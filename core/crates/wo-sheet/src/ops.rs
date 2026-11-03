@@ -506,7 +506,9 @@ fn op_touched_region(op: &SheetOp) -> Option<OpTouchedRegion> {
         SheetOp::Unmerge(_range) => Some(OpTouchedRegion::Structural),
         SheetOp::SetStyle { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
         SheetOp::Sort { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
-        SheetOp::ApplyConditionalFormat { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
+        SheetOp::ApplyConditionalFormat { range, .. } => {
+            Some(OpTouchedRegion::Range(range.clone()))
+        }
         SheetOp::Clear { range } => Some(OpTouchedRegion::Range(range.clone())),
         SheetOp::Copy { from, to } => Some(OpTouchedRegion::Copy {
             from: from.clone(),
@@ -541,11 +543,7 @@ fn op_touched_region(op: &SheetOp) -> Option<OpTouchedRegion> {
 
 /// Check if an operation is allowed given sheet protection and edit ranges.
 /// Returns true if protection is disabled or if all touched cells are allowed.
-fn is_op_allowed(
-    sheet: &Sheet,
-    edit_ranges: &[EditRange],
-    region: &OpTouchedRegion,
-) -> bool {
+fn is_op_allowed(sheet: &Sheet, edit_ranges: &[EditRange], region: &OpTouchedRegion) -> bool {
     // If protection is disabled, everything is allowed
     if !sheet.protection.enabled {
         return true;
@@ -575,12 +573,7 @@ fn is_op_allowed(
             // Check destination - we need to calculate the destination range
             let dest_rows = source_range.end_row - source_range.start_row + 1;
             let dest_cols = source_range.end_col - source_range.start_col + 1;
-            let dest_range = Range2d::new(
-                to.0,
-                to.1,
-                to.0 + dest_rows - 1,
-                to.1 + dest_cols - 1,
-            );
+            let dest_range = Range2d::new(to.0, to.1, to.0 + dest_rows - 1, to.1 + dest_cols - 1);
             super::model::range_is_fully_allowed(&sheet.protection, edit_ranges, &dest_range)
         }
         OpTouchedRegion::Structural => {
@@ -611,15 +604,13 @@ fn is_op_allowed_for_user(
         return false;
     }
     match region {
-        OpTouchedRegion::SingleCell(row, col) => {
-            super::model::is_edit_allowed_for_user(
-                &sheet.protection,
-                edit_ranges,
-                (*row, *col),
-                user,
-                groups,
-            )
-        }
+        OpTouchedRegion::SingleCell(row, col) => super::model::is_edit_allowed_for_user(
+            &sheet.protection,
+            edit_ranges,
+            (*row, *col),
+            user,
+            groups,
+        ),
         OpTouchedRegion::Range(range) => super::model::range_is_fully_allowed_for_user(
             &sheet.protection,
             edit_ranges,
@@ -654,19 +645,19 @@ fn is_op_allowed_for_user(
 }
 
 /// Apply a SheetOp to a Sheet with protection enforcement.
-/// 
+///
 /// This function checks if the operation is allowed based on:
 /// - The sheet's protection settings
 /// - The workbook's edit ranges
-/// 
+///
 /// If protection is disabled or the operation touches only allowed cells,
 /// it delegates to `apply_to_sheet`. Otherwise, returns a Protected error.
-/// 
+///
 /// # Arguments
 /// * `sheet` - The sheet to apply the operation to
 /// * `workbook_edit_ranges` - The edit ranges from the containing workbook
 /// * `op` - The operation to apply
-/// 
+///
 /// # Returns
 /// * `Ok(())` if the operation was applied successfully
 /// * `Err(SheetOpError::Protected)` if the operation would modify protected cells
@@ -719,12 +710,20 @@ pub fn apply_to_workbook_protected(
     let target_sheet_name = if let Some(name) = sheet_name {
         name.to_string()
     } else {
-        wb.sheets.get(wb.active_sheet).map(|s| s.name.clone()).unwrap_or_else(|| "Sheet1".to_string())
+        wb.sheets
+            .get(wb.active_sheet)
+            .map(|s| s.name.clone())
+            .unwrap_or_else(|| "Sheet1".to_string())
     };
-    
-    let sheet = wb.sheets.iter_mut().find(|s| s.name == target_sheet_name)
-        .ok_or_else(|| SheetOpError::SheetNotFound { name: target_sheet_name })?;
-    
+
+    let sheet = wb
+        .sheets
+        .iter_mut()
+        .find(|s| s.name == target_sheet_name)
+        .ok_or_else(|| SheetOpError::SheetNotFound {
+            name: target_sheet_name,
+        })?;
+
     apply_to_sheet_protected(sheet, &wb.edit_ranges, op)
 }
 
@@ -739,10 +738,18 @@ pub fn apply_to_workbook_protected_for_user(
     let target_sheet_name = if let Some(name) = sheet_name {
         name.to_string()
     } else {
-        wb.sheets.get(wb.active_sheet).map(|s| s.name.clone()).unwrap_or_else(|| "Sheet1".to_string())
+        wb.sheets
+            .get(wb.active_sheet)
+            .map(|s| s.name.clone())
+            .unwrap_or_else(|| "Sheet1".to_string())
     };
-    let sheet = wb.sheets.iter_mut().find(|s| s.name == target_sheet_name)
-        .ok_or_else(|| SheetOpError::SheetNotFound { name: target_sheet_name })?;
+    let sheet = wb
+        .sheets
+        .iter_mut()
+        .find(|s| s.name == target_sheet_name)
+        .ok_or_else(|| SheetOpError::SheetNotFound {
+            name: target_sheet_name,
+        })?;
     apply_to_sheet_protected_for_user(sheet, &wb.edit_ranges, op, user, groups)
 }
 
@@ -1705,7 +1712,7 @@ mod tests {
     fn test_protected_set_cell_disallowed() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
@@ -1727,7 +1734,7 @@ mod tests {
     fn test_protected_set_cell_allowed() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
@@ -1741,7 +1748,7 @@ mod tests {
 
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_ok());
-        
+
         // Verify the cell was actually set
         let cell = sheet.get_cell(2, 2).unwrap();
         assert_eq!(cell.raw, "test value");
@@ -1752,7 +1759,7 @@ mod tests {
     fn test_protection_disabled_ops_through() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("UnprotectedSheet");
         sheet.protection = SheetProtection::disabled();
         let edit_ranges = vec![]; // No edit ranges needed when protection is disabled
@@ -1766,7 +1773,7 @@ mod tests {
 
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_ok());
-        
+
         // Verify the cell was set
         let cell = sheet.get_cell(100, 100).unwrap();
         assert_eq!(cell.raw, "test");
@@ -1777,7 +1784,7 @@ mod tests {
     fn test_protected_empty_edit_ranges() {
         // F-146
         use super::super::model::{Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         let edit_ranges = vec![]; // Empty edit ranges
@@ -1799,12 +1806,12 @@ mod tests {
     fn test_protected_copy_dest_outside() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         // Set up some cells to copy
         sheet.set_cell(0, 0, super::super::model::Cell::with_text("data"));
         sheet.protection = SheetProtection::enabled();
-        
+
         // Edit range includes source but not destination
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
 
@@ -1817,7 +1824,7 @@ mod tests {
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_err());
         assert!(matches!(result, Err(SheetOpError::Protected)));
-        
+
         // Verify no cell was created at destination
         assert!(sheet.get_cell(10, 10).is_none());
     }
@@ -1827,7 +1834,7 @@ mod tests {
     fn test_protected_set_style_disallowed() {
         // F-146
         use super::super::model::{CellStyle, EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
@@ -1848,7 +1855,7 @@ mod tests {
     fn test_protected_clear_disallowed() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.set_cell(10, 10, super::super::model::Cell::with_text("to clear"));
         sheet.protection = SheetProtection::enabled();
@@ -1862,7 +1869,7 @@ mod tests {
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_err());
         assert!(matches!(result, Err(SheetOpError::Protected)));
-        
+
         // Verify cell still exists
         assert!(sheet.get_cell(10, 10).is_some());
     }
@@ -1872,11 +1879,11 @@ mod tests {
     fn test_protected_copy_both_allowed() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.set_cell(0, 0, super::super::model::Cell::with_text("data"));
         sheet.protection = SheetProtection::enabled();
-        
+
         // Edit range allows both source and destination
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 10, 10))];
 
@@ -1888,7 +1895,7 @@ mod tests {
 
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_ok());
-        
+
         // Verify cell was copied
         let cell = sheet.get_cell(5, 5).unwrap();
         assert_eq!(cell.raw, "data");
@@ -1899,7 +1906,7 @@ mod tests {
     fn test_protected_insert_row_allowed() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.set_cell(0, 0, super::super::model::Cell::with_text("row0"));
         sheet.set_cell(1, 0, super::super::model::Cell::with_text("row1"));
@@ -1912,7 +1919,7 @@ mod tests {
 
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_ok());
-        
+
         // Verify cells were shifted: row0 stays, row1 and row2 shift down to row2 and row3
         assert_eq!(sheet.get_cell(0, 0).unwrap().raw, "row0");
         assert!(sheet.get_cell(1, 0).is_none()); // Empty row inserted at position 1
@@ -1925,7 +1932,7 @@ mod tests {
     fn test_protected_merge_allowed() {
         // F-146
         use super::super::model::{EditRange, MergeRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
@@ -1943,7 +1950,7 @@ mod tests {
     fn test_apply_to_workbook_protected() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection, Workbook};
-        
+
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
@@ -1967,11 +1974,11 @@ mod tests {
     fn test_protected_locked_cells_precedence() {
         // F-146
         use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
-        
+
         let mut sheet = Sheet::new("ProtectedSheet");
         sheet.protection = SheetProtection::enabled();
         sheet.protection.locked_cells = Some(vec![Range2d::new(2, 2, 4, 4)]);
-        
+
         // Edit range includes the locked area
         let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 10, 10))];
 
@@ -2004,7 +2011,8 @@ mod tests {
             col: 10,
             raw: "test".to_string(),
         };
-        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("alice"), &[]);
+        let result =
+            apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("alice"), &[]);
         assert!(result.is_ok(), "exempt user should bypass protection");
     }
 
@@ -2025,7 +2033,8 @@ mod tests {
             col: 10,
             raw: "test".to_string(),
         };
-        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("bob"), &[]);
+        let result =
+            apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("bob"), &[]);
         assert!(result.is_err());
         assert!(matches!(result, Err(SheetOpError::Protected)));
     }
@@ -2047,7 +2056,13 @@ mod tests {
             col: 10,
             raw: "test".to_string(),
         };
-        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("bob"), &["admins"]);
+        let result = apply_to_sheet_protected_for_user(
+            &mut sheet,
+            &edit_ranges,
+            &op,
+            Some("bob"),
+            &["admins"],
+        );
         assert!(result.is_ok(), "exempt group should bypass protection");
     }
 

@@ -2700,7 +2700,12 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     });
                 }
             }
-            BlockElement::OrderedList { items, start, style, .. } => {
+            BlockElement::OrderedList {
+                items,
+                start,
+                style,
+                ..
+            } => {
                 // C2-3: <ol start="N"> becomes w:startValue on the FIRST
                 // list paragraph (Word restarts numbering at N there).
                 // C2-2: <ol>/<ul> inline margin-left/text-indent -> w:ind.
@@ -3144,19 +3149,31 @@ struct ListInd {
 }
 
 fn list_style_to_ind(style: Option<&str>) -> ListInd {
-    let mut ind = ListInd { left: None, first: None, hanging: None };
-    let Some(style) = style else { return ind; };
+    let mut ind = ListInd {
+        left: None,
+        first: None,
+        hanging: None,
+    };
+    let Some(style) = style else {
+        return ind;
+    };
     let px_of = |v: &str| -> Option<i32> {
         let n = v.trim().trim_end_matches("px").trim().parse::<f32>().ok()?;
         Some((n * 15.0).round() as i32)
     };
     for decl in style.split(';') {
-        let Some((prop, val)) = decl.split_once(':') else { continue; };
+        let Some((prop, val)) = decl.split_once(':') else {
+            continue;
+        };
         match prop.trim() {
             "margin-left" => ind.left = px_of(val),
             "text-indent" => {
                 if let Some(tw) = px_of(val) {
-                    if tw >= 0 { ind.first = Some(tw); } else { ind.hanging = Some(-tw); }
+                    if tw >= 0 {
+                        ind.first = Some(tw);
+                    } else {
+                        ind.hanging = Some(-tw);
+                    }
                 }
             }
             _ => {}
@@ -3166,9 +3183,15 @@ fn list_style_to_ind(style: Option<&str>) -> ListInd {
 }
 
 fn apply_indent(mut props: DocxParagraphProperties, ind: &ListInd) -> DocxParagraphProperties {
-    if let Some(l) = ind.left { props.indent_left = Some(l); }
-    if let Some(f) = ind.first { props.indent_first_line = Some(f); }
-    if let Some(h) = ind.hanging { props.indent_hanging = Some(h); }
+    if let Some(l) = ind.left {
+        props.indent_left = Some(l);
+    }
+    if let Some(f) = ind.first {
+        props.indent_first_line = Some(f);
+    }
+    if let Some(h) = ind.hanging {
+        props.indent_hanging = Some(h);
+    }
     props
 }
 
@@ -3187,8 +3210,13 @@ fn css_list_style_type(style: Option<&str>) -> Option<String> {
 }
 
 fn num_id_for_css(style: Option<&str>, default_ordered: bool) -> u32 {
-    let css = css_list_style_type(style)
-        .unwrap_or_else(|| if default_ordered { "decimal".to_string() } else { "disc".to_string() });
+    let css = css_list_style_type(style).unwrap_or_else(|| {
+        if default_ordered {
+            "decimal".to_string()
+        } else {
+            "disc".to_string()
+        }
+    });
     match css.as_str() {
         "disc" => 1,
         "circle" => 7,
@@ -3199,7 +3227,11 @@ fn num_id_for_css(style: Option<&str>, default_ordered: bool) -> u32 {
         "upper-alpha" | "upper-latin" => 5,
         "upper-roman" => 6,
         _ => {
-            if default_ordered { 2 } else { 1 }
+            if default_ordered {
+                2
+            } else {
+                1
+            }
         }
     }
 }
@@ -3223,7 +3255,9 @@ fn css_for_num_id(num_id: Option<u32>) -> Option<(&'static str, bool)> {
 /// C2-2b: fold a known w:numFmt (via css list-style-type) into the list's
 /// inline style attr alongside any indent declarations.
 fn merge_list_style(base: Option<String>, style_type: Option<&str>) -> Option<String> {
-    let Some(css) = style_type else { return base; };
+    let Some(css) = style_type else {
+        return base;
+    };
     let mut parts = Vec::new();
     parts.push(format!("list-style-type:{}", css));
     if let Some(b) = base {
@@ -3236,15 +3270,28 @@ fn merge_list_style(base: Option<String>, style_type: Option<&str>) -> Option<St
 fn list_ind_to_style(props: &DocxParagraphProperties) -> Option<String> {
     let mut parts = Vec::new();
     if let Some(l) = props.indent_left {
-        parts.push(format!("margin-left:{}px", (l as f32 / 15.0).round() as i32));
+        parts.push(format!(
+            "margin-left:{}px",
+            (l as f32 / 15.0).round() as i32
+        ));
     }
     if let Some(f) = props.indent_first_line {
-        parts.push(format!("text-indent:{}px", (f as f32 / 15.0).round() as i32));
+        parts.push(format!(
+            "text-indent:{}px",
+            (f as f32 / 15.0).round() as i32
+        ));
     }
     if let Some(h) = props.indent_hanging {
-        parts.push(format!("text-indent:-{}px", (h as f32 / 15.0).round() as i32));
+        parts.push(format!(
+            "text-indent:-{}px",
+            (h as f32 / 15.0).round() as i32
+        ));
     }
-    if parts.is_empty() { None } else { Some(parts.join(";")) }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(";"))
+    }
 }
 
 fn html_inlines_to_docx_runs(
@@ -4138,14 +4185,12 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 Some((css, ord)) => (Some(css), Some(ord)),
                 None => (None, None),
             };
-            let ordered = known_ordered
-                .unwrap_or_else(|| {
-                    para
-                        .style_id
-                        .as_deref()
-                        .map(|s| s.contains("ListNumber"))
-                        .unwrap_or(false)
-                });
+            let ordered = known_ordered.unwrap_or_else(|| {
+                para.style_id
+                    .as_deref()
+                    .map(|s| s.contains("ListNumber"))
+                    .unwrap_or(false)
+            });
             // Don't restate the browser/Word default (decimal for ordered,
             // disc for unordered) — canonical output stays style-free.
             let style_type = match (style_type, known_ordered) {
@@ -4234,7 +4279,11 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 let start = raw[lo..].find('"').map(|j| lo + j + 1)?;
                 let end = raw[start..].find('"')?;
                 let v = raw[start..start + end].trim();
-                if v.is_empty() { None } else { Some(v.to_string()) }
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v.to_string())
+                }
             }) {
                 inlines.insert(0, InlineElement::Field { instr });
             }
@@ -10692,7 +10741,9 @@ mod tests {
         let docx2 = HtmlToDocxConverter
             .convert(&html)
             .expect("html -> docx (2)");
-        let html2 = DocxToHtmlConverter.convert(&docx2).expect("docx -> html (2)");
+        let html2 = DocxToHtmlConverter
+            .convert(&docx2)
+            .expect("docx -> html (2)");
         let html2_str = String::from_utf8_lossy(&html2).to_string();
         assert!(
             html2_str.contains("<hr"),
@@ -13268,7 +13319,7 @@ mod tests {
                             },
                         ],
                         id: None,
-                                        style: None,
+                        style: None,
                     },
                     BlockElement::OrderedList {
                         items: vec![ListItem {
@@ -13279,7 +13330,7 @@ mod tests {
                         }],
                         id: None,
                         start: Some(5),
-                                        style: None,
+                        style: None,
                     },
                 ],
             },
@@ -13371,10 +13422,18 @@ mod tests {
         // NOT a 72-box-drawing-character garbage run.
         let hr_para = &body.paragraphs()[2];
         assert!(hr_para.runs.is_empty(), "HR must have no text runs");
-        let borders = hr_para.properties.borders.as_ref().expect("HR must carry w:pBdr");
-        assert!(borders.top.is_some() && borders.bottom.is_some()
-            && borders.left.is_some() && borders.right.is_some(),
-            "HR must carry all four sides of w:pBdr");
+        let borders = hr_para
+            .properties
+            .borders
+            .as_ref()
+            .expect("HR must carry w:pBdr");
+        assert!(
+            borders.top.is_some()
+                && borders.bottom.is_some()
+                && borders.left.is_some()
+                && borders.right.is_some(),
+            "HR must carry all four sides of w:pBdr"
+        );
         assert_eq!(borders.top.as_ref().unwrap().style, "single");
     }
 
@@ -13598,7 +13657,7 @@ mod tests {
                     }],
                 }],
                 id: None,
-                        style: None,
+                style: None,
             },
             BlockElement::OrderedList {
                 items: vec![ListItem {
@@ -13609,7 +13668,7 @@ mod tests {
                 }],
                 id: None,
                 start: None,
-                        style: None,
+                style: None,
             },
             BlockElement::Table {
                 rows: vec![TableRow {
@@ -14647,7 +14706,7 @@ mod tests {
         let ul = html_elements_to_fb2(&[BlockElement::UnorderedList {
             items: items.clone(),
             id: None,
-                style: None,
+            style: None,
         }]);
         assert_eq!(
             ul.len(),
@@ -14658,7 +14717,7 @@ mod tests {
             items,
             id: None,
             start: None,
-                style: None,
+            style: None,
         }]);
         assert_eq!(ol.len(), 1);
         if let ContentElement::Paragraph { content, .. } = &ol[0] {
@@ -15592,7 +15651,7 @@ mod tests {
                 },
             ],
             id: None,
-                style: None,
+            style: None,
         }]);
         assert_eq!(result.len(), 2);
         for block in &result {
@@ -15624,7 +15683,7 @@ mod tests {
             }],
             id: None,
             start: Some(5),
-                style: None,
+            style: None,
         }]);
         assert_eq!(result.len(), 1);
         match &result[0] {
@@ -15888,7 +15947,7 @@ mod tests {
                     }],
                 }],
                 id: None,
-                        style: None,
+                style: None,
             },
             BlockElement::OrderedList {
                 items: vec![wo_html::model::ListItem {
@@ -15899,7 +15958,7 @@ mod tests {
                 }],
                 id: None,
                 start: None,
-                        style: None,
+                style: None,
             },
             BlockElement::Table {
                 rows: vec![wo_html::model::TableRow {
@@ -16278,7 +16337,7 @@ mod tests {
                 }],
             }],
             id: None,
-                style: None,
+            style: None,
         });
         assert!(ul.contains("<ul>"), "unordered list should have ul tag");
 
@@ -16292,7 +16351,7 @@ mod tests {
             }],
             id: None,
             start: None,
-                style: None,
+            style: None,
         });
         assert!(ol.contains("<ol>"), "ordered list should have ol tag");
 

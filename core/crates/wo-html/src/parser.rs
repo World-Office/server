@@ -7,9 +7,24 @@ use crate::model::*;
 fn is_block_tag(tag: &str) -> bool {
     matches!(
         tag,
-        "ul" | "ol" | "table" | "div" | "blockquote" | "pre" | "hr" | "p"
-            | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
-            | "section" | "article" | "main" | "nav" | "aside"
+        "ul" | "ol"
+            | "table"
+            | "div"
+            | "blockquote"
+            | "pre"
+            | "hr"
+            | "p"
+            | "h1"
+            | "h2"
+            | "h3"
+            | "h4"
+            | "h5"
+            | "h6"
+            | "section"
+            | "article"
+            | "main"
+            | "nav"
+            | "aside"
     )
 }
 
@@ -64,14 +79,21 @@ fn list_style_attr(node: &roxmltree::Node) -> Option<String> {
         .split(';')
         .filter_map(|decl| {
             let (prop, val) = decl.split_once(':')?;
-            if interesting.iter().any(|k| prop.trim().eq_ignore_ascii_case(k)) {
+            if interesting
+                .iter()
+                .any(|k| prop.trim().eq_ignore_ascii_case(k))
+            {
                 Some(format!("{}:{}", prop.trim(), val.trim()))
             } else {
                 None
             }
         })
         .collect();
-    if picked.is_empty() { None } else { Some(picked.join(";")) }
+    if picked.is_empty() {
+        None
+    } else {
+        Some(picked.join(";"))
+    }
 }
 
 /// F-041: block direction from `dir="rtl"` or `style="direction: rtl"`.
@@ -671,7 +693,11 @@ impl HtmlParser {
             for c in ch.children() {
                 if c.is_element() && is_block_tag(c.tag_name().name()) {
                     if !run.is_empty() {
-                        out.push(self.block_paragraph(self.parse_inline_nodes(&run), id.clone(), ch));
+                        out.push(self.block_paragraph(
+                            self.parse_inline_nodes(&run),
+                            id.clone(),
+                            ch,
+                        ));
                         run.clear();
                     }
                     out.extend(self.parse_block_child(&c));
@@ -686,125 +712,127 @@ impl HtmlParser {
         }
 
         match tag {
-
-                "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-                    let level: u8 = tag[1..].parse().unwrap_or(1);
-                    return vec![BlockElement::Heading {
-                        level,
-                        content: self.parse_inline_elements(&ch),
-                        id,
-                    }];
-                }
-                "p" => {
-                    return vec![BlockElement::Paragraph {
-                        content: self.parse_inline_elements(&ch),
-                        id,
-                        dir: block_direction(&ch),
-                        align: block_align(&ch),
-                        background: block_background(&ch),
-                        borders: block_borders(&ch),
-                        writing_mode: block_writing_mode(&ch),
-                    }];
-                }
-                "div" => {
-                    return vec![BlockElement::Div {
-                        elements: self.parse_block_elements(&ch),
-                        id,
-                        class: attr(&ch, "class"),
-                    }];
-                }
-                "ul" => {
-                    return vec![BlockElement::UnorderedList {
-                        items: self.parse_list_items(&ch),
-                        id,
-                        style: list_style_attr(&ch),
-                    }];
-                }
-                "ol" => {
-                    let start = attr(&ch, "start").and_then(|s| s.parse().ok());
-                    return vec![BlockElement::OrderedList {
-                        items: self.parse_list_items(&ch),
-                        id,
-                        start,
-                        style: list_style_attr(&ch),
-                    }];
-                }
-                "table" => {
-                    return vec![BlockElement::Table {
-                        rows: self.parse_table(&ch),
-                        id,
-                    }];
-                }
-                "blockquote" => {
-                    return vec![BlockElement::Blockquote {
-                        elements: self.parse_block_elements(&ch),
-                        id,
-                    }];
-                }
-                "pre" => {
-                    let content = node_text(&ch);
-                    return vec![BlockElement::Pre { content, id }];
-                }
-                "hr" => {
-                    return vec![BlockElement::HorizontalRule];
-                }
-                "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" => {
-                    // BUG9-CONVERTER-CONTRACT: for semantic containers (nav/
-                    // aside/section/article/main) merge the user `class` with
-                    // the tag so editor dialect classes survive round-trips
-                    // (e.g. `<nav class="toc">` -> Div{class:"nav toc"}).
-                    // header/footer are exempt: wo-x2t furniture_spans matches
-                    // `class == "header"` / `class == "footer"` by exact
-                    // equality, so those keep `class = tag` (user class dropped).
-                    let class = if matches!(tag, "header" | "footer") {
-                        Some(tag.to_string())
-                    } else {
-                        match attr(&ch, "class") {
-                            Some(user) => Some(format!("{tag} {user}")),
-                            None => Some(tag.to_string()),
-                        }
-                    };
-                    return vec![BlockElement::Div {
-                        elements: self.parse_block_elements(&ch),
-                        id,
-                        class,
-                    }];
-                }
-                _ => {
-                    // A bare body-level page-number span (the editor's flat
-                    // HTML puts `<span class="page-number"></span>` next to
-                    // the paragraphs) must become a paragraph around the field
-                    // inline so html->docx keeps it instead of the empty-node
-                    // drop below. parse_inline_elements recurses into the
-                    // span's CHILDREN (an empty placeholder produces nothing),
-                    // so parse the span node itself (as the <p> hoist does).
-                    if ch.is_element()
-                        && ch.tag_name().name() == "span"
-                        && attr(&ch, "class")
-                            .map(|c| c.split_whitespace().any(|t| t == "page-number"))
-                            .unwrap_or(false)
-                    {
-                        return vec![self.block_paragraph(
-                            self.parse_inline_nodes(&[ch.clone()]),
-                            id,
-                            ch,
-                        )];
+            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
+                let level: u8 = tag[1..].parse().unwrap_or(1);
+                return vec![BlockElement::Heading {
+                    level,
+                    content: self.parse_inline_elements(&ch),
+                    id,
+                }];
+            }
+            "p" => {
+                return vec![BlockElement::Paragraph {
+                    content: self.parse_inline_elements(&ch),
+                    id,
+                    dir: block_direction(&ch),
+                    align: block_align(&ch),
+                    background: block_background(&ch),
+                    borders: block_borders(&ch),
+                    writing_mode: block_writing_mode(&ch),
+                }];
+            }
+            "div" => {
+                return vec![BlockElement::Div {
+                    elements: self.parse_block_elements(&ch),
+                    id,
+                    class: attr(&ch, "class"),
+                }];
+            }
+            "ul" => {
+                return vec![BlockElement::UnorderedList {
+                    items: self.parse_list_items(&ch),
+                    id,
+                    style: list_style_attr(&ch),
+                }];
+            }
+            "ol" => {
+                let start = attr(&ch, "start").and_then(|s| s.parse().ok());
+                return vec![BlockElement::OrderedList {
+                    items: self.parse_list_items(&ch),
+                    id,
+                    start,
+                    style: list_style_attr(&ch),
+                }];
+            }
+            "table" => {
+                return vec![BlockElement::Table {
+                    rows: self.parse_table(&ch),
+                    id,
+                }];
+            }
+            "blockquote" => {
+                return vec![BlockElement::Blockquote {
+                    elements: self.parse_block_elements(&ch),
+                    id,
+                }];
+            }
+            "pre" => {
+                let content = node_text(&ch);
+                return vec![BlockElement::Pre { content, id }];
+            }
+            "hr" => {
+                return vec![BlockElement::HorizontalRule];
+            }
+            "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" => {
+                // BUG9-CONVERTER-CONTRACT: for semantic containers (nav/
+                // aside/section/article/main) merge the user `class` with
+                // the tag so editor dialect classes survive round-trips
+                // (e.g. `<nav class="toc">` -> Div{class:"nav toc"}).
+                // header/footer are exempt: wo-x2t furniture_spans matches
+                // `class == "header"` / `class == "footer"` by exact
+                // equality, so those keep `class = tag` (user class dropped).
+                let class = if matches!(tag, "header" | "footer") {
+                    Some(tag.to_string())
+                } else {
+                    match attr(&ch, "class") {
+                        Some(user) => Some(format!("{tag} {user}")),
+                        None => Some(tag.to_string()),
                     }
-                    let text = node_text(&ch);
-                    if !text.is_empty() {
-                        return vec![BlockElement::RawHtml {
-                            tag: tag.to_string(),
-                            content: text,
-                        }];
-                    }
-                    vec![]
+                };
+                return vec![BlockElement::Div {
+                    elements: self.parse_block_elements(&ch),
+                    id,
+                    class,
+                }];
+            }
+            _ => {
+                // A bare body-level page-number span (the editor's flat
+                // HTML puts `<span class="page-number"></span>` next to
+                // the paragraphs) must become a paragraph around the field
+                // inline so html->docx keeps it instead of the empty-node
+                // drop below. parse_inline_elements recurses into the
+                // span's CHILDREN (an empty placeholder produces nothing),
+                // so parse the span node itself (as the <p> hoist does).
+                if ch.is_element()
+                    && ch.tag_name().name() == "span"
+                    && attr(&ch, "class")
+                        .map(|c| c.split_whitespace().any(|t| t == "page-number"))
+                        .unwrap_or(false)
+                {
+                    return vec![self.block_paragraph(
+                        self.parse_inline_nodes(&[ch.clone()]),
+                        id,
+                        ch,
+                    )];
                 }
-
-
+                let text = node_text(&ch);
+                if !text.is_empty() {
+                    return vec![BlockElement::RawHtml {
+                        tag: tag.to_string(),
+                        content: text,
+                    }];
+                }
+                vec![]
+            }
         }
     }
 
-    fn block_paragraph(&self, content: Vec<InlineElement>, id: Option<String>, ch: &roxmltree::Node) -> BlockElement {
+    fn block_paragraph(
+        &self,
+        content: Vec<InlineElement>,
+        id: Option<String>,
+        ch: &roxmltree::Node,
+    ) -> BlockElement {
         BlockElement::Paragraph {
             content,
             id,
@@ -978,8 +1006,7 @@ impl HtmlParser {
                         .unwrap_or(false)
                     {
                         elements.push(InlineElement::Field {
-                            instr: attr(&ch, "data-field")
-                                .unwrap_or_else(|| "PAGE".to_string()),
+                            instr: attr(&ch, "data-field").unwrap_or_else(|| "PAGE".to_string()),
                         });
                         continue;
                     }
@@ -1214,7 +1241,11 @@ mod tests {
         // text before the nested block stays in a leading paragraph
         let html2 = b"<html><body><p>before<ul><li>x</li></ul>after</p></body></html>";
         let doc2 = parser.parse(html2).unwrap();
-        assert_eq!(doc2.body.elements.len(), 3, "before-para + list + after-para");
+        assert_eq!(
+            doc2.body.elements.len(),
+            3,
+            "before-para + list + after-para"
+        );
     }
 
     #[test]
@@ -2217,8 +2248,7 @@ mod tests {
 
     #[test]
     fn page_number_span_parses_and_serializes() {
-        let html =
-            "<span class=\"page-number\"></span><p>Sentinel paragraph here.</p>";
+        let html = "<span class=\"page-number\"></span><p>Sentinel paragraph here.</p>";
         let doc = crate::HtmlParser::new().parse(html.as_bytes()).unwrap();
         let out = crate::HtmlSerializer::new().serialize(&doc);
         assert!(

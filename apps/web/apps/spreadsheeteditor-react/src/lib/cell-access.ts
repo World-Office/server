@@ -11,9 +11,9 @@
  */
 
 import {
+	type UniverWorkbookFacade,
 	getActiveUniverAPI,
 	getUniverSnapshot,
-	type UniverWorkbookFacade,
 } from "./univer-command";
 
 /** A text-bearing cell located in the active workbook. */

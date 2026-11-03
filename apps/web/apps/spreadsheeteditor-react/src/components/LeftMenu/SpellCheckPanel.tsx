@@ -9,8 +9,16 @@
  */
 import { observer } from "mobx-react-lite";
 import { type JSX, useState } from "react";
-import { activateCell, collectTextCells, setCellValue } from "../../lib/cell-access";
-import { applySuggestion, findSpellIssues, type SpellIssue } from "../../lib/spellcheck";
+import {
+	activateCell,
+	collectTextCells,
+	setCellValue,
+} from "../../lib/cell-access";
+import {
+	type SpellIssue,
+	applySuggestion,
+	findSpellIssues,
+} from "../../lib/spellcheck";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 
 const REASON_LABELS: Record<SpellIssue["reason"], string> = {
@@ -38,9 +46,7 @@ function SpellCheckPanelInner({ active }: SpellCheckPanelProps): JSX.Element {
 
 	function ignore(issue: SpellIssue): void {
 		const word =
-			issue.reason === "repeated-word"
-				? issue.word.split(" ")[0]
-				: issue.word;
+			issue.reason === "repeated-word" ? issue.word.split(" ")[0] : issue.word;
 		const next = new Set(ignored);
 		next.add(word.toLowerCase());
 		setIgnored(next);
@@ -71,7 +77,9 @@ function SpellCheckPanelInner({ active }: SpellCheckPanelProps): JSX.Element {
 			if (!issue.suggestion) continue;
 			if (fix(issue, applySuggestion(issue.cell.value, issue))) count++;
 		}
-		setStatus(count > 0 ? `Fixed ${count} issue(s).` : "No auto-fixable issues left.");
+		setStatus(
+			count > 0 ? `Fixed ${count} issue(s).` : "No auto-fixable issues left.",
+		);
 	}
 
 	return (
@@ -177,9 +185,8 @@ function SpellCheckPanelInner({ active }: SpellCheckPanelProps): JSX.Element {
 					))}
 				</ul>
 				<div className="se-left-panel-muted se-left-panel-footnote">
-					Heuristic pass (frequent typos, repeated words, triple letters) —
-					not a full dictionary check. Language:{" "}
-					{spreadsheetStore.languageCode}
+					Heuristic pass (frequent typos, repeated words, triple letters) — not
+					a full dictionary check. Language: {spreadsheetStore.languageCode}
 				</div>
 			</div>
 		</div>

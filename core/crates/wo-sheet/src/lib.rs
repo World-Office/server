@@ -5,8 +5,8 @@
 
 pub mod conditional;
 pub mod export;
-pub mod formula_eval;
 pub mod format;
+pub mod formula_eval;
 pub mod model;
 pub mod ops;
 pub mod pivot;
@@ -16,8 +16,8 @@ pub use conditional::{ConditionalResult, apply_conditional_format};
 pub use export::{export_ods, from_ods};
 pub use format::{FormatContext, FormatPattern, format_number, format_value};
 pub use model::{
-    Cell, CellStyle, ConditionalRule, DefinedName, EditRange, MergeRange, Range2d, Sheet,
-    SheetOp, SheetProtection, SortKey, Workbook, allowed_edit_ranges, is_edit_allowed,
+    Cell, CellStyle, ConditionalRule, DefinedName, EditRange, MergeRange, Range2d, Sheet, SheetOp,
+    SheetProtection, SortKey, Workbook, allowed_edit_ranges, is_edit_allowed,
     is_edit_allowed_for_user, range_is_fully_allowed, range_is_fully_allowed_for_user,
 };
 pub use ops::{

@@ -7,7 +7,7 @@
  * when the deployment configured one (customization.feedback.url).
  */
 import { observer } from "mobx-react-lite";
-import { type JSX } from "react";
+import type { JSX } from "react";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 
 /** Open a File-menu panel, closing the left rail first. */

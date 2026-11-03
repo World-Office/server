@@ -337,7 +337,7 @@ jobs:
 
   parity-contracts:
     name: Word Parity Contracts (L2+L4)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # playwright@1.59.1 has no ubuntu-26.04 browser deps
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -392,7 +392,7 @@ jobs:
   fig:
     name: Strangler Fig (census+collab+auth+contracts+golden)
     needs: [parity-contracts]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # playwright@1.59.1 has no ubuntu-26.04 browser deps
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4

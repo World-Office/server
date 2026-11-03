@@ -60,16 +60,15 @@ pub fn resolve_inheritance(slide: &Slide, presentation: &Presentation) -> Resolv
             .masters
             .iter()
             .flat_map(|master| master.slide_layouts.iter())
-            .find(|layout| {
-                layout.id.to_string() == *layout_id_str || layout.name == *layout_id_str
-            })
+            .find(|layout| layout.id.to_string() == *layout_id_str || layout.name == *layout_id_str)
     });
 
     // Find the master: first try slide.master_id, then fall back to layout's master
     let master = if let Some(master_id_str) = &slide.master_id {
-        presentation.masters.iter().find(|master| {
-            master.id.to_string() == *master_id_str || master.name == *master_id_str
-        })
+        presentation
+            .masters
+            .iter()
+            .find(|master| master.id.to_string() == *master_id_str || master.name == *master_id_str)
     } else {
         // If slide doesn't have master_id, use the layout's master
         slide.layout_id.as_ref().and_then(|layout_id_str| {
@@ -85,12 +84,18 @@ pub fn resolve_inheritance(slide: &Slide, presentation: &Presentation) -> Resolv
     };
 
     // Collect placeholder types from layout (if slide doesn't have explicit placeholder shapes)
-    let placeholder_types: Vec<String> = if slide.shapes.iter().any(|s| matches!(s, Shape::Placeholder(_))) {
+    let placeholder_types: Vec<String> = if slide
+        .shapes
+        .iter()
+        .any(|s| matches!(s, Shape::Placeholder(_)))
+    {
         // Slide has explicit placeholder shapes, don't inherit placeholder_types
         Vec::new()
     } else {
         // No explicit placeholder shapes on slide, inherit from layout
-        layout.map(|l| l.placeholder_types.clone()).unwrap_or_default()
+        layout
+            .map(|l| l.placeholder_types.clone())
+            .unwrap_or_default()
     };
 
     // Background: neither layouts nor masters carry one in the current model.
@@ -154,32 +159,26 @@ fn shape_id(shape: &Shape) -> Option<&str> {
 
 /// Get the effective layout for a slide.
 /// Returns the SlideLayout if found, None otherwise.
-pub fn get_layout<'a>(
-    slide: &Slide,
-    presentation: &'a Presentation,
-) -> Option<&'a SlideLayout> {
+pub fn get_layout<'a>(slide: &Slide, presentation: &'a Presentation) -> Option<&'a SlideLayout> {
     slide.layout_id.as_ref().and_then(|layout_id_str| {
         presentation
             .masters
             .iter()
             .flat_map(|master| master.slide_layouts.iter())
-            .find(|layout| {
-                layout.id.to_string() == *layout_id_str || layout.name == *layout_id_str
-            })
+            .find(|layout| layout.id.to_string() == *layout_id_str || layout.name == *layout_id_str)
     })
 }
 
 /// Get the effective master for a slide.
 /// First tries slide.master_id, then falls back to the layout's master.
-pub fn get_master<'a>(
-    slide: &Slide,
-    presentation: &'a Presentation,
-) -> Option<&'a SlideMaster> {
+pub fn get_master<'a>(slide: &Slide, presentation: &'a Presentation) -> Option<&'a SlideMaster> {
     // First, try slide.master_id directly
     if let Some(master_id_str) = &slide.master_id {
-        if let Some(master) = presentation.masters.iter().find(|m| {
-            m.id.to_string() == *master_id_str || m.name == *master_id_str
-        }) {
+        if let Some(master) = presentation
+            .masters
+            .iter()
+            .find(|m| m.id.to_string() == *master_id_str || m.name == *master_id_str)
+        {
             return Some(master);
         }
     }
@@ -234,21 +233,19 @@ mod tests {
                     id: 102,
                     name: "Content Layout".to_string(),
                     layout_type: "title and content".to_string(),
-                    shapes: vec![
-                        Shape::Placeholder(PlaceholderShape {
-                            id: "content_ph".to_string(),
-                            bounds: Bounds {
-                                x: 100,
-                                y: 200,
-                                cx: 500,
-                                cy: 300,
-                            },
-                            placeholder_type: "content".to_string(),
-                            text_body: None,
-                            fill: None,
-                            effect: None,
-                        }),
-                    ],
+                    shapes: vec![Shape::Placeholder(PlaceholderShape {
+                        id: "content_ph".to_string(),
+                        bounds: Bounds {
+                            x: 100,
+                            y: 200,
+                            cx: 500,
+                            cy: 300,
+                        },
+                        placeholder_type: "content".to_string(),
+                        text_body: None,
+                        fill: None,
+                        effect: None,
+                    })],
                     placeholder_types: vec!["title".to_string(), "content".to_string()],
                 },
             ],
@@ -282,12 +279,15 @@ mod tests {
         let layout = resolved.layout.unwrap();
         assert_eq!(layout.id, 101, "Should resolve to layout 101");
         assert_eq!(layout.name, "Title Layout");
-        
+
         // Should also resolve master via layout
-        assert!(resolved.master.is_some(), "Should resolve master via layout");
+        assert!(
+            resolved.master.is_some(),
+            "Should resolve master via layout"
+        );
         let master = resolved.master.unwrap();
         assert_eq!(master.id, 1, "Should resolve to master 1");
-        
+
         // Should inherit placeholder types
         assert!(
             resolved.placeholder_types.contains(&"title".to_string()),
@@ -297,9 +297,13 @@ mod tests {
             resolved.placeholder_types.contains(&"subtitle".to_string()),
             "Should inherit subtitle placeholder type"
         );
-        
+
         // Should inherit shapes from layout
-        assert_eq!(resolved.inherited_shapes.len(), 1, "Should inherit layout shape");
+        assert_eq!(
+            resolved.inherited_shapes.len(),
+            1,
+            "Should inherit layout shape"
+        );
     }
 
     #[test]
@@ -311,7 +315,7 @@ mod tests {
             id: 2,
             name: "Test Slide 2".to_string(),
             layout_id: Some("Title Layout".to_string()), // References by name
-            master_id: None, // No explicit master
+            master_id: None,                             // No explicit master
             shapes: vec![],
             notes: None,
             transition: None,
@@ -327,7 +331,10 @@ mod tests {
         assert_eq!(layout.name, "Title Layout");
 
         // Should fall back to the layout's master (Master One)
-        assert!(resolved.master.is_some(), "Should fall back to layout's master");
+        assert!(
+            resolved.master.is_some(),
+            "Should fall back to layout's master"
+        );
         let master = resolved.master.unwrap();
         assert_eq!(master.name, "Master One");
     }
@@ -371,10 +378,16 @@ mod tests {
         let resolved = resolve_inheritance(&slide, &pres);
 
         // Slide has explicit background
-        assert!(resolved.background.is_none(), "Should not inherit background when slide has explicit one");
+        assert!(
+            resolved.background.is_none(),
+            "Should not inherit background when slide has explicit one"
+        );
 
         // Slide has explicit placeholder shape, so placeholder_types should not be inherited
-        assert!(resolved.placeholder_types.is_empty(), "Should not inherit placeholder_types when slide has placeholder shapes");
+        assert!(
+            resolved.placeholder_types.is_empty(),
+            "Should not inherit placeholder_types when slide has placeholder shapes"
+        );
 
         // The layout's placeholder shape (title_ph) should be inherited since slide has different id
         assert!(
@@ -407,18 +420,30 @@ mod tests {
         let _resolved = resolve_inheritance(&slide, &pres);
 
         // Verify original structs unchanged
-        assert_eq!(pres.masters.len(), original_master_count, "Master count unchanged");
-        assert_eq!(pres.masters[0].slide_layouts.len(), original_layout_count, "Layout count unchanged");
-        
+        assert_eq!(
+            pres.masters.len(),
+            original_master_count,
+            "Master count unchanged"
+        );
+        assert_eq!(
+            pres.masters[0].slide_layouts.len(),
+            original_layout_count,
+            "Layout count unchanged"
+        );
+
         // Verify slide unchanged
         assert_eq!(slide.id, 4);
         assert!(slide.layout_id.is_some());
-        
+
         // Also test get_layout and get_master don't mutate
         let _layout = get_layout(&slide, &pres);
         let _master = get_master(&slide, &pres);
-        
-        assert_eq!(pres.masters.len(), original_master_count, "Master count still unchanged");
+
+        assert_eq!(
+            pres.masters.len(),
+            original_master_count,
+            "Master count still unchanged"
+        );
     }
 
     #[test]

@@ -243,7 +243,12 @@ impl HtmlSerializer {
                 out.push_str(&pad);
                 out.push_str("</ul>\n");
             }
-            BlockElement::OrderedList { items, id, start, style } => {
+            BlockElement::OrderedList {
+                items,
+                id,
+                start,
+                style,
+            } => {
                 out.push_str(&pad);
                 out.push_str("<ol");
                 if let Some(id_val) = id {

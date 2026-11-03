@@ -373,7 +373,8 @@ mod tests {
       </draw:page>
     </office:presentation>
   </office:body>
-</office:document-content>"##.as_ref(),
+</office:document-content>"##
+                    .as_ref(),
             )
             .unwrap();
         writer

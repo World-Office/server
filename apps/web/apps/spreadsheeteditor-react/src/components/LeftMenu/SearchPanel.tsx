@@ -10,10 +10,10 @@
 import { observer } from "mobx-react-lite";
 import { type JSX, useState } from "react";
 import {
+	type SheetCell,
 	activateCell,
 	collectTextCells,
 	setCellValue,
-	type SheetCell,
 } from "../../lib/cell-access";
 
 const MAX_RESULTS = 200;
@@ -93,10 +93,7 @@ function SearchPanelInner({ active }: SearchPanelProps): JSX.Element {
 		if (!cell || !query) return;
 		const next = matchCase
 			? cell.value.replace(query, replacement)
-			: cell.value.replace(
-					new RegExp(escapeRegExp(query), "i"),
-					replacement,
-				);
+			: cell.value.replace(new RegExp(escapeRegExp(query), "i"), replacement);
 		if (!setCellValue(cell, next)) {
 			setStatus("No active sheet — cannot replace.");
 			return;
@@ -114,7 +111,9 @@ function SearchPanelInner({ active }: SearchPanelProps): JSX.Element {
 			const next = cell.value.replace(pattern, replacement);
 			if (next !== cell.value && setCellValue(cell, next)) count++;
 		}
-		setStatus(count > 0 ? `Replaced in ${count} cell(s).` : "Nothing replaced.");
+		setStatus(
+			count > 0 ? `Replaced in ${count} cell(s).` : "Nothing replaced.",
+		);
 		runSearch();
 	}
 

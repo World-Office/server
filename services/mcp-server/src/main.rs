@@ -4,10 +4,8 @@ pub mod tools;
 
 use rmcp::ServiceExt;
 use rmcp::transport::stdio;
-use rmcp::transport::streamable_http_server::{
-    StreamableHttpServerConfig, StreamableHttpService,
-};
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
+use rmcp::transport::streamable_http_server::{StreamableHttpServerConfig, StreamableHttpService};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use tools::McpTools;

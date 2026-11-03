@@ -57,7 +57,7 @@ impl From<&CellStyle> for CellStyleKey {
 /// Generate ODF style properties from a CellStyle
 fn cell_style_to_odf_properties(style: &CellStyle) -> Vec<(String, String)> {
     let mut props = Vec::new();
-    
+
     if let Some(ref family) = style.font_family {
         props.push(("style:font-name".to_string(), family.clone()));
     }
@@ -77,11 +77,20 @@ fn cell_style_to_odf_properties(style: &CellStyle) -> Vec<(String, String)> {
         props.push(("fo:font-style".to_string(), "normal".to_string()));
     }
     if style.underline == Some(true) {
-        props.push(("style:text-underline-style".to_string(), "solid".to_string()));
-        props.push(("style:text-underline-type".to_string(), "single".to_string()));
+        props.push((
+            "style:text-underline-style".to_string(),
+            "solid".to_string(),
+        ));
+        props.push((
+            "style:text-underline-type".to_string(),
+            "single".to_string(),
+        ));
     }
     if style.strikethrough == Some(true) {
-        props.push(("style:text-line-through-style".to_string(), "solid".to_string()));
+        props.push((
+            "style:text-line-through-style".to_string(),
+            "solid".to_string(),
+        ));
     }
     if let Some(ref color) = style.color {
         props.push(("fo:color".to_string(), color.clone()));
@@ -111,7 +120,7 @@ fn cell_style_to_odf_properties(style: &CellStyle) -> Vec<(String, String)> {
     if let Some(ref border) = style.border {
         props.push(("fo:border".to_string(), border.clone()));
     }
-    
+
     props
 }
 
@@ -148,63 +157,67 @@ pub fn export_ods(workbook: &Workbook) -> Result<Vec<u8>> {
 }
 
 /// Parse ODS bytes into a Workbook (inverse of export_ods).
-/// 
+///
 /// Uses wo_odf::OdfParser to parse the ODS file and maps the ODF model
 /// back into wo-sheet Workbook/Sheet/Cell structures.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `bytes` - The ODS file bytes
-/// 
+///
 /// # Returns
-/// 
+///
 /// A Result containing the parsed Workbook, or an error if parsing fails
 /// or if the document is not a spreadsheet (ODS).
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// use wo_sheet::from_ods;
-/// 
+///
 /// let ods_bytes = std::fs::read("test.ods")?;
 /// let workbook = from_ods(&ods_bytes)?;
 /// ```
 pub fn from_ods(bytes: &[u8]) -> Result<Workbook> {
     let parser = OdfParser::new();
-    let doc = parser.parse(bytes)
-        .context("Failed to parse ODS file")?;
-    
+    let doc = parser.parse(bytes).context("Failed to parse ODS file")?;
+
     // Ensure it's a spreadsheet
     if doc.doc_type != OdfType::Spreadsheet {
-        anyhow::bail!("Not an ODS document: expected Spreadsheet type, got {:?}", doc.doc_type);
+        anyhow::bail!(
+            "Not an ODS document: expected Spreadsheet type, got {:?}",
+            doc.doc_type
+        );
     }
-    
+
     // Extract sheets from the document content
     let OdfContent::Spreadsheet { sheets } = doc.content else {
         anyhow::bail!("Not an ODS document: content is not Spreadsheet type");
     };
-    
+
     // Collect all styles (named + automatic) for cell style read-back
-    let all_styles: Vec<OdfStyle> = doc.styles.iter()
+    let all_styles: Vec<OdfStyle> = doc
+        .styles
+        .iter()
         .chain(doc.automatic_cell_styles.iter())
         .cloned()
         .collect();
-    
+
     // Convert each ODF sheet to a wo-sheet Sheet
     let mut workbook = Workbook::new();
-    
+
     for odf_sheet in sheets {
         let sheet = convert_odf_sheet_to_sheet(&odf_sheet, &all_styles)?;
         workbook.add_sheet(sheet);
     }
-    
+
     Ok(workbook)
 }
 
 /// Convert an ODF SpreadsheetSheet to a wo-sheet Sheet.
 fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle]) -> Result<Sheet> {
     let mut sheet = Sheet::new(&odf_sheet.name);
-    
+
     // Copy column widths
     if let Some(ref col_widths) = odf_sheet.col_widths {
         sheet.col_widths = col_widths.clone();
@@ -213,10 +226,10 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle])
     if let Some(ref row_heights) = odf_sheet.row_heights {
         sheet.row_heights = row_heights.clone();
     }
-    
+
     // Track merge ranges to avoid duplicates
     let mut processed_merges: BTreeSet<(u32, u32, u32, u32)> = BTreeSet::new();
-    
+
     // Process each row and cell
     // Note: ODF parser has a bug where cell.row is 1-indexed but cell.column is 0-indexed
     // This is inconsistent, but we need to work around it: subtract 1 from row, keep column as-is
@@ -226,17 +239,17 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle])
             if cell.text.is_empty() && cell.value.is_none() && cell.formula.is_none() {
                 continue;
             }
-            
+
             // Convert to 0-indexed: row needs -1, column is already 0-indexed
             let row_idx = if cell.row > 0 { cell.row - 1 } else { 0 };
             let col_idx = cell.column;
-            
+
             // Convert the cell
-            let wo_cell = convert_odf_cell_to_cell(cell, styles)?;;
-            
+            let wo_cell = convert_odf_cell_to_cell(cell, styles)?;
+
             // Set the cell in the sheet
             sheet.set_cell(row_idx, col_idx, wo_cell);
-            
+
             // Process merge ranges (from col_span and row_span)
             if let (Some(col_span), Some(row_span)) = (cell.col_span, cell.row_span) {
                 if col_span > 1 || row_span > 1 {
@@ -244,17 +257,19 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle])
                     let start_col = cell.column;
                     let end_row = start_row + row_span - 1;
                     let end_col = start_col + col_span - 1;
-                    
+
                     let merge_key = (start_row, start_col, end_row, end_col);
                     if !processed_merges.contains(&merge_key) {
                         processed_merges.insert(merge_key);
-                        sheet.merges.push(MergeRange::new(start_row, start_col, end_row, end_col));
+                        sheet
+                            .merges
+                            .push(MergeRange::new(start_row, start_col, end_row, end_col));
                     }
                 }
             }
         }
     }
-    
+
     Ok(sheet)
 }
 
@@ -317,10 +332,11 @@ fn read_back_cell_style(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> Cell
 
 fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> Result<Cell> {
     // Parse formula if present
-    let formula = odf_cell.formula.as_ref().and_then(|f| {
-        parse_formula(f).ok()
-    });
-    
+    let formula = odf_cell
+        .formula
+        .as_ref()
+        .and_then(|f| parse_formula(f).ok());
+
     // Special handling for error cells
     // export_ods maps CellValue::Err to text "#ERROR!" (CellType::String)
     // During import, we keep it as text - we can't distinguish it from a literal "#ERROR!" string
@@ -334,9 +350,9 @@ fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> 
             style: CellStyle::default(),
         });
     }
-    
+
     let raw_text = odf_cell.text.clone();
-    
+
     // Map based on cell_type and formula/value
     let value = match odf_cell.cell_type {
         CellType::String => {
@@ -362,13 +378,18 @@ fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> 
                 CellValue::Num(v)
             } else {
                 // Try to parse text as number
-                raw_text.parse::<f64>().map(CellValue::Num).unwrap_or_else(|_| CellValue::Text(raw_text.clone()))
+                raw_text
+                    .parse::<f64>()
+                    .map(CellValue::Num)
+                    .unwrap_or_else(|_| CellValue::Text(raw_text.clone()))
             }
         }
         CellType::Boolean => {
             // ODF uses office:boolean-value + value (1.0 for true, 0.0 for false)
             // export writes true as 1.0, so we check value field first, then text
-            let bool_val = odf_cell.value.map(|v| v != 0.0)
+            let bool_val = odf_cell
+                .value
+                .map(|v| v != 0.0)
                 .or_else(|| odf_cell.text.parse::<f64>().ok().map(|v| v != 0.0))
                 .unwrap_or(false);
             CellValue::Bool(bool_val)
@@ -387,14 +408,17 @@ fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> 
             if let Some(v) = odf_cell.value {
                 CellValue::Num(v)
             } else {
-                raw_text.parse::<f64>().map(CellValue::Num).unwrap_or_else(|_| CellValue::Text(raw_text.clone()))
+                raw_text
+                    .parse::<f64>()
+                    .map(CellValue::Num)
+                    .unwrap_or_else(|_| CellValue::Text(raw_text.clone()))
             }
         }
     };
-    
+
     // Read back cell style from ODF automatic styles (F-210 styling fidelity)
     let style = read_back_cell_style(odf_cell, styles);
-    
+
     Ok(Cell {
         raw: raw_text,
         value,
@@ -411,7 +435,7 @@ fn build_odf_document(workbook: &Workbook) -> OdfDocument {
     // Collect all unique cell styles from the workbook
     let mut cell_style_map: HashMap<CellStyleKey, String> = HashMap::new();
     let mut automatic_cell_styles: Vec<OdfStyle> = Vec::new();
-    
+
     // First pass: collect all unique non-default styles
     for sheet in &workbook.sheets {
         for cell in sheet.cells.values() {
@@ -420,7 +444,7 @@ fn build_odf_document(workbook: &Workbook) -> OdfDocument {
                 if !cell_style_map.contains_key(&key) {
                     let style_name = format!("ce{}", automatic_cell_styles.len() + 2);
                     cell_style_map.insert(key.clone(), style_name.clone());
-                    
+
                     // Create ODF style for this cell style
                     let props = cell_style_to_odf_properties(&cell.style);
                     automatic_cell_styles.push(OdfStyle {
@@ -434,7 +458,7 @@ fn build_odf_document(workbook: &Workbook) -> OdfDocument {
             }
         }
     }
-    
+
     // Pass the style map to sheet conversion
     let sheets = convert_sheets_with_styles(&workbook.sheets, &cell_style_map);
 
@@ -455,18 +479,18 @@ fn build_odf_document(workbook: &Workbook) -> OdfDocument {
 /// Check if a CellStyle is the default (all fields are None)
 impl CellStyle {
     fn is_default(&self) -> bool {
-        self.font_family.is_none() &&
-        self.font_size.is_none() &&
-        self.bold.is_none() &&
-        self.italic.is_none() &&
-        self.underline.is_none() &&
-        self.strikethrough.is_none() &&
-        self.color.is_none() &&
-        self.background_color.is_none() &&
-        self.horizontal_align.is_none() &&
-        self.vertical_align.is_none() &&
-        self.border.is_none() &&
-        self.number_format.is_none()
+        self.font_family.is_none()
+            && self.font_size.is_none()
+            && self.bold.is_none()
+            && self.italic.is_none()
+            && self.underline.is_none()
+            && self.strikethrough.is_none()
+            && self.color.is_none()
+            && self.background_color.is_none()
+            && self.horizontal_align.is_none()
+            && self.vertical_align.is_none()
+            && self.border.is_none()
+            && self.number_format.is_none()
     }
 }
 
@@ -480,7 +504,7 @@ fn convert_sheets_with_styles(
         .map(|sheet| {
             let rows = convert_sheet_to_rows_with_styles(sheet, style_map);
             let max_column = find_max_column(sheet);
-            
+
             // Map col_widths
             let col_widths = if sheet.col_widths.is_empty() {
                 None
@@ -514,11 +538,7 @@ fn convert_sheet_to_rows_with_styles(
     use std::collections::{BTreeMap, BTreeSet};
 
     // Collect all unique row indices from the cell grid
-    let row_indices: BTreeSet<u32> = sheet
-        .cells
-        .keys()
-        .map(|&(row, _col)| row)
-        .collect();
+    let row_indices: BTreeSet<u32> = sheet.cells.keys().map(|&(row, _col)| row).collect();
 
     // Build a map of merge ranges for quick lookup: (row, col) -> (col_span, row_span)
     // Only the top-left cell of each merge gets the span information
@@ -547,7 +567,7 @@ fn convert_sheet_to_rows_with_styles(
             .into_iter()
             .map(|(col, cell)| {
                 let mut odf_cell = convert_cell(row_num, col, cell);
-                
+
                 // Set style name if cell has a non-default style
                 if !cell.style.is_default() {
                     let key = CellStyleKey::from(&cell.style);
@@ -555,13 +575,13 @@ fn convert_sheet_to_rows_with_styles(
                         odf_cell.style_name = Some(style_name.clone());
                     }
                 }
-                
+
                 // Check if this cell is the top-left of a merge range
                 if let Some((col_span, row_span)) = merge_spans.get(&(row_num, col)) {
                     odf_cell.col_span = Some(*col_span);
                     odf_cell.row_span = Some(*row_span);
                 }
-                
+
                 odf_cell
             })
             .collect();
@@ -762,10 +782,7 @@ mod tests {
         let mut mimetype = archive.by_name("mimetype")?;
         let mut buf = String::new();
         std::io::Read::read_to_string(&mut mimetype, &mut buf)?;
-        assert_eq!(
-            buf.trim(),
-            "application/vnd.oasis.opendocument.spreadsheet"
-        );
+        assert_eq!(buf.trim(), "application/vnd.oasis.opendocument.spreadsheet");
 
         Ok(())
     }
@@ -778,33 +795,21 @@ mod tests {
 
         // Sheet 1: Text and numbers
         let mut sheet1 = Sheet::new("Sheet1");
-        sheet1.cells.insert(
-            (0, 0),
-            Cell::with_text("Hello World"),
-        );
-        sheet1.cells.insert(
-            (0, 1),
-            Cell::with_num(42.5),
-        );
-        sheet1.cells.insert(
-            (1, 0),
-            Cell::with_num(100.0),
-        );
+        sheet1.cells.insert((0, 0), Cell::with_text("Hello World"));
+        sheet1.cells.insert((0, 1), Cell::with_num(42.5));
+        sheet1.cells.insert((1, 0), Cell::with_num(100.0));
         wb.add_sheet(sheet1);
 
         // Sheet 2: More data
         let mut sheet2 = Sheet::new("Data");
-        sheet2.cells.insert(
-            (0, 0),
-            Cell::with_text("Test"),
-        );
+        sheet2.cells.insert((0, 0), Cell::with_text("Test"));
         wb.add_sheet(sheet2);
 
         let bytes = export_ods(&wb)?;
 
         // Verify it's a valid ZIP with content
-        use zip::ZipArchive;
         use std::io::Read;
+        use zip::ZipArchive;
 
         let cursor = std::io::Cursor::new(&bytes);
         let mut archive = ZipArchive::new(cursor)?;
@@ -826,11 +831,23 @@ mod tests {
         let mut content_buf = String::new();
         content.read_to_string(&mut content_buf)?;
 
-        assert!(content_buf.contains("table:table"), "Expected table:table in content.xml");
-        assert!(content_buf.contains("Sheet1"), "Expected Sheet1 in content.xml");
+        assert!(
+            content_buf.contains("table:table"),
+            "Expected table:table in content.xml"
+        );
+        assert!(
+            content_buf.contains("Sheet1"),
+            "Expected Sheet1 in content.xml"
+        );
         assert!(content_buf.contains("Data"), "Expected Data in content.xml");
-        assert!(content_buf.contains("Hello World"), "Expected cell text in content.xml");
-        assert!(content_buf.contains("42.5"), "Expected numeric value in content.xml");
+        assert!(
+            content_buf.contains("Hello World"),
+            "Expected cell text in content.xml"
+        );
+        assert!(
+            content_buf.contains("42.5"),
+            "Expected numeric value in content.xml"
+        );
 
         Ok(())
     }
@@ -855,8 +872,8 @@ mod tests {
         let bytes = export_ods(&wb)?;
 
         // Verify content.xml contains the formula
-        use zip::ZipArchive;
         use std::io::Read;
+        use zip::ZipArchive;
 
         let cursor = std::io::Cursor::new(&bytes);
         let mut archive = ZipArchive::new(cursor)?;
@@ -864,7 +881,10 @@ mod tests {
         let mut content_buf = String::new();
         content.read_to_string(&mut content_buf)?;
 
-        assert!(content_buf.contains("table:formula"), "Expected formula attribute in content.xml");
+        assert!(
+            content_buf.contains("table:formula"),
+            "Expected formula attribute in content.xml"
+        );
 
         Ok(())
     }
@@ -882,14 +902,14 @@ mod tests {
         let mut sheet1 = Sheet::new("TestSheet");
         sheet1.cells.insert((0, 0), Cell::with_text("Text Cell"));
         sheet1.cells.insert((0, 1), Cell::with_num(123.45));
-        
+
         // Add a formula cell
         let formula = parse("=A1+B1").unwrap_or_else(|_| Expr::Num(0.0));
         sheet1.cells.insert(
             (0, 2),
             Cell::with_formula("=A1+B1", formula, wo_formula::ast::CellValue::Num(0.0)),
         );
-        
+
         sheet1.cells.insert((1, 0), Cell::with_bool(true));
         wb.add_sheet(sheet1);
 
@@ -903,8 +923,8 @@ mod tests {
         let ods_bytes = export_ods(&wb)?;
 
         // Verify it's a valid ODS file
-        use zip::ZipArchive;
         use std::io::Read;
+        use zip::ZipArchive;
 
         let cursor = std::io::Cursor::new(&ods_bytes);
         let mut archive = ZipArchive::new(cursor)?;
@@ -940,7 +960,7 @@ mod tests {
             content_buf.contains("SecondSheet"),
             "content.xml should contain SecondSheet"
         );
-        
+
         // Verify values are present
         assert!(
             content_buf.contains("Text Cell"),
@@ -958,7 +978,7 @@ mod tests {
             content_buf.contains("Another cell"),
             "content.xml should contain 'Another cell'"
         );
-        
+
         // Verify formula is present
         assert!(
             content_buf.contains("table:formula"),
@@ -969,18 +989,18 @@ mod tests {
         use wo_odf::OdfParser;
         let parser = OdfParser::new();
         let parsed_doc = parser.parse(&ods_bytes)?;
-        
+
         assert_eq!(parsed_doc.doc_type, OdfType::Spreadsheet);
-        
+
         if let OdfContent::Spreadsheet { sheets } = &parsed_doc.content {
             assert_eq!(sheets.len(), 2, "Should have 2 sheets");
             assert_eq!(sheets[0].name, "TestSheet");
             assert_eq!(sheets[1].name, "SecondSheet");
-            
+
             // Check that TestSheet has cells
             let test_sheet = &sheets[0];
             assert!(!test_sheet.rows.is_empty(), "TestSheet should have rows");
-            
+
             // Verify at least one row has cells
             let has_cells = test_sheet.rows.iter().any(|r| !r.cells.is_empty());
             assert!(has_cells, "TestSheet should have cells in at least one row");
@@ -1007,7 +1027,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         assert!(
             content.contains("table:number-columns-spanned=\"2\""),
@@ -1038,7 +1060,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         assert!(
             content.contains("style:family=\"table-column\""),
@@ -1069,7 +1093,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         assert!(
             !content.contains("number-columns-spanned"),
@@ -1094,21 +1120,23 @@ mod tests {
 
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("BoldCells");
-        
+
         // Create a bold cell
         let mut bold_cell = Cell::with_text("Bold");
         bold_cell.style.bold = Some(true);
         sheet.set_cell(0, 0, bold_cell);
-        
+
         // Create a plain cell for comparison
         sheet.set_cell(0, 1, Cell::with_text("Plain"));
-        
+
         wb.add_sheet(sheet);
 
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // Check that a table-cell style with bold was emitted
         assert!(
@@ -1119,13 +1147,13 @@ mod tests {
             content.contains("fo:font-weight=\"bold\""),
             "content.xml should contain fo:font-weight=\"bold\""
         );
-        
+
         // Check that the bold cell has a style-name attribute (ce2: ce1 is the reserved plain-number default)
         assert!(
             content.contains("table:style-name=\"ce2\""),
             "bold cell should reference ce2 style"
         );
-        
+
         // Check that the plain cell does NOT have a style-name on its opening tag
         // (it may inherit ce1 from the Number default, but String cells don't get it)
         // We check by ensuring at least one cell has style-name=ce1 (the bold one)
@@ -1134,7 +1162,7 @@ mod tests {
             content.contains("Plain"),
             "content should contain plain cell text"
         );
-        
+
         Ok(())
     }
 
@@ -1146,25 +1174,27 @@ mod tests {
 
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("ItalicCells");
-        
+
         // Create an italic cell
         let mut italic_cell = Cell::with_text("Italic");
         italic_cell.style.italic = Some(true);
         sheet.set_cell(0, 0, italic_cell);
-        
+
         wb.add_sheet(sheet);
 
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // Check that a table-cell style with italic was emitted
         assert!(
             content.contains("fo:font-style=\"italic\""),
             "content.xml should contain fo:font-style=\"italic\""
         );
-        
+
         Ok(())
     }
 
@@ -1176,25 +1206,27 @@ mod tests {
 
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("FontSizeCells");
-        
+
         // Create a cell with font size 14pt
         let mut sized_cell = Cell::with_text("Large");
         sized_cell.style.font_size = Some(14.0);
         sheet.set_cell(0, 0, sized_cell);
-        
+
         wb.add_sheet(sheet);
 
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // Check that a table-cell style with font-size was emitted
         assert!(
             content.contains("fo:font-size=\"14.000pt\""),
             "content.xml should contain fo:font-size=\"14.000pt\""
         );
-        
+
         Ok(())
     }
 
@@ -1218,10 +1250,15 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // styled style lives under ce2 (+), never ce1
-        assert!(content.contains("style:name=\"ce2\""), "bold style must be ce2");
+        assert!(
+            content.contains("style:name=\"ce2\""),
+            "bold style must be ce2"
+        );
         assert!(
             !content.contains("style:name=\"ce1\""),
             "ce1 must stay undefined so plain cells never inherit bold"
@@ -1251,7 +1288,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // Plain String cells should not have table:style-name attributes
         // (the hardcoded ce1 only appears on Number cells currently)
@@ -1262,7 +1301,7 @@ mod tests {
             !content.contains("table-cell-properties"),
             "plain cells should not emit cell-style elements"
         );
-        
+
         Ok(())
     }
 
@@ -1274,25 +1313,27 @@ mod tests {
 
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("DedupeCells");
-        
+
         // Create two cells with identical bold style
         let mut bold_style = CellStyle::default();
         bold_style.bold = Some(true);
-        
+
         let mut bold_cell1 = Cell::with_text("Bold1");
         bold_cell1.style = bold_style.clone();
         sheet.set_cell(0, 0, bold_cell1);
-        
+
         let mut bold_cell2 = Cell::with_text("Bold2");
         bold_cell2.style = bold_style.clone();
         sheet.set_cell(0, 1, bold_cell2);
-        
+
         wb.add_sheet(sheet);
 
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         // Should have exactly one ce1 style definition
         // ce1 is always undefined (reserved plain-number default ref)
@@ -1303,13 +1344,13 @@ mod tests {
             1,
             "should have exactly one ce2 style definition for two cells with same style"
         );
-        
+
         // Both cells should reference ce2 (ce1 is the reserved plain-number default)
         assert!(
             content.contains("table:style-name=\"ce2\""),
             "cells should reference ce2"
         );
-        
+
         Ok(())
     }
 
@@ -1318,72 +1359,97 @@ mod tests {
     fn test_from_ods_roundtrip_basic_types_f210() -> Result<()> {
         use crate::model::{Cell, Sheet};
         use chrono::NaiveDate;
-        
+
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("BasicTypes");
-        
+
         // Text cell
         sheet.set_cell(0, 0, Cell::with_text("Hello World"));
-        
+
         // Number cell
         sheet.set_cell(0, 1, Cell::with_num(42.5));
-        
+
         // Boolean cell
         sheet.set_cell(0, 2, Cell::with_bool(true));
         sheet.set_cell(1, 2, Cell::with_bool(false));
-        
+
         // Date cell - use NaiveDateTime with time 00:00:00
-        sheet.set_cell(0, 3, Cell {
-            raw: "2026-10-19T00:00:00".to_string(),
-            value: CellValue::Date(NaiveDate::from_ymd_opt(2026, 10, 19).unwrap().and_hms_opt(0, 0, 0).unwrap()),
-            formula: None,
-            style: CellStyle::default(),
-        });
-        
+        sheet.set_cell(
+            0,
+            3,
+            Cell {
+                raw: "2026-10-19T00:00:00".to_string(),
+                value: CellValue::Date(
+                    NaiveDate::from_ymd_opt(2026, 10, 19)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                ),
+                formula: None,
+                style: CellStyle::default(),
+            },
+        );
+
         // Error cell (mapped to text "#ERROR!")
-        sheet.set_cell(1, 3, Cell {
-            raw: "#ERROR!".to_string(),
-            value: CellValue::Text("#ERROR!".to_string()),
-            formula: None,
-            style: CellStyle::default(),
-        });
-        
+        sheet.set_cell(
+            1,
+            3,
+            Cell {
+                raw: "#ERROR!".to_string(),
+                value: CellValue::Text("#ERROR!".to_string()),
+                formula: None,
+                style: CellStyle::default(),
+            },
+        );
+
         wb.add_sheet(sheet);
-        
+
         // Export and import
         let ods_bytes = export_ods(&wb)?;
         let imported_wb = from_ods(&ods_bytes)?;
-        
+
         // Verify sheets
         assert_eq!(imported_wb.sheets.len(), 1);
         assert_eq!(imported_wb.sheets[0].name, "BasicTypes");
-        
+
         let imported_sheet = &imported_wb.sheets[0];
-        
+
         // Check text cell
-        let cell = imported_sheet.get_cell(0, 0).expect("Text cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 0)
+            .expect("Text cell should exist");
         assert!(matches!(cell.value, CellValue::Text(ref s) if s == "Hello World"));
-        
+
         // Check number cell
-        let cell = imported_sheet.get_cell(0, 1).expect("Number cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 1)
+            .expect("Number cell should exist");
         println!("Number cell: value={:?}, raw='{}'", cell.value, cell.raw);
         assert!(matches!(cell.value, CellValue::Num(n) if (n - 42.5).abs() < f64::EPSILON));
-        
+
         // Check boolean cells
-        let cell = imported_sheet.get_cell(0, 2).expect("True cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 2)
+            .expect("True cell should exist");
         assert!(matches!(cell.value, CellValue::Bool(true)));
-        
-        let cell = imported_sheet.get_cell(1, 2).expect("False cell should exist");
+
+        let cell = imported_sheet
+            .get_cell(1, 2)
+            .expect("False cell should exist");
         assert!(matches!(cell.value, CellValue::Bool(false)));
-        
+
         // Check date cell
-        let cell = imported_sheet.get_cell(0, 3).expect("Date cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 3)
+            .expect("Date cell should exist");
         assert!(matches!(cell.value, CellValue::Date(_)));
-        
+
         // Check error cell (as text)
-        let cell = imported_sheet.get_cell(1, 3).expect("Error cell should exist");
+        let cell = imported_sheet
+            .get_cell(1, 3)
+            .expect("Error cell should exist");
         assert!(matches!(cell.value, CellValue::Text(ref s) if s == "#ERROR!"));
-        
+
         Ok(())
     }
 
@@ -1392,38 +1458,54 @@ mod tests {
     fn test_from_ods_roundtrip_formula_f210() -> Result<()> {
         use crate::model::{Cell, Sheet};
         use wo_formula::parser::parse;
-        
+
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("Formulas");
-        
+
         // Formula with numeric result
         let formula = parse("=1+1")?;
-        sheet.set_cell(0, 0, Cell::with_formula("=1+1", formula, CellValue::Num(2.0)));
-        
+        sheet.set_cell(
+            0,
+            0,
+            Cell::with_formula("=1+1", formula, CellValue::Num(2.0)),
+        );
+
         // Formula with text result
         let formula = parse("=CONCATENATE(\"Hello\", \" \", \"World\")")?;
-        sheet.set_cell(0, 1, Cell::with_formula("=CONCATENATE(\"Hello\", \" \", \"World\")", formula, CellValue::Text("Hello World".to_string())));
-        
+        sheet.set_cell(
+            0,
+            1,
+            Cell::with_formula(
+                "=CONCATENATE(\"Hello\", \" \", \"World\")",
+                formula,
+                CellValue::Text("Hello World".to_string()),
+            ),
+        );
+
         wb.add_sheet(sheet);
-        
+
         // Export and import
         let ods_bytes = export_ods(&wb)?;
         let imported_wb = from_ods(&ods_bytes)?;
-        
+
         // Verify sheets
         assert_eq!(imported_wb.sheets.len(), 1);
         let imported_sheet = &imported_wb.sheets[0];
-        
+
         // Check numeric formula cell
-        let cell = imported_sheet.get_cell(0, 0).expect("Formula cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 0)
+            .expect("Formula cell should exist");
         assert!(cell.formula.is_some(), "Formula should be present");
         assert!(matches!(cell.value, CellValue::Num(n) if (n - 2.0).abs() < f64::EPSILON));
-        
+
         // Check text formula cell
-        let cell = imported_sheet.get_cell(0, 1).expect("Text formula cell should exist");
+        let cell = imported_sheet
+            .get_cell(0, 1)
+            .expect("Text formula cell should exist");
         assert!(cell.formula.is_some(), "Formula should be present");
         assert!(matches!(cell.value, CellValue::Text(ref s) if s == "Hello World"));
-        
+
         Ok(())
     }
 
@@ -1431,44 +1513,44 @@ mod tests {
     #[test]
     fn test_from_ods_roundtrip_merges_widths_f210() -> Result<()> {
         use crate::model::{Cell, MergeRange, Sheet};
-        
+
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("MergesAndWidths");
-        
+
         // Add a 2x2 merge
         sheet.add_merge(MergeRange::new(0, 0, 1, 1));
         sheet.set_cell(0, 0, Cell::with_text("Merged Cell"));
-        
+
         // Set column widths
         sheet.col_widths.insert(0, 50.0);
         sheet.col_widths.insert(1, 75.0);
-        
+
         wb.add_sheet(sheet);
-        
+
         // Export and import
         let ods_bytes = export_ods(&wb)?;
         let imported_wb = from_ods(&ods_bytes)?;
-        
+
         // Verify
         assert_eq!(imported_wb.sheets.len(), 1);
         let imported_sheet = &imported_wb.sheets[0];
-        
+
         // Check merges
         assert_eq!(imported_sheet.merges.len(), 1);
         assert_eq!(imported_sheet.merges[0].start_row, 0);
         assert_eq!(imported_sheet.merges[0].start_col, 0);
         assert_eq!(imported_sheet.merges[0].end_row, 1);
         assert_eq!(imported_sheet.merges[0].end_col, 1);
-        
+
         // Check column widths (tolerant: serializer emits cm at {:.3}, so 50pt
         // round-trips to ~50.003pt — well within any visual fidelity bound)
         assert_eq!(imported_sheet.col_widths.len(), 2);
         assert!((imported_sheet.col_widths.get(&0).copied().unwrap() - 50.0).abs() < 0.01);
         assert!((imported_sheet.col_widths.get(&1).copied().unwrap() - 75.0).abs() < 0.01);
-        
+
         // Check merged cell exists at (0,0)
         assert!(imported_sheet.get_cell(0, 0).is_some());
-        
+
         Ok(())
     }
 
@@ -1476,14 +1558,14 @@ mod tests {
     #[test]
     fn test_from_ods_roundtrip_empty_workbook_f210() -> Result<()> {
         let wb = Workbook::new();
-        
+
         // Export and import
         let ods_bytes = export_ods(&wb)?;
         let imported_wb = from_ods(&ods_bytes)?;
-        
+
         // Verify empty workbook
         assert_eq!(imported_wb.sheets.len(), 0);
-        
+
         Ok(())
     }
 
@@ -1491,20 +1573,20 @@ mod tests {
     #[test]
     fn test_from_ods_debug_f210() -> Result<()> {
         use crate::model::{Cell, Sheet};
-        
+
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("Debug");
         sheet.set_cell(0, 0, Cell::with_text("Hello"));
         sheet.set_cell(0, 1, Cell::with_num(42.5));
         wb.add_sheet(sheet);
-        
+
         let bytes = export_ods(&wb)?;
-        
+
         // Parse with wo-odf directly to see what's there
         use wo_odf::{OdfParser, model::OdfContent};
         let parser = OdfParser::new();
         let doc = parser.parse(&bytes)?;
-        
+
         println!("Doc type: {:?}", doc.doc_type);
         match doc.content {
             OdfContent::Spreadsheet { ref sheets } => {
@@ -1514,25 +1596,35 @@ mod tests {
                     for row in &sheet.rows {
                         println!("    Row {}: {} cells", row.row_num, row.cells.len());
                         for cell in &row.cells {
-                            println!("      Cell ({},{}): type={:?}, text='{}', value={:?}, formula={:?}",
-                                cell.row, cell.column, cell.cell_type, cell.text, cell.value, cell.formula);
+                            println!(
+                                "      Cell ({},{}): type={:?}, text='{}', value={:?}, formula={:?}",
+                                cell.row,
+                                cell.column,
+                                cell.cell_type,
+                                cell.text,
+                                cell.value,
+                                cell.formula
+                            );
                         }
                     }
                 }
             }
             _ => println!("Not a spreadsheet"),
         }
-        
+
         // Now try from_ods
         let imported_wb = from_ods(&bytes)?;
         println!("\nfrom_ods: {} sheets", imported_wb.sheets.len());
         if let Some(sheet) = imported_wb.sheets.first() {
             println!("  Sheet: {}, cells: {}", sheet.name, sheet.cells.len());
             for ((row, col), cell) in &sheet.cells {
-                println!("    Cell ({},{}): raw='{}', value={:?}", row, col, cell.raw, cell.value);
+                println!(
+                    "    Cell ({},{}): raw='{}', value={:?}",
+                    row, col, cell.raw, cell.value
+                );
             }
         }
-        
+
         Ok(())
     }
 
@@ -1547,33 +1639,37 @@ mod tests {
     #[test]
     fn test_from_ods_roundtrip_multiple_sheets_f210() -> Result<()> {
         use crate::model::{Cell, Sheet};
-        
+
         let mut wb = Workbook::new();
-        
+
         let mut sheet1 = Sheet::new("Sheet1");
         sheet1.set_cell(0, 0, Cell::with_text("Sheet1 data"));
         wb.add_sheet(sheet1);
-        
+
         let mut sheet2 = Sheet::new("Sheet2");
         sheet2.set_cell(0, 0, Cell::with_num(123.0));
         wb.add_sheet(sheet2);
-        
+
         // Export and import
         let ods_bytes = export_ods(&wb)?;
         let imported_wb = from_ods(&ods_bytes)?;
-        
+
         // Verify sheets
         assert_eq!(imported_wb.sheets.len(), 2);
         assert_eq!(imported_wb.sheets[0].name, "Sheet1");
         assert_eq!(imported_wb.sheets[1].name, "Sheet2");
-        
+
         // Check data
-        let cell = imported_wb.sheets[0].get_cell(0, 0).expect("Sheet1 cell should exist");
+        let cell = imported_wb.sheets[0]
+            .get_cell(0, 0)
+            .expect("Sheet1 cell should exist");
         assert!(matches!(cell.value, CellValue::Text(ref s) if s == "Sheet1 data"));
-        
-        let cell = imported_wb.sheets[1].get_cell(0, 0).expect("Sheet2 cell should exist");
+
+        let cell = imported_wb.sheets[1]
+            .get_cell(0, 0)
+            .expect("Sheet2 cell should exist");
         assert!(matches!(cell.value, CellValue::Num(n) if (n - 123.0).abs() < f64::EPSILON));
-        
+
         Ok(())
     }
     #[test]
@@ -1594,7 +1690,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         assert!(
             content.contains("style:family=\"table-row\""),
@@ -1645,7 +1743,9 @@ mod tests {
         let bytes = export_ods(&wb)?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
         let mut content = String::new();
-        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+        archive
+            .by_name("content.xml")?
+            .read_to_string(&mut content)?;
 
         assert!(
             !content.contains("table:style-name=\"ro"),
@@ -1655,7 +1755,10 @@ mod tests {
             !content.contains("table-row-properties"),
             "no table-row-properties on a plain sheet"
         );
-        assert!(!content.contains("row-height"), "no row-height on a plain sheet");
+        assert!(
+            !content.contains("row-height"),
+            "no row-height on a plain sheet"
+        );
         Ok(())
     }
 
@@ -1739,12 +1842,28 @@ mod tests {
         assert_eq!(c1.style.bold, Some(true), "bold must round-trip");
         assert_eq!(c1.style.italic, Some(true), "italic must round-trip");
         assert!(c1.style.font_size.is_some(), "font_size must round-trip");
-        assert_eq!(c1.style.color, Some("#FF0000".to_string()), "color must round-trip");
+        assert_eq!(
+            c1.style.color,
+            Some("#FF0000".to_string()),
+            "color must round-trip"
+        );
 
         // Cell 2: border + background + horizontal_align
-        assert_eq!(c2.style.border, Some("0.5pt solid #000000".to_string()), "border must round-trip");
-        assert_eq!(c2.style.background_color, Some("#FFFF00".to_string()), "background_color must round-trip");
-        assert_eq!(c2.style.horizontal_align, Some("right".to_string()), "horizontal_align must round-trip");
+        assert_eq!(
+            c2.style.border,
+            Some("0.5pt solid #000000".to_string()),
+            "border must round-trip"
+        );
+        assert_eq!(
+            c2.style.background_color,
+            Some("#FFFF00".to_string()),
+            "background_color must round-trip"
+        );
+        assert_eq!(
+            c2.style.horizontal_align,
+            Some("right".to_string()),
+            "horizontal_align must round-trip"
+        );
 
         Ok(())
     }

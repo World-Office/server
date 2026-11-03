@@ -159,7 +159,9 @@ impl SheetProtection {
             }
         }
         // Check group exemption
-        groups.iter().any(|g| self.exempt_groups.contains(&g.to_string()))
+        groups
+            .iter()
+            .any(|g| self.exempt_groups.contains(&g.to_string()))
     }
 }
 
@@ -430,18 +432,12 @@ impl Sheet {
 
     /// Get the maximum row index with data.
     pub fn max_row(&self) -> u32 {
-        self.cells.keys()
-            .map(|&(row, _)| row)
-            .max()
-            .unwrap_or(0)
+        self.cells.keys().map(|&(row, _)| row).max().unwrap_or(0)
     }
 
     /// Get the maximum column index with data.
     pub fn max_col(&self) -> u32 {
-        self.cells.keys()
-            .map(|&(_, col)| col)
-            .max()
-            .unwrap_or(0)
+        self.cells.keys().map(|&(_, col)| col).max().unwrap_or(0)
     }
 
     /// Set column width.
@@ -1112,11 +1108,11 @@ pub fn is_edit_allowed(
 }
 
 /// Check if a cell can be edited by a specific user with their groups.
-/// 
+///
 /// This is like `is_edit_allowed` but also checks user/group exemptions.
 /// If the user or any of their groups are exempt, they can edit regardless
 /// of edit ranges and locked cells.
-/// 
+///
 /// // ponytail: per-op/token flow can adopt this later without rework
 pub fn is_edit_allowed_for_user(
     protection: &SheetProtection,
@@ -2050,9 +2046,21 @@ mod tests {
 
         // Sheet should have protection disabled by default
         assert!(!sheet.protection.enabled);
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (100, 100)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (50, 25)));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (0, 0)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (100, 100)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (50, 25)
+        ));
     }
 
     // Test (b): protection enabled + a named edit range -> inside allowed, outside blocked
@@ -2066,14 +2074,38 @@ mod tests {
         workbook.edit_ranges = vec![EditRange::new("InputRange", Range2d::new(0, 0, 5, 5))];
 
         // Cells inside the range should be allowed
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (2, 3)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (5, 5)));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (0, 0)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (2, 3)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (5, 5)
+        ));
 
         // Cells outside the range should be blocked
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (6, 0)));
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 6)));
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (10, 10)));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (6, 0)
+        ));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (0, 6)
+        ));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (10, 10)
+        ));
     }
 
     // Test (c): protection enabled + no edit ranges -> everything blocked
@@ -2086,9 +2118,21 @@ mod tests {
         let workbook = Workbook::new();
         // workbook.edit_ranges is empty by default
 
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (1, 1)));
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (100, 100)));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (0, 0)
+        ));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (1, 1)
+        ));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (100, 100)
+        ));
     }
 
     // Test (d): multi-range edit range (rect union) resolves correctly
@@ -2108,20 +2152,56 @@ mod tests {
         )];
 
         // Cells in first range should be allowed
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (1, 1)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (2, 2)));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (0, 0)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (1, 1)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (2, 2)
+        ));
 
         // Cells in second range should be allowed
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (5, 5)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (7, 8)));
-        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (10, 10)));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (5, 5)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (7, 8)
+        ));
+        assert!(is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (10, 10)
+        ));
 
         // Cells between ranges should be blocked
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (3, 3)));
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (4, 4)));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (3, 3)
+        ));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (4, 4)
+        ));
         // Cells outside both ranges should be blocked
-        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (11, 11)));
+        assert!(!is_edit_allowed(
+            &sheet.protection,
+            &workbook.edit_ranges,
+            (11, 11)
+        ));
     }
 
     // Test (e): serde defaults - Sheet/Workbook without protection fields round-trips
@@ -2245,10 +2325,10 @@ mod tests {
 
         workbook.edit_ranges = vec![
             EditRange::new("InputArea", Range2d::new(0, 0, 10, 10)),
-            EditRange::with_ranges("MultiArea", vec![
-                Range2d::new(20, 20, 30, 30),
-                Range2d::new(40, 40, 50, 50),
-            ]),
+            EditRange::with_ranges(
+                "MultiArea",
+                vec![Range2d::new(20, 20, 30, 30), Range2d::new(40, 40, 50, 50)],
+            ),
         ];
 
         // Serialize and deserialize
@@ -2292,10 +2372,8 @@ mod tests {
         assert!(edit_range_single.contains(2, 2));
         assert!(!edit_range_single.contains(12, 12));
 
-        let edit_range_multi = EditRange::with_ranges(
-            "Multi",
-            vec![range1, Range2d::new(10, 10, 15, 15)],
-        );
+        let edit_range_multi =
+            EditRange::with_ranges("Multi", vec![range1, Range2d::new(10, 10, 15, 15)]);
         assert_eq!(edit_range_multi.name, "Multi");
         assert_eq!(edit_range_multi.ranges.len(), 2);
         assert!(edit_range_multi.contains(2, 2));
@@ -2324,7 +2402,11 @@ mod tests {
 
         // Even with protection enabled on sheet, if we pass disabled protection to is_edit_allowed, it should allow
         let disabled_protection = SheetProtection::disabled();
-        assert!(is_edit_allowed(&disabled_protection, &workbook.edit_ranges, (100, 100)));
+        assert!(is_edit_allowed(
+            &disabled_protection,
+            &workbook.edit_ranges,
+            (100, 100)
+        ));
     }
 
     // Test: EditRange::contains_cell
@@ -2347,12 +2429,12 @@ mod tests {
         // F-146
         let mut sheet = Sheet::new("Test");
         protect_sheet(&mut sheet, Some("sekrit"));
-        
+
         assert!(sheet.protection.enabled);
         assert!(sheet.protection.has_password());
         assert!(sheet.protection.password_hash.is_some());
         assert_eq!(sheet.protection.password_hash.as_ref().unwrap().len(), 64); // SHA-256 hex
-        
+
         let result = unprotect_sheet(&mut sheet, "sekrit");
         assert!(result.is_ok());
         assert!(!sheet.protection.enabled);
@@ -2365,9 +2447,9 @@ mod tests {
         // F-146
         let mut sheet = Sheet::new("Test");
         protect_sheet(&mut sheet, Some("sekrit"));
-        
+
         assert!(sheet.protection.enabled);
-        
+
         let result = unprotect_sheet(&mut sheet, "nope");
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "wrong password");
@@ -2380,10 +2462,10 @@ mod tests {
         // F-146
         let mut sheet = Sheet::new("Test");
         protect_sheet(&mut sheet, None);
-        
+
         assert!(sheet.protection.enabled);
         assert!(!sheet.protection.has_password());
-        
+
         // Any password should work when no password is set
         let result = unprotect_sheet(&mut sheet, "");
         assert!(result.is_ok());
@@ -2396,11 +2478,11 @@ mod tests {
         // F-146
         let mut protection = SheetProtection::new(false);
         assert!(!protection.has_password());
-        
+
         // Before setting password, empty password should pass (for no-password case)
         assert!(protection.verify_password(""));
         assert!(!protection.verify_password("x"));
-        
+
         protection.set_password("test123");
         assert!(protection.has_password());
         assert!(protection.verify_password("test123"));
@@ -2414,13 +2496,19 @@ mod tests {
         // F-146
         let mut protection = SheetProtection::enabled();
         protection.add_exempt_user("alice");
-        
+
         // Sheet is fully locked (no edit ranges, no locked_cells)
         assert!(!is_edit_allowed(&protection, &[], (5, 5)));
-        
+
         // But alice is exempt
-        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), Some("alice"), &[]));
-        
+        assert!(is_edit_allowed_for_user(
+            &protection,
+            &[],
+            (5, 5),
+            Some("alice"),
+            &[]
+        ));
+
         // Base resolver unaffected
         assert!(!is_edit_allowed(&protection, &[], (5, 5)));
     }
@@ -2431,15 +2519,33 @@ mod tests {
         // F-146
         let mut protection = SheetProtection::enabled();
         protection.add_exempt_group("editors");
-        
+
         // Non-exempt user with no groups should be blocked
-        assert!(!is_edit_allowed_for_user(&protection, &[], (5, 5), Some("bob"), &[]));
-        
+        assert!(!is_edit_allowed_for_user(
+            &protection,
+            &[],
+            (5, 5),
+            Some("bob"),
+            &[]
+        ));
+
         // Non-exempt user with editors group should be allowed
-        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), Some("bob"), &["editors"]));
-        
+        assert!(is_edit_allowed_for_user(
+            &protection,
+            &[],
+            (5, 5),
+            Some("bob"),
+            &["editors"]
+        ));
+
         // User with editors group should be allowed
-        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), None, &["editors"]));
+        assert!(is_edit_allowed_for_user(
+            &protection,
+            &[],
+            (5, 5),
+            None,
+            &["editors"]
+        ));
     }
 
     // Test S15-PROTECT-PASSWORD-F146: hash stability
@@ -2448,13 +2554,13 @@ mod tests {
         // F-146
         let mut protection1 = SheetProtection::new(false);
         protection1.set_password("abc");
-        
+
         let mut protection2 = SheetProtection::new(false);
         protection2.set_password("abc");
-        
+
         assert_eq!(protection1.password_hash, protection2.password_hash);
         assert!(protection1.password_hash.as_ref().unwrap().len() == 64);
-        
+
         // Hash should not contain the plaintext
         assert!(!protection1.password_hash.as_ref().unwrap().contains("abc"));
     }
@@ -2467,10 +2573,10 @@ mod tests {
         protection.set_password("test");
         protection.add_exempt_user("alice");
         protection.add_exempt_group("editors");
-        
+
         let json = serde_json::to_string(&protection).unwrap();
         let deserialized: SheetProtection = serde_json::from_str(&json).unwrap();
-        
+
         assert!(deserialized.enabled);
         assert_eq!(deserialized.password_hash, protection.password_hash);
         assert_eq!(deserialized.exempt_users, protection.exempt_users);

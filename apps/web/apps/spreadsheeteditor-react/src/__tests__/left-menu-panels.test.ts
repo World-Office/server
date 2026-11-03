@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { collectTextCells, toCellRef } from "../lib/cell-access";
+import { applySuggestion, checkWord, findSpellIssues } from "../lib/spellcheck";
 import { setActiveUniverAPI } from "../lib/univer-command";
-import {
-	applySuggestion,
-	checkWord,
-	findSpellIssues,
-} from "../lib/spellcheck";
 import { SpreadsheetStore } from "../stores/SpreadsheetStore";
 
 /* Fake Univer facade: only what cell-access reads (workbook.save()). */
@@ -148,14 +144,15 @@ describe("SpreadsheetStore left-menu panels", () => {
 		expect(store.cellComments).toHaveLength(1);
 
 		expect(store.addCellComment("A1", "   ")).toBeNull();
+		if (!thread) throw new Error("comment thread missing");
 
-		expect(store.addCellReply(thread!.id, " done")).not.toBeNull();
+		expect(store.addCellReply(thread.id, " done")).not.toBeNull();
 		expect(store.cellComments[0].replies).toHaveLength(1);
 
-		store.setCellCommentResolved(thread!.id, true);
+		store.setCellCommentResolved(thread.id, true);
 		expect(store.cellComments[0].resolved).toBe(true);
 
-		store.deleteCellComment(thread!.id);
+		store.deleteCellComment(thread.id);
 		expect(store.cellComments).toHaveLength(0);
 	});
 

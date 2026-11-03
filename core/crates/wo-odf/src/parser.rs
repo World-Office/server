@@ -646,7 +646,7 @@ impl OdfParser {
                 let mut rows = Vec::new();
                 let mut max_col: usize = 0;
                 let mut row_num = 0u32;
-                
+
                 // Resolve table-column automatic styles (style:family="table-column",
                 // style:table-column-properties style:column-width="Ncm") to widths in points.
                 let mut col_width_map: BTreeMap<String, f32> = BTreeMap::new();
@@ -685,7 +685,8 @@ impl OdfParser {
                             // Try to extract column index from style name (coN pattern)
                             if let Some(idx_str) = style_name.strip_prefix("co") {
                                 if let Ok(col_idx) = idx_str.parse::<u32>() {
-                                    let width = col_width_map.get(style_name).copied().unwrap_or(0.0);
+                                    let width =
+                                        col_width_map.get(style_name).copied().unwrap_or(0.0);
                                     col_widths.insert(col_idx, width);
                                 }
                             }
@@ -700,7 +701,7 @@ impl OdfParser {
                         continue;
                     }
                     row_num += 1;
-                    
+
                     // Parse row height from table:style-name attribute (roN pattern)
                     if let Some(style_name) = row_node.attribute((TABLE_NS, "style-name")) {
                         if let Some(idx_str) = style_name.strip_prefix("ro") {
@@ -855,20 +856,18 @@ impl OdfParser {
                 let transition = self.parse_odp_transition(page_node);
 
                 // F-306: resolve slide background from draw:style-name → drawing-page-properties
-                let background = page_node
-                    .attribute((DRAW_NS, "style-name"))
-                    .and_then(|sn| {
-                        let fill_color = Self::resolve_style_property(
-                            styles,
-                            sn,
-                            "drawing-page-properties:fill-color",
-                        );
-                        if fill_color.is_some() {
-                            Some(OdpSlideBackground { fill_color })
-                        } else {
-                            None
-                        }
-                    });
+                let background = page_node.attribute((DRAW_NS, "style-name")).and_then(|sn| {
+                    let fill_color = Self::resolve_style_property(
+                        styles,
+                        sn,
+                        "drawing-page-properties:fill-color",
+                    );
+                    if fill_color.is_some() {
+                        Some(OdpSlideBackground { fill_color })
+                    } else {
+                        None
+                    }
+                });
 
                 slides.push(PresentationSlide {
                     name,

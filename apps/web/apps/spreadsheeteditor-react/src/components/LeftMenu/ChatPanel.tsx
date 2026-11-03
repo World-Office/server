@@ -60,10 +60,13 @@ function ChatPanelInner({ active }: ChatPanelProps): JSX.Element {
 	}, []);
 	useEffect(() => {
 		saveMessages(messages);
+		if (listRef.current)
+			listRef.current.scrollTop = listRef.current.scrollHeight;
 	}, [messages]);
 	useEffect(() => {
-		if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
-	}, [messages, active]);
+		if (active && listRef.current)
+			listRef.current.scrollTop = listRef.current.scrollHeight;
+	}, [active]);
 
 	function send(): void {
 		if (!spreadsheetStore.addChatMessage(text)) return;

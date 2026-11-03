@@ -501,7 +501,7 @@ fn emit_cell_style(xml: &mut String, style: &OdfStyle) {
         style_name
     )
     .unwrap();
-    
+
     // Group properties by ODF property family for correct XML emission
     // text-properties: font-name, font-size, font-weight, font-style, text-underline-*, text-line-through-*, color
     // table-cell-properties: background-color, border
@@ -511,9 +511,14 @@ fn emit_cell_style(xml: &mut String, style: &OdfStyle) {
     let mut para_props: Vec<&(String, String)> = Vec::new();
     for prop in &style.properties {
         match prop.0.as_str() {
-            "style:font-name" | "fo:font-size" | "fo:font-weight" | "fo:font-style"
-            | "style:text-underline-style" | "style:text-underline-type"
-            | "style:text-line-through-style" | "fo:color" => {
+            "style:font-name"
+            | "fo:font-size"
+            | "fo:font-weight"
+            | "fo:font-style"
+            | "style:text-underline-style"
+            | "style:text-underline-type"
+            | "style:text-line-through-style"
+            | "fo:color" => {
                 text_props.push(prop);
             }
             "fo:background-color" | "fo:border" => {
@@ -724,9 +729,14 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
         } else {
             None
         };
-        
+
         if let Some(style_name) = row_style_name {
-            writeln!(xml, "{}  <table:table-row table:style-name=\"{}\">", pad, style_name).unwrap();
+            writeln!(
+                xml,
+                "{}  <table:table-row table:style-name=\"{}\">",
+                pad, style_name
+            )
+            .unwrap();
         } else {
             writeln!(xml, "{}  <table:table-row>", pad).unwrap();
         }
@@ -740,12 +750,17 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
             }
             // Build cell attributes including span and style info
             let mut cell_attrs = String::new();
-            
+
             // Add style-name if present (for cells with explicit styles)
             if let Some(ref style_name) = cell.style_name {
-                write!(cell_attrs, " table:style-name=\"{}\"", escape_xml(style_name)).unwrap();
+                write!(
+                    cell_attrs,
+                    " table:style-name=\"{}\"",
+                    escape_xml(style_name)
+                )
+                .unwrap();
             }
-            
+
             // Add span attributes if present
             if let Some(span) = cell.col_span {
                 if span > 1 {
@@ -757,7 +772,7 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     write!(cell_attrs, " table:number-rows-spanned=\"{}\"", span).unwrap();
                 }
             }
-            
+
             match cell.cell_type {
                 CellType::Number | CellType::Percentage | CellType::Currency => {
                     if let Some(v) = cell.value {

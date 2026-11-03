@@ -668,10 +668,10 @@ mod tests {
     async fn test_http_transport_initialize_and_tools_list() {
         use rmcp::ServiceExt;
         use rmcp::transport::streamable_http_client::StreamableHttpClientTransport;
+        use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
         use rmcp::transport::streamable_http_server::{
             StreamableHttpServerConfig, StreamableHttpService,
         };
-        use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
         use std::sync::Arc;
         use tokio_util::sync::CancellationToken;
 
@@ -705,14 +705,10 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
         // Use the rmcp client transport to initialize + list tools over HTTP/SSE
-        let transport =
-            StreamableHttpClientTransport::from_uri(format!("http://{addr}/mcp"));
+        let transport = StreamableHttpClientTransport::from_uri(format!("http://{addr}/mcp"));
         let client = ().serve(transport).await.expect("client init failed");
 
-        let tools = client
-            .list_all_tools()
-            .await
-            .expect("tools/list failed");
+        let tools = client.list_all_tools().await.expect("tools/list failed");
         assert!(!tools.is_empty(), "should have tools");
         assert!(
             tools.iter().any(|t| t.name.as_ref() == "list_documents"),

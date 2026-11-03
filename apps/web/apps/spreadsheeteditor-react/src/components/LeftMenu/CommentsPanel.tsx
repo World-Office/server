@@ -10,11 +10,11 @@
 import { observer } from "mobx-react-lite";
 import { type JSX, useEffect, useMemo, useState } from "react";
 import {
+	type SheetCell,
 	activateCell,
 	collectTextCells,
 	getActiveCellRef,
 	getActiveSheetName,
-	type SheetCell,
 } from "../../lib/cell-access";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { CellCommentThread } from "../../types/spreadsheet";
@@ -54,7 +54,9 @@ function formatTime(ts: number): string {
 }
 
 function anchorCell(cellRef: string): SheetCell | null {
-	const ref = cellRef.includes("!") ? cellRef.split("!").pop() ?? "" : cellRef;
+	const ref = cellRef.includes("!")
+		? (cellRef.split("!").pop() ?? "")
+		: cellRef;
 	return collectTextCells().find((c) => c.ref === ref) ?? null;
 }
 

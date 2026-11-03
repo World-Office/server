@@ -16,10 +16,7 @@
 
 import type { SheetCell } from "./cell-access";
 
-export type SpellIssueReason =
-	| "typo"
-	| "repeated-word"
-	| "triple-letter";
+export type SpellIssueReason = "typo" | "repeated-word" | "triple-letter";
 
 export interface SpellIssue {
 	/** Stable id: sheet/ref/offset/word. */
@@ -216,7 +213,7 @@ export function checkWord(
 	// "worrd" — three identical letters in a row is never English/German
 	const triple = /(.)\1\1/.exec(word);
 	if (triple) {
-		const collapsed = word.replace(/(.)\1\1+/g, `$1$1`);
+		const collapsed = word.replace(/(.)\1\1+/g, "$1$1");
 		if (collapsed !== word) {
 			return { reason: "triple-letter", suggestion: collapsed };
 		}
@@ -239,8 +236,7 @@ export function findSpellIssues(
 
 		// repeated word: "the the", "sum sum" (case-insensitive)
 		const repeat = /\b([A-Za-zÄÖÜäöüß]{2,})\s+\1\b/g;
-		let m: RegExpExecArray | null;
-		while ((m = repeat.exec(text)) !== null) {
+		for (const m of text.matchAll(repeat)) {
 			const word = m[1];
 			if (ignored.has(word.toLowerCase())) continue;
 			issues.push({
@@ -253,8 +249,7 @@ export function findSpellIssues(
 			});
 		}
 
-		WORD_RE.lastIndex = 0;
-		while ((m = WORD_RE.exec(text)) !== null) {
+		for (const m of text.matchAll(WORD_RE)) {
 			const word = m[0];
 			if (ignored.has(word.toLowerCase())) continue;
 			const found = checkWord(word);
@@ -265,8 +260,8 @@ export function findSpellIssues(
 					(i) =>
 						i.cell === cell &&
 						i.reason === "repeated-word" &&
-						m!.index >= i.offset &&
-						m!.index < i.offset + i.word.length,
+						m.index >= i.offset &&
+						m.index < i.offset + i.word.length,
 				)
 			) {
 				continue;
@@ -289,10 +284,7 @@ export function findSpellIssues(
  * text changed in the meantime the fix is re-anchored by word so an edited
  * cell still gets its correction (best effort, never throws).
  */
-export function applySuggestion(
-	text: string,
-	issue: SpellIssue,
-): string {
+export function applySuggestion(text: string, issue: SpellIssue): string {
 	const replacement = issue.suggestion ?? issue.word;
 	if (issue.reason === "repeated-word") {
 		return (
@@ -311,7 +303,5 @@ export function applySuggestion(
 	// cell was edited since the check — fall back to a global word replace
 	const idx = text.indexOf(issue.word);
 	if (idx === -1) return text;
-	return (
-		text.slice(0, idx) + replacement + text.slice(idx + issue.word.length)
-	);
+	return text.slice(0, idx) + replacement + text.slice(idx + issue.word.length);
 }

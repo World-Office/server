@@ -13,6 +13,10 @@ pub mod model;
 pub mod ops;
 
 pub use chart_embed::{render_embedded_chart, ChartCollection, ChartRef, EmbedError};
+pub use inheritance::{
+    get_layout, get_master, resolve_inheritance, ResolvedInheritance, ResolvedLayout,
+    ResolvedMaster,
+};
 pub use model::{
     AdvanceMode, AnimationData, AutoShape, Bounds, ChartRef as PresentationChartRef, ColorScheme,
     ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme, GradientFill, GradientKind,
@@ -20,9 +24,5 @@ pub use model::{
     ReflectionEffect, ShadowEffect, Shape, SlideBackground, SlideBackgroundType, SlideLayout,
     SlideMaster, SlideSize, SlideTransition, SmartArtShape, TableCell, TableColumn, TableRow,
     TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, TransitionEffect,
-};
-pub use inheritance::{
-    get_layout, get_master, resolve_inheritance, ResolvedInheritance, ResolvedLayout,
-    ResolvedMaster,
 };
 pub use ops::{SlideOp, SlideOpError};
