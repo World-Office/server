@@ -2035,7 +2035,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -6556,8 +6556,21 @@
   if (btnMacroManager) btnMacroManager.addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent("wo:macro-manager", { detail: {} }));
     console.info("wo:macro-manager: requested");
-    setStatus("Macro manager requested (marker only)");
+    setStatus("Macro manager requested");
+    openDlg("macro-dialog");
   });
+
+  // Macro dialog button handlers
+  const btnMacroClose = document.getElementById("macro-dialog-close");
+  if (btnMacroClose) btnMacroClose.addEventListener("click", () => closeDlg("macro-dialog"));
+  const btnMacroCancel = document.getElementById("macro-dialog-cancel");
+  if (btnMacroCancel) btnMacroCancel.addEventListener("click", () => closeDlg("macro-dialog"));
+  const btnMacroOk = document.getElementById("macro-dialog-ok");
+  if (btnMacroOk) btnMacroOk.addEventListener("click", () => closeDlg("macro-dialog"));
+  const btnMacroRecordStart = document.getElementById("macro-record-start");
+  if (btnMacroRecordStart) btnMacroRecordStart.addEventListener("click", () => emitMacroMarker("record"));
+  const btnMacroRecordStop = document.getElementById("macro-record-stop");
+  if (btnMacroRecordStop) btnMacroRecordStop.addEventListener("click", () => emitMacroMarker("stop"));
 
   // Formatting marks (nonprinting characters): view-only overlay (like
   // gridlines); the ¶ glyphs come from CSS on #editor.show-marks, nothing
@@ -12903,6 +12916,10 @@
   });
   const btnMailClose = document.getElementById("btn-mailmerge-close");
   if (btnMailClose) btnMailClose.addEventListener("click", () => closeDlg("mailmerge-dialog"));
+  const btnMailCancel = document.getElementById("btn-mailmerge-cancel");
+  if (btnMailCancel) btnMailCancel.addEventListener("click", () => closeDlg("mailmerge-dialog"));
+  const btnMailOk = document.getElementById("btn-mailmerge");
+  if (btnMailOk) btnMailOk.addEventListener("click", () => closeDlg("mailmerge-dialog"));
 
   // Insert > Add text: OO-parity options dialog (level picker) around the
   // selection-mask (view surface only — the marker text stays in the doc).
