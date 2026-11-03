@@ -6561,8 +6561,6 @@
   });
 
   // Macro dialog button handlers
-  const btnMacroClose = document.getElementById("macro-dialog-close");
-  if (btnMacroClose) btnMacroClose.addEventListener("click", () => closeDlg("macro-dialog"));
   const btnMacroCancel = document.getElementById("macro-dialog-cancel");
   if (btnMacroCancel) btnMacroCancel.addEventListener("click", () => closeDlg("macro-dialog"));
   const btnMacroOk = document.getElementById("macro-dialog-ok");
@@ -6570,7 +6568,7 @@
   const btnMacroRecordStart = document.getElementById("macro-record-start");
   if (btnMacroRecordStart) btnMacroRecordStart.addEventListener("click", () => emitMacroMarker("record"));
   const btnMacroRecordStop = document.getElementById("macro-record-stop");
-  if (btnMacroRecordStop) btnMacroRecordStop.addEventListener("click", () => emitMacroMarker("stop"));
+  if (btnMacroRecordStop) btnMacroRecordStop.addEventListener("click", () => emitMacroMarker("pause"));
 
   // Formatting marks (nonprinting characters): view-only overlay (like
   // gridlines); the ¶ glyphs come from CSS on #editor.show-marks, nothing
@@ -6905,6 +6903,20 @@
     syncRightPanelControls();
     setStatus("Table background: " + color);
   }
+  // Banded rows (OO Table Design parity): alternating row shading via a
+  // table-level class. Class (not inline colors) so the toggle is cleanly
+  // reversible and does not fight per-cell background overrides.
+  // ponytail: session-level visual state — like applyTableBackground, the
+  // wo-html parser drops table attrs on docx roundtrip, so banding does not
+  // persist across conversion (matches existing background behavior).
+  function applyTableBanded(on) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBanded"); return; }
+    table.classList.toggle("table-banded", !!on);
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus(on ? "Table banded rows on" : "Table banded rows off");
+  }
   // No per-row/col resize machinery exists (table ops only insert/delete),
   // so the size inputs apply to the whole selected table (closest table).
   function applyTableRowHeight(pt) {
@@ -6948,6 +6960,8 @@
     }
     const bgIn = document.getElementById("rp-table-background");
     if (cs && bgIn && csToHex(cs.backgroundColor)) bgIn.value = csToHex(cs.backgroundColor);
+    const bandedIn = document.getElementById("rp-table-banded");
+    if (bandedIn) bandedIn.checked = table.classList.contains("table-banded");
     const rowIn = document.getElementById("rp-table-row-height");
     if (rowIn && table.rows && table.rows.length) {
       const h = table.rows[0].getBoundingClientRect().height;
@@ -7208,6 +7222,11 @@
   if (rpTableBackground) rpTableBackground.addEventListener("change", () => {
     if (READ_ONLY) return;
     applyTableBackground(rpTableBackground.value);
+  });
+  const rpTableBanded = document.getElementById("rp-table-banded");
+  if (rpTableBanded) rpTableBanded.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableBanded(rpTableBanded.checked);
   });
   const rpTableRowHeight = document.getElementById("rp-table-row-height");
   if (rpTableRowHeight) rpTableRowHeight.addEventListener("change", () => {
@@ -10933,6 +10952,15 @@
     // foot/endnote-now, chat, currency/symbol inserts) actually reach us —
     // the guarded block would otherwise swallow them. Each binds a WO
     // command target that already exists in runCommand()/emitCommand().
+    // F7: spellcheck toggle (Word/OO convention) — plain F7, no modifiers.
+    if (ev.key === "F7" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      ev.preventDefault();
+      toggleSpellcheck(!spellState.enabled);
+      setStatus(spellState.enabled
+        ? (t.lng === "de" ? "Rechtschreibprüfung aktiviert" : "Spell check on")
+        : (t.lng === "de" ? "Rechtschreibprüfung deaktiviert" : "Spell check off"));
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key === " ") {
       // Non-breaking space: Ctrl+Shift+Space (OO/Word convention).
       if (ev.shiftKey) { ev.preventDefault(); emitCommand("insertSymbol", "\u00a0"); return; }
@@ -10940,6 +10968,13 @@
     if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {
       // En dash: Ctrl+Minus (OO convention; takes precedence over browser zoom-out).
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+      // Line spacing (Word/OO convention): Ctrl+1 single, Ctrl+2 double,
+      // Ctrl+5 one-and-a-half. Match on ev.code so layout-independent.
+      if (ev.code === "Digit1" || ev.code === "Digit2" || ev.code === "Digit5") {
+        ev.preventDefault();
+        emitCommand("lineHeight", ev.code === "Digit1" ? "1" : ev.code === "Digit2" ? "2" : "1.5");
+        return;
+      }
       // Open existing file: Ctrl/Cmd+O (OO parity, WO-22-shortcut-openexistingfile).
       // Overrides the browser's native file-open dialog and lands on the
       // backstage Open/Recent pane — the standard web Open flow.
@@ -11061,13 +11096,22 @@
         runCommand("redo");
         return;
       }
-      // Lists: Ctrl+Shift+7 = ordered, Ctrl+Shift+8 = bulleted
-      // (Google Docs / LibreOffice convention). Match on ev.code so the
-      // digits resolve independently of keyboard layout, where Shift+digit
-      // would report a symbol in ev.key instead of the numeral.
-      if (ev.shiftKey && (ev.code === "Digit7" || ev.code === "Digit8")) {
+      // Lists: Ctrl+Shift+7 = ordered, Ctrl+Shift+L = bulleted
+      // (OO 9.4 Home convention for the bullet arm; ordered list keeps the
+      // Google Docs digit-combo. Census: ApplyListBullet = Ctrl+Shift+L).
+      // Match on ev.code for the digit so layouts resolve independently
+      // of where Shift+digit reports a symbol in ev.key.
+      if (ev.shiftKey && (ev.code === "Digit7" || k === "l")) {
         ev.preventDefault();
-        emitCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
+        emitCommand(k === "l" ? "insertUnorderedList" : "insertOrderedList");
+        return;
+      }
+      // Show all (formatting marks): Ctrl+Shift+8 (OO convention, census
+      // ShowAll). WO already has the marks overlay + ribbon toggle; this is
+      // its shortcut.
+      if (ev.shiftKey && ev.code === "Digit8") {
+        ev.preventDefault();
+        setFormatMarks(!editor.classList.contains("show-marks"));
         return;
       }
       // Font size: Ctrl+] grow, Ctrl+[ shrink (OO 9.4 Home convention).
@@ -11083,14 +11127,15 @@
         emitCommand("subscript");
         return;
       }
-      // Right settings panel: Ctrl+Shift+P (OO settings-panel convention).
+      // Insert page number: Ctrl+Shift+P (OO convention, census
+      // InsertPageNumber). The settings panel stays on its ribbon button.
       if (k === "p" && ev.shiftKey) {
         ev.preventDefault();
-        emitCommand("toggleRightPanel");
+        emitCommand("insertPageNumber");
         return;
       }
       // Paragraph alignment (Word / LibreOffice convention): Ctrl+E center,
-      // Ctrl+J justify, Ctrl+Shift+L left, Ctrl+R right. Ctrl+R overrides
+      // Ctrl+J justify, Ctrl+L left, Ctrl+R right. Ctrl+R overrides
       // browser reload while focus is inside the editor — exactly what
       // desktop word processors do; click outside the editor to reload.
       if (k === "e") {
@@ -11103,7 +11148,7 @@
         emitCommand("justifyFull");
         return;
       }
-      if (k === "l" && ev.shiftKey) {
+      if (k === "l" && !ev.shiftKey) {
         ev.preventDefault();
         emitCommand("justifyLeft");
         return;
@@ -12916,10 +12961,6 @@
   });
   const btnMailClose = document.getElementById("btn-mailmerge-close");
   if (btnMailClose) btnMailClose.addEventListener("click", () => closeDlg("mailmerge-dialog"));
-  const btnMailCancel = document.getElementById("btn-mailmerge-cancel");
-  if (btnMailCancel) btnMailCancel.addEventListener("click", () => closeDlg("mailmerge-dialog"));
-  const btnMailOk = document.getElementById("btn-mailmerge");
-  if (btnMailOk) btnMailOk.addEventListener("click", () => closeDlg("mailmerge-dialog"));
 
   // Insert > Add text: OO-parity options dialog (level picker) around the
   // selection-mask (view surface only — the marker text stays in the doc).

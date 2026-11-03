@@ -1455,6 +1455,15 @@ main {
   padding: 6px 10px;
   min-width: 40px;
 }
+/* Banded rows (OO Table Design "banded rows"): class toggled from the
+   right-panel checkbox. Even rows only; header row excluded. */
+#editor table.table-banded > tbody > tr:nth-child(even) > td,
+#editor table.table-banded > tr:nth-child(even) > td {
+  background-color: #f2f2f2;
+}
+#editor table.table-banded > thead + tbody > tr:nth-child(even) > td {
+  background-color: #f2f2f2;
+}
 
 /* ---- insert-table dialog ---- */
 .color-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
