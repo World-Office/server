@@ -92,6 +92,23 @@ async function checkEffect(page, ov, assertion) {
         return { ok: !!vis, observed: vis ? `dialog visible (${vis.id || vis.className.split(' ')[0]})` : `no visible dialog among ${els.length} × ${sel}` };
       }, assertion.dialogSelector || '.dialog-overlay'));
     }
+    case 'text-mutation': {
+      // the click inserted/changed text (plain text runs, dates, fields…)
+      return poll(page, () => page.evaluate((a) => {
+        const el = document.querySelector(a.selector || '#editor');
+        if (!el) return { ok: false, observed: `no ${a.selector || '#editor'}` };
+        const text = el.textContent || '';
+        let ok;
+        if (a.containsDate) {
+          const d = new Date();
+          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          ok = text.includes(iso);
+          return { ok, observed: `text ${ok ? 'contains' : 'lacks'} today (${iso})` };
+        }
+        ok = a.contains ? text.includes(a.contains) : text.trim().length > 0;
+        return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}` : `text lacks ${JSON.stringify(a.contains)}` };
+      }, assertion));
+    }
     case 'op-emitted':
       return { ok: false, observed: `observer for ${assertion.kind} not exercised yet` };
     case 'viewport-flag': {

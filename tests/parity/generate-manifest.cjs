@@ -65,7 +65,7 @@ function classify(row, override) {
 }
 
 const VALID_CLASSES = new Set(['format', 'structure', 'dialog', 'op', 'view', 'stub', 'covered-cluster', 'unclassified']);
-const VALID_ASSERTIONS = new Set(['computed-style', 'dom-mutation', 'dialog-visible', 'op-emitted', 'viewport-flag', 'unspecified']);
+const VALID_ASSERTIONS = new Set(['computed-style', 'dom-mutation', 'dialog-visible', 'op-emitted', 'viewport-flag', 'text-mutation', 'unspecified']);
 
 function validateOverride(key, o, errors) {
   if (!VALID_CLASSES.has(o.effektClass)) errors.push(`${key}: bad effektClass "${o.effektClass}"`);
