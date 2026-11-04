@@ -1,0 +1,141 @@
+{
+  "entries": {
+    "shortcut.openfindandreplacemenu": {
+      "effektClass": "dialog",
+      "key": "Control+h",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "find input",
+          "selector": "#find-query"
+        },
+        {
+          "name": "replace input",
+          "selector": "#find-replace"
+        }
+      ],
+      "note": "ledger feature shortcut.openfindandreplacemenu (token ctrl+h) — document-scoped handler (editor.js:10825) calls openFindDialog(true): same #find-dialog as Ctrl+F, with the replace field (#find-replace, index.html:3019) in the panel"
+    },
+    "shortcut.opencommentspanel": {
+      "effektClass": "dialog",
+      "pre": "list",
+      "key": "Control+Shift+H",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#comments-panel",
+        "prop": "display",
+        "equals": "flex"
+      },
+      "note": "ledger feature shortcut.opencommentspanel — editor-scoped handler (editor.js:11016) calls openCommentsPanel() which clears hidden on #comments-panel; .side-panel[hidden]{display:none} vs .side-panel{display:flex} (style.css:2130). pre 'list' guarantees #editor focus for the editor-scoped keydown"
+    },
+    "shortcut.openhelpmenu": {
+      "effektClass": "dialog",
+      "pre": "list",
+      "key": "F1",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#help-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "help title",
+          "selector": "#help-dialog-title"
+        },
+        {
+          "name": "help close button",
+          "selector": "#btn-help-close"
+        }
+      ],
+      "note": "ledger feature shortcut.openhelpmenu — F1 (no modifiers) runs openDlg('help-dialog') (editor.js:11063); real chord verified in editor.js, matching the ledger wo match 'F1 opens Help dialog'"
+    },
+    "shortcut.opencontextmenu": {
+      "effektClass": "dialog",
+      "pre": "list",
+      "key": "Shift+F10",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ctx-menu"
+      },
+      "subFeatures": [
+        {
+          "name": "cut item",
+          "selector": "[data-ctx=\"Cut\"]"
+        },
+        {
+          "name": "copy item",
+          "selector": "[data-ctx=\"Copy\"]"
+        },
+        {
+          "name": "paste item",
+          "selector": "[data-ctx=\"Paste\"]"
+        }
+      ],
+      "note": "ledger feature shortcut.opencontextmenu — Shift+F10 makes Chromium synthesize a contextmenu DOM event on the focused #editor; WO's editorEl contextmenu listener (editor.js:9750) shows #ctx-menu. pre 'list' focuses #editor so the synthesized event targets it"
+    },
+    "shortcut.closemenu": {
+      "effektClass": "view",
+      "pre": "file-menu",
+      "key": "Escape",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#backstage-overlay",
+        "prop": "display",
+        "equals": "none"
+      },
+      "note": "ledger feature shortcut.closemenu (token escape) — Escape runs closeAllMenus() -> hideBackstage() (editor.js:10728, 10506): the open #backstage-overlay (.open -> display:flex, style.css:2520) drops back to display:none. Contract asserts the menu that WAS open is closed, not that nothing opens"
+    },
+    "shortcut.zoom100": {
+      "effektClass": "view",
+      "pre": "list",
+      "key": "Control+0",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1"
+      },
+      "note": "ledger feature shortcut.zoom100 — editor-scoped handler (editor.js:11218) resets zoomLevel=1 through applyZoom; runs after statusbar.btn-zoom-up (manifest 238) so persisted zoom is already 1 and stays 1 through Ctrl+0"
+    },
+    "shortcut.zoomin": {
+      "effektClass": "view",
+      "pre": "list",
+      "key": "Control+=",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1.1"
+      },
+      "note": "ledger feature shortcut.zoomin — Ctrl+= (ev.code Equal, editor.js:11206) adds 0.1 through applyZoom from the clean persisted zoom 1; no post: the runner clicks post BEFORE asserting, so a reset post would zero the observation. The next contract (shortcut.zoomout) carries the #btn-zoom-reset post that restores zoom 1"
+    },
+    "shortcut.zoomout": {
+      "effektClass": "view",
+      "pre": "list",
+      "key": "Control+-",
+      "post": "#btn-zoom-reset",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "0.9"
+      },
+      "xfail": true,
+      "note": "ledger feature shortcut.zoomout — REAL GAP: the editor-scoped handler intercepts plain Ctrl+Minus earlier for the en-dash insert (editor.js:10987, '(OO convention; takes precedence over browser zoom-out)') and returns, so the Ctrl+Minus zoom-out arm (editor.js:11205) is unreachable via the physical Minus key; zoom stays 1 instead of 0.9. post #btn-zoom-reset keeps the persisted wo-zoom clean for downstream contracts"
+    },
+    "shortcut.openchatpanel": {
+      "effektClass": "dialog",
+      "pre": "list",
+      "key": "Control+Alt+Q",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#btn-chat-toggle",
+        "attr": "aria-expanded",
+        "equals": "true"
+      },
+      "note": "ledger feature shortcut.openchatpanel — editor-scoped handler (editor.js:11033) emitCommand('toggleChat') -> toggleChat() (editor.js:6676) unhides #chat-panel and flips #btn-chat-toggle aria-expanded false->true (index.html:759). attr equality avoids the absence-of-hidden gap viewport-flag cannot express"
+    }
+  }
+}
