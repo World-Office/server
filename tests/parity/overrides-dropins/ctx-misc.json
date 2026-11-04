@@ -1,0 +1,218 @@
+{
+  "entries": {
+    "ctx.add-comment": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AddComment\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#comment-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "comment body textarea",
+          "selector": "#comment-body"
+        },
+        {
+          "name": "comment ok button",
+          "selector": "#btn-comment-ok"
+        }
+      ],
+      "note": "ledger ctx.add-comment: AddComment ctx row is ungated and openCommentDialog() opens #comment-dialog (editor.js:9894/4345)"
+    },
+    "ctx.spellcheck": {
+      "effektClass": "view",
+      "key": "F7",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "attr": "spellcheck",
+        "equals": "false"
+      },
+      "note": "ledger ctx.spellcheck (Review ribbon spellcheck / F7, not in ctx menu): F7 runs toggleSpellcheck(true) which flips #editor spellcheck to false so the WO engine owns the squiggles (editor.js:10973/11426); spellState.enabled defaults false"
+    },
+    "ctx.rotate-text-down": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextDirection\"]",
+      "post": "[data-ctx=\"TextDirRotateDown\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "writing-mode",
+        "equals": "vertical-rl"
+      },
+      "note": "ledger ctx.rotate-text-down: TextDirRotateDown is a data-subitem child of the TextDirection parent; trigger opens the submenu, post clicks the child, applyTextDirection sets td writing-mode vertical-rl + wo-textdir-down (editor.js:10270/10331)"
+    },
+    "ctx.rotate-text-up": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextDirection\"]",
+      "post": "[data-ctx=\"TextDirRotateUp\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "writing-mode",
+        "equals": "sideways-lr"
+      },
+      "note": "ledger ctx.rotate-text-up: TextDirRotateUp submenu child maps to applyTextDirection('rotate-up') = writing-mode sideways-lr on the block (td) under the selection (editor.js:10272/10331)"
+    },
+    "ctx.page-break-before": {
+      "effektClass": "structure",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"PageBreakBefore\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .page-break"
+      },
+      "note": "ledger ctx.page-break-before: ungated ctx row emits insertPageBreak which inserts <div class=\"page-break\"> plus a trailing paragraph at the selection (editor.js:9948/1177)"
+    },
+    "ctx.keep-lines-together": {
+      "effektClass": "format",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"KeepLines\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .keep-lines"
+      },
+      "note": "ledger ctx.keep-lines-together: KeepLines ctx row emits toggleKeepLines which toggles the keep-lines class on the block(s) under the selection (editor.js:10151/1354)"
+    },
+    "ctx.horizontal": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextDirection\"]",
+      "post": "[data-ctx=\"TextDirHorizontal\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor [data-textdir=\"horizontal\"]"
+      },
+      "xfail": true,
+      "note": "ledger ctx.horizontal KNOWN GAP: applyTextDirection('horizontal') reverts to the default state (removes writing-mode/data-textdir) — a no-op on default-state text; observing it needs a pre with a pre-rotated (vertical) fixture, which the pre vocabulary lacks (editor.js:10268/10327)"
+    },
+    "ctx.accept-change": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AcceptChange\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert, #editor del.track-delete"
+      },
+      "xfail": true,
+      "note": "ledger ctx.accept-change KNOWN GAP: the ctx item is ungated but trackedChangeAtSelection('accept') needs ins.track-insert/del.track-delete at the caret; without a track-changes fixture it only sets a status message (editor.js:10177/3038) — needs track-changes fixture pre"
+    },
+    "ctx.reject-change": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"RejectChange\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert, #editor del.track-delete"
+      },
+      "xfail": true,
+      "note": "ledger ctx.reject-change KNOWN GAP: same as accept — trackedChangeAtSelection('reject') needs a tracked-change fixture at the caret, else only a status message — needs track-changes fixture pre"
+    },
+    "ctx.follow-move": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"FollowMove\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert"
+      },
+      "xfail": true,
+      "note": "ledger ctx.follow-move KNOWN GAP: data-showif=\"trackchanges\" keeps the ctx item hidden without a tracked-move fixture — needs track-changes fixture pre"
+    },
+    "ctx.ignore": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Ignore\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span.wo-misspelled"
+      },
+      "xfail": true,
+      "note": "ledger ctx.ignore KNOWN GAP: data-showif=\"misspelled\" keeps the ctx item hidden without a misspelled-word fixture — needs misspelled-word fixture pre"
+    },
+    "ctx.ignore-all": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"IgnoreAll\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span.wo-misspelled"
+      },
+      "xfail": true,
+      "note": "ledger ctx.ignore-all KNOWN GAP: data-showif=\"misspelled\" keeps the ctx item hidden without a misspelled-word fixture — needs misspelled-word fixture pre"
+    },
+    "ctx.add-to-dictionary": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AddToDictionary\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span.wo-misspelled"
+      },
+      "xfail": true,
+      "note": "ledger ctx.add-to-dictionary KNOWN GAP: data-showif=\"misspelled\" keeps the ctx item hidden without a misspelled-word fixture (handler unwraps the spell marker via spellAddToDictionaryAtSelection) — needs misspelled-word fixture pre"
+    },
+    "ctx.select-language": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"SelectLanguage\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#doc-lang"
+      },
+      "subFeatures": [
+        {
+          "name": "document language select",
+          "selector": "#doc-lang"
+        }
+      ],
+      "xfail": true,
+      "note": "ledger ctx.select-language KNOWN GAP: data-showif=\"misspelled\" keeps the ctx item hidden without a misspelled-word fixture; the handler only showPicker()s the #doc-lang select (no dialog) — needs misspelled-word fixture pre"
+    },
+    "ctx.update-1-style": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"FormattingAsStyle\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#style-gallery .style-chip"
+      },
+      "xfail": true,
+      "note": "ledger ctx.update-1-style KNOWN GAP: shares the FormattingAsStyle ctx row which only dispatches the wo:style-from-format CustomEvent — style update is owned by the host shell channel, no listener mutates the editor page DOM (editor.js:10163)"
+    },
+    "ctx.formatting-as-style": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"FormattingAsStyle\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#style-gallery .style-chip"
+      },
+      "xfail": true,
+      "note": "ledger ctx.formatting-as-style KNOWN GAP: FormattingAsStyle dispatches wo:style-from-format at window level; the style gallery/host shell owns the effect — no observable DOM mutation in the editor page (editor.js:10163)"
+    }
+  },
+  "$skipped": [
+    {
+      "row": "ctx.undo",
+      "reason": "ctx-menu Undo routes to editor history (emitCommand undo) — no observable DOM/state delta on a fresh page without prior history"
+    },
+    {
+      "row": "ctx.redo",
+      "reason": "ctx-menu Redo routes to editor history (emitCommand redo) — nothing to redo on a fresh page, no observable delta"
+    },
+    {
+      "row": "ctx.copy",
+      "reason": "clipboard operation not observable in-page (system clipboard, no DOM contract)"
+    },
+    {
+      "row": "ctx.cut",
+      "reason": "clipboard operation not observable in-page (system clipboard, no DOM contract)"
+    },
+    {
+      "row": "ctx.paste",
+      "reason": "clipboard operation not observable in-page (system clipboard, no DOM contract)"
+    }
+  ]
+}
