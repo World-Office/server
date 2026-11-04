@@ -1,0 +1,50 @@
+{
+  "$comment": "L2E-05-CTX-CHART: ctx chart rows (on-chart). Census claims OO shows chart-element rows (Axis Titles, Data Labels, Legend, Trendline, Error Bars, Up/Down Bars, Gridlines, Chart Title, Data Table) plus Edit data / Update field in the context menu on a chart. WO's #ctx-menu has NO chart-specific rows: the only chart-adjacent surface is data-showif=\"object\" rows (wrap ops, ConvertToShape, EditPoints, ResizeToCell — verified live: right-click on the img.vector-object[data-kind=chart] fixture shows exactly those, EditObject stays hidden because isEditableObject() requires div.object, Distribute* stay hidden at <2 objects, FrameSettings/EquationSettings explicitly exclude img.vector-object[data-kind=chart]). The chartElement toggles the census points at live only in the chart-design ribbon rb-menu (hidden ul.menu-list, unreachable by the runner's hit-test — see chart-tab2.json $skipped) and the ctx pre cannot reach them. Empirical probe (right-click fixture chart): visible ctx items = Cut/Copy/Paste/lists/Undo/Redo/Bold/Italic/... + WrapInline/Square/Tight/Behind/Front/Through + EditWrapBoundary + ConvertToShape + EditPoints + ResizeToCell + UpdateField/UpdateTOC/... ; chart-design ribbon tab stays hidden (activation listens on editor 'click', a right-click never fires it).",
+  "entries": {},
+  "$skipped": [
+    {
+      "row": "ctx.axis-titles",
+      "reason": "no ctx item (ribbon-only row): WO's #ctx-menu has no Axis Titles row; the census WO binding is the chart-design 'Chart elements' rb-menu item (data-cmd=chartElement data-value=axisTitles) which sits in a hidden ul.menu-list — unreachable by the runner's single-click hit-test (same verdict as chart.axis-titles in chart-tab2.json); the ctx-menu-on-chart pre cannot reach it either"
+    },
+    {
+      "row": "ctx.data-labels",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement dataLabels rb-menu item on the chart-design tab; no data-ctx row exists"
+    },
+    {
+      "row": "ctx.legend",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement legend rb-menu item; no data-ctx row exists"
+    },
+    {
+      "row": "ctx.trendline",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement trendline rb-menu item; additionally CHART_ELEMENT_SUPPORT gates trendline off bar charts, so even the ribbon path would only setStatus on the fixture bar chart"
+    },
+    {
+      "row": "ctx.error-bars",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement errorBars rb-menu item; no data-ctx row exists"
+    },
+    {
+      "row": "ctx.up-down-bars",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement upDownBars rb-menu item; CHART_ELEMENT_SUPPORT limits upDownBars to line charts — the fixture bar chart would only setStatus"
+    },
+    {
+      "row": "ctx.gridlines",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement gridlines rb-menu item; the ungated #btn-gridlines view-tab toggle is the document gridlines row (already contracted by the view wave) and must not be hijacked for the chart element"
+    },
+    {
+      "row": "ctx.chart-title",
+      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement title rb-menu item on the chart-design tab; no data-ctx row exists"
+    },
+    {
+      "row": "ctx.chart.datatable",
+      "reason": "no ctx item (ribbon-only row): the dataTable toggle (chartElement dataTable, re-renders chartSVG with the data table) exists only as a hidden chart-design rb-menu item; no data-ctx row exists"
+    },
+    {
+      "row": "ctx.edit-data",
+      "reason": "no ctx item (ribbon-only row): the WO surface per census is the chart-design tab's chartEditData button -> openVectorEditor(\"chart\") #chart-dialog, already contracted PASSING as chart.edit-data (pilot3.json) and charteditdata (chart-tab2.json). The ctx candidates are all dead ends (verified live): EditObject is hidden for imgs (isEditableObject requires div.object), FrameSettings/EquationSettings exclude img.vector-object[data-kind=chart] (setStatus 'No object selected'), and the dblclick re-open path is not expressible with the runner's single synthetic click"
+    },
+    {
+      "row": "ctx.update-field",
+      "reason": "ctx item exists ([data-ctx=UpdateField], ungated — visible on-chart too), but the row is already owned by ctx-fieldlink.json (same key, which also wins the merge: it sorts after this file); fieldOpAtSelection(\"update\") only dispatches the fire-and-forget wo:field-op CustomEvent (editor.js:3057-3066) and the runner's op-emitted observer is a stub returning ok:false — nothing assertable, xfail there"
+    }
+  ]
+}
