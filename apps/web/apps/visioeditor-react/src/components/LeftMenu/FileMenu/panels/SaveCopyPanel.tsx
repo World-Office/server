@@ -1,6 +1,6 @@
+import { Button, Input, makeStyles, tokens } from "@fluentui/react-components";
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Button, Input, makeStyles, tokens } from "@fluentui/react-components";
 import { useTranslation } from "react-i18next";
 import { visioStore } from "../../../../stores/VisioStore";
 
@@ -132,7 +132,11 @@ export function SaveCopyPanel({ visible }: { visible: boolean }) {
 					{t("Destination")}: {t("Downloads")}
 				</div>
 				<div className={styles.footer}>
-					<Button appearance="primary" disabled={!canSave} onClick={handleSaveCopy}>
+					<Button
+						appearance="primary"
+						disabled={!canSave}
+						onClick={handleSaveCopy}
+					>
 						{t("Save Copy")}
 					</Button>
 					<Button appearance="secondary" onClick={handleClose}>

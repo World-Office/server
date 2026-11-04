@@ -3,11 +3,11 @@
 //! This module extends wo-formula's evaluation to support defined names
 //! (named ranges) with cross-sheet references and proper OO reference semantics.
 
-use crate::model::{DefinedName, Sheet as WoSheet, Workbook};
+use crate::model::{Sheet as WoSheet, Workbook};
 use wo_formula::ast::{
     CellErr, CellRef, CellRefCoord, CellValue, Expr, FormulaError, RangeRef, RefStyle,
 };
-use wo_formula::eval::{Sheet as FormulaSheet, eval as base_eval};
+use wo_formula::eval::Sheet as FormulaSheet;
 use wo_formula::parser::parse as parse_formula;
 
 /// Parse a reference string (e.g., "Sheet1!A1", "$A$1:$B$2", "A:A", "1:1") into an Expr.
@@ -116,7 +116,7 @@ fn parse_single_reference(sheet: Option<&str>, refs: &str) -> Result<Expr, Formu
             row_dollar = true;
             chars.next();
         } else if c.is_ascii_digit() {
-            row_num = row_num * 10 + ((*c as u8) as u32 - ('0' as u8 as u32));
+            row_num = row_num * 10 + ((*c as u8) as u32 - (b'0' as u32));
             row_started = true;
             chars.next();
         } else {
@@ -163,7 +163,7 @@ pub fn a1_to_col(s: &str) -> Result<u32, FormulaError> {
                 s
             )));
         }
-        col = col * 26 + ((c as u8) as u32 - ('A' as u8 as u32) + 1);
+        col = col * 26 + ((c as u8) as u32 - (b'A' as u32) + 1);
     }
     Ok(col - 1)
 }
@@ -185,12 +185,11 @@ pub fn resolve_named_range(wb: &Workbook, name: &str, current_sheet: Option<&str
     // If we have a current sheet, try to find a sheet-scoped name
     if let Some(current_sheet) = current_sheet {
         for defined_name in &wb.defined_names {
-            if defined_name.name == name {
-                if let Some(scope) = &defined_name.scope {
-                    if scope == current_sheet {
-                        return parse_reference_string(&defined_name.refs).ok();
-                    }
-                }
+            if defined_name.name == name
+                && let Some(scope) = &defined_name.scope
+                && scope == current_sheet
+            {
+                return parse_reference_string(&defined_name.refs).ok();
             }
         }
     }
@@ -234,10 +233,10 @@ impl<'a> WorkbookEvalContext<'a> {
 
 impl<'a> FormulaSheet for WorkbookEvalContext<'a> {
     fn cell(&self, row: u32, col: u32) -> Option<&CellValue> {
-        if let Some(sheet) = self.current_sheet() {
-            if let Some(cell) = sheet.get_cell(row, col) {
-                return Some(&cell.value);
-            }
+        if let Some(sheet) = self.current_sheet()
+            && let Some(cell) = sheet.get_cell(row, col)
+        {
+            return Some(&cell.value);
         }
         for sheet in &self.wb.sheets {
             if let Some(cell) = sheet.get_cell(row, col) {
@@ -331,7 +330,7 @@ pub fn eval_with_context(
                 Err(FormulaError::RefError)
             }
         }
-        Expr::NamedRange(name) => {
+        Expr::NamedRange(_name) => {
             // This should have been resolved before we get here
             Err(FormulaError::NameError)
         }
@@ -413,13 +412,13 @@ pub fn eval_with_context(
             }
         }
 
-        Expr::Func { name, args } => {
+        Expr::Func { name: _, args } => {
             // For functions, we need to evaluate each argument with our custom evaluator
             // and then call the function. But the functions in wo-formula require &impl Sheet.
             // Since WorkbookEvalContext implements FormulaSheet, we can use base_eval directly.
             // However, we need to make sure sheet-qualified references in args are handled.
             // We'll evaluate args using our custom evaluator first.
-            let evaluated_args: Vec<CellValue> = args
+            let _evaluated_args: Vec<CellValue> = args
                 .iter()
                 .map(|arg| eval_with_context(arg, ctx))
                 .collect::<Result<Vec<_>, _>>()?;
@@ -463,18 +462,18 @@ fn resolve_named_ranges_in_expr(
             }
         }
         Expr::CellRef(cell_ref) => {
-            if let Some(sheet_name) = &cell_ref.sheet {
-                if get_sheet_by_name(wb, sheet_name).is_none() {
-                    return Err(FormulaError::RefError);
-                }
+            if let Some(sheet_name) = &cell_ref.sheet
+                && get_sheet_by_name(wb, sheet_name).is_none()
+            {
+                return Err(FormulaError::RefError);
             }
             Ok(Expr::CellRef(cell_ref.clone()))
         }
         Expr::RangeRef(range_ref) => {
-            if let Some(sheet_name) = &range_ref.sheet {
-                if get_sheet_by_name(wb, sheet_name).is_none() {
-                    return Err(FormulaError::RefError);
-                }
+            if let Some(sheet_name) = &range_ref.sheet
+                && get_sheet_by_name(wb, sheet_name).is_none()
+            {
+                return Err(FormulaError::RefError);
             }
             let start = resolve_named_ranges_in_expr(
                 &Expr::CellRef(range_ref.start.clone()),

@@ -251,20 +251,20 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle])
             sheet.set_cell(row_idx, col_idx, wo_cell);
 
             // Process merge ranges (from col_span and row_span)
-            if let (Some(col_span), Some(row_span)) = (cell.col_span, cell.row_span) {
-                if col_span > 1 || row_span > 1 {
-                    let start_row = if cell.row > 0 { cell.row - 1 } else { 0 };
-                    let start_col = cell.column;
-                    let end_row = start_row + row_span - 1;
-                    let end_col = start_col + col_span - 1;
+            if let (Some(col_span), Some(row_span)) = (cell.col_span, cell.row_span)
+                && (col_span > 1 || row_span > 1)
+            {
+                let start_row = if cell.row > 0 { cell.row - 1 } else { 0 };
+                let start_col = cell.column;
+                let end_row = start_row + row_span - 1;
+                let end_col = start_col + col_span - 1;
 
-                    let merge_key = (start_row, start_col, end_row, end_col);
-                    if !processed_merges.contains(&merge_key) {
-                        processed_merges.insert(merge_key);
-                        sheet
-                            .merges
-                            .push(MergeRange::new(start_row, start_col, end_row, end_col));
-                    }
+                let merge_key = (start_row, start_col, end_row, end_col);
+                if !processed_merges.contains(&merge_key) {
+                    processed_merges.insert(merge_key);
+                    sheet
+                        .merges
+                        .push(MergeRange::new(start_row, start_col, end_row, end_col));
                 }
             }
         }
@@ -593,7 +593,7 @@ fn convert_sheet_to_rows_with_styles(
     }
 
     // Sort rows by row_num
-    rows.sort_by(|a, b| a.row_num.cmp(&b.row_num));
+    rows.sort_by_key(|a| a.row_num);
     rows
 }
 
@@ -861,7 +861,7 @@ mod tests {
         let mut sheet = Sheet::new("Formulas");
 
         // Parse a simple formula
-        let formula = parse("=1+1").unwrap_or_else(|_| Expr::Num(2.0));
+        let formula = parse("=1+1").unwrap_or(Expr::Num(2.0));
         sheet.cells.insert(
             (0, 0),
             Cell::with_formula("=1+1", formula, wo_formula::ast::CellValue::Num(2.0)),
@@ -904,7 +904,7 @@ mod tests {
         sheet1.cells.insert((0, 1), Cell::with_num(123.45));
 
         // Add a formula cell
-        let formula = parse("=A1+B1").unwrap_or_else(|_| Expr::Num(0.0));
+        let formula = parse("=A1+B1").unwrap_or(Expr::Num(0.0));
         sheet1.cells.insert(
             (0, 2),
             Cell::with_formula("=A1+B1", formula, wo_formula::ast::CellValue::Num(0.0)),
@@ -1115,7 +1115,7 @@ mod tests {
     // F-210: cell styles -> table-cell automatic styles
     #[test]
     fn test_export_cell_bold_f210() -> Result<()> {
-        use crate::model::{Cell, CellStyle, Sheet};
+        use crate::model::{Cell, Sheet};
         use std::io::Read;
 
         let mut wb = Workbook::new();
@@ -1169,7 +1169,7 @@ mod tests {
     // F-210: italic cell -> its own style element
     #[test]
     fn test_export_cell_italic_f210() -> Result<()> {
-        use crate::model::{Cell, CellStyle, Sheet};
+        use crate::model::{Cell, Sheet};
         use std::io::Read;
 
         let mut wb = Workbook::new();
@@ -1201,7 +1201,7 @@ mod tests {
     // F-210: font-size cell -> its own style element
     #[test]
     fn test_export_cell_font_size_f210() -> Result<()> {
-        use crate::model::{Cell, CellStyle, Sheet};
+        use crate::model::{Cell, Sheet};
         use std::io::Read;
 
         let mut wb = Workbook::new();
@@ -1234,7 +1234,7 @@ mod tests {
     // reserved default ref for plain Number cells, styled cells use ce2+
     #[test]
     fn test_export_cell_style_no_bleed_f210() -> Result<()> {
-        use crate::model::{Cell, CellStyle, Sheet};
+        use crate::model::{Cell, Sheet};
         use std::io::Read;
 
         let mut wb = Workbook::new();
@@ -1243,7 +1243,7 @@ mod tests {
         bold_cell.style.bold = Some(true);
         sheet.set_cell(0, 0, bold_cell);
         // plain NUMBER cell (hits the hardcoded ce1 style ref path)
-        let mut num_cell = Cell::with_num(42.0);
+        let num_cell = Cell::with_num(42.0);
         sheet.set_cell(0, 1, num_cell);
         wb.add_sheet(sheet);
 
@@ -1315,8 +1315,10 @@ mod tests {
         let mut sheet = Sheet::new("DedupeCells");
 
         // Create two cells with identical bold style
-        let mut bold_style = CellStyle::default();
-        bold_style.bold = Some(true);
+        let bold_style = CellStyle {
+            bold: Some(true),
+            ..Default::default()
+        };
 
         let mut bold_cell1 = Cell::with_text("Bold1");
         bold_cell1.style = bold_style.clone();
@@ -1765,7 +1767,6 @@ mod tests {
     #[test]
     fn test_from_ods_roundtrip_row_heights_f210() -> Result<()> {
         use crate::model::{Cell, Sheet};
-        use std::io::Read;
 
         let mut wb = Workbook::new();
         let mut sheet = Sheet::new("RT");

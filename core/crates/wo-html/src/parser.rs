@@ -714,64 +714,64 @@ impl HtmlParser {
         match tag {
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                 let level: u8 = tag[1..].parse().unwrap_or(1);
-                return vec![BlockElement::Heading {
+                vec![BlockElement::Heading {
                     level,
-                    content: self.parse_inline_elements(&ch),
+                    content: self.parse_inline_elements(ch),
                     id,
-                }];
+                }]
             }
             "p" => {
-                return vec![BlockElement::Paragraph {
-                    content: self.parse_inline_elements(&ch),
+                vec![BlockElement::Paragraph {
+                    content: self.parse_inline_elements(ch),
                     id,
-                    dir: block_direction(&ch),
-                    align: block_align(&ch),
-                    background: block_background(&ch),
-                    borders: block_borders(&ch),
-                    writing_mode: block_writing_mode(&ch),
-                }];
+                    dir: block_direction(ch),
+                    align: block_align(ch),
+                    background: block_background(ch),
+                    borders: block_borders(ch),
+                    writing_mode: block_writing_mode(ch),
+                }]
             }
             "div" => {
-                return vec![BlockElement::Div {
-                    elements: self.parse_block_elements(&ch),
+                vec![BlockElement::Div {
+                    elements: self.parse_block_elements(ch),
                     id,
-                    class: attr(&ch, "class"),
-                }];
+                    class: attr(ch, "class"),
+                }]
             }
             "ul" => {
-                return vec![BlockElement::UnorderedList {
-                    items: self.parse_list_items(&ch),
+                vec![BlockElement::UnorderedList {
+                    items: self.parse_list_items(ch),
                     id,
-                    style: list_style_attr(&ch),
-                }];
+                    style: list_style_attr(ch),
+                }]
             }
             "ol" => {
-                let start = attr(&ch, "start").and_then(|s| s.parse().ok());
-                return vec![BlockElement::OrderedList {
-                    items: self.parse_list_items(&ch),
+                let start = attr(ch, "start").and_then(|s| s.parse().ok());
+                vec![BlockElement::OrderedList {
+                    items: self.parse_list_items(ch),
                     id,
                     start,
-                    style: list_style_attr(&ch),
-                }];
+                    style: list_style_attr(ch),
+                }]
             }
             "table" => {
-                return vec![BlockElement::Table {
-                    rows: self.parse_table(&ch),
+                vec![BlockElement::Table {
+                    rows: self.parse_table(ch),
                     id,
-                }];
+                }]
             }
             "blockquote" => {
-                return vec![BlockElement::Blockquote {
-                    elements: self.parse_block_elements(&ch),
+                vec![BlockElement::Blockquote {
+                    elements: self.parse_block_elements(ch),
                     id,
-                }];
+                }]
             }
             "pre" => {
-                let content = node_text(&ch);
-                return vec![BlockElement::Pre { content, id }];
+                let content = node_text(ch);
+                vec![BlockElement::Pre { content, id }]
             }
             "hr" => {
-                return vec![BlockElement::HorizontalRule];
+                vec![BlockElement::HorizontalRule]
             }
             "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" => {
                 // BUG9-CONVERTER-CONTRACT: for semantic containers (nav/
@@ -784,16 +784,16 @@ impl HtmlParser {
                 let class = if matches!(tag, "header" | "footer") {
                     Some(tag.to_string())
                 } else {
-                    match attr(&ch, "class") {
+                    match attr(ch, "class") {
                         Some(user) => Some(format!("{tag} {user}")),
                         None => Some(tag.to_string()),
                     }
                 };
-                return vec![BlockElement::Div {
-                    elements: self.parse_block_elements(&ch),
+                vec![BlockElement::Div {
+                    elements: self.parse_block_elements(ch),
                     id,
                     class,
-                }];
+                }]
             }
             _ => {
                 // A bare body-level page-number span (the editor's flat
@@ -805,17 +805,13 @@ impl HtmlParser {
                 // so parse the span node itself (as the <p> hoist does).
                 if ch.is_element()
                     && ch.tag_name().name() == "span"
-                    && attr(&ch, "class")
+                    && attr(ch, "class")
                         .map(|c| c.split_whitespace().any(|t| t == "page-number"))
                         .unwrap_or(false)
                 {
-                    return vec![self.block_paragraph(
-                        self.parse_inline_nodes(&[ch.clone()]),
-                        id,
-                        ch,
-                    )];
+                    return vec![self.block_paragraph(self.parse_inline_nodes(&[*ch]), id, ch)];
                 }
-                let text = node_text(&ch);
+                let text = node_text(ch);
                 if !text.is_empty() {
                     return vec![BlockElement::RawHtml {
                         tag: tag.to_string(),
@@ -849,7 +845,7 @@ impl HtmlParser {
     fn parse_inline_nodes(&self, nodes: &[roxmltree::Node]) -> Vec<InlineElement> {
         let mut elements = Vec::new();
 
-        for ch in nodes.iter().copied() {
+        for ch in nodes {
             if ch.is_text() {
                 if let Some(text) = ch.text() {
                     if !text.is_empty() {
@@ -870,11 +866,11 @@ impl HtmlParser {
 
             match tag {
                 "strong" | "b" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Bold { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Bold {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -883,11 +879,11 @@ impl HtmlParser {
                     }
                 }
                 "em" | "i" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Italic { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Italic {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -896,11 +892,11 @@ impl HtmlParser {
                     }
                 }
                 "u" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Underline { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Underline {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -909,11 +905,11 @@ impl HtmlParser {
                     }
                 }
                 "s" | "del" | "strike" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Strikethrough { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Strikethrough {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -922,11 +918,11 @@ impl HtmlParser {
                     }
                 }
                 "sub" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Subscript { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Subscript {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -935,11 +931,11 @@ impl HtmlParser {
                     }
                 }
                 "sup" => {
-                    let content = self.parse_inline_elements(&ch);
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Superscript { content });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Superscript {
                                 content: vec![InlineElement::Text { text, style: None }],
@@ -948,13 +944,13 @@ impl HtmlParser {
                     }
                 }
                 "code" => {
-                    let text = node_text(&ch);
+                    let text = node_text(ch);
                     elements.push(InlineElement::Code { content: text });
                 }
                 "a" => {
-                    let href = attr(&ch, "href").unwrap_or_default();
-                    let title = attr(&ch, "title");
-                    let content = self.parse_inline_elements(&ch);
+                    let href = attr(ch, "href").unwrap_or_default();
+                    let title = attr(ch, "title");
+                    let content = self.parse_inline_elements(ch);
                     if !content.is_empty() {
                         elements.push(InlineElement::Link {
                             href,
@@ -962,7 +958,7 @@ impl HtmlParser {
                             content,
                         });
                     } else {
-                        let text = direct_text(&ch);
+                        let text = direct_text(ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Link {
                                 href,
@@ -973,11 +969,11 @@ impl HtmlParser {
                     }
                 }
                 "img" => {
-                    let src = attr(&ch, "src").unwrap_or_default();
-                    let alt = attr(&ch, "alt");
-                    let title = attr(&ch, "title");
-                    let width = attr(&ch, "width").and_then(|w| w.parse().ok());
-                    let height = attr(&ch, "height").and_then(|h| h.parse().ok());
+                    let src = attr(ch, "src").unwrap_or_default();
+                    let alt = attr(ch, "alt");
+                    let title = attr(ch, "title");
+                    let width = attr(ch, "width").and_then(|w| w.parse().ok());
+                    let height = attr(ch, "height").and_then(|h| h.parse().ok());
                     elements.push(InlineElement::Image {
                         src,
                         alt,
@@ -989,7 +985,7 @@ impl HtmlParser {
                 "span" => {
                     // page-break marker (see html_to_xml_compatible): round-
                     // trips the \u{c} run the docx -> html emitter produced.
-                    if attr(&ch, "class").as_deref() == Some("wo-pagebreak") {
+                    if attr(ch, "class").as_deref() == Some("wo-pagebreak") {
                         elements.push(InlineElement::Text {
                             text: "\u{c}".to_string(),
                             style: None,
@@ -1001,26 +997,26 @@ impl HtmlParser {
                     // the whole contract. data-field carries the instr when
                     // present (docx->html round-trip); body placeholders
                     // default to PAGE.
-                    if attr(&ch, "class")
+                    if attr(ch, "class")
                         .map(|c| c.split_whitespace().any(|t| t == "page-number"))
                         .unwrap_or(false)
                     {
                         elements.push(InlineElement::Field {
-                            instr: attr(&ch, "data-field").unwrap_or_else(|| "PAGE".to_string()),
+                            instr: attr(ch, "data-field").unwrap_or_else(|| "PAGE".to_string()),
                         });
                         continue;
                     }
                     // F-102: comment thread anchor (editor dialect span.comment)
-                    if attr(&ch, "class").as_deref() == Some("comment") {
-                        let replies = attr(&ch, "data-replies")
+                    if attr(ch, "class").as_deref() == Some("comment") {
+                        let replies = attr(ch, "data-replies")
                             .and_then(|raw| serde_json::from_str::<Vec<CommentReply>>(&raw).ok())
                             .unwrap_or_default();
                         elements.push(InlineElement::Comment {
-                            content: self.parse_inline_elements(&ch),
-                            author: attr(&ch, "data-author").unwrap_or_default(),
-                            comment: attr(&ch, "data-comment").unwrap_or_default(),
-                            id: attr(&ch, "data-id"),
-                            resolved: attr(&ch, "data-resolved").as_deref() == Some("1"),
+                            content: self.parse_inline_elements(ch),
+                            author: attr(ch, "data-author").unwrap_or_default(),
+                            comment: attr(ch, "data-comment").unwrap_or_default(),
+                            id: attr(ch, "data-id"),
+                            resolved: attr(ch, "data-resolved").as_deref() == Some("1"),
                             replies,
                         });
                         continue;
@@ -1028,16 +1024,16 @@ impl HtmlParser {
                     // RES1: content control (editor dialect span.content-control);
                     // data-cc + title are the conversion channels,
                     // contenteditable is editor-only state.
-                    if attr(&ch, "class").as_deref() == Some("content-control") {
+                    if attr(ch, "class").as_deref() == Some("content-control") {
                         elements.push(InlineElement::ContentControl {
-                            cc_type: attr(&ch, "data-cc").unwrap_or_default(),
-                            title: attr(&ch, "title"),
-                            content: self.parse_inline_elements(&ch),
+                            cc_type: attr(ch, "data-cc").unwrap_or_default(),
+                            title: attr(ch, "title"),
+                            content: self.parse_inline_elements(ch),
                         });
                         continue;
                     }
-                    let text = direct_text(&ch);
-                    let style = attr(&ch, "style");
+                    let text = direct_text(ch);
+                    let style = attr(ch, "style");
                     if !text.is_empty() {
                         elements.push(InlineElement::Text { text, style });
                     }
@@ -1046,7 +1042,7 @@ impl HtmlParser {
                     elements.push(InlineElement::LineBreak);
                 }
                 _ => {
-                    let text = direct_text(&ch);
+                    let text = direct_text(ch);
                     if !text.is_empty() {
                         elements.push(InlineElement::Text { text, style: None });
                     }

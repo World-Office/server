@@ -153,10 +153,10 @@ impl SheetProtection {
     /// Check if a user (with their groups) is exempt from protection.
     pub fn is_exempt_for(&self, user: Option<&str>, groups: &[&str]) -> bool {
         // Check user exemption
-        if let Some(u) = user {
-            if self.exempt_users.contains(&u.to_string()) {
-                return true;
-            }
+        if let Some(u) = user
+            && self.exempt_users.contains(&u.to_string())
+        {
+            return true;
         }
         // Check group exemption
         groups
@@ -513,10 +513,8 @@ pub fn unprotect_sheet(sheet: &mut Sheet, password: &str) -> Result<(), String> 
         return Ok(());
     }
 
-    if sheet.protection.has_password() {
-        if !sheet.protection.verify_password(password) {
-            return Err("wrong password".to_string());
-        }
+    if sheet.protection.has_password() && !sheet.protection.verify_password(password) {
+        return Err("wrong password".to_string());
     }
 
     // Successful unprotect: disable protection and clear password

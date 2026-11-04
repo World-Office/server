@@ -456,7 +456,7 @@ impl HtmlSerializer {
                         let json = serde_json::to_string(replies).unwrap_or_default();
                         out.push_str(&format!(" data-replies=\"{}\"", escape_attr(&json)));
                     }
-                    out.push_str(">");
+                    out.push('>');
                     out.push_str(&self.serialize_inline(content));
                     out.push_str("</span>");
                 }

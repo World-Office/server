@@ -661,7 +661,7 @@ fn is_op_allowed_for_user(
 /// # Returns
 /// * `Ok(())` if the operation was applied successfully
 /// * `Err(SheetOpError::Protected)` if the operation would modify protected cells
-/// // F-146
+// F-146
 pub fn apply_to_sheet_protected(
     sheet: &mut Sheet,
     workbook_edit_ranges: &[EditRange],
@@ -689,10 +689,10 @@ pub fn apply_to_sheet_protected_for_user(
     user: Option<&str>,
     groups: &[&str],
 ) -> SheetOpResult<()> {
-    if let Some(region) = op_touched_region(op) {
-        if !is_op_allowed_for_user(sheet, workbook_edit_ranges, &region, user, groups) {
-            return Err(SheetOpError::Protected);
-        }
+    if let Some(region) = op_touched_region(op)
+        && !is_op_allowed_for_user(sheet, workbook_edit_ranges, &region, user, groups)
+    {
+        return Err(SheetOpError::Protected);
     }
     apply_to_sheet(sheet, op)
 }
@@ -720,7 +720,7 @@ pub fn apply_to_workbook_protected(
         .sheets
         .iter_mut()
         .find(|s| s.name == target_sheet_name)
-        .ok_or_else(|| SheetOpError::SheetNotFound {
+        .ok_or(SheetOpError::SheetNotFound {
             name: target_sheet_name,
         })?;
 
@@ -747,7 +747,7 @@ pub fn apply_to_workbook_protected_for_user(
         .sheets
         .iter_mut()
         .find(|s| s.name == target_sheet_name)
-        .ok_or_else(|| SheetOpError::SheetNotFound {
+        .ok_or(SheetOpError::SheetNotFound {
             name: target_sheet_name,
         })?;
     apply_to_sheet_protected_for_user(sheet, &wb.edit_ranges, op, user, groups)
@@ -1758,7 +1758,7 @@ mod tests {
     #[test]
     fn test_protection_disabled_ops_through() {
         // F-146
-        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        use super::super::model::{Sheet, SheetProtection};
 
         let mut sheet = Sheet::new("UnprotectedSheet");
         sheet.protection = SheetProtection::disabled();
@@ -2069,7 +2069,7 @@ mod tests {
     // Test F-146: user-aware protection — protection disabled allows all
     #[test]
     fn test_apply_to_sheet_protected_for_user_disabled() {
-        use super::super::model::{EditRange, Range2d, Sheet};
+        use super::super::model::{EditRange, Sheet};
 
         let mut sheet = Sheet::new("Sheet");
         // protection disabled by default

@@ -186,7 +186,7 @@ fn c2_2_list_indent_roundtrip() {
     assert!(
         xml.contains(r#"<w:ind w:left="1125""#),
         "w:ind left missing (75px -> 1125 twips): {}",
-        &xml[xml.find("<w:ind").unwrap_or(xml.len().saturating_sub(200))..]
+        xml[xml.find("<w:ind").unwrap_or(xml.len().saturating_sub(200))..]
             .chars()
             .take(200)
             .collect::<String>()

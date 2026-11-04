@@ -2,8 +2,8 @@
 // File-menu store surface (rename / save copy / go to documents) — the
 // download path clicks an anchor, so it needs a DOM.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeVisioMode } from "./fixtures";
 import { VisioStore } from "../stores/VisioStore";
+import { makeVisioMode } from "./fixtures";
 
 // Mock wopi-client to avoid network calls during tests
 vi.mock("@world-office/wopi-client", () => ({

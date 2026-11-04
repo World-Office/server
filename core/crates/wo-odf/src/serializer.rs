@@ -707,7 +707,7 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
 
     // Emit column definitions with widths if present
     if let Some(ref col_widths) = sheet.col_widths {
-        for (col_idx, _width) in col_widths {
+        for col_idx in col_widths.keys() {
             let style_name = format!("co{}", col_idx);
             writeln!(
                 xml,

@@ -461,6 +461,9 @@ pub struct SectionProperties {
 /// A block in the document body - either a paragraph or a table.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+// ponytail: 784B-vs-480B variant spread acceptable for a document AST;
+// Box the big variants if enum size shows up in allocations profiles
+#[allow(clippy::large_enum_variant)]
 pub enum DocxBlock {
     /// A paragraph block
     Paragraph(DocxParagraph),

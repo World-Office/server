@@ -3,7 +3,7 @@
 // paints, Back closes the menu, the formerly dead entries open a pane and the
 // ExportWizard dialog really dismisses.
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { type Root, createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FileMenu } from "../components/LeftMenu/FileMenu/FileMenu";
 import { visioStore } from "../stores/VisioStore";
@@ -14,8 +14,9 @@ vi.mock("react-i18next", () => ({
 }));
 
 // React 19: act() needs this flag outside of react-testing-library
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-	true;
+(
+	globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 function click(el: Element): void {
 	act(() => {

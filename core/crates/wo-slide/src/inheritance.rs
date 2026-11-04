@@ -9,9 +9,7 @@
 //!
 //! Tests tagged with // F-301
 
-use crate::model::{
-    Bounds, Fill, Presentation, Shape, Slide, SlideBackground, SlideLayout, SlideMaster,
-};
+use crate::model::{Presentation, Shape, Slide, SlideBackground, SlideLayout, SlideMaster};
 
 /// Resolved inheritance information for a slide.
 /// This is a read-only projection that does not mutate the original structs.
@@ -197,9 +195,10 @@ pub fn get_master<'a>(slide: &Slide, presentation: &'a Presentation) -> Option<&
     None
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{PlaceholderShape, SlideLayout, SlideMaster, TextBody};
+    use crate::model::{Bounds, PlaceholderShape, SlideLayout, SlideMaster};
 
     // Helper to create test fixtures
     fn create_test_presentation() -> Presentation {
@@ -391,7 +390,7 @@ mod tests {
 
         // The layout's placeholder shape (title_ph) should be inherited since slide has different id
         assert!(
-            resolved.inherited_shapes.len() > 0,
+            !resolved.inherited_shapes.is_empty(),
             "Should still inherit layout shapes with different ids"
         );
     }

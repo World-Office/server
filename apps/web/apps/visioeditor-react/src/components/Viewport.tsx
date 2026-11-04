@@ -103,6 +103,6 @@ const ViewportInner = function Viewport({
 			</div>
 		</div>
 	);
-}
+};
 
 export const Viewport = observer(ViewportInner);

@@ -36,6 +36,9 @@ pub struct HtmlBody {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+// ponytail: 784B-vs-480B variant spread acceptable for a document AST;
+// Box the big variants if enum size shows up in allocations profiles
+#[allow(clippy::large_enum_variant)]
 pub enum BlockElement {
     Heading {
         level: u8,

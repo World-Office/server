@@ -144,7 +144,7 @@ pub enum CellType {
 }
 
 /// A spreadsheet sheet.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SpreadsheetSheet {
     pub name: String,
     pub rows: Vec<SpreadsheetRow>,
@@ -155,18 +155,6 @@ pub struct SpreadsheetSheet {
     /// Row heights (row index -> height in points)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub row_heights: Option<BTreeMap<u32, f32>>,
-}
-
-impl Default for SpreadsheetSheet {
-    fn default() -> Self {
-        SpreadsheetSheet {
-            name: String::new(),
-            rows: Vec::new(),
-            max_column: 0,
-            col_widths: None,
-            row_heights: None,
-        }
-    }
 }
 
 /// A spreadsheet row.

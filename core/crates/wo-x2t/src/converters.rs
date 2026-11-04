@@ -2925,7 +2925,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             media,
             image_rels,
             hyperlink_rels: Vec::new(),
-            comments: comments,
+            comments,
             comment_anchors: Vec::new(),
             footnotes_raw: None,
         }),
@@ -3029,15 +3029,15 @@ fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
 /// font-size (pt/px), color (#hex/named), background-color (highlight) and
 /// vertical-align (super/sub). Anything else is ignored — the style string
 /// is never a parser error source.
-fn css_to_run_props(
-    style: &Option<String>,
-) -> (
+/// (font-family, font-size, color, highlight, vertical-align)
+type CssRunProps = (
     Option<String>,
     Option<u32>,
     Option<String>,
     Option<String>,
     Option<VerticalAlignment>,
-) {
+);
+fn css_to_run_props(style: &Option<String>) -> CssRunProps {
     let mut font = None;
     let mut size: Option<u32> = None;
     let mut color = None;
@@ -4194,8 +4194,8 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             // Don't restate the browser/Word default (decimal for ordered,
             // disc for unordered) — canonical output stays style-free.
             let style_type = match (style_type, known_ordered) {
-                (Some(css), Some(true)) if css == "decimal" => None,
-                (Some(css), Some(false)) if css == "disc" => None,
+                (Some("decimal"), Some(true)) => None,
+                (Some("disc"), Some(false)) => None,
                 (Some(css), _) => Some(css),
                 (None, _) => None,
             };
@@ -19713,7 +19713,6 @@ mod bridge_converter_tests {
     /// F-200/206/207: non-core XLSX parts (charts, pivot tables, media) must
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
     // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
-    #[test]
     /// F-204: XLSX cell address (r=A1) and type (n/s/str/b/e/d) must survive
     /// the Xlsx->WO bridge, and never-set cells must be elided from the output.
     // F-204
@@ -19730,9 +19729,8 @@ mod bridge_converter_tests {
         let a1 = find_cell(&v, "A1");
         assert_eq!(a1["r"].as_str(), Some("A1"), "r address kept");
         assert_eq!(a1["t"].as_str(), Some("s"), "type s kept");
-        assert_eq!(
+        assert!(
             a1["v"].as_str().unwrap().contains("Gott"),
-            true,
             "shared string resolves"
         );
 
@@ -19841,7 +19839,6 @@ mod bridge_converter_tests {
     /// F-200/206/207: non-core XLSX parts (charts, pivot tables, media) must
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
     // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
-    #[test]
     /// F-301: PPTX write path passes layout_id through (sldLayoutId in output).
     // F-301
     #[test]
@@ -20087,6 +20084,7 @@ mod bridge_converter_tests {
         zip.finish().unwrap().into_inner()
     }
 
+    #[test]
     fn test_xlsx_extra_parts_byte_faithful_roundtrip() {
         use std::io::Write;
         use zip::write::SimpleFileOptions;
