@@ -1,0 +1,132 @@
+{
+  "entries": {
+    "insert.shape": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"insert\"] [data-cmd=\"insertObject\"][data-value=\"shape\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#shape-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "rectangle option",
+          "selector": "[data-shape-type=\"rectangle\"]"
+        },
+        {
+          "name": "circle option",
+          "selector": "[data-shape-type=\"circle\"]"
+        },
+        {
+          "name": "triangle option",
+          "selector": "[data-shape-type=\"triangle\"]"
+        },
+        {
+          "name": "rounded rectangle option",
+          "selector": "[data-shape-type=\"rounded-rectangle\"]"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-shape-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-shape-ok"
+        }
+      ],
+      "note": "ledger row: insert.shape — data-cmd=insertObject (data-value=shape) opens the shape picker #shape-dialog (WO-10-shape); scoped selector because insertobject is shared with chart.chart"
+    },
+    "chart.chart": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"insert\"] [data-cmd=\"insertObject\"][data-value=\"chart\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "type select",
+          "selector": "#object-type"
+        },
+        {
+          "name": "label input",
+          "selector": "#object-label"
+        },
+        {
+          "name": "content textarea",
+          "selector": "#object-content"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-object-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-object-ok"
+        }
+      ],
+      "note": "ledger row: chart.chart — data-cmd=insertObject (data-value=chart) opens the generic object dialog #object-dialog with chart preset (not #chart-dialog); shares token insertobject with insert.shape, hence keyed by feature id"
+    },
+    "btn-smartart": {
+      "effektClass": "dialog",
+      "selector": "#btn-smartart",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#smartart-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "layout select",
+          "selector": "#smartart-type"
+        },
+        {
+          "name": "diagram preview",
+          "selector": "#smartart-preview"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-smartart-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-smartart-ok"
+        }
+      ],
+      "note": "ledger row: insert.smartart — #btn-smartart opens the #smartart-dialog insert-pop"
+    },
+    "btn-textfile": {
+      "effektClass": "dialog",
+      "selector": "#btn-textfile",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#textfromfile-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "file input",
+          "selector": "#textfromfile-input"
+        },
+        {
+          "name": "insert mode select",
+          "selector": "#textfromfile-mode"
+        },
+        {
+          "name": "format select",
+          "selector": "#textfromfile-format"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-textfromfile-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-textfromfile-insert"
+        }
+      ],
+      "note": "ledger row: insert.text-from-file — #btn-textfile opens #textfromfile-dialog"
+    }
+  }
+}
