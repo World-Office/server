@@ -1,0 +1,93 @@
+{
+  "$comment": "L2C-02-HOMEFMT: Home-tab text formatting contracts (computed-style on the first word's element). Ledger rows: formatting.align-*-ctrl-*, formatting.justified-ctrl-j, formatting.underline-ctrl-u, formatting.strikethrough-ctrl-5, formatting.subscript-ctrl, formatting.superscript-ctrl. Explicit selectors are required: the ledger wo.match values are camelCase (justifyLeft/strikeThrough) while tokens are lowercased, and the runner's [data-cmd=<token>] fallback would miss them.",
+  "entries": {
+    "justifyleft": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"justifyLeft\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "start"
+      },
+      "note": "ledger row: formatting.align-left-ctrl-l — on the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write when the block already computes text-align:start (its name for unset/left), so the honest post-click state is start, not a literal left"
+    },
+    "justifycenter": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"justifyCenter\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "center"
+      },
+      "note": "ledger row: formatting.align-center-ctrl-e"
+    },
+    "justifyright": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"justifyRight\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "right"
+      },
+      "note": "ledger row: formatting.align-right-ctrl-r"
+    },
+    "justifyfull": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"justifyFull\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "justify"
+      },
+      "note": "ledger row: formatting.justified-ctrl-j"
+    },
+    "underline": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"underline\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-decoration-line",
+        "equals": "underline"
+      },
+      "note": "ledger row: formatting.underline-ctrl-u — execCommand('underline') wraps the selection in <u>, which the runner's computed-style reader (closest b,i,u,span,p) reaches"
+    },
+    "strikethrough": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"strikeThrough\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-decoration-line",
+        "equals": "line-through"
+      },
+      "note": "ledger row: formatting.strikethrough-ctrl-5 — probe: execCommand('strikeThrough') wraps the selection in <strike>"
+    },
+    "superscript": {
+      "effektClass": "format",
+      "selector": "button.rb[data-cmd=\"superscript\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "vertical-align",
+        "equals": "super"
+      },
+      "note": "ledger row: formatting.superscript-ctrl — probe: execCommand('superscript') wraps the selection in <sup>; scoped selector skips the hidden Script-options menuitem with the same data-cmd"
+    },
+    "subscript": {
+      "effektClass": "format",
+      "selector": "button.rb[data-cmd=\"subscript\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "vertical-align",
+        "equals": "sub"
+      },
+      "note": "ledger row: formatting.subscript-ctrl — probe: execCommand('subscript') wraps the selection in <sub>; scoped selector skips the hidden Script-options menuitem with the same data-cmd (first-match bug)"
+    }
+  }
+}
