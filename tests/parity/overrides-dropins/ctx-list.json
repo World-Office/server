@@ -1,0 +1,73 @@
+{
+  "entries": {
+    "ctx.set-numbering-value": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"SetNumberingValue\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#numbering-value-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "start-at input",
+          "selector": "#numbering-value"
+        },
+        {
+          "name": "ok button",
+          "selector": "#btn-numbering-ok"
+        },
+        {
+          "name": "cancel button",
+          "selector": "#btn-numbering-close"
+        }
+      ],
+      "note": "L2D-03: ctx set-numbering-value — right-click in a list selection, SetNumberingValue opens the numbering-value dialog (openNumberingValueDialog, editor.js currentListItem guard satisfied by the fixture)"
+    },
+    "ctx.adjust-list-indents": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"AdjustListIndents\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#list-indents-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "left indent input",
+          "selector": "#list-indent-left"
+        },
+        {
+          "name": "hanging indent input",
+          "selector": "#list-indent-hanging"
+        },
+        {
+          "name": "ok button",
+          "selector": "#btn-list-indents-ok"
+        }
+      ],
+      "note": "L2D-03: ctx adjust-list-indents — right-click in a list selection, AdjustListIndents opens the list-indents dialog (openListIndentsDialog, left/hanging fields wired to applyListIndents)"
+    },
+    "ctx.start-new-list": {
+      "effektClass": "structure",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"StartNewList\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ul li"
+      },
+      "note": "L2D-03: ctx start-new-list — handler emits insertUnorderedList (toggleList -> native execCommand), which converts the selected ol item(s) into a <ul> inside #editor"
+    },
+    "ctx.continue-numbering": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"ContinueNumbering\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ol:nth-of-type(2)"
+      },
+      "xfail": true,
+      "note": "L2D-03: continueNumbering() merges the caret <ol> into a PRECEDING <ol> sibling; the ctx-menu-in-list fixture builds a single <ol>, so the op is a no-op (Status.NoPreviousList) — pre cannot build the required two-adjacent-lists state"
+    }
+  }
+}
