@@ -176,7 +176,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 2. prerequisites FIRST (a control inside a closed menu is invisible),
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ov.pre === 'file-menu' || ov.pre === 'list' || (ov.pre || '').startsWith('backstage'); // list pre manages its own caret
+      const preMenu = ov.pre === 'file-menu' || ov.pre === 'list' || ov.pre === 'ctx-menu' || ov.pre === 'ctx-menu-in-list' || ov.pre === 'ctx-menu-in-table' || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -196,6 +196,59 @@ async function subFeatureAudit(page, ov, dialogSel) {
         });
         await sleep(100);
       }
+      else if (ov.pre === 'ctx-menu-in-list') {
+        // ctx rows whose handlers need list state (BulletsAndNumbering,
+        // SetNumberingValue…): build the list, select a word inside it, then
+        // right-click inside that selection to open the context menu
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<ol><li>alpha</li><li>beta</li></ol><p>after</p>';
+          const beta = ed.querySelectorAll('li')[1];
+          const range = document.createRange();
+          range.selectNodeContents(beta);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-in-list pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-in-table') {
+        // ctx rows gated on data-showif="table" (merge/split cells, row/column
+        // ops…): build a 2×2 table, select a word inside cell 1, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tr><td>alpha cell</td><td>beta cell</td></tr><tr><td>gamma</td><td>delta</td></tr></table><p>after</p>';
+          const cell = ed.querySelectorAll('td')[0];
+          const range = document.createRange();
+          range.selectNodeContents(cell.firstChild);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-in-table pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       else if ((ov.pre || '').startsWith('backstage:')) {
         // 'backstage:<pane>' — open the File backstage, then switch it to
         // <pane> (rows like [data-pane=info] swap the backstage panel;
@@ -208,7 +261,23 @@ async function subFeatureAudit(page, ov, dialogSel) {
         }, ov.pre.slice('backstage:'.length));
         await sleep(250);
       }
+      else if (ov.pre === 'ctx-menu') {
+        // open the context menu over the selected word (right-click inside
+        // the selection preserves it, so ctx format/op handlers still see it;
+        // data-showif-gated items stay hidden unless their state holds)
+        await placeCaret(page);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       const selector = ov.selector || `[data-cmd="${e.wo}"]`;
+      if (!ov.key) {
       const loc = page.locator(selector).first();
       if (await loc.count() === 0) throw new Error(`control not found: ${selector}`);
       await loc.scrollIntoViewIfNeeded();
@@ -218,6 +287,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
         return el && !!el.closest('button, [role=button], input, select, label');
       }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
       if (!hit) throw new Error('control present but hit-test BLOCKED (elementFromPoint misses a control)');
+      } // end selector presence + hit-test (skipped for key-trigger contracts)
 
       // 3. caret placement (not needed for menu/dialog flows)
       if (!preMenu) {
@@ -230,6 +300,13 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // would collapse it before the command handler runs). One retry for
       // cold-boot races (caret not settled, dialog open animation).
       const trigger = () => {
+        if (ov.key) {
+          // keyboard shortcut contract: dispatch a real key chord (handlers
+          // listen on #editor — placeCaret focuses it and selects word 1)
+          if (!preMenu) placeCaret(page);
+          return page.keyboard.press(ov.key)
+            .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
+        }
         if (!preMenu) placeCaret(page);
         return page.evaluate((sel) => document.querySelector(sel).click(), selector)
           .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);

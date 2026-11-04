@@ -1,0 +1,49 @@
+{
+  "entries": {
+    "ctx.bullets-and-numbering": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"BulletsAndNumbering\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#bullets-numbering-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "style select",
+          "selector": "#bn-style-select"
+        },
+        {
+          "name": "start-at input",
+          "selector": "#bn-start-at"
+        }
+      ],
+      "note": "pilot2: ctx-menu pre vocabulary \u2014 right-click in selection, click BulletsAndNumbering item, bullets/numbering dialog opens"
+    },
+    "shortcut.openfinddialog": {
+      "effektClass": "dialog",
+      "key": "Control+f",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "find input",
+          "selector": "#find-query"
+        }
+      ],
+      "note": "pilot2: key trigger vocabulary \u2014 Ctrl+F opens the find dialog"
+    },
+    "ctx.row-above": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableRowAbove\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor tr:nth-child(3)"
+      },
+      "note": "pilot2: ctx-menu-in-table pre \u2014 TableRowAbove adds a third row to the 2-row fixture"
+    }
+  }
+}
