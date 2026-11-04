@@ -50,7 +50,7 @@ server/
 | wo-pdf | PDF reading/writing |
 | wo-msbinary | OLE compound document parser to JSON |
 | wo-ooxml | OOXML (DOCX/XLSX/PPTX) parser + serializer |
-| wo-x2t | Format conversion orchestrator (27 native converters, chain support) |
+| wo-x2t | Format conversion orchestrator (60 registered converter pairs, chain support) |
 
 ### Rendering and Fonts (3 crates)
 | Crate | Description |
