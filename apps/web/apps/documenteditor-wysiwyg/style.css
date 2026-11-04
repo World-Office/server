@@ -1418,6 +1418,58 @@ main {
   margin-top: 0;
 }
 
+/* PRINT (Ctrl+P / btn-print) — the printed page must match the document's
+   page format. Before this there was no @page rule: the browser printed on
+   its locale default (US Letter 612x792pt), ignoring the A4 document, and
+   held the whole paginated flow on the paper, so a multi-sheet doc printed
+   as ONE squeezed page — the "first page too long" symptom. Fix: pin the
+   paper to A4 (document default) with zero browser margins, and give every
+   .wo-page sheet its own printed page at its own physical size (CSS vars
+   are px → mm at 96dpi, so a marker-set Letter/Legal sheet scales too). */
+@page { size: A4; margin: 0; }
+
+@media print {
+  /* The app shell is a fixed-height, overflow-hidden flex column built for the
+     screen. In print that clips every sheet but the first sliver -> printable
+     pages came out almost blank. Un-clip and un-fix everything so the full
+     flow exists for the printer. */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body { display: block; }
+  main { overflow: visible !important; padding: 0; }
+  /* chrome must not print: ribbon, statusbar, right settings panel, ink
+     canvas, open dialogs/backstage, nav/chat rails, toasts */
+  #toolbar, footer.statusbar, #right-panel, #nav-panel, #chat-panel,
+  #ink-canvas, .dialog-overlay, .backstage-overlay, [class*="toast"] {
+    display: none !important;
+  }
+  body, main, #editor { background: #fff !important; }
+  #editor {
+    display: block;          /* block (not flex): page-break-after on sheets is
+                                honoured; a flex container breaks unreliably */
+    padding: 0;
+    min-height: 0;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .wo-page {
+    /* sheets keep their on-screen px size: at 96dpi the A4 fallback
+       794x1123px already IS A4 (210x297mm), so each sheet lands 1:1 on an
+       A4 page with its own padding as the document margins. The -1px on
+       height keeps 1123px <= the 1122.5px A4 printable height — otherwise
+       the half-pixel overflow spills a phantom blank page per sheet. */
+    height: calc(var(--wo-page-h, 1123px) - 1px);
+    margin: 0 auto;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-after: always;      /* each on-screen sheet = one printed page */
+    page-break-inside: avoid;
+  }
+  .wo-page:last-child { page-break-after: auto; }
+}
+
 #editor:focus { box-shadow: 0 0 0 2px var(--accent); }
 
 /* Ink canvas overlay for Draw tab drawing. Positioned over the editor. */
