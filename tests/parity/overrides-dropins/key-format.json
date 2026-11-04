@@ -1,0 +1,149 @@
+{
+  "$comment": "L2D-05-KEY-FORMAT: keyboard shortcut contracts for character/paragraph formatting (ledger kind=shortcut, feature ids shortcut.*). Every entry is a key-trigger chord (no selector); the runner's placeCaret selects the first word (Chromium focuses the contenteditable on selection placement, so the #editor keydown handler receives the chord). All chords verified in the C1 SHORTCUT PARITY block of editor.js (editor.addEventListener(\"keydown\"), ~line 10965). Assertions mirror the proven click contracts in home-format.json (same emitCommand targets).",
+  "entries": {
+    "shortcut.bold": {
+      "effektClass": "format",
+      "key": "Control+b",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-weight",
+        "equals": "700"
+      },
+      "note": "ledger row: shortcut.bold (Ctrl+B) — emitCommand(\"bold\"), same execCommand path as the proven toolbar click contract 'bold'; <b> wrap -> font-weight 700"
+    },
+    "shortcut.italic": {
+      "effektClass": "format",
+      "key": "Control+i",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-style",
+        "equals": "italic"
+      },
+      "note": "ledger row: shortcut.italic (Ctrl+I) — emitCommand(\"italic\"); <i> wrap -> font-style italic"
+    },
+    "shortcut.underline": {
+      "effektClass": "format",
+      "key": "Control+u",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-decoration-line",
+        "equals": "underline"
+      },
+      "note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader)"
+    },
+    "shortcut.strikeout": {
+      "effektClass": "format",
+      "key": "Control+Shift+x",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-decoration-line",
+        "equals": "line-through"
+      },
+      "note": "ledger row: shortcut.strikeout (Ctrl+Shift+X PC variant; OO Shift+Cmd+X Mac) — emitCommand(\"strikeThrough\"); <strike> wrap read via the reader's || el fallback"
+    },
+    "shortcut.subscript": {
+      "effektClass": "format",
+      "key": "Control+.",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "vertical-align",
+        "equals": "sub"
+      },
+      "note": "ledger row: shortcut.subscript (Ctrl+.) — emitCommand(\"subscript\"); <sub> wrap -> vertical-align sub (same as the proven subscript click contract)"
+    },
+    "shortcut.superscript": {
+      "effektClass": "format",
+      "key": "Control+,",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "vertical-align",
+        "equals": "super"
+      },
+      "note": "ledger row: shortcut.superscript (Ctrl+,) — emitCommand(\"superscript\"); <sup> wrap -> vertical-align super"
+    },
+    "shortcut.centerpara": {
+      "effektClass": "format",
+      "key": "Control+e",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "center"
+      },
+      "note": "ledger row: shortcut.centerpara (Ctrl+E) — emitCommand(\"justifyCenter\"), same command as the proven justifycenter click contract"
+    },
+    "shortcut.justifypara": {
+      "effektClass": "format",
+      "key": "Control+j",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "justify"
+      },
+      "note": "ledger row: shortcut.justifypara (Ctrl+J) — emitCommand(\"justifyFull\")"
+    },
+    "shortcut.rightpara": {
+      "effektClass": "format",
+      "key": "Control+r",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "right"
+      },
+      "note": "ledger row: shortcut.rightpara (Ctrl+R; the keydown preventDefault also suppresses browser reload while focused) — emitCommand(\"justifyRight\")"
+    },
+    "shortcut.leftpara": {
+      "effektClass": "format",
+      "key": "Control+l",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "start"
+      },
+      "note": "ledger row: shortcut.leftpara — ledger + editor.js bind Ctrl+L (Ctrl+Shift+L is the bulleted-list combo, insertUnorderedList). On the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write, so the honest post-chord state is start (same as the justifyleft click contract)"
+    },
+    "shortcut.indent": {
+      "effektClass": "format",
+      "key": "Control+m",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor blockquote"
+      },
+      "note": "ledger row: shortcut.indent (Ctrl+M) — execCommand(\"indent\"); Chromium wraps the block in <blockquote style=\"margin: 0 0 0 40px\"> — the wrapper's existence is the observable effect (the inner block's own margin-left stays 0px)"
+    },
+    "shortcut.increasefontsize": {
+      "effektClass": "format",
+      "key": "Control+]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-size",
+        "equals": "48px"
+      },
+      "note": "ledger row: shortcut.increasefontsize (Ctrl+]) — emitCommand(\"fontSizeInc\") steps the CSS absolute size; probed: default 32px h1 word wrapped in <span style=\"font-size: xxx-large\"> -> computed 48px"
+    },
+    "shortcut.decreasefontsize": {
+      "effektClass": "format",
+      "key": "Control+[",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-size",
+        "equals": "24px"
+      },
+      "note": "ledger row: shortcut.decreasefontsize (Ctrl+[) — emitCommand(\"fontSizeDec\"); probed: default 32px h1 word wrapped in <span style=\"font-size: x-large\"> -> computed 24px"
+    },
+    "shortcut.smallcaps": {
+      "effektClass": "format",
+      "key": "Control+Shift+k",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span[style*=\"font-variant-caps\"]"
+      },
+      "note": "ledger row: shortcut.smallcaps (Ctrl+Shift+K) — emitCommand(\"smallCaps\") -> toggleInlineCSS(\"fontVariant\",\"small-caps\"), which wraps via execCommand(\"insertHTML\") and leaves the caret collapsed — a computed-style read on the selection can never pass, so the contract asserts the wrap span itself (probed: <span style=\"font-variant-caps: small-caps\"> -> computed font-variant small-caps)"
+    }
+  },
+  "$skipped": [
+    {
+      "row": "shortcut.unindent",
+      "reason": "Ctrl+Shift+M is bound (emitCommand(\"outdent\"), native execCommand) but the contract layer has no pre vocabulary that builds indented paragraph state first (file-menu/list/ctx-menu/backstage only), and probed execCommand(\"outdent\") on the runner's unindented fixture is a structural no-op — no post-chord assertion can distinguish the chord firing from not firing, so any assertion would pass vacuously"
+    }
+  ]
+}
