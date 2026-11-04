@@ -1,0 +1,118 @@
+{
+  "$comment": "L2D-04-CTX-TABLE: ctx-menu in-table rows (split/select/cell ops). All entries run with pre ctx-menu-in-table (2x2 table fixture, cell[0] selected, right-click opens #ctx-menu; ctx items live at '#ctx-menu [data-ctx=X]'). ctx.row-above is already contracted in pilot2.json. Deletion ops are asserted via :only-child selectors that only match AFTER the mutation; distribute ops via style attributes only the op writes (fixture cells carry no inline styles).",
+  "entries": {
+    "ctx.several-rows-columns": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "pre": "ctx-menu-in-table",
+      "selector": "#btn-table-ops",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#table-ops-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "insert count input",
+          "selector": "#op-insert-count"
+        },
+        {
+          "name": "apply rows action",
+          "selector": "#op-apply-rows"
+        },
+        {
+          "name": "apply columns action",
+          "selector": "#op-apply-cols"
+        }
+      ],
+      "note": "ledger row: ctx.several-rows-columns — OO surfaces 'several rows/columns' from the table ctx menu; WO binds it to the table-ops dialog (openTableOps on #btn-table-ops, insert several rows/cols via op-insert-count + op-apply-rows/op-apply-cols). Contracted with the in-table pre so the dialog opens in its functional cell-selected state."
+    },
+    "ctx.distribute-columns": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"DistributeColumns\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td[style*=\"width\"]"
+      },
+      "note": "ledger row: ctx.distribute-columns — ctx item runs distributeTableColumns (equalize column widths); fixture cells carry no inline width, so td[style*=width] only matches once the op ran (caret-in-table targets all columns)"
+    },
+    "ctx.distribute-rows": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"DistributeRows\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor tr[style*=\"height\"]"
+      },
+      "note": "ledger row: ctx.distribute-rows — ctx item runs distributeTableRows (equalize row heights via tr.style.height); fixture rows carry no inline height, so tr[style*=height] only matches once the op ran"
+    },
+    "ctx.row": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableDeleteRow\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor tr:only-child"
+      },
+      "note": "ledger row: ctx.row (OO 'Row' row, census-bound to WO delete-row) — deleteTableRow removes the caret row; after deleting one of the 2 fixture rows the remaining tr is :only-child, which matches nothing before the op"
+    },
+    "ctx.column": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableDeleteCol\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td:only-child"
+      },
+      "note": "ledger row: ctx.column (OO 'Column' row, census-bound to WO delete-column) — deleteTableCol drops the caret column from every row; each fixture row is left with a single td, i.e. td:only-child matches only after the op"
+    },
+    "ctx.cell": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableDeleteCell\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td:only-child"
+      },
+      "note": "ledger row: ctx.cell — deleteTableCell removes the caret cell (shift left, row cleanup); the fixture row keeps one td, so td:only-child matches only after the op"
+    },
+    "ctx.cells": {
+      "effektClass": "op",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableDeleteCell\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td:only-child"
+      },
+      "note": "ledger row: ctx.cells (OO 'Cells') — census binds it to the same TableDeleteCell surface: OO's multi-cell selection collapses to the single-cell delete in WO, same observable as ctx.cell"
+    },
+    "ctx.merge-cells": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableMergeCells\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td[colspan]"
+      },
+      "note": "KNOWN GAP (state prerequisite): mergeTableCells() early-returns unless selectedCells>=2; the ctx-menu-in-table pre selects a single cell, and the runner offers no multi-cell-selection pre. A working merge would emit a td[colspan] — it never appears."
+    },
+    "ctx.split-cell": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TableSplitCell\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td br"
+      },
+      "note": "KNOWN GAP (state prerequisite + no dialog): OO opens a 'Split cell...' dialog; WO's splitTableCell() no-ops unless the cell at the caret has colSpan/rowSpan>1 (a working split emits <td><br>) and no split dialog exists. The 2x2 fixture cells are unspanned and the pre cannot build a spanned cell."
+    }
+  },
+  "$skipped": [
+    {
+      "row": "ctx.select",
+      "reason": "census wo.match is 'browser native selection' — no WO ctx-menu control exists for it, so there is nothing to trigger or assert (not a gap, an intentional divergence)."
+    }
+  ]
+}
