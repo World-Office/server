@@ -25,7 +25,8 @@ const overrides = JSON.parse(fs.readFileSync(path.join(__dirname, 'word-parity-o
 
 const RUNNABLE = new Set(['format', 'structure', 'dialog', 'op', 'view']);
 let entries = manifest.entries.filter(e => {
-  const ov = overrides[e.token];
+  // same key precedence as generate-manifest: binding token, then feature id
+  const ov = overrides[e.token] || overrides[e.feature];
   if (!ov) return false; // no override => no executable contract yet
   return RUNNABLE.has(e.effektClass);
 });
@@ -122,9 +123,9 @@ async function subFeatureAudit(page, ov, dialogSel) {
   let fails = 0;
 
   for (const e of entries) {
-    const ov = overrides[e.token] || {};
+    const ov = overrides[e.token] || overrides[e.feature] || {};
     const woTab = ov.woTab || e.woTab;
-    const res = { token: e.token, tab: e.tab, cls: e.effektClass, xfail: !!ov.xfail };
+    const res = { token: e.token, feature: e.feature, tab: e.tab, cls: e.effektClass, xfail: !!ov.xfail };
     try {
       // fresh page per contract: contracts must be independent (no state
       // bleed from previous toggles/inserts)
@@ -142,8 +143,26 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 2. prerequisites FIRST (a control inside a closed menu is invisible),
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ov.pre === 'file-menu' || (ov.pre || '').startsWith('backstage');
+      const preMenu = ov.pre === 'file-menu' || ov.pre === 'list' || (ov.pre || '').startsWith('backstage'); // list pre manages its own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
+      else if (ov.pre === 'list') {
+        // 'list' — build a two-item ordered list with the caret in the second
+        // item (contracts like multilevel-list nesting need real list state)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<ol><li>alpha</li><li>beta</li></ol><p>after</p>';
+          const beta = ed.querySelectorAll('li')[1];
+          const range = document.createRange();
+          range.setStart(beta.firstChild, 1);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+      }
       else if ((ov.pre || '').startsWith('backstage:')) {
         // 'backstage:<pane>' — open the File backstage, then switch it to
         // <pane> (rows like [data-pane=info] swap the backstage panel;

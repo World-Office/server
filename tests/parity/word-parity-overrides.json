@@ -105,6 +105,153 @@
           "selector": "#info-size"
         }
       ]
+    },
+    "toggledropcap": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"toggleDropcap\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#dropcap-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "position select",
+          "selector": "#dropcap-position"
+        },
+        {
+          "name": "lines",
+          "selector": "#dropcap-lines"
+        },
+        {
+          "name": "distance",
+          "selector": "#dropcap-distance"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-dropcap-ok"
+        }
+      ],
+      "woTab": "insert",
+      "note": "ledger row: insert.drop-cap"
+    },
+    "togglelinenumbers": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"toggleLineNumbers\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#linenumbers-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "mode select",
+          "selector": "#ln-mode"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-linenumbers-ok"
+        }
+      ],
+      "woTab": "layout",
+      "note": "ledger row: page.line-numbers"
+    },
+    "togglewatermark": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"toggleWatermark\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#watermark-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "mode select",
+          "selector": "#wm-mode"
+        },
+        {
+          "name": "custom text",
+          "selector": "#wm-text"
+        },
+        {
+          "name": "color",
+          "selector": "#wm-color"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-watermark-ok"
+        }
+      ],
+      "woTab": "layout",
+      "note": "ledger row: page.watermark"
+    },
+    "togglehyphenation": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"toggleHyphenation\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#hyphenation-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "mode select",
+          "selector": "#hy-mode"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-hyphenation-ok"
+        }
+      ],
+      "woTab": "layout",
+      "note": "ledger row: page.hyphenation-options"
+    },
+    "multilevel": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"multilevel\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor li li"
+      },
+      "woTab": "home",
+      "note": "ledger row: formatting.multilevel-list — ribbon button nests the caret li under its previous sibling (direct DOM op, not a dialog); bullets-numbering-dialog lives on the list ctx menu",
+      "pre": "list"
+    },
+    "file.view": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"view\"] [data-cmd=\"displayMode\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#displaymode-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "mode select",
+          "selector": "#displaymode-mode"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-displaymode-ok"
+        }
+      ],
+      "woTab": "view",
+      "note": "ledger row: file.view"
+    },
+    "review.display-mode": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"collaboration\"] [data-cmd=\"displayMode\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#displaymode-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "mode select",
+          "selector": "#displaymode-mode"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-displaymode-ok"
+        }
+      ],
+      "woTab": "collaboration",
+      "note": "ledger row: review.display-mode"
     }
   }
 }
