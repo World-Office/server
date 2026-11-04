@@ -7,7 +7,7 @@
  * deployment configured one (customization.feedback.url).
  */
 import { observer } from "mobx-react-lite";
-import { type JSX } from "react";
+import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 
 /** Open a File-menu panel, closing the left rail first. */

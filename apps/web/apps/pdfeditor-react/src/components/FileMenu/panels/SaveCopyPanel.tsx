@@ -1,6 +1,6 @@
+import { Button, Input, makeStyles, tokens } from "@fluentui/react-components"
 import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
-import { Button, Input, makeStyles, tokens } from "@fluentui/react-components"
 import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../../stores/PdfStore"
 
@@ -125,7 +125,9 @@ export function SaveCopyPanel({ visible }: { visible: boolean }) {
           />
           <span className={styles.ext}>.pdf</span>
         </div>
-        <div className={styles.destination}>{t("Destination")}: {t("Downloads")}</div>
+        <div className={styles.destination}>
+          {t("Destination")}: {t("Downloads")}
+        </div>
         <div className={styles.footer}>
           <Button appearance="primary" disabled={!canSave} onClick={handleSaveCopy}>
             {t("Save Copy")}

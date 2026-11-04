@@ -35,26 +35,19 @@ function mount(node: ReactNode): HTMLDivElement {
 }
 
 function clickRailButton(container: HTMLElement, action: string): void {
-  const button = container.querySelector<HTMLButtonElement>(
-    `button[data-action="${action}"]`,
-  )
+  const button = container.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)
   if (!button) throw new Error(`rail button "${action}" not found`)
   act(() => button.dispatchEvent(new MouseEvent("click", { bubbles: true })))
 }
 
 function clickButton(container: HTMLElement, action: string): void {
-  const button = container.querySelector<HTMLButtonElement>(
-    `button[data-action="${action}"]`,
-  )
+  const button = container.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)
   if (!button) throw new Error(`button "${action}" not found`)
   act(() => button.dispatchEvent(new MouseEvent("click", { bubbles: true })))
 }
 
 /** Type into a controlled React input/textarea (bypasses React's value tracker). */
-function typeInto(
-  el: HTMLInputElement | HTMLTextAreaElement | null,
-  value: string,
-): void {
+function typeInto(el: HTMLInputElement | HTMLTextAreaElement | null, value: string): void {
   if (!el) throw new Error("input not found")
   const proto =
     el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
@@ -101,8 +94,7 @@ describe("Left-menu panels", () => {
     expect(node).not.toBeNull()
     expect(node?.style.display).toBe("flex")
     expect(node?.textContent).toContain("Search")
-    expect(container.querySelector<HTMLInputElement>(`[data-action="search-query"]`)).not
-      .toBeNull()
+    expect(container.querySelector<HTMLInputElement>(`[data-action="search-query"]`)).not.toBeNull()
     expect(container.querySelector(`[data-action="search-run"]`)).not.toBeNull()
   })
 
@@ -114,9 +106,7 @@ describe("Left-menu panels", () => {
     const node = panel(container, "comments")
     expect(node?.style.display).toBe("flex")
 
-    const textarea = container.querySelector<HTMLTextAreaElement>(
-      '[data-action="comment-text"]',
-    )
+    const textarea = container.querySelector<HTMLTextAreaElement>('[data-action="comment-text"]')
     expect(textarea).not.toBeNull()
     typeInto(textarea, "check this page")
     clickButton(container, "comment-add")

@@ -127,8 +127,7 @@ function SupportPanelInner({ active }: { active: boolean }): JSX.Element {
         </div>
 
         <div className="pdf-left-panel-muted pdf-left-panel-footnote">
-          World Office PDF (React) — support entries live in this editor, so they
-          work offline too.
+          World Office PDF (React) — support entries live in this editor, so they work offline too.
         </div>
       </div>
     </div>

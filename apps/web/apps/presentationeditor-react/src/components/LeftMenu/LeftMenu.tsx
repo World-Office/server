@@ -3,11 +3,11 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { LeftMenuAction } from "../../types/presentation";
+import { SlideThumbnails } from "../SlideThumbnails";
 import { ChatPanel } from "./ChatPanel";
 import { CommentsPanel } from "./CommentsPanel";
 import { LeftMenuButton } from "./LeftMenuButton";
 import { SearchPanel } from "./SearchPanel";
-import { SlideThumbnails } from "../SlideThumbnails";
 import { SupportPanel } from "./SupportPanel";
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> =

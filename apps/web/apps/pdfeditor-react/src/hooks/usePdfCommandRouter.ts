@@ -10,7 +10,7 @@
 
 import { registerEditorRouter } from "@world-office/editor-common"
 import { useEffect } from "react"
-import { createPdfCommandHandler, PDF_COMMANDS } from "../lib/pdf-commands"
+import { PDF_COMMANDS, createPdfCommandHandler } from "../lib/pdf-commands"
 
 /**
  * Register the PDF command router.
@@ -18,11 +18,7 @@ import { createPdfCommandHandler, PDF_COMMANDS } from "../lib/pdf-commands"
  */
 export function usePdfCommandRouter(): void {
   useEffect(() => {
-    const unregister = registerEditorRouter(
-      "pdf",
-      createPdfCommandHandler(),
-      [...PDF_COMMANDS],
-    )
+    const unregister = registerEditorRouter("pdf", createPdfCommandHandler(), [...PDF_COMMANDS])
     return unregister
   }, [])
 }

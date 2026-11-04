@@ -56,7 +56,12 @@ const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "external-help", caption: "External Help", hasPanel: false },
 	{ action: "suggest", caption: "Suggest Feature", hasPanel: true },
 	{ action: "create-new", caption: "Create New", hasPanel: true },
-	{ action: "open-recent", caption: "Open Recent", hasPanel: true, panel: "recent" },
+	{
+		action: "open-recent",
+		caption: "Open Recent",
+		hasPanel: true,
+		panel: "recent",
+	},
 ];
 
 const useStyles = makeStyles({
@@ -150,9 +155,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 							? styles.active
 							: undefined,
 					)}
-					onClick={() =>
-						onMenuClick(item.panel ?? item.action, item.hasPanel)
-					}
+					onClick={() => onMenuClick(item.panel ?? item.action, item.hasPanel)}
 					onKeyDown={(e) =>
 						handleKeyDown(e, () =>
 							onMenuClick(item.panel ?? item.action, item.hasPanel),

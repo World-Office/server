@@ -57,9 +57,11 @@ function ChatPanelInner({ active }: { active: boolean }): JSX.Element {
 	useEffect(() => {
 		saveMessages(messages);
 	}, [messages]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll-to-bottom must re-run when a new chat message arrives; messages is intentional
 	useEffect(() => {
-		if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
-	}, [messages, active]);
+		if (listRef.current)
+			listRef.current.scrollTop = listRef.current.scrollHeight;
+	}, [messages]);
 
 	function send(): void {
 		if (!presentationStore.addChatMessage(text)) return;

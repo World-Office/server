@@ -13,10 +13,7 @@
 
 import type { WoCommand } from "@world-office/editor-common";
 import { presentationStore } from "../stores/PresentationStore";
-import type {
-	ShapeData,
-	TransitionEffect,
-} from "../types/presentation";
+import type { ShapeData, TransitionEffect } from "../types/presentation";
 
 /** Map ribbon transition command suffix → TransitionEffect value. */
 const TRANSITION_BY_CMD: Record<string, TransitionEffect> = {
@@ -130,14 +127,12 @@ function textPlaceholder(
 }
 
 /** Inline SVG placeholder for Insert ▸ Picture before a file is picked. */
-const PICTURE_PLACEHOLDER_SRC =
-	"data:image/svg+xml;utf8," +
-	encodeURIComponent(
-		'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
-			'<rect width="200" height="200" fill="#f0f0f0" stroke="#bbbbbb"/>' +
-			'<path d="M30 150 L80 90 L120 130 L150 105 L175 150 Z" fill="#9db8d9"/>' +
-			'<circle cx="60" cy="55" r="16" fill="#f5d76e"/></svg>',
-	);
+const PICTURE_PLACEHOLDER_SRC = `data:image/svg+xml;utf8,${encodeURIComponent(
+	'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
+		'<rect width="200" height="200" fill="#f0f0f0" stroke="#bbbbbb"/>' +
+		'<path d="M30 150 L80 90 L120 130 L150 105 L175 150 Z" fill="#9db8d9"/>' +
+		'<circle cx="60" cy="55" r="16" fill="#f5d76e"/></svg>',
+)}`;
 
 /** Open the left-menu Search panel (Home ▸ Editing ▸ Find / Replace). */
 function openSearchPanel(): void {
@@ -146,9 +141,9 @@ function openSearchPanel(): void {
 }
 
 /** Open the right-menu panel for a settings surface. */
-function openRightPanel(panel: Parameters<
-	typeof presentationStore.setActiveRightPanel
->[0]): void {
+function openRightPanel(
+	panel: Parameters<typeof presentationStore.setActiveRightPanel>[0],
+): void {
 	presentationStore.setRightMenuVisible(true);
 	presentationStore.setActiveRightPanel(panel);
 }
@@ -400,11 +395,7 @@ export function createPresentationCommandHandler(): (cmd: WoCommand) => void {
 		// 8. Insert tab
 		switch (command) {
 			case "insertTable":
-				presentationStore.addTableToSlide(
-					presentationStore.currentSlide,
-					3,
-					3,
-				);
+				presentationStore.addTableToSlide(presentationStore.currentSlide, 3, 3);
 				return;
 			case "insertPicture":
 			case "insertOnlinePicture":
@@ -595,8 +586,7 @@ export function createPresentationCommandHandler(): (cmd: WoCommand) => void {
 				return;
 			case "bgColorStart":
 			case "bgColorEnd": {
-				const slide =
-					presentationStore.slides[presentationStore.currentSlide];
+				const slide = presentationStore.slides[presentationStore.currentSlide];
 				const existing = slide?.background;
 				const start =
 					command === "bgColorStart"

@@ -292,8 +292,7 @@ impl<'a> Parser<'a> {
                 }
                 Token::Semicolon => {
                     self.advance();
-                    rows.push(current_row);
-                    current_row = Vec::new();
+                    rows.push(std::mem::take(&mut current_row));
                     if !self.current_is(&Token::RBrace) {
                         current_row.push(self.parse_expression(0)?);
                     }

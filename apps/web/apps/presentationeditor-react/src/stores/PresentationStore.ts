@@ -12,6 +12,7 @@ import {
 	convertPptxToWoPresentation,
 	convertWoPresentationToPptx,
 } from "../lib/conversion";
+import type { SlideTextHit } from "../lib/slide-text";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -43,7 +44,6 @@ import type {
 	TableCell,
 	TableRow,
 } from "../types/presentation";
-import type { SlideTextHit } from "../lib/slide-text";
 
 export interface SlideData {
 	id: string;
@@ -1114,10 +1114,7 @@ export class PresentationStore {
 	formatPainterActive = false;
 	formatPainterStyle: Partial<ShapeData> | null = null;
 
-	setFormatPainter(
-		active: boolean,
-		style: Partial<ShapeData> | null,
-	): void {
+	setFormatPainter(active: boolean, style: Partial<ShapeData> | null): void {
 		this.formatPainterActive = active;
 		this.formatPainterStyle = style;
 	}
@@ -1462,12 +1459,19 @@ export class PresentationStore {
 	}
 
 	/** Re-map comment anchors after slides move (null drops the thread). */
-	private reanchorSlideComments(map: (oldIndex: number) => number | null): void {
+	private reanchorSlideComments(
+		map: (oldIndex: number) => number | null,
+	): void {
 		const next: SlideCommentThread[] = [];
 		for (const thread of this.slideComments) {
 			const mapped = map(thread.slideIndex);
-			if (mapped === null || mapped < 0 || mapped >= this.slides.length) continue;
-			next.push(mapped === thread.slideIndex ? thread : { ...thread, slideIndex: mapped });
+			if (mapped === null || mapped < 0 || mapped >= this.slides.length)
+				continue;
+			next.push(
+				mapped === thread.slideIndex
+					? thread
+					: { ...thread, slideIndex: mapped },
+			);
 		}
 		this.slideComments = next;
 	}
@@ -1852,11 +1856,7 @@ export class PresentationStore {
 	addImageToSlide(slideIndex: number, file: File): void {
 		const reader = new FileReader();
 		reader.onload = () => {
-			this.addImageShapeToSlide(
-				slideIndex,
-				reader.result as string,
-				file.name,
-			);
+			this.addImageShapeToSlide(slideIndex, reader.result as string, file.name);
 		};
 		reader.readAsDataURL(file);
 	}

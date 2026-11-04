@@ -149,9 +149,7 @@ function CommentsPanelInner({ active }: { active: boolean }): JSX.Element {
                 <button
                   type="button"
                   className="pdf-left-panel-btn"
-                  onClick={() =>
-                    pdfStore.setPageCommentResolved(thread.id, !thread.resolved)
-                  }
+                  onClick={() => pdfStore.setPageCommentResolved(thread.id, !thread.resolved)}
                   data-action="comment-resolve"
                 >
                   {thread.resolved ? "Reopen" : "Resolve"}

@@ -4,24 +4,24 @@ import { makeAutoObservable } from "mobx"
 import type { PDFDocumentProxy } from "pdfjs-dist"
 import { produceAnnotatedPdf } from "../lib/annotation-conversion"
 import {
-  collectPdfOutline,
-  collectPdfText,
-  findPdfTextMatches,
   type PdfTextDocumentSource,
   type PdfTextMatch,
   type PdfTextPage,
+  collectPdfOutline,
+  collectPdfText,
+  findPdfTextMatches,
 } from "../lib/pdf-text"
 import type {
   AnnotationTool,
   BookmarkNode,
   LeftMenuAction,
   PageInfo,
+  PanelChatMessage,
   PdfCommentReply,
   PdfCommentThread,
   PdfDocument,
   PdfMode,
   PdfTab,
-  PanelChatMessage,
   RightMenuPanel,
   Tool,
   ZoomLevel,

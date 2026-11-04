@@ -67,8 +67,7 @@ const ViewportInner = function Viewport({
                 // behind it (the fixed 40px inline width used to clip/overlap
                 // every panel); About keeps its overlay below.
                 width:
-                  pdfStore.activeLeftPanel !== null &&
-                  pdfStore.activeLeftPanel !== "about"
+                  pdfStore.activeLeftPanel !== null && pdfStore.activeLeftPanel !== "about"
                     ? "calc(var(--wo-pdf-leftmenu-width, 40px) + var(--wo-pdf-leftpanel-width, 250px))"
                     : "var(--wo-pdf-leftmenu-width, 40px)",
               }}

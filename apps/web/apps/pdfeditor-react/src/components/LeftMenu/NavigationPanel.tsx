@@ -147,18 +147,16 @@ function NavigationPanelInner({ active }: { active: boolean }): JSX.Element {
           )}
           {!pdfStore.isOutlineLoading && pdfStore.bookmarks.length === 0 && (
             <div className="pdf-left-panel-muted">
-              This document has no bookmark tree. Use the page controls above, or the
-              Thumbnails panel.
+              This document has no bookmark tree. Use the page controls above, or the Thumbnails
+              panel.
             </div>
           )}
-          {pdfStore.bookmarks.length > 0 && (
-            <BookmarkTree nodes={pdfStore.bookmarks} depth={0} />
-          )}
+          {pdfStore.bookmarks.length > 0 && <BookmarkTree nodes={pdfStore.bookmarks} depth={0} />}
         </div>
 
         <div className="pdf-left-panel-muted pdf-left-panel-footnote">
-          Bookmarks come from the document outline; a click jumps to the page the
-          bookmark points at.
+          Bookmarks come from the document outline; a click jumps to the page the bookmark points
+          at.
         </div>
       </div>
     </div>

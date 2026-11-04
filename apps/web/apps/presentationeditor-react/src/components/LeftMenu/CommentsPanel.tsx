@@ -58,7 +58,8 @@ function CommentsPanelInner({ active }: { active: boolean }): JSX.Element {
 	const visible = threads.filter((t) => showResolved || !t.resolved);
 	const currentSlide = presentationStore.currentSlide;
 	const slideTitle =
-		presentationStore.slides[currentSlide]?.title ?? `Slide ${currentSlide + 1}`;
+		presentationStore.slides[currentSlide]?.title ??
+		`Slide ${currentSlide + 1}`;
 
 	// load once per document, keep the store persisted on change
 	useEffect(() => {
@@ -182,7 +183,9 @@ function CommentsPanelInner({ active }: { active: boolean }): JSX.Element {
 								<button
 									type="button"
 									className="prese-left-panel-btn prese-left-panel-btn-danger"
-									onClick={() => presentationStore.deleteSlideComment(thread.id)}
+									onClick={() =>
+										presentationStore.deleteSlideComment(thread.id)
+									}
 									data-action="comment-delete"
 								>
 									Delete

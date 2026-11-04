@@ -280,7 +280,8 @@
 	color: #ffffff;
 }
 
-.prese-file-menu-footer button.prese-file-menu-primary-btn:hover:not(:disabled) {
+.prese-file-menu-footer
+	button.prese-file-menu-primary-btn:hover:not(:disabled) {
 	background-color: var(--wo-prese-accent, #426ab3);
 	opacity: 0.9;
 }
@@ -323,7 +324,6 @@
 	cursor: pointer;
 	padding: 0;
 }
-
 
 .prese-template-card {
 	display: flex;

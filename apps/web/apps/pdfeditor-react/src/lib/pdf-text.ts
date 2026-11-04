@@ -86,9 +86,7 @@ export function pageTextFromItems(items: PdfTextItem[]): string {
 function textItems(content: { items?: unknown[] }): PdfTextItem[] {
   return (content.items ?? []).filter(
     (item): item is PdfTextItem =>
-      typeof item === "object" &&
-      item !== null &&
-      typeof (item as PdfTextItem).str === "string",
+      typeof item === "object" && item !== null && typeof (item as PdfTextItem).str === "string",
   )
 }
 

@@ -1,10 +1,10 @@
+import { observer } from "mobx-react-lite"
 import * as monaco from "monaco-editor"
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker"
 import CssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker"
 import HtmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker"
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker"
 import TsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
-import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { pdfStore } from "../stores/PdfStore"
 
@@ -115,6 +115,7 @@ function MonacoEditorImpl({
 
   // Keep the live editor in sync with the ribbon's View ▸ Code Editor toggles
   // (toggleWordWrap / toggleMinimap mutate the store; this applies them).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pdfStore.wordWrapEnabled/minimapEnabled are MobX observables; needed for effect reactivity
   useEffect(() => {
     if (!editorRef.current || !isReady) return
     editorRef.current.updateOptions({

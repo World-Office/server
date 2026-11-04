@@ -1,6 +1,8 @@
 import type { PDFDocumentProxy } from "pdfjs-dist"
 import { describe, expect, it } from "vitest"
 import {
+  type PdfOutlineSourceNode,
+  type PdfTextDocumentSource,
   collectPdfOutline,
   collectPdfText,
   findPdfTextMatches,
@@ -8,15 +10,10 @@ import {
   pageTextFromItems,
   resolveOutlinePage,
   snippetAround,
-  type PdfOutlineSourceNode,
-  type PdfTextDocumentSource,
 } from "../lib/pdf-text"
 import { PdfStore } from "../stores/PdfStore"
 
-function fakeDocument(
-  pages: string[],
-  outline?: PdfOutlineSourceNode[],
-): PdfTextDocumentSource {
+function fakeDocument(pages: string[], outline?: PdfOutlineSourceNode[]): PdfTextDocumentSource {
   return {
     numPages: pages.length,
     async getPage(pageNumber: number) {
@@ -152,21 +149,24 @@ describe("PdfStore left-menu panels", () => {
     expect(store.commentCount).toBe(1)
     expect(store.addPageComment(0, "   ")).toBeNull()
 
-    expect(store.addPageReply(thread!.id, " done")).not.toBeNull()
+    expect(store.addPageReply(thread?.id, " done")).not.toBeNull()
     expect(store.pageComments[0].replies).toHaveLength(1)
 
-    store.setPageCommentResolved(thread!.id, true)
+    store.setPageCommentResolved(thread?.id, true)
     expect(store.pageComments[0].resolved).toBe(true)
     // resolved threads leave the open-comment counter
     expect(store.commentCount).toBe(0)
 
-    store.deletePageComment(thread!.id)
+    store.deletePageComment(thread?.id)
     expect(store.pageComments).toHaveLength(0)
   })
 
   it("drops comment threads that outlive their pages", () => {
     const store = new PdfStore()
-    store.setPages([{ index: 0, label: "1" }, { index: 1, label: "2" }])
+    store.setPages([
+      { index: 0, label: "1" },
+      { index: 1, label: "2" },
+    ])
     store.addPageComment(1, "second page")
 
     store.setPageCount(1)

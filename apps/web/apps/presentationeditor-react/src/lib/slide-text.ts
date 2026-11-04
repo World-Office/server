@@ -132,7 +132,11 @@ export function replaceInText(
 }
 
 /** Short preview around the first match so the result rows stay readable. */
-export function snippet(text: string, query: string, matchCase: boolean): string {
+export function snippet(
+	text: string,
+	query: string,
+	matchCase: boolean,
+): string {
 	const idx = matchCase
 		? text.indexOf(query)
 		: text.toLowerCase().indexOf(query.toLowerCase());

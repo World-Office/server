@@ -6,7 +6,7 @@
  * blank pane over the slide.
  */
 import { observer } from "mobx-react-lite";
-import { type JSX } from "react";
+import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 
 function AboutPanelInner(): JSX.Element {

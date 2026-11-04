@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+	type SlideTextHit,
 	collectSlideText,
 	describeSlideTextHit,
 	findSlideMatches,
 	replaceInText,
 	snippet,
-	type SlideTextHit,
 } from "../lib/slide-text";
 import { PresentationStore, type SlideData } from "../stores/PresentationStore";
 
@@ -68,7 +68,11 @@ describe("slide-text", () => {
 			"title",
 			"notes",
 		]);
-		expect(hits[0]).toMatchObject({ slideIndex: 0, kind: "title", text: "Quarterly Review" });
+		expect(hits[0]).toMatchObject({
+			slideIndex: 0,
+			kind: "title",
+			text: "Quarterly Review",
+		});
 		expect(hits[2]).toMatchObject({
 			kind: "table",
 			shapeId: "sh2",
@@ -87,7 +91,12 @@ describe("slide-text", () => {
 	it("finds matches across the deck and honours match case", () => {
 		const hits = findSlideMatches(DECK, "revenue");
 		expect(hits).toHaveLength(4);
-		expect(hits.map((h) => h.kind)).toEqual(["shape", "table", "notes", "notes"]);
+		expect(hits.map((h) => h.kind)).toEqual([
+			"shape",
+			"table",
+			"notes",
+			"notes",
+		]);
 
 		const cased = findSlideMatches(DECK, "Revenue", { matchCase: true });
 		expect(cased).toHaveLength(2);
@@ -95,12 +104,12 @@ describe("slide-text", () => {
 	});
 
 	it("replaces the first or every occurrence and previews a snippet", () => {
-		expect(replaceInText("Revenue, revenue", "revenue", "sales", true, false)).toBe(
-			"Revenue, sales",
-		);
-		expect(replaceInText("Revenue, revenue", "revenue", "sales", false, true)).toBe(
-			"sales, sales",
-		);
+		expect(
+			replaceInText("Revenue, revenue", "revenue", "sales", true, false),
+		).toBe("Revenue, sales");
+		expect(
+			replaceInText("Revenue, revenue", "revenue", "sales", false, true),
+		).toBe("sales, sales");
 		// regex metacharacters are treated literally
 		expect(replaceInText("1.5x", ".", ",", false, true)).toBe("1,5x");
 		// no match → the text is handed back untouched
@@ -114,7 +123,13 @@ describe("slide-text", () => {
 	it("labels the origin of a hit", () => {
 		const kinds: SlideTextHit["kind"][] = ["title", "shape", "table", "notes"];
 		const labels = kinds.map((kind) =>
-			describeSlideTextHit({ slideIndex: 0, slideId: "s", shapeId: null, kind, text: "" }),
+			describeSlideTextHit({
+				slideIndex: 0,
+				slideId: "s",
+				shapeId: null,
+				kind,
+				text: "",
+			}),
 		);
 		expect(labels).toEqual([
 			"Slide title",
@@ -135,13 +150,13 @@ describe("PresentationStore left-menu panels", () => {
 		expect(store.slideComments).toHaveLength(1);
 		expect(store.addSlideComment(0, "   ")).toBeNull();
 
-		expect(store.addSlideReply(thread!.id, " done")).not.toBeNull();
+		expect(store.addSlideReply(thread?.id, " done")).not.toBeNull();
 		expect(store.slideComments[0].replies).toHaveLength(1);
 
-		store.setSlideCommentResolved(thread!.id, true);
+		store.setSlideCommentResolved(thread?.id, true);
 		expect(store.slideComments[0].resolved).toBe(true);
 
-		store.deleteSlideComment(thread!.id);
+		store.deleteSlideComment(thread?.id);
 		expect(store.slideComments).toHaveLength(0);
 	});
 
@@ -184,7 +199,9 @@ describe("PresentationStore left-menu panels", () => {
 
 	it("writes search hits back through the editing path", () => {
 		const store = new PresentationStore();
-		store.setSlides(DECK.map((s) => ({ ...s, shapes: s.shapes.map((x) => ({ ...x })) })));
+		store.setSlides(
+			DECK.map((s) => ({ ...s, shapes: s.shapes.map((x) => ({ ...x })) })),
+		);
 		store.clearModified();
 
 		const [title, shape, table, notes] = collectSlideText(store.slides);
@@ -195,7 +212,9 @@ describe("PresentationStore left-menu panels", () => {
 		expect(store.slides[0].shapes[0].text).toBe("Revenue is way up");
 
 		expect(store.applySlideText(table, "Turnover")).toBe(true);
-		expect(store.slides[0].shapes[1].table?.cells[0].cells[0].text).toBe("Turnover");
+		expect(store.slides[0].shapes[1].table?.cells[0].cells[0].text).toBe(
+			"Turnover",
+		);
 
 		expect(store.applySlideText(notes, "talk about turnover")).toBe(true);
 		expect(store.slides[0].notes).toBe("talk about turnover");
@@ -204,8 +223,8 @@ describe("PresentationStore left-menu panels", () => {
 		expect(store.isModified).toBe(true);
 
 		// unknown slide → refused instead of silently dropping the edit
-		expect(
-			store.applySlideText({ ...title, slideIndex: 99 }, "nope"),
-		).toBe(false);
+		expect(store.applySlideText({ ...title, slideIndex: 99 }, "nope")).toBe(
+			false,
+		);
 	});
 });

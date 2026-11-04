@@ -105,13 +105,11 @@ function SearchPanelInner({ active }: { active: boolean }): JSX.Element {
           </button>
         </div>
         {status && <div className="pdf-left-panel-muted">{status}</div>}
-        {!pdfStore.pdfDocProxy && (
-          <div className="pdf-left-panel-muted">No document open.</div>
-        )}
+        {!pdfStore.pdfDocProxy && <div className="pdf-left-panel-muted">No document open.</div>}
         {pdfStore.pdfDocProxy && matches.length === 0 && !status && (
           <div className="pdf-left-panel-muted">
-            Search covers the document text. Scanned pages without a text layer stay
-            invisible to it.
+            Search covers the document text. Scanned pages without a text layer stay invisible to
+            it.
           </div>
         )}
         <ul className="pdf-left-panel-list">

@@ -10,11 +10,11 @@
 import { observer } from "mobx-react-lite";
 import { type JSX, useState } from "react";
 import {
+	type SlideTextHit,
 	describeSlideTextHit,
 	findSlideMatches,
 	replaceInText,
 	snippet,
-	type SlideTextHit,
 } from "../../lib/slide-text";
 import { presentationStore } from "../../stores/PresentationStore";
 
@@ -83,7 +83,9 @@ function SearchPanelInner({ active }: { active: boolean }): JSX.Element {
 				count++;
 			}
 		}
-		setStatus(count > 0 ? `Replaced in ${count} place(s).` : "Nothing replaced.");
+		setStatus(
+			count > 0 ? `Replaced in ${count} place(s).` : "Nothing replaced.",
+		);
 		runSearch();
 	}
 

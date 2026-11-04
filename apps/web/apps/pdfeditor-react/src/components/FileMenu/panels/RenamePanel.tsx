@@ -1,6 +1,6 @@
+import { Button, Input, makeStyles, tokens } from "@fluentui/react-components"
 import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
-import { Button, Input, makeStyles, tokens } from "@fluentui/react-components"
 import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../../stores/PdfStore"
 
