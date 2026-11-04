@@ -1,0 +1,94 @@
+{
+  "entries": {
+    "columns": {
+      "effektClass": "dialog",
+      "selector": "#btn-columns",
+      "woTab": "layout",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#columns-dialog"
+      },
+      "subFeatures": [
+        { "name": "number of columns", "selector": "#columns-count" },
+        { "name": "column gap", "selector": "#columns-gap" },
+        { "name": "insert action", "selector": "#btn-columns-ok" },
+        { "name": "cancel action", "selector": "#btn-columns-cancel" }
+      ],
+      "note": "ledger row: page.columns — [data-cmd=columns] does not exist; the Columns dropdown items are hidden until the menu opens, so contracted via the visible WO 'Columns' ribbon button (layout row 2) that opens #columns-dialog"
+    },
+    "page.dlg-columns": {
+      "effektClass": "dialog",
+      "selector": "#btn-columns",
+      "woTab": "layout",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#columns-dialog"
+      },
+      "subFeatures": [
+        { "name": "number of columns", "selector": "#columns-count" },
+        { "name": "insert action", "selector": "#btn-columns-ok" }
+      ],
+      "note": "ledger row: page.dlg-columns (dialog:Columns) — census trigger 'menu-item:Custom columns' ([data-cmd=openColumnsDialog]) sits in the hidden Columns dropdown and is unreachable for the runner's hit-test; no distinct opener exists, so keyed on the feature id with the same visible #btn-columns trigger"
+    },
+    "themecolors": {
+      "effektClass": "dialog",
+      "selector": "#themecolors",
+      "woTab": "layout",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#colors-dialog"
+      },
+      "subFeatures": [
+        { "name": "scheme select", "selector": "#cs-scheme" },
+        { "name": "paper swatches", "selector": "#colors-paper-swatches" },
+        { "name": "paper custom color", "selector": "#colors-paper-custom" },
+        { "name": "ink swatches", "selector": "#colors-ink-swatches" },
+        { "name": "ink custom color", "selector": "#colors-ink-custom" },
+        { "name": "ok action", "selector": "#btn-colors-ok" }
+      ],
+      "note": "ledger row: page.colors — clicking the Color scheme select opens the Color Scheme palette dialog (editor.js themeColorsSel click listener -> openColorsDialog)"
+    },
+    "page.margins": {
+      "effektClass": "dialog",
+      "selector": "#btn-page-setup",
+      "woTab": "layout",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#page-setup-dialog"
+      },
+      "subFeatures": [
+        { "name": "page size select", "selector": "#ps-size" },
+        { "name": "portrait option", "selector": "input[name=\"ps-orient\"][value=\"portrait\"]" },
+        { "name": "landscape option", "selector": "input[name=\"ps-orient\"][value=\"landscape\"]" },
+        { "name": "margin top", "selector": "#ps-mt" },
+        { "name": "margin bottom", "selector": "#ps-mb" },
+        { "name": "margin left", "selector": "#ps-ml" },
+        { "name": "margin right", "selector": "#ps-mr" },
+        { "name": "apply action", "selector": "#btn-ps-apply" }
+      ],
+      "note": "ledger row: page.margins — the Margins dropdown's 'Custom margins' entry (data-cmd=openPageSetup) delegates to btn-page-setup.click() (editor.js openPageSetup handler); contracted via that visible opener since dropdown items are hidden until the menu opens"
+    },
+    "page.size": {
+      "effektClass": "dialog",
+      "selector": "#btn-page-setup",
+      "woTab": "layout",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#page-setup-dialog"
+      },
+      "subFeatures": [
+        { "name": "page size select", "selector": "#ps-size" },
+        { "name": "orientation radios", "selector": "input[name=\"ps-orient\"][value=\"landscape\"]" },
+        { "name": "apply action", "selector": "#btn-ps-apply" },
+        { "name": "cancel action", "selector": "#btn-ps-cancel" }
+      ],
+      "note": "ledger row: page.size — the Size dropdown's 'Custom page size' entry (data-cmd=openPageSetup) routes to the same visible #btn-page-setup page-setup dialog"
+    }
+  },
+  "$skipped": [
+    {
+      "row": "page.orientation",
+      "reason": "Orientation dropdown offers only Portrait/Landscape (data-cmd=applyPageOrientation items inside the hidden menu-list — the runner's hit-test cannot reach them); no 'Custom...' entry opening #page-setup-dialog exists and no stable visible attribute changes when a value is applied directly"
+    }
+  ]
+}
