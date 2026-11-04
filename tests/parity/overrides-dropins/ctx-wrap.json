@@ -1,0 +1,86 @@
+{
+  "entries": {
+    "ctx.in-line-with-text": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapInline\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-inline[data-wrap=\"inline\"]"
+      },
+      "note": "ledger ctx.in-line-with-text — WrapInline: applyObjectOp('wrap-inline') sets obj-inline + data-wrap=inline on the picked image"
+    },
+    "ctx.square": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapSquare\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-square[data-wrap=\"square\"]"
+      },
+      "note": "ledger ctx.square — WrapSquare: applyObjectOp('wrap-square') sets obj-square + data-wrap=square on the picked image"
+    },
+    "ctx.tight": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapTight\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-square[data-wrap=\"tight\"]"
+      },
+      "note": "ledger ctx.tight — WrapTight: aliases obj-square (documented divergence, no contour model) + data-wrap=tight on the picked image"
+    },
+    "ctx.through": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapThrough\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-through[data-wrap=\"through\"]"
+      },
+      "note": "ledger ctx.through — WrapThrough: applyObjectOp('wrap-through') sets obj-through + data-wrap=through on the picked image"
+    },
+    "ctx.in-front-of-text": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapFront\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-front[data-wrap=\"front\"]"
+      },
+      "note": "ledger ctx.in-front-of-text — WrapFront: applyObjectOp('wrap-front') sets obj-front + data-wrap=front on the picked image"
+    },
+    "ctx.behind-text": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"WrapBehind\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-behind[data-wrap=\"behind\"]"
+      },
+      "note": "ledger ctx.behind-text — WrapBehind: applyObjectOp('wrap-behind') sets obj-behind + data-wrap=behind on the picked image"
+    },
+    "ctx.top-and-bottom": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"TopAndBottom\"]",
+      "xfail": true,
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.obj-center"
+      },
+      "note": "ledger ctx.top-and-bottom — REAL gap: no TopAndBottom row in the WO ctx menu; WO surface elsewhere: obj-center block flow (top-and-bottom ≈ own-line block), ledger level 1"
+    },
+    "ctx.edit-wrap-boundary": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"EditWrapBoundary\"]",
+      "xfail": true,
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img.wo-wrap-boundary"
+      },
+      "note": "ledger ctx.edit-wrap-boundary — LOUD registered divergence (Phase 5/WO-22): no vector contour model; reportEditWrapBoundaryUnavailable() emits wo:edit-wrap-boundary marker + SetStatus NotAvailable, never mutates the document"
+    }
+  }
+}
