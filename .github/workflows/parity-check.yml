@@ -42,6 +42,11 @@ jobs:
         run: |-
           pnpm install --frozen-lockfile
           pnpm build --filter='!@world-office/tauri-poc'
+        env:
+          # parallel vite builds OOM the 7GB runner (exit 137) — serialize the
+          # heavy bundlers and keep node heaps modest
+          TURBO_CONCURRENCY: "2"
+          NODE_OPTIONS: --max-old-space-size=3072
 
   test-core:
     name: Core Tests
