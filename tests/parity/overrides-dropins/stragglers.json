@@ -1,0 +1,104 @@
+{
+  "entries": {
+    "file.download-as": {
+      "effektClass": "dialog",
+      "pre": "backstage:export",
+      "selector": "#btn-export",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#export-sub"
+      },
+      "subFeatures": [
+        { "name": "export PDF", "selector": "[data-export=\"pdf\"]" },
+        { "name": "export ODT", "selector": "[data-export=\"odt\"]" },
+        { "name": "export HTML", "selector": "[data-export=\"html\"]" },
+        { "name": "export DOCX", "selector": "[data-export=\"docx\"]" }
+      ],
+      "note": "ledger row: file.download-as — backstage Download As row opens the export pane; its #btn-export trigger discloses the format menu (setMenu -> #export-sub unhidden, aria-expanded)"
+    },
+    "file.protect": {
+      "effektClass": "dialog",
+      "pre": "backstage:protect",
+      "selector": "#btn-fileprotect",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#protect-dialog"
+      },
+      "subFeatures": [
+        { "name": "restrict toggle", "selector": "#protect-check-restrict" },
+        { "name": "password input", "selector": "#protect-new-password" },
+        { "name": "apply action", "selector": "#btn-protect-apply" }
+      ],
+      "note": "ledger row: file.protect — backstage Protect row opens the protect pane; #btn-fileprotect runs protectDialog() -> #protect-dialog"
+    },
+    "file.suggest-a-feature": {
+      "effektClass": "dialog",
+      "pre": "backstage:suggest",
+      "selector": "#btn-filesuggest",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#suggest-dialog"
+      },
+      "subFeatures": [
+        { "name": "feedback textarea", "selector": "#suggest-text" },
+        { "name": "email input", "selector": "#suggest-email" },
+        { "name": "compose email action", "selector": "#btn-suggest-send" },
+        { "name": "cancel action", "selector": "#btn-suggest-cancel" }
+      ],
+      "note": "ledger row: file.suggest-a-feature — backstage Suggest row opens the suggest pane; #btn-filesuggest runs openDlg(\"suggest-dialog\")"
+    },
+    "shortcut.save": {
+      "effektClass": "op",
+      "key": "Control+s",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#status",
+        "contains": "Saved"
+      },
+      "note": "ledger row: shortcut.save — Ctrl+S runs saveDocument(): status cycles Saving -> Saved (fetch POST /api/documents/{id}/save succeeds against the parity docserver)"
+    },
+    "statusbar.btn-doc-spell": {
+      "effektClass": "view",
+      "selector": "#sb-doc-spell",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#sb-doc-spell",
+        "attr": "aria-pressed",
+        "equals": "true"
+      },
+      "note": "ledger row: statusbar.btn-doc-spell — statusbar Spell button toggles the inline spellcheck engine; click flips aria-pressed false->true and syncs the settings checkbox"
+    },
+    "statusbar.english-united-states": {
+      "effektClass": "view",
+      "xfail": true,
+      "selector": "#sb-lang",
+      "note": "KNOWN GAP: ledger row statusbar.english-united-states (token sb-lang) — #sb-lang is a passive statusbar label mirrored from the #doc-lang select (syncStatusbarLang); it has NO click handler, so the promised language-picker affordance never appears. The picker only opens via #doc-lang-caret showPicker(), which throws in headless chromium."
+    },
+    "statusbar.btn-doc-lang": {
+      "effektClass": "view",
+      "xfail": true,
+      "selector": "#sb-lang",
+      "note": "KNOWN GAP: ledger row statusbar.btn-doc-lang (token sb-lang, same physical control as statusbar.english-united-states) — #sb-lang has no click listener; clicking never surfaces a language UI."
+    },
+    "ctx.actual-size": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ActualSize\"]",
+      "note": "KNOWN GAP: ledger row ctx.actual-size — the ctx item is data-showif=\"image\" gated (hidden over a text selection, which is the only state the ctx-menu pre can build) and applyObjectOp(\"actual-size\") without a selected object no-ops into Status.NotAvailable."
+    },
+    "ctx.print-selection": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"PrintSelection\"]",
+      "note": "KNOWN GAP: ledger row ctx.print-selection — the ctx item exists and emits wo-command printSelection; runCommand dispatches the wo:print-selection window event and opens a scratch print window via window.open — the effect lives outside the page DOM (popup target + window event), so no contract assertion kind can observe it."
+    },
+    "ctx.rotate": {
+      "effektClass": "op",
+      "xfail": true,
+      "selector": "#rp-image-rotate",
+      "note": "KNOWN GAP: ledger row ctx.rotate — WO has no Rotate ctx item at all; the census maps the capability to the right-panel #rp-image-rotate (applyImageRotate90), which needs an image selection — state no contract pre can build — so the promised ctx-menu Rotate never appears."
+    }
+  }
+}
