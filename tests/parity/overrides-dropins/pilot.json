@@ -1,0 +1,15 @@
+{
+  "entries": {
+    "view.dark-document": {
+      "effektClass": "view",
+      "selector": "#btn-view-darkdoc",
+      "woTab": "view",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "main",
+        "hasClass": "dark-document"
+      },
+      "note": "pilot: overrides.d drop-in"
+    }
+  }
+}

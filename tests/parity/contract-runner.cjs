@@ -21,7 +21,7 @@ const MANIFEST = arg('--manifest', path.join(__dirname, 'word-parity-contracts.j
 const manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
 // Overrides carry the executable details (selector/pre/xfail); re-read them so
 // the runner always reflects the latest overrides without a regen step.
-const overrides = JSON.parse(fs.readFileSync(path.join(__dirname, 'word-parity-overrides.json'), 'utf8')).entries;
+const overrides = require('./overrides-loader.cjs').loadOverrides(__dirname).entries;
 
 const RUNNABLE = new Set(['format', 'structure', 'dialog', 'op', 'view']);
 let entries = manifest.entries.filter(e => {
@@ -93,8 +93,24 @@ async function checkEffect(page, ov, assertion) {
       }, assertion.dialogSelector || '.dialog-overlay'));
     }
     case 'op-emitted':
-    case 'viewport-flag':
       return { ok: false, observed: `observer for ${assertion.kind} not exercised yet` };
+    case 'viewport-flag': {
+      // read a class / attribute / computed-style prop on a root element
+      // (body, main, #editor …) after the click — for toggles that change
+      // document-level state instead of selection state (zoom, dark doc,
+      // format marks…)
+      return poll(page, () => page.evaluate((a) => {
+        const el = document.querySelector(a.rootSelector || 'main');
+        if (!el) return { ok: false, observed: `no root ${a.rootSelector || 'main'}` };
+        let v;
+        if (a.hasClass) v = el.classList.contains(a.hasClass);
+        else if (a.attr) v = el.getAttribute(a.attr);
+        else if (a.prop) v = getComputedStyle(el)[a.prop];
+        else return { ok: false, observed: 'viewport-flag needs hasClass|attr|prop' };
+        const ok = v === (a.prop ? a.equals : true) || v === String(a.equals);
+        return { ok, observed: `${a.hasClass ? 'class:' + a.hasClass : a.attr || a.prop}=${v}`, expected: `${a.equals === undefined ? true : a.equals}` };
+      }, assertion));
+    }
     default:
       return { ok: false, observed: `unknown assertion.kind ${assertion.kind}` };
   }

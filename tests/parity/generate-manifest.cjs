@@ -29,6 +29,11 @@ function ledgerDefault() {
 }
 const OUT = arg('--out', path.join(HERE, 'word-parity-contracts.json'));
 const OVERRIDES = arg('--overrides', path.join(HERE, 'word-parity-overrides.json'));
+const { loadOverrides } = require('./overrides-loader.cjs');
+// --overrides path OR the merged base+overrides.d view
+const RAW = OVERRIDES === path.join(HERE, 'word-parity-overrides.json')
+  ? loadOverrides(HERE)
+  : JSON.parse(fs.readFileSync(OVERRIDES, 'utf8'));
 
 // Default effektClass by command family — first match wins. Override file wins over these.
 const CLASS_RULES = [
@@ -81,7 +86,7 @@ function validateOverride(key, o, errors) {
 // downstream contract/surface run ENOENT'd — the CI job had been red 30/30.
 const ledger = JSON.parse(fs.readFileSync(LEDGER, 'utf8')).features;
 const featureStatus = (row) => ({ 1: 'real', 2: 'real', 4: 'real', 3: 'deferred' }[row.level] || 'real');
-const overrideFile = JSON.parse(fs.readFileSync(OVERRIDES, 'utf8'));
+const overrideFile = RAW;
 const overrideErrors = [];
 for (const [k, o] of Object.entries(overrideFile.entries || {})) validateOverride(k, o, overrideErrors);
 if (overrideErrors.length) {
