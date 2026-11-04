@@ -1,0 +1,123 @@
+{
+  "entries": {
+    "insert.page-number": {
+      "effektClass": "dialog",
+      "selector": "#btn-pagenumber",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#pagenumber-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "position select",
+          "selector": "#pagenumber-position"
+        },
+        {
+          "name": "format select",
+          "selector": "#pagenumber-format"
+        },
+        {
+          "name": "alignment select",
+          "selector": "#pagenumber-align"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-pagenumber-close"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-pagenumber-ok"
+        }
+      ],
+      "note": "ledger row: insert.page-number — census token insertpagenumber (wo.match insertPageNumber) has NO data-cmd control in the markup; the real insert-tab trigger #btn-pagenumber opens #pagenumber-dialog (editor.js:8857) whose Insert action emits insertPageNumber planting span.page-number (editor.js:8902/8929)"
+    },
+    "headerfooter.page-number": {
+      "effektClass": "dialog",
+      "selector": "#btn-pagenumber",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#pagenumber-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "position select",
+          "selector": "#pagenumber-position"
+        },
+        {
+          "name": "format select",
+          "selector": "#pagenumber-format"
+        },
+        {
+          "name": "alignment select",
+          "selector": "#pagenumber-align"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-pagenumber-close"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-pagenumber-ok"
+        }
+      ],
+      "note": "ledger row: headerfooter.page-number — census binds the SAME insert-tab insertPageNumber control as insert.page-number (wo.match insertPageNumber, where tab:insert), so the shared bound trigger is contracted; the HF-context twin #btn-hf-pagenumber (editor.js:9677, opens the same #pagenumber-dialog) sits on the contextual header-footer ribbon tab that stays hidden until HF edit mode (double-click a page header/footer), which the runner's fresh-page flow cannot enter"
+    },
+    "insert.date-time": {
+      "effektClass": "structure",
+      "selector": "#btn-datetime",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "op-emitted"
+      },
+      "xfail": true,
+      "note": "ledger row: insert.date-time — control exists and WORKS: #btn-datetime emits insertDate which inserts a plain 'YYYY-MM-DD' text run at the caret (editor.js:8839/1297, execCommand insertText); the runner's assertion vocabulary (computed-style/dom-mutation/dialog-visible/viewport-flag) has no text-node observer, so the working effect is not executable at L2 — needs a text-mutation assertion kind"
+    },
+    "headerfooter.date-time": {
+      "effektClass": "structure",
+      "selector": "#btn-datetime",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "op-emitted"
+      },
+      "xfail": true,
+      "note": "ledger row: headerfooter.date-time — census binds the same insert-tab btn-datetime control as insert.date-time; same harness gap (plain-text date insert, no text-node observer). The HF-context twin #btn-hf-datetime (editor.js:9679, same insertDate) additionally sits on the contextual header-footer ribbon tab hidden until HF edit mode"
+    },
+    "insert.dlg-date-time": {
+      "effektClass": "dialog",
+      "selector": "#btn-datetime",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#datetime-dialog"
+      },
+      "subFeatures": [],
+      "xfail": true,
+      "note": "ledger row: insert.dlg-date-time — OO promises a Date & time dialog (fields: Update automatically; buttons: Set as default/OK/Cancel); WO has NO datetime dialog (not in DIALOG_IDS, not in markup): #btn-datetime inserts a plain date string instead — real parity gap, dialog never appears"
+    },
+    "headerfooter.dlg-date-time": {
+      "effektClass": "dialog",
+      "selector": "#btn-datetime",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#datetime-dialog"
+      },
+      "subFeatures": [],
+      "xfail": true,
+      "note": "ledger row: headerfooter.dlg-date-time — same gap as insert.dlg-date-time: the OO-promised Date & time dialog does not exist in WO; both date/time entry points (insert-tab #btn-datetime, HF-tab #btn-hf-datetime) emit insertDate plain-text insertion"
+    },
+    "sb-track-changes": {
+      "effektClass": "op",
+      "selector": "#sb-track-changes",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#sb-track-changes",
+        "attr": "aria-pressed",
+        "equals": "true"
+      },
+      "note": "ledger row: statusbar.btn-doc-review — #sb-track-changes toggles tracking via setTrackChanges(!trackChangesOn) (editor.js:10433/4037): flips aria-pressed true/false on the statusbar button and .track-on on #editor; it does NOT open #trackchanges-dialog (only the collaboration-tab #btn-track-changes does), so the honest statusbar contract asserts the toggle state"
+    }
+  }
+}
