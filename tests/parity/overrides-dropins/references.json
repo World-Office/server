@@ -1,0 +1,118 @@
+{
+  "entries": {
+    "btn-addtext": {
+      "effektClass": "dialog",
+      "selector": "#btn-addtext",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#addtext-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "level select",
+          "selector": "#addtext-level"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-addtext-close"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-addtext-ok"
+        }
+      ],
+      "note": "ledger row: references.add-text — binding btn-addtext (tab:insert); #btn-addtext opens #addtext-dialog (editor.js openOverlayDialog), same dialog as the references-tab data-cmd=addText twin"
+    },
+    "crossref-dialog": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#crossref-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "target bookmark select",
+          "selector": "#crossref-target"
+        },
+        {
+          "name": "display text input",
+          "selector": "#crossref-text"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-crossref-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-crossref-ok"
+        }
+      ],
+      "note": "ledger rows: references.cross-reference + references.dlg-cross-reference — both bind token crossref-dialog with no distinct opener (data-cmd=openCrossref -> openCrossrefDialog -> #crossref-dialog), so one contract covers both rows"
+    },
+    "references.bookmark": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"bookmark\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#bookmark-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "name input",
+          "selector": "#bookmark-name"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-bookmark-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-bookmark-ok"
+        }
+      ],
+      "note": "ledger row: references.bookmark — feature-keyed (references.dlg-bookmarks shares token bookmark-dialog but promises the OO manage surface, declared divergence not gated here); data-cmd=bookmark on #btn-bookmark -> openBookmarkDialog -> #bookmark-dialog"
+    },
+    "references.link": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"link\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "text to display input",
+          "selector": "#link-text"
+        },
+        {
+          "name": "url input",
+          "selector": "#link-url"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-link-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-link-ok"
+        }
+      ],
+      "note": "ledger row: references.link — feature-keyed (insert.link shares token link); selector scoped to the references tab because data-cmd=link also sits on the insert-tab Hyperlink button; click -> insertLink -> #link-dialog"
+    },
+    "references.caption": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"insertCaption\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor p[style*=\"center\"] em"
+      },
+      "note": "ledger row: references.caption — feature-keyed (references.dlg-insert-caption shares token insertcaption); real behavior is inline, not the OO dialog: insertCaptionCommand drops a centered <p><em>Caption</em></p> at the caret (or figure/figcaption around a table); census evidence 'mutated #editor DOM: DIV:+P'"
+    }
+  }
+}
