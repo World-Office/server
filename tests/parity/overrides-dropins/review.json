@@ -1,0 +1,104 @@
+{
+  "entries": {
+    "compareversion": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"compareVersion\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#compare-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "document select",
+          "selector": "#compare-document-select"
+        },
+        {
+          "name": "error region",
+          "selector": "#compare-error"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-compare-apply"
+        }
+      ],
+      "woTab": "collaboration",
+      "note": "ledger row: review.compare"
+    },
+    "combinerevisions": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"combineRevisions\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#combine-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "documents multi-select",
+          "selector": "#combine-document-select"
+        },
+        {
+          "name": "error region",
+          "selector": "#combine-error"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-combine-apply"
+        }
+      ],
+      "woTab": "collaboration",
+      "note": "ledger row: review.combine"
+    },
+    "mailmerge": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"mailMerge\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#mailmerge-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "merge field select",
+          "selector": "#mailmerge-fields"
+        },
+        {
+          "name": "csv source picker",
+          "selector": "#btn-mailmerge-csv"
+        },
+        {
+          "name": "merge preview",
+          "selector": "#mailmerge-preview"
+        },
+        {
+          "name": "insert field action",
+          "selector": "#btn-mailmerge-field"
+        },
+        {
+          "name": "preview merged action",
+          "selector": "#btn-mailmerge-preview"
+        }
+      ],
+      "woTab": "collaboration",
+      "note": "ledger row: file.mail-merge"
+    },
+    "updatetoc": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"updateToc\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#updatetoc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "update scope select",
+          "selector": "#toc-update"
+        },
+        {
+          "name": "update action",
+          "selector": "#btn-updatetoc-ok"
+        }
+      ],
+      "woTab": "references",
+      "note": "ledger row: table.update-table — two updateToc buttons share the token (Update TOC / Update table); selector scoped to the references tab, first match = Update TOC, both open #updatetoc-dialog"
+    }
+  }
+}
