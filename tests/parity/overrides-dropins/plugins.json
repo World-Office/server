@@ -1,0 +1,120 @@
+{
+  "entries": {
+    "plugins-dialog": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"managePlugins\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#plugins-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "dialog title",
+          "selector": "#plugins-dialog-title"
+        },
+        {
+          "name": "installed plugins list",
+          "selector": "#plugins-list"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-plugins-close"
+        }
+      ],
+      "note": "ledger row: plugins.background-plugins (token 'plugins-dialog') — the real opener of #plugins-dialog is data-cmd=managePlugins (Plugins > Manage plugins), which fills #plugins-list from /api/plugins"
+    },
+    "ocrrun": {
+      "effektClass": "dialog",
+      "selector": "#btn-ocr",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ocr-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "cancel action",
+          "selector": "#btn-ocr-cancel"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-ocr-ok"
+        }
+      ],
+      "note": "ledger row: plugins.ocr — #btn-ocr (data-cmd=ocrRun, plugins tab) opens #ocr-dialog"
+    },
+    "btn-speech": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"readAloud\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#speech-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "voice select",
+          "selector": "#speech-voice"
+        },
+        {
+          "name": "rate slider",
+          "selector": "#speech-rate"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-speech-ok"
+        }
+      ],
+      "note": "ledger row: plugins.speech — #btn-speech (view tab) is only a dropdown trigger; #speech-dialog is really opened by the readAloud command, contracted via the visible plugins-tab Speech card (data-cmd=readAloud also exists on the hidden view-menu item, hence the tab scoping)"
+    },
+    "dictate": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"dictate\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#speechinput-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "language select",
+          "selector": "#speechinput-lang"
+        },
+        {
+          "name": "interim results checkbox",
+          "selector": "#speechinput-interim"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-speechinput-ok"
+        }
+      ],
+      "note": "ledger row: plugins.speech-input — data-cmd=dictate exists on TWO controls (hidden view-menu item + plugins-tab Speech input card); scoped to the visible plugins-tab card"
+    },
+    "photoeditor": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"photoEditor\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#photo-editor-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "image file input",
+          "selector": "#photo-editor-file"
+        },
+        {
+          "name": "editor canvas",
+          "selector": "#photo-editor-canvas"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-photo-editor-apply"
+        }
+      ],
+      "note": "ledger row: image.photo-editor — data-cmd=photoEditor (plugins tab) opens #photo-editor-dialog (canvas filter editor)"
+    }
+  }
+}
