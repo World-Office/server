@@ -146,3 +146,5 @@ state/
 # stray test artifact written by wo-docserver test binary into its crate dir
 core/crates/wo-docserver/demo.docx
 tests/parity/word-parity-gaps.md
+state-l2c/
+state-l2d/
