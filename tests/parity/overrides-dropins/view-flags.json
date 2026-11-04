@@ -1,0 +1,68 @@
+{
+  "entries": {
+    "btn-home-formatmarks": {
+      "effektClass": "view",
+      "selector": "#btn-home-formatmarks",
+      "woTab": "home",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "hasClass": "show-marks"
+      },
+      "note": "ledger row: formatting.nonprinting-characters-ctrl-shift-8 — setFormatMarks toggles .show-marks on #editor (editor.js:6577)"
+    },
+    "btn-zoom-out": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-out",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "0.9"
+      },
+      "note": "ledger row: statusbar.btn-zoom-down — applyZoom sets #editor style zoom 1 -> 0.9 and persists wo-zoom; no post because the runner clicks post BEFORE asserting (a reset post would zero the assertion). The next contract (btn-zoom-in, manifest order 238 > 237) continues from the persisted 0.9"
+    },
+    "btn-zoom-in": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-in",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1"
+      },
+      "note": "ledger row: statusbar.btn-zoom-up — runs after btn-zoom-out in manifest order, so zoom starts at the persisted 0.9; 0.9 + 0.1 lands exactly on 1 (IEEE754), proving the click handler ran (a broken handler would stay at 0.9) and ending with the clean default zoom for later contracts"
+    },
+    "sb-word-count": {
+      "effektClass": "dialog",
+      "selector": "#sb-word-count",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#info-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "document name",
+          "selector": "#info-name"
+        },
+        {
+          "name": "document path",
+          "selector": "#info-path"
+        },
+        {
+          "name": "language",
+          "selector": "#info-lang"
+        },
+        {
+          "name": "word/char stats",
+          "selector": "#info-stats"
+        },
+        {
+          "name": "file size",
+          "selector": "#info-size"
+        }
+      ],
+      "note": "ledger row: statusbar.word-count — data-cmd showWordCount runs docStats() + openDlg('info-dialog') (editor.js:1262), same dialog as the passing 'info' contract"
+    }
+  }
+}
