@@ -165,18 +165,9 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.goto(`${server.base}/word/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector('#editor', { timeout: 15000 });
       await page.waitForTimeout(1200);
-      // 1. ribbon tab context (only real ribbon tabs — surface:/backstage
-      // entries are handled by their prerequisite instead)
-      if (woTab && !/^(surface:|_)/.test(woTab) && woTab !== 'backstage') {
-        const needsClick = await page.evaluate((sel) => {
-          const pg = document.querySelector(`.ribbon-page[data-tab="${sel}"]`);
-          return pg && getComputedStyle(pg).display === 'none';
-        }, woTab);
-        if (needsClick) { await page.click(`.ribbon-tab[data-tab="${woTab}"]`); await sleep(150); }
-      }
-      // 2. prerequisites FIRST (a control inside a closed menu is invisible),
+      // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ov.pre === 'file-menu' || ov.pre === 'list' || ov.pre === 'ctx-menu' || ov.pre === 'ctx-menu-in-list' || ov.pre === 'ctx-menu-in-table' || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection'].includes(ov.pre) || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -249,6 +240,111 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if (ov.pre === 'ctx-menu-on-image') {
+        // object-gated ctx rows (wrap/crop/rotate/alt-text/save-as-picture…):
+        // insert a plain image, then right-click ON it (any mousedown over
+        // img/div.object sets lastObjectPick, so hasObjectSel holds)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <img id="fixture-img" alt="fixture" style="width:120px;height:80px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"> after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-img', { timeout: 3000 });
+        const box = await page.locator('#fixture-img').boundingBox();
+        if (!box) throw new Error('ctx-menu-on-image: no img box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-chart') {
+        // chart-gated ctx rows: same as on-image but the fixture is a chart
+        // vector object (img.vector-object[data-kind=chart] with a spec)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const spec = { type: 'bar', title: 'Fixture', rows: [['A', '1'], ['B', '2']], elements: {} };
+          const img = '<img id="fixture-chart" class="vector-object" data-kind="chart" alt="chart" style="width:420px;height:240px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-spec="' + JSON.stringify(spec).replace(/"/g, '&quot;').replace(/&(?!(amp|lt|gt|quot);)/g, '&amp;') + '">';
+          ed.innerHTML = '<p>before ' + img + ' after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-chart', { timeout: 3000 });
+        const box = await page.locator('#fixture-chart').boundingBox();
+        if (!box) throw new Error('ctx-menu-on-chart: no chart box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'chart-selection') {
+        // chart-design tab is CONTEXTUAL: it appears only after clicking a
+        // chart vector object (handler sets lastChartPick, unhides + activates
+        // the tab). Fixture chart, real left-click, tab becomes clickable.
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const spec = { type: 'bar', title: 'Fixture', rows: [['A', '1'], ['B', '2']], elements: {} };
+          const img = '<img id="fixture-chart" class="vector-object" data-kind="chart" alt="chart" style="width:420px;height:240px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-spec="' + JSON.stringify(spec).replace(/"/g, '&quot;').replace(/&(?!(amp|lt|gt|quot);)/g, '&amp;') + '">';
+          ed.innerHTML = '<p>before ' + img + ' after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-chart', { timeout: 3000 });
+        await page.locator('#fixture-chart').click({ timeout: 5000 });
+        await page.waitForSelector('.ribbon-tab[data-tab="chart-design"]:not([hidden])', { timeout: 3000 });
+        await sleep(200);
+      }
+      else if (ov.pre === 'ctx-menu-cells') {
+        // multi-cell ctx rows (merge cells…): selectedCells() = cells
+        // intersecting the selection range — select across row 1's two cells,
+        // right-click between them
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tr><td>alpha cell</td><td>beta cell</td></tr><tr><td>gamma</td><td>delta</td></tr></table><p>after</p>';
+          const tds = ed.querySelectorAll('td');
+          const range = document.createRange();
+          range.setStart(tds[0].firstChild, 0);
+          range.setEnd(tds[1].firstChild, tds[1].firstChild.textContent.length);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-cells pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'link-at-caret') {
+        // link-gated ctx rows (EditLink/RemoveLink…): anchor at the caret
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>see <a id="fixture-link" href="https://example.com/">link text</a> here</p>';
+          const a = ed.querySelector('#fixture-link');
+          const range = document.createRange();
+          range.selectNodeContents(a);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('link-at-caret pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       else if ((ov.pre || '').startsWith('backstage:')) {
         // 'backstage:<pane>' — open the File backstage, then switch it to
         // <pane> (rows like [data-pane=info] swap the backstage panel;
@@ -275,6 +371,20 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.mouse.click(r.x, r.y, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
+      }
+      // 1b. ribbon tab context AFTER the pre (contextual tabs like
+      // chart-design only become visible once the pre selected the object;
+      // backstage/file-menu pres cover the ribbon, but those rows use
+      // surface:/_ tab keys and never reach this click)
+      if (woTab && !/^(surface:|_)/.test(woTab) && woTab !== 'backstage') {
+        // a ctx-menu pre can leave the popup overlapping the ribbon — close it
+        const menuOpen = await page.evaluate(() => { const m = document.querySelector('#ctx-menu'); return m && !m.hidden; });
+        if (menuOpen) await page.keyboard.press('Escape');
+        const needsClick = await page.evaluate((sel) => {
+          const pg = document.querySelector(`.ribbon-page[data-tab="${sel}"]`);
+          return pg && getComputedStyle(pg).display === 'none';
+        }, woTab);
+        if (needsClick) { await page.click(`.ribbon-tab[data-tab="${woTab}"]`); await sleep(150); }
       }
       const selector = ov.selector || `[data-cmd="${e.wo}"]`;
       if (!ov.key) {

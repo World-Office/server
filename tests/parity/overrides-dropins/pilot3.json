@@ -1,0 +1,71 @@
+{
+  "entries": {
+    "ctx.edit-link": {
+      "effektClass": "dialog",
+      "pre": "link-at-caret",
+      "selector": "[data-ctx=\"EditLink\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "url input",
+          "selector": "#link-url"
+        },
+        {
+          "name": "text input",
+          "selector": "#link-text"
+        }
+      ],
+      "note": "pilot3: link-at-caret pre \u2014 EditLink opens #link-dialog prefilled from the anchor"
+    },
+    "ctx.edit-alt-text": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"EditAltText\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#image-alt-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "alt input",
+          "selector": "#image-alt-input"
+        }
+      ],
+      "note": "pilot3: ctx-menu-on-image pre \u2014 EditAltText opens #image-alt-dialog"
+    },
+    "ctx.merge-cells": {
+      "effektClass": "op",
+      "pre": "ctx-menu-cells",
+      "selector": "[data-ctx=\"TableMergeCells\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td[colspan]"
+      },
+      "note": "pilot3: ctx-menu-cells pre \u2014 merge row-1 cells sets colspan"
+    },
+    "chart.edit-data": {
+      "effektClass": "dialog",
+      "pre": "chart-selection",
+      "selector": "[data-cmd=\"chartEditData\"]",
+      "woTab": "chart-design",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#chart-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "title",
+          "selector": "#chart-title"
+        }
+      ],
+      "note": "pilot3: chart-selection pre \u2014 clicking the fixture chart activates the contextual chart-design tab; EditData opens #chart-dialog (openVectorEditor)"
+    }
+  }
+}
