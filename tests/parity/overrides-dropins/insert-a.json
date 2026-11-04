@@ -1,0 +1,88 @@
+{
+  "entries": {
+    "btn-symbol": {
+      "effektClass": "dialog",
+      "selector": "#btn-symbol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#symbol-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "font select",
+          "selector": "#symbol-font"
+        },
+        {
+          "name": "range select",
+          "selector": "#symbol-range"
+        },
+        {
+          "name": "symbol grid",
+          "selector": "#symbol-grid"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-symbol-close"
+        }
+      ],
+      "note": "ledger row: insert.symbol — button carries data-wo-cmd=btn-symbol (no data-cmd), wired in editor.js openSymbolDialog -> #symbol-dialog.open"
+    },
+    "btn-equation": {
+      "effektClass": "dialog",
+      "selector": "#btn-equation",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#equation-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "linear notation input",
+          "selector": "#equation-input"
+        },
+        {
+          "name": "live preview",
+          "selector": "#equation-preview"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-equation-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-equation-ok"
+        }
+      ],
+      "note": "ledger row: insert.equation — editor.js opens #equation-dialog with input + live SVG preview"
+    },
+    "btn-contentcontrol": {
+      "effektClass": "dialog",
+      "selector": "#btn-contentcontrol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#cc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "type select",
+          "selector": "#cc-type"
+        },
+        {
+          "name": "title input",
+          "selector": "#cc-title"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-cc-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-cc-ok"
+        }
+      ],
+      "note": "ledger row: insert.content-controls — editor.js opens #cc-dialog (type dropdown + optional title)"
+    }
+  }
+}
