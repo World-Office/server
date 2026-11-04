@@ -1,0 +1,160 @@
+{
+  "$comment": "L2D-06-KEY-INSERT: keyboard shortcut contracts — special-char inserts, page/column breaks, endnote, equation, hyperlink. All chords verified in editor.js C1 SHORTCUT PARITY block (lines 10965-11082) + guarded ctrl block (11231/11233). Ledger token for these rows is the chord itself (e.g. 'ctrl+shift+space'); keyed by feature id. effektClass supplied by override so 'unclassified' ledger rows become runnable (classify() gives the override precedence).",
+  "entries": {
+    "shortcut.nonbreakingspace": {
+      "effektClass": "op",
+      "key": "Control+Shift+Space",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u00a0"
+      },
+      "note": "ledger row: shortcut.nonbreakingspace — Ctrl+Shift+Space emits insertSymbol U+00A0 at the caret (editor.js:10983)"
+    },
+    "shortcut.nonbreakinghyphen": {
+      "effektClass": "op",
+      "key": "Control+Shift+Minus",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u2011"
+      },
+      "note": "ledger row: shortcut.nonbreakinghyphen — Ctrl+Shift+Minus emits insertSymbol U+2011 (editor.js:11003, ev.code Minus)"
+    },
+    "shortcut.horizontalellipsis": {
+      "effektClass": "op",
+      "key": "Alt+;",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u2026"
+      },
+      "note": "ledger row: shortcut.horizontalellipsis — plain Alt+; emits insertSymbol U+2026 (editor.js:11069, ev.code Semicolon)"
+    },
+    "shortcut.copyrightsign": {
+      "effektClass": "op",
+      "key": "Control+Alt+g",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u00a9"
+      },
+      "note": "ledger row: shortcut.copyrightsign — Ctrl+Alt+G emits insertSymbol U+00A9 (editor.js:11039)"
+    },
+    "shortcut.eurosign": {
+      "effektClass": "op",
+      "key": "Control+Alt+e",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u20ac"
+      },
+      "note": "ledger row: shortcut.eurosign — Ctrl+Alt+E emits insertSymbol U+20AC (editor.js:11038)"
+    },
+    "shortcut.registeredsign": {
+      "effektClass": "op",
+      "key": "Control+Alt+r",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u00ae"
+      },
+      "note": "ledger row: shortcut.registeredsign — Ctrl+Alt+R emits insertSymbol U+00AE (editor.js:11041)"
+    },
+    "shortcut.trademarksign": {
+      "effektClass": "op",
+      "key": "Control+Alt+t",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "\u2122"
+      },
+      "note": "ledger row: shortcut.trademarksign — Ctrl+Alt+T emits insertSymbol U+2122 (editor.js:11040)"
+    },
+    "shortcut.insertpagebreak": {
+      "effektClass": "structure",
+      "key": "Control+Enter",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .page-break"
+      },
+      "note": "ledger row: shortcut.insertpagebreak — Ctrl+Enter emits insertPageBreak which plants div.page-break + trailing p (editor.js:11231, 1177-1194)"
+    },
+    "shortcut.insertcolumnbreak": {
+      "effektClass": "structure",
+      "key": "Control+Shift+Enter",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .column-break"
+      },
+      "note": "ledger row: shortcut.insertcolumnbreak — Ctrl+Shift+Enter emits insertColumnBreak planting div.column-break (editor.js:11012, 1212-1227)"
+    },
+    "shortcut.insertendnotenow": {
+      "effektClass": "structure",
+      "key": "Control+Alt+d",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "Endnote text"
+      },
+      "note": "ledger row: shortcut.insertendnotenow — Ctrl+Alt+D emits insertEndnote: sup.endnote-citation + span.endnote 'Endnote text' (editor.js:11031, 1228-1244)"
+    },
+    "shortcut.insertequation": {
+      "effektClass": "structure",
+      "key": "Control+Alt+=",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: shortcut.insertequation — Ctrl+Alt+= emits equationTemplate without a value, inserting the default 'x' vector object as img.inline-object.vector-object[data-kind=equation] (editor.js:11026, 1545, 2356-2365, 13069-13095)"
+    },
+    "shortcut.inserthyperlink": {
+      "effektClass": "dialog",
+      "key": "Control+k",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "url input",
+          "selector": "#link-url"
+        },
+        {
+          "name": "text input",
+          "selector": "#link-text"
+        }
+      ],
+      "note": "ledger row: shortcut.inserthyperlink — Ctrl+K emits link -> insertLink opens #link-dialog and focuses #link-url (editor.js:11233, 1436, 2924-2942)"
+    },
+    "shortcut.insertfootnotenow": {
+      "effektClass": "structure",
+      "key": "Control+Alt+f",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "Footnote text"
+      },
+      "xfail": true,
+      "note": "ledger row: shortcut.insertfootnotenow — REAL GAP: Ctrl+Alt+F is NOT bound to insertFootnote; editor.js:11029 binds it to openBackstage('open') (recent-files pane). The promised footnote insertion never appears from the chord (insertFootnote exists only via toolbar #btn-footnote, the ctx Insert menu and the reference dialog)."
+    }
+  },
+  "$skipped": [
+    {
+      "row": "shortcut.visithyperlink",
+      "reason": "ledger binding 'browser caret/scroll (n/a for web editor)' — following a hyperlink needs an existing anchor under the caret plus a web binding WO does not have; no trigger the runner can fire"
+    },
+    {
+      "row": "shortcut.equationaddplaceholder",
+      "reason": "ledger binding 'browser caret/scroll (n/a for web editor)' — OO-only caret/scroll behaviour, no WO control or chord to trigger"
+    },
+    {
+      "row": "shortcut.equationchangealignmentleft",
+      "reason": "ledger binding 'browser caret/scroll (n/a for web editor)' — OO-only equation alignment behaviour, no WO control or chord to trigger"
+    },
+    {
+      "row": "shortcut.equationchangealignmentright",
+      "reason": "ledger binding 'browser caret/scroll (n/a for web editor)' — OO-only equation alignment behaviour, no WO control or chord to trigger"
+    }
+  ]
+}
