@@ -1,0 +1,40 @@
+{
+  "entries": {
+    "btn-find": {
+      "effektClass": "dialog",
+      "selector": "#btn-find",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        { "name": "find query input", "selector": "#find-query" },
+        { "name": "find next", "selector": "#btn-find-next" },
+        { "name": "find prev", "selector": "#btn-find-prev" },
+        { "name": "find close", "selector": "#btn-find-close" },
+        { "name": "replace input", "selector": "#find-replace" },
+        { "name": "replace action", "selector": "#btn-find-replace" },
+        { "name": "replace all action", "selector": "#btn-find-replace-all" },
+        { "name": "match case toggle", "selector": "#find-match-case" },
+        { "name": "match count", "selector": "#find-count" }
+      ],
+      "note": "ledger row: file.find-ctrl-f — toolbar Find (Ctrl+F) opens #find-dialog"
+    },
+    "btn-replace": {
+      "effektClass": "dialog",
+      "selector": "#btn-replace",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        { "name": "replace input", "selector": "#find-replace" },
+        { "name": "replace action", "selector": "#btn-find-replace" },
+        { "name": "replace all action", "selector": "#btn-find-replace-all" }
+      ],
+      "note": "ledger row: formatting.replace-ctrl-h — toolbar Replace (Ctrl+H) opens the same #find-dialog with replace focus (editor.js openFindDialog(true))"
+    }
+  }
+}
