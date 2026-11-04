@@ -1,0 +1,129 @@
+{
+  "entries": {
+    "ctx.link": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Link\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "text to display input",
+          "selector": "#link-text"
+        },
+        {
+          "name": "url input",
+          "selector": "#link-url"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-link-ok"
+        }
+      ],
+      "note": "ledger row: ctx.link (Hyperlink) — ctx Link opens #link-dialog in insert mode (editor.js insertLink); no post: the runner clicks post before checkEffect, which would close the dialog under assertion"
+    },
+    "ctx.edit-link": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"EditLink\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "url input",
+          "selector": "#link-url"
+        }
+      ],
+      "xfail": true,
+      "note": "needs link-at-caret pre — editLinkAtSelection early-returns via setStatus('… editLink') when anchorAtSelection() finds no <a href> inside the selection (editor.js:2997-3003); the ctx-menu pre cannot build link state, so the promised #link-dialog edit mode never appears"
+    },
+    "ctx.remove-link": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"RemoveLink\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor a[href]"
+      },
+      "xfail": true,
+      "note": "needs link-at-caret pre — removeLinkAtSelection early-returns via setStatus('… removeLink') when anchorAtSelection() finds no <a href> at the selection (editor.js:3015-3021); unlinking an anchor that cannot be planted is unassertable"
+    },
+    "ctx.clear-field": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ClearField\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor .page-number, #editor [data-field]"
+      },
+      "xfail": true,
+      "note": "needs field-at-caret pre — row is data-showif=\"field\" (index.html:1663, hidden unless .page-number/[data-field] sits at the caret) and the handler early-returns via setStatus(NoFieldAtCaret) (editor.js:9931-9944); the pre vocabulary cannot plant a field"
+    },
+    "ctx.update-field": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"UpdateField\"]",
+      "assertion": {
+        "kind": "op-emitted"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: fieldOpAtSelection('update') only dispatches a fire-and-forget wo:field-op CustomEvent — no listener in editor.js, promised field-dialog slice unimplemented (editor.js:3054-3066); the runner's op-emitted observer is a stub (contract-runner.cjs:112-113), so nothing is assertable"
+    },
+    "ctx.edit-field": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"EditField\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#field-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "field dialog exists",
+          "selector": "#field-dialog .dialog"
+        }
+      ],
+      "xfail": true,
+      "note": "KNOWN GAP: fieldOpAtSelection('edit') only dispatches a fire-and-forget wo:field-op CustomEvent — no listener, promised #field-dialog edit slice never opens (editor.js:3054-3066); op-emitted observer is a stub (contract-runner.cjs:112-113)"
+    },
+    "ctx.toggle-field-codes": {
+      "effektClass": "view",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ToggleFieldCodes\"]",
+      "assertion": {
+        "kind": "op-emitted"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: fieldOpAtSelection('toggle-codes') only dispatches a fire-and-forget wo:field-op CustomEvent — no field-code view toggle exists in the DOM model (editor.js:3054-3066); op-emitted observer is a stub (contract-runner.cjs:112-113)"
+    },
+    "ctx.content-control-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ContentControlSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#cc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "type select",
+          "selector": "#cc-type"
+        },
+        {
+          "name": "title input",
+          "selector": "#cc-title"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-cc-ok"
+        }
+      ],
+      "xfail": true,
+      "note": "needs content-control-at-caret pre — ContentControlSettings dispatches wo:content-control-settings then early-returns via setStatus(NoContentControl) when contentControlAtSelection() finds no span.content-control at the caret (editor.js:10205-10208); #cc-dialog never opens without planted content-control state"
+    }
+  }
+}
