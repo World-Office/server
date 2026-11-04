@@ -136,9 +136,9 @@ jobs:
         run: |
           cd wo-test-harness
           # pinned: diff.js loads pixelmatch's v6 NAMED export
-          # (v5 was directly callable); pngjs 7 matches. capture.js's
-          # playwright dep is not exercised by this job.
-          npm install pixelmatch@6.4.0 pngjs@7.0.0
+          # (v5 was directly callable); 6.0.0 is the only v6 on npm. pngjs 7
+          # matches. capture.js's playwright dep is not exercised by this job.
+          npm install pixelmatch@6.0.0 pngjs@7.0.0
       - name: Run visual diff self-test
         run: |
           cd wo-test-harness/census/visual

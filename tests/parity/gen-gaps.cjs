@@ -84,7 +84,13 @@ out.push('- **Right-click context menu** — census-oo.cjs walks ribbon tabs + f
 out.push('- **OO right panel** — the OO properties panel (paragraph/shape/chart advanced settings) is not part of the ribbon walk; its entry points (e.g. line-spacing options) appear as single ribbon controls.');
 out.push('');
 
-const dest = path.join(HERE, '..', '..', '..', 'plan', 'PARITY_GAPS.md');
+// dest: the parent-workspace plan/ dir when present (dev box), else
+// inside the repo — CI checks out server alone and /…/plan/ does not exist
+// there (first CI run after the 2026-11-04 port ENOENT'd on exactly this).
+const planDir = path.join(HERE, '..', '..', '..', 'plan');
+const dest = fs.existsSync(planDir)
+  ? path.join(planDir, 'PARITY_GAPS.md')
+  : path.join(HERE, 'word-parity-gaps.md');
 fs.writeFileSync(dest, out.join('\n') + '\n');
 console.log(`gap report -> ${dest}`);
 console.log(`  known-gaps ${gaps.length}, stubs ${stubs.length}, unverified ${unverified.length}, covered-clusters ${clusters.length}`);
