@@ -48,19 +48,15 @@ const LABEL_RULES = CLASS_RULES.map(([re, cls]) => [new RegExp(re.source.replace
 
 function classify(row, override) {
   if (override && override.effektClass) return override.effektClass;
-  if (row.status === 'real') {
-    // token first, but fall back to the label — icon-only OO controls come
-    // with asc-genNNN ids whose meaning only the census label carries
-    const tok = (row.wo || row.token || '').toLowerCase();
-    const hay = (tok + ' ' + (row.label || '')).toLowerCase();
-    for (const [re, cls] of CLASS_RULES) if (re.test(tok)) return cls;
-    for (const [re, cls] of LABEL_RULES) if (re.test(hay)) return cls;
-    return 'unclassified';
-  }
-  if (row.status === 'covered') return 'covered-cluster';
-  if (row.status === 'stub') return 'stub';
-  if (row.status === 'deferred') return 'stub'; // declared divergence — loud
-  return row.status === 'global-repeat' ? 'view' : 'unclassified';
+  // All current ledger rows carry a WO binding (level 1-4); classify by
+  // the binding token, falling back to the OO census label — icon-only OO
+  // controls come with asc-genNNN ids whose meaning only the label carries
+  const tok = ((row.wo && row.wo.match) || '').toLowerCase();
+  const label = (row.oo && row.oo[0] && row.oo[0].label) || '';
+  const hay = (tok + ' ' + label).toLowerCase();
+  for (const [re, cls] of CLASS_RULES) if (re.test(tok)) return cls;
+  for (const [re, cls] of LABEL_RULES) if (re.test(hay)) return cls;
+  return 'unclassified';
 }
 
 const VALID_CLASSES = new Set(['format', 'structure', 'dialog', 'op', 'view', 'stub', 'covered-cluster', 'unclassified']);
@@ -76,7 +72,15 @@ function validateOverride(key, o, errors) {
   if (o.effektClass === 'dialog' && o.assertion && o.assertion.kind === 'dialog-visible' && !Array.isArray(o.subFeatures)) errors.push(`${key}: dialog-visible needs subFeatures[]`);
 }
 
-const ledger = JSON.parse(fs.readFileSync(LEDGER, 'utf8')).ledger;
+// 2026-11-04: ported to the current ledger schema. The old reader expected
+// {ledger: [{token, tab, id, label, status, wo, wo_tab}]} — that shape is
+// gone; both committed ledgers are {version, generated, levels, totals,
+// features: [{feature, cluster, kind, level, oo: [{surface,label,id}], wo:
+// {match, where}, evidence}]}. The old reader crashed with "ledger is not
+// iterable" (undefined .ledger), the manifest never materialized, and every
+// downstream contract/surface run ENOENT'd — the CI job had been red 30/30.
+const ledger = JSON.parse(fs.readFileSync(LEDGER, 'utf8')).features;
+const featureStatus = (row) => ({ 1: 'real', 2: 'real', 4: 'real', 3: 'deferred' }[row.level] || 'real');
 const overrideFile = JSON.parse(fs.readFileSync(OVERRIDES, 'utf8'));
 const overrideErrors = [];
 for (const [k, o] of Object.entries(overrideFile.entries || {})) validateOverride(k, o, overrideErrors);
@@ -89,25 +93,47 @@ const overrides = overrideFile.entries;
 
 const entries = [];
 let unclassified = 0;
+const matched = new Set();
 for (const row of ledger) {
-  const key = (row.token || '').toLowerCase();
-  const override = overrides[key] || overrides[row.id] || null;
+  const woMatch = (row.wo && row.wo.match) || '';
+  // label-ish matches ("Table \u25be", "Ctrl+B") are not binding ids — key
+  // those entries by the stable feature id instead
+  const token = (woMatch && !woMatch.includes(' ') ? woMatch : row.feature).toLowerCase();
+  const override = overrides[token] || overrides[row.feature] || null;
+  if (override) matched.add(overrides[token] ? token : row.feature);
   const effektClass = classify(row, override);
   if (effektClass === 'unclassified') unclassified++;
   const entry = {
-    tab: row.tab,
-    ooId: row.id,
-    label: row.label,
-    token: row.token,
-    censusStatus: row.status,
-    wo: row.wo || row.covered || null,
-    woTab: row.wo_tab || null,
+    tab: (row.oo && row.oo[0] && row.oo[0].surface) || '',
+    ooId: (row.oo && row.oo[0] && row.oo[0].id) || row.feature,
+    label: (row.oo && row.oo[0] && row.oo[0].label) || row.feature,
+    token,
+    feature: row.feature,
+    level: row.level,
+    censusStatus: featureStatus(row),
+    wo: row.wo || null,
+    woTab: null,
     effektClass,
     assertion: (override && override.assertion) || { kind: 'unspecified' },
     subFeatures: (override && override.subFeatures) || null,
   };
   if (override && override.note) entry.note = override.note;
   entries.push(entry);
+}
+
+// Overrides that matched no ledger row would silently vanish — keep them as
+// override-only entries (their selectors/assertions are editor-side facts)
+// and report the drift loudly so the keys get re-pointed at the new ids.
+for (const [key, ov] of Object.entries(overrides)) {
+  if (matched.has(key)) continue;
+  entries.push({
+    tab: ov.woTab || '', ooId: key, label: key, token: key, feature: key,
+    level: null, censusStatus: 'override-only', wo: null, woTab: ov.woTab || null,
+    effektClass: ov.effektClass || 'unclassified',
+    assertion: ov.assertion || { kind: 'unspecified' },
+    subFeatures: ov.subFeatures || null, note: (ov.note || '') + ' [override-only: no ledger row matched this key]',
+  });
+  console.warn(`WARN override "${key}" matched no ledger row — emitted as override-only entry`);
 }
 
 const byClass = {};

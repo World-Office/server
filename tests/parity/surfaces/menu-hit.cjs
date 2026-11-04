@@ -17,6 +17,11 @@ const TABS = ['home', 'insert', 'draw', 'layout', 'references', 'collaboration',
     const r = await page.evaluate((t) => {
       const btn = document.querySelector(`.ribbon-tab[data-tab="${t}"]`);
       if (!btn) return { ok: false, why: 'tab button missing' };
+      // contextual tabs (hidden until a header/footer or chart is edited —
+      // OO parity) are hidden by design: SKIP, not FAIL. A hidden tab has a
+      // 0x0 rect and elementFromPoint lands on the titlebar — that false
+      // "BLOCKED by titlebar" red herring cost an hour on 2026-11-04.
+      if (btn.hidden) return { ok: true, skip: true, why: 'contextual (hidden until its context is entered)' };
       const b = btn.getBoundingClientRect();
       const el = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
       if (!el || !el.closest('.ribbon-tab')) return { ok: false, why: 'BLOCKED by ' + (el ? el.className : 'nothing') };
@@ -26,7 +31,7 @@ const TABS = ['home', 'insert', 'draw', 'layout', 'references', 'collaboration',
       return { ok: !!vis, why: vis ? `${pg.querySelectorAll('button,[role=button],input,select').length} controls` : 'page did not show' };
     }, tab);
     if (!r.ok) fails++;
-    console.log(`${r.ok ? 'PASS' : 'FAIL'} tab ${tab}: ${r.why}`);
+    console.log(`${r.ok ? (r.skip ? 'SKIP' : 'PASS') : 'FAIL'} tab ${tab}: ${r.why}`);
   }
   await browser.close();
   if (server.owned && server.child) server.child.kill('SIGKILL');

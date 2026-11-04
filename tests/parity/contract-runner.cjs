@@ -142,7 +142,20 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 2. prerequisites FIRST (a control inside a closed menu is invisible),
       // then presence + hit-test (elementFromPoint, not just DOM)
+      const preMenu = ov.pre === 'file-menu' || (ov.pre || '').startsWith('backstage');
       if (ov.pre === 'file-menu') await openFileMenu(page);
+      else if ((ov.pre || '').startsWith('backstage:')) {
+        // 'backstage:<pane>' — open the File backstage, then switch it to
+        // <pane> (rows like [data-pane=info] swap the backstage panel;
+        // controls inside the pane are invisible until then)
+        await openFileMenu(page);
+        await page.evaluate((p) => {
+          const b = document.querySelector(`[data-pane="${p}"]`);
+          if (!b) throw new Error('backstage row missing: ' + p);
+          b.click();
+        }, ov.pre.slice('backstage:'.length));
+        await sleep(250);
+      }
       const selector = ov.selector || `[data-cmd="${e.wo}"]`;
       const loc = page.locator(selector).first();
       if (await loc.count() === 0) throw new Error(`control not found: ${selector}`);
@@ -155,7 +168,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       if (!hit) throw new Error('control present but hit-test BLOCKED (elementFromPoint misses a control)');
 
       // 3. caret placement (not needed for menu/dialog flows)
-      if (ov.pre !== 'file-menu') {
+      if (!preMenu) {
         // place the caret over the first word that actually has text
         await placeCaret(page);
       }
@@ -165,7 +178,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // would collapse it before the command handler runs). One retry for
       // cold-boot races (caret not settled, dialog open animation).
       const trigger = () => {
-        if (ov.pre !== 'file-menu') placeCaret(page);
+        if (!preMenu) placeCaret(page);
         return page.evaluate((sel) => document.querySelector(sel).click(), selector)
           .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
       };
@@ -195,7 +208,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       res.expected = JSON.stringify(ov.assertion) + (ov.subFeatures ? ` +${ov.subFeatures.length} subFeatures` : '');
       res.observed = observed;
       // close whatever we opened for the next case
-      if (ov.pre === 'file-menu' || ov.post || (ok && ov.assertion.kind === 'dialog-visible')) {
+      if (preMenu || ov.post || (ok && ov.assertion.kind === 'dialog-visible')) {
         await page.keyboard.press('Escape').catch(() => {});
         await sleep(150);
       }

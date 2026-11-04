@@ -88,6 +88,31 @@ jobs:
           name: ledger-report
           path: wo-test-harness/census/ledger/ledger.json
 
+  editor-gates:
+    name: Editor Gate Suite
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run editor *.test.mjs gates
+        run: |
+          cd apps/web/apps/documenteditor-wysiwyg
+          fails=0
+          for f in *.test.mjs; do
+            # shift-enter-behavior.test.mjs is jest+CommonJS on purpose (see
+            # its header: Node 22's jest cannot require ESM) and drives a live
+            # editor via WO_EDITOR_URL — it belongs to the live-stack runs.
+            if [ "$f" = "shift-enter-behavior.test.mjs" ]; then
+              echo "SKIP $f (jest/live-stack)"
+              continue
+            fi
+            echo "-- $f"
+            node "$f" || fails=$((fails+1))
+          done
+          echo "editor gates: $(( $(ls *.test.mjs | wc -l ) - 1 - fails )) pass, $fails fail"
+          exit $fails
+
   visual-diff:
     name: Visual Diff
     needs: build
@@ -110,12 +135,14 @@ jobs:
       - name: Install dependencies
         run: |
           cd wo-test-harness
-          npm install pixelmatch pngjs @playwright/test
-      - name: Run visual diff
+          # pinned: diff.js loads pixelmatch's v6 NAMED export
+          # (v5 was directly callable); pngjs 7 matches. capture.js's
+          # playwright dep is not exercised by this job.
+          npm install pixelmatch@6.4.0 pngjs@7.0.0
+      - name: Run visual diff self-test
         run: |
           cd wo-test-harness/census/visual
-          node diff.js
-        continue-on-error: true
+          node diff.js --self-test
 
   performance:
     name: Performance Benchmark
@@ -148,7 +175,7 @@ jobs:
 
   report:
     name: Generate Parity Report
-    needs: [ledger-build, visual-diff, performance]
+    needs: [ledger-build, editor-gates, visual-diff, performance]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -177,6 +204,7 @@ jobs:
             echo "| Build | ${{ needs.build.result }} | Core compilation |"
             echo "| Tests | ${{ needs.test-core.result }} | Unit tests |"
             echo "| Ledger | ${{ needs.ledger-build.result }} | Feature tracking |"
+            echo "| Editor Gates | ${{ needs.editor-gates.result }} | documenteditor-wysiwyg *.test.mjs suite |"
             echo "| Visual | ${{ needs.visual-diff.result }} | Screenshot comparison |"
             echo "| Performance | ${{ needs.performance.result }} | Benchmark results |"
             echo

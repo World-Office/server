@@ -24,8 +24,10 @@ function ledgerDefault() {
   }
   throw new Error('ledger.json not found — set WO_LEDGER');
 }
-const ledger = JSON.parse(fs.readFileSync(process.env.WO_LEDGER || ledgerDefault(), 'utf8')).ledger;
-const rowOf = tok => ledger.find(r => r.token === tok) || {};
+// 2026-11-04: same ledger-shape port as generate-manifest.cjs — the reader
+// expected the removed {ledger:[...]} envelope and rows with a .token field.
+const ledger = JSON.parse(fs.readFileSync(process.env.WO_LEDGER || ledgerDefault(), 'utf8')).features;
+const rowOf = tok => ledger.find(r => ((r.wo && r.wo.match) || '').toLowerCase() === tok || r.feature === tok) || {};
 
 const out = [];
 out.push('# Word-Office Parity Gaps');
