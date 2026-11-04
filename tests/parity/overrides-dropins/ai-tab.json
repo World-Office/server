@@ -1,0 +1,176 @@
+{
+  "entries": {
+    "aisettings": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiSettings\"]",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#settings-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "theme select",
+          "selector": "#settings-theme"
+        },
+        {
+          "name": "language select",
+          "selector": "#settings-lang"
+        },
+        {
+          "name": "spellcheck toggle",
+          "selector": "#settings-spellcheck"
+        },
+        {
+          "name": "zoom input",
+          "selector": "#settings-zoom"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-settings-ok"
+        }
+      ],
+      "note": "ledger row: other.settings — AF11-SPELLCHECK-CLOSEOUT: the AI-tab Settings card (data-cmd=aiSettings) syncs and opens the shared settings dialog (same one as File > Settings); scoped to the ai tab even though data-cmd is unique"
+    },
+    "btn-ai-assistant": {
+      "effektClass": "dialog",
+      "selector": "#btn-ai-assistant",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "error region",
+          "selector": "#ai-propose-error"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        }
+      ],
+      "note": "ledger row: other.chatbot — OO Chatbot maps to the WO AI assistant card (btn-ai-assistant), which opens the ai-propose dialog pre-filled with a style-improvement instruction"
+    },
+    "aisummarize": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiSummarize\"]",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "error region",
+          "selector": "#ai-propose-error"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        }
+      ],
+      "note": "ledger row: other.summarization — data-cmd=aiSummarize opens the ai-propose dialog with a summarize instruction (not the plugin-unavailable dialog)"
+    },
+    "other.translation": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiTranslate\"]",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "error region",
+          "selector": "#ai-propose-error"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        }
+      ],
+      "note": "ledger row: other.translation — keyed by FEATURE ID because token aitranslate is shared with plugins.translator (plugins-tab Translator card, out of this drop-in's scope); #btn-ai-translate opens the ai-propose dialog with a translate-to-German instruction; selector scoped to the ai tab since data-cmd=aiTranslate also exists on the plugins tab"
+    },
+    "btn-ai-grammar": {
+      "effektClass": "dialog",
+      "selector": "#btn-ai-grammar",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "error region",
+          "selector": "#ai-propose-error"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        }
+      ],
+      "note": "ledger row: review.grammar-spelling — btn-ai-grammar opens the ai-propose dialog with a fix-grammar-and-spelling instruction"
+    },
+    "createaiassistant": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"createAiAssistant\"]",
+      "woTab": "ai",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "error region",
+          "selector": "#ai-propose-error"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        }
+      ],
+      "note": "ledger row: other.create-ai-assistant — data-cmd=createAiAssistant opens the ai-propose dialog with a style-improvement instruction"
+    }
+  }
+}
