@@ -1,0 +1,273 @@
+{
+  "entries": {
+    "ctx.bring-forward": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-forward\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "zIndex",
+        "equals": "1"
+      },
+      "note": "ledger row ctx.bring-forward — WO control is the Layout tab objectOp button (index.html Layout.Object.BringForward); ctx-menu-on-image pre right-clicks the fixture img so selectedObject() falls back to lastObjectPick; applyObjectOp sets position:relative and zIndex 0->1"
+    },
+    "ctx.send-backward": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"send-backward\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "zIndex",
+        "equals": "-1"
+      },
+      "note": "ledger row ctx.send-backward — Layout tab objectOp send-backward decrements the picked img's zIndex 0->-1 (applyObjectOp z-order branch)"
+    },
+    "ctx.bring-to-foreground": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-to-foreground\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "zIndex",
+        "equals": "1"
+      },
+      "note": "ledger row ctx.bring-to-foreground — Layout tab objectOp bring-to-foreground sets zIndex to siblings' max+1 (single fixture img: 0+1); override reclassifies the unclassified census row so the contract runs"
+    },
+    "ctx.send-to-background": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"send-to-background\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "zIndex",
+        "equals": "-1"
+      },
+      "note": "ledger row ctx.send-to-background — Layout tab objectOp send-to-background sets zIndex to siblings' min-1 (single fixture img: 0-1); census class 'dialog' was a ledger mislabel, reclassified as op"
+    },
+    "ctx.align-left": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-left\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "hasClass": "obj-square"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-left — handler (objectOp align-left) would apply obj-square to the picked img, but the control sits in the Layout tab's hidden 'Align \u25be' dropdown (ul.menu-list[hidden]) and the runner's presence+hit-test gate cannot reach it; needs a dropdown-open pre (same gap class as layout.json's page.orientation skip)"
+    },
+    "ctx.align-center": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-center\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "hasClass": "obj-center"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-center — objectOp align-center would apply obj-center, but the item is dropdown-hidden (Layout 'Align \u25be' ul.menu-list[hidden]) and unreachable for the runner's hit-test; needs a dropdown-open pre"
+    },
+    "ctx.align-right": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-right\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "hasClass": "obj-right"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-right — objectOp align-right would apply obj-square+obj-right, but the item is dropdown-hidden (Layout 'Align \u25be' ul.menu-list[hidden]) and unreachable for the runner's hit-test; needs a dropdown-open pre"
+    },
+    "ctx.align-top": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-top\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "verticalAlign",
+        "equals": "top"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-top — objectOp align-top sets inline verticalAlign=top on the picked img, but the item is dropdown-hidden (Layout 'Align \u25be' ul.menu-list[hidden]) and unreachable for the runner's hit-test; needs a dropdown-open pre"
+    },
+    "ctx.align-middle": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-middle\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "verticalAlign",
+        "equals": "middle"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-middle — objectOp align-middle sets verticalAlign=middle, but the item is dropdown-hidden (Layout 'Align \u25be' ul.menu-list[hidden]) and unreachable for the runner's hit-test; needs a dropdown-open pre"
+    },
+    "ctx.align-bottom": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"align-bottom\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "verticalAlign",
+        "equals": "bottom"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.align-bottom — objectOp align-bottom sets verticalAlign=bottom, but the item is dropdown-hidden (Layout 'Align \u25be' ul.menu-list[hidden]) and unreachable for the runner's hit-test; needs a dropdown-open pre"
+    },
+    "ctx.distribute-horizontally": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"DistributeHorizontally\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "position",
+        "equals": "absolute"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.distribute-horizontally — ctx row is visible under data-showif=object, but distributeObjectsHorizontally needs selectedObjects.length >= 2 (shift-click multi-select); the ctx-menu-on-image pre picks a single fixture img so the handler no-ops with Status.DistributeNeedsTwoObjects \u2014 needs a multi-object pre (real runner vocabulary gap)"
+    },
+    "ctx.distribute-vertically": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"DistributeVertically\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "prop": "position",
+        "equals": "absolute"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.distribute-vertically — distributeObjectsVertically needs selectedObjects.length >= 2 (shift-click multi-select); single-fixture-img pre leaves the handler no-oping \u2014 needs a multi-object pre (real runner vocabulary gap)"
+    },
+    "ctx.merge-shapes": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"merge-union\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "attr": "data-merge-op"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.merge-shapes — census binds it to the Layout tab objectOp merge-union/intersect/subtract items, which sit in the hidden 'Merge shapes \u25be' dropdown (ul.menu-list[hidden]) AND boolean shape merge needs >=2 selected shapes; double gap (dropdown-open pre + multi-object pre)"
+    },
+    "ctx.group": {
+      "effektClass": "format",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"group\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.object-group"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.group — Layout tab Group button is reachable (objectOp group -> groupSelectedObjects), but grouping requires >=2 img/div.object siblings in the parent; the single fixture img returns false and nothing mutates \u2014 needs a multi-object pre (real runner vocabulary gap)"
+    },
+    "ctx.ungroup": {
+      "effektClass": "op",
+      "pre": "ctx-menu-on-image",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"ungroup\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.object-group"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.ungroup — Layout tab Ungroup button is reachable, but ungroupSelectedObjects needs a selected .object-group (grouped-object state the runner cannot build: grouping itself already needs multi-select) \u2014 needs a grouped-object/multi-object pre (real runner vocabulary gap)"
+    },
+    "ctx.top": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignTop\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "verticalAlign",
+        "equals": "top"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.top — grep confirmed these are the TABLE text-alignment rows (data-ctx=TextAlignTop, data-subitem=text-align, data-showif=table): Top/Middle/Bottom set vertical-align on the selected td. ctx-menu-in-table satisfies the showif gate, but the rows are children of the TextAlignment submenu and stay hidden until the header row toggles them (collapseAllCtxSubmenus on every menu open, editor.js) \u2014 the single-click runner cannot open the submenu; needs a submenu-open pre"
+    },
+    "ctx.middle": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignMiddle\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "verticalAlign",
+        "equals": "middle"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.middle — TextAlignMiddle table row, hidden until the TextAlignment submenu header toggles it (collapseAllCtxSubmenus on every menu open); single-click runner cannot open the submenu \u2014 needs a submenu-open pre"
+    },
+    "ctx.bottom": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignBottom\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "verticalAlign",
+        "equals": "bottom"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.bottom — TextAlignBottom table row, hidden until the TextAlignment submenu header toggles it (collapseAllCtxSubmenus on every menu open); single-click runner cannot open the submenu \u2014 needs a submenu-open pre"
+    },
+    "ctx.left": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignLeft\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "textAlign",
+        "equals": "left"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.left — TextAlignLeft table row (sets text-align, not z-order), hidden until the TextAlignment submenu header toggles it (collapseAllCtxSubmenus on every menu open); single-click runner cannot open the submenu \u2014 needs a submenu-open pre"
+    },
+    "ctx.center": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignCenter\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "textAlign",
+        "equals": "center"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.center — TextAlignCenter table row (sets text-align, not z-order), hidden until the TextAlignment submenu header toggles it (collapseAllCtxSubmenus on every menu open); single-click runner cannot open the submenu \u2014 needs a submenu-open pre"
+    },
+    "ctx.right": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignRight\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "textAlign",
+        "equals": "right"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ledger row ctx.right — TextAlignRight table row (sets text-align, not z-order), hidden until the TextAlignment submenu header toggles it (collapseAllCtxSubmenus on every menu open); single-click runner cannot open the submenu \u2014 needs a submenu-open pre"
+    }
+  },
+  "$skipped": []
+}
