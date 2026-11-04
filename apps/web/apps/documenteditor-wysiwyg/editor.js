@@ -1306,8 +1306,11 @@
       // Never let a symbol/date-land inside an <hr> or page-break marker
       // whose caret Chromium re-restored on focus.
       moveCaretPastStructuralMarkers();
+      // Word inserts the LOCAL date; toISOString() would drift a day for
+      // every non-UTC timezone between local midnight and UTC midnight
+      const now = new Date();
       const text = cmd === "insertDate"
-        ? new Date().toISOString().slice(0, 10)
+        ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
         : String(value || "");
       try { document.execCommand("insertText", false, text); } catch (err) {}
       markDirty();

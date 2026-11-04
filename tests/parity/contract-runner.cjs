@@ -101,9 +101,11 @@ async function checkEffect(page, ov, assertion) {
         let ok;
         if (a.containsDate) {
           const d = new Date();
-          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          ok = text.includes(iso);
-          return { ok, observed: `text ${ok ? 'contains' : 'lacks'} today (${iso})` };
+          const y = new Date(Date.now() - 864e5); // midnight race: the dialog
+          // may have rendered the date a second before the check
+          const iso = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+          ok = text.includes(iso(d)) || text.includes(iso(y));
+          return { ok, observed: `text ${ok ? 'contains' : 'lacks'} today/yesterday (${iso(d)}/${iso(y)})` };
         }
         ok = a.contains ? text.includes(a.contains) : text.trim().length > 0;
         return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}` : `text lacks ${JSON.stringify(a.contains)}` };
@@ -390,7 +392,10 @@ async function subFeatureAudit(page, ov, dialogSel) {
       if (!ov.key) {
       const loc = page.locator(selector).first();
       if (await loc.count() === 0) throw new Error(`control not found: ${selector}`);
-      await loc.scrollIntoViewIfNeeded();
+      // hidden/unstable controls (contextual ctx items) never scroll into
+      // view — the playwright default here is 30s, which xfail rows would
+      // burn wholesale; 3s is plenty for genuinely visible controls
+      await loc.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
       const box = await loc.boundingBox();
       const hit = box && await page.evaluate(({ x, y }) => {
         const el = document.elementFromPoint(x, y);
