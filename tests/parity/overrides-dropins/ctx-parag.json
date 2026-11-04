@@ -1,0 +1,161 @@
+{
+  "entries": {
+    "ctx.insert-caption": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Caption\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "Caption"
+      },
+      "note": "ledger row: ctx.insert-caption \u2014 ctx data-ctx=Caption runs insertCaptionCommand (editor.js:7516), which at a plain-text caret inserts a centered <p><em>Caption</em></p> run (no dialog at this surface; the figure/figcaption path only fires inside a table cell)"
+    },
+    "ctx.paragraph-advanced-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ParagraphSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#paragraph-settings-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "alignment select",
+          "selector": "#ps-align"
+        },
+        {
+          "name": "left indent",
+          "selector": "#ps-indent-left"
+        },
+        {
+          "name": "right indent",
+          "selector": "#ps-indent-right"
+        },
+        {
+          "name": "first line indent",
+          "selector": "#ps-first-line"
+        },
+        {
+          "name": "line spacing select",
+          "selector": "#ps-spacing"
+        },
+        {
+          "name": "keep lines together",
+          "selector": "#ps-keep-lines"
+        },
+        {
+          "name": "keep with next",
+          "selector": "#ps-keep-next"
+        },
+        {
+          "name": "page break before",
+          "selector": "#ps-page-break"
+        }
+      ],
+      "note": "ledger row: ctx.paragraph-advanced-settings \u2014 ctx data-ctx=ParagraphSettings opens openParagraphSettingsDialog (editor.js:5139) -> #paragraph-settings-dialog (index.html:1859), prefilled from the caret paragraph"
+    },
+    "ctx.drop-cap-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"DropcapSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#dropcap-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "position select",
+          "selector": "#dropcap-position"
+        },
+        {
+          "name": "lines to drop",
+          "selector": "#dropcap-lines"
+        },
+        {
+          "name": "distance from text",
+          "selector": "#dropcap-distance"
+        }
+      ],
+      "note": "ledger row: ctx.drop-cap-settings \u2014 ctx data-ctx=DropcapSettings runs openDropcapDialog (editor.js:9362) -> #dropcap-dialog (index.html:2114)"
+    },
+    "ctx.horizontal-line-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"HorizontalLineSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#hr-settings-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "width input",
+          "selector": "#hr-width"
+        },
+        {
+          "name": "height input",
+          "selector": "#hr-height"
+        },
+        {
+          "name": "color input",
+          "selector": "#hr-color"
+        },
+        {
+          "name": "alignment select",
+          "selector": "#hr-align"
+        }
+      ],
+      "note": "ledger row: ctx.horizontal-line-settings \u2014 ctx data-ctx=HorizontalLineSettings runs openHrSettings (editor.js:5243) -> #hr-settings-dialog (index.html:1957); without an hr at the caret it opens with defaults (prefill branch is optional)"
+    },
+    "ctx.table-of-contents-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"TocSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#updatetoc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "update scope select",
+          "selector": "#toc-update"
+        },
+        {
+          "name": "update button",
+          "selector": "#btn-updatetoc-ok"
+        }
+      ],
+      "note": "ledger row: ctx.table-of-contents-settings \u2014 ctx data-ctx=TocSettings runs openUpdateTocDialog (editor.js:9329) -> #updatetoc-dialog (index.html:2398)"
+    },
+    "ctx.equation-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"EquationSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#equation-dialog"
+      },
+      "subFeatures": [],
+      "xfail": true,
+      "note": "ledger row: ctx.equation-settings \u2014 the ctx data-ctx=EquationSettings handler (editor.js:10195) opens #equation-dialog via openVectorEditor ONLY when vectorObjectAtSelection() returns an equation object; with a plain word selection (all ctx-menu pre states) it takes the else branch: status message + wo:equation-settings event only, no dialog \u2014 handler needs equation-at-caret state the pre cannot build"
+    },
+    "ctx.create-new-style": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"FormattingAsStyle\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#style-save-dialog"
+      },
+      "subFeatures": [],
+      "xfail": true,
+      "note": "ledger row: ctx.create-new-style \u2014 the ctx data-ctx=FormattingAsStyle handler (editor.js:10163) ONLY dispatches the wo:style-from-format CustomEvent (host-shell channel, style-save owned by the host shell); nothing in the standalone editor listens for it and no style-save dialog exists in DIALOG_IDS/markup \u2014 control exists, promised Create-new-style effect never appears"
+    }
+  },
+  "$skipped": [
+    {
+      "row": "ctx.table-advanced-settings",
+      "reason": "no ctx-menu control exists at the contracted surface: the full data-ctx census (index.html:1513-1682) has NO table-advanced-settings item (table items are TableRowAbove/Below, TableColLeft/Right, TableDelete*, TableMergeCells, TableSplitCell, all data-showif=table); the WO table settings surface is elsewhere per the ledger \u2014 right-panel #rp-table-advanced -> emitCommand(openBorders) -> #table-ops-dialog, which no ctx-menu pre can reach"
+    }
+  ]
+}
