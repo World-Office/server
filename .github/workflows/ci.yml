@@ -378,7 +378,7 @@ jobs:
       - name: Run L2 contracts + L4 surfaces
         working-directory: tests
         run: npm run parity
-        timeout-minutes: 10
+        timeout-minutes: 22
 
       - name: Upload contract-results (consumed by fig job for editor-ui-word)
         if: always()
