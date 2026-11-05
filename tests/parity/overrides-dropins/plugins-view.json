@@ -1,0 +1,149 @@
+{
+  "entries": {
+    "plugins.youtube": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] .plugin-card[data-cmd=\"pluginUnavailable\"][data-plugin=\"YouTube\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#plugin-unavailable-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "dialog title",
+          "selector": "#plugin-unavailable-title"
+        },
+        {
+          "name": "plugin name echo",
+          "selector": "[data-plugin-name]"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-plugin-unavailable-close"
+        }
+      ],
+      "note": "ledger row: plugins.youtube — YouTube card (data-cmd=pluginUnavailable) opens #plugin-unavailable-dialog with [data-plugin-name] echoing the plugin name (openPluginUnavailable, editor.js:12618)"
+    },
+    "plugins.mendeley": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] .plugin-card[data-cmd=\"pluginUnavailable\"][data-plugin=\"Mendeley\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#plugin-unavailable-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "dialog title",
+          "selector": "#plugin-unavailable-title"
+        },
+        {
+          "name": "plugin name echo",
+          "selector": "[data-plugin-name]"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-plugin-unavailable-close"
+        }
+      ],
+      "note": "ledger row: plugins.mendeley — Mendeley card (data-cmd=pluginUnavailable) opens #plugin-unavailable-dialog with [data-plugin-name] echoing the plugin name (openPluginUnavailable, editor.js:12618)"
+    },
+    "plugins.zotero": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] .plugin-card[data-cmd=\"pluginUnavailable\"][data-plugin=\"Zotero\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#plugin-unavailable-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "dialog title",
+          "selector": "#plugin-unavailable-title"
+        },
+        {
+          "name": "plugin name echo",
+          "selector": "[data-plugin-name]"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-plugin-unavailable-close"
+        }
+      ],
+      "note": "ledger row: plugins.zotero — Zotero card (data-cmd=pluginUnavailable) opens #plugin-unavailable-dialog with [data-plugin-name] echoing the plugin name (openPluginUnavailable, editor.js:12618)"
+    },
+    "plugins.translator": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] .plugin-card[data-cmd=\"aiTranslate\"][data-value=\"German\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-propose-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "dialog title",
+          "selector": "#ai-propose-title"
+        },
+        {
+          "name": "instruction textarea",
+          "selector": "#ai-propose-instruction"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-ai-propose-cancel"
+        },
+        {
+          "name": "run action",
+          "selector": "#btn-ai-propose-run"
+        }
+      ],
+      "note": "ledger row: plugins.translator — Translator card (data-cmd=aiTranslate, data-value=German) opens #ai-propose-dialog pre-filled with the German translation instruction (openAiPropose, editor.js:5594); scoped to the plugins-tab card because #btn-ai-translate shares the data-cmd"
+    },
+    "view.headings": {
+      "effektClass": "view",
+      "selector": "#btn-view-headings",
+      "woTab": "view",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#btn-view-headings",
+        "attr": "aria-pressed",
+        "equals": "true"
+      },
+      "note": "ledger row: view.headings — click proxies btn-nav-toggle: #nav-panel unhidden and the Headings button mirrors the state via aria-pressed=true (editor.js:6516)"
+    },
+    "view.multiple-pages": {
+      "effektClass": "view",
+      "selector": "#btn-multipage",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "body",
+        "hasClass": "multi-page-view"
+      },
+      "note": "ledger row: view.multiple-pages — setMultipage toggles body.multi-page-view plus the aria-pressed mirror (editor.js:13023); no woTab because the control lives on the statusbar"
+    },
+    "statusbar.status-btn-multiple-pages": {
+      "effektClass": "view",
+      "selector": "#btn-multipage",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "body",
+        "hasClass": "multi-page-view"
+      },
+      "note": "ledger row: statusbar.status-btn-multiple-pages — same #btn-multipage control as view.multiple-pages; the runner's fresh page per contract lets both ledger rows pass independently (multi-page-view is not persisted)"
+    },
+    "view.interface-theme": {
+      "effektClass": "view",
+      "xfail": true,
+      "selector": "#view-theme-select",
+      "woTab": "view",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#view-theme-select",
+        "attr": "data-applied-theme",
+        "equals": "classic"
+      },
+      "note": "ledger row: view.interface-theme — honest known gap: theme switching fires only on the select's change event (editor.js:6526, localStorage wo-theme + applyTheme); a synthetic click cannot fire change and no DOM flag marks the applied theme, so there is nothing observable to assert"
+    }
+  }
+}
