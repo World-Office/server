@@ -1,0 +1,242 @@
+{
+  "$comment": "L2G-05-CHART-REF-OTHER: chart-element menu rows + references/other dialog L4 rows. Chart rows (chart.axis-titles/data-labels/error-bars/legend/trendline/up-down-bars) run the two-step trigger: pre chart-selection picks the fixture chart (reveals the contextual chart-design tab), selector clicks the 'Chart elements ▾' rb-menu trigger, post clicks the chartElement item — toggleChartElement rewrites img[data-spec] with elements.<flag>:true (attr on fixture). references.dlg-* gate the dialog surfaces of the shared-token rows; dialog.*.l4 gate the pinned L4 dialog routes from the census evidence (each opened via its real ribbon control).",
+  "entries": {
+    "chart.axis-titles": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"axisTitles\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"axisTitles\":true']"
+      },
+      "note": "ledger row: chart.axis-titles (menu:Chart elements ▾) — two-step contract: chart-selection pre clicks the fixture chart so the contextual chart-design tab activates, selector opens the 'Chart elements ▾' rb-menu (index.html), post clicks the axisTitles item; toggleChartElement flips spec.elements.axisTitles and rerenderChart rewrites img[data-spec] (editor.js:13710) — asserted on the fixture attr"
+    },
+    "chart.data-labels": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"dataLabels\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"dataLabels\":true']"
+      },
+      "note": "ledger row: chart.data-labels (menu:Chart elements ▾) — same two-step as chart.axis-titles; dataLabels is type-agnostic (not in CHART_ELEMENT_SUPPORT), so the bar fixture toggles and data-spec gains \"dataLabels\":true"
+    },
+    "chart.error-bars": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"errorBars\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"errorBars\":true']"
+      },
+      "note": "ledger row: chart.error-bars (menu:Chart elements ▾) — same two-step; CHART_ELEMENT_SUPPORT allows errorBars on bar/line/area (editor.js:13705), so the fixture bar chart toggles and data-spec gains \"errorBars\":true"
+    },
+    "chart.legend": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"legend\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"legend\":true']"
+      },
+      "note": "ledger row: chart.legend (menu:Chart elements ▾) — same two-step; legend is type-agnostic, fixture bar chart toggles and data-spec gains \"legend\":true"
+    },
+    "chart.trendline": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"trendline\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"trendline\":true']"
+      },
+      "note": "ledger row: chart.trendline (menu:Chart elements ▾) — same two-step; trendline is NOT gated by CHART_ELEMENT_SUPPORT (the map only holds upDownBars/errorBars, editor.js:13705 — the older ctx-chart note claiming a bar-chart gate is stale), fixture bar chart toggles and data-spec gains \"trendline\":true"
+    },
+    "chart.up-down-bars": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"upDownBars\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-spec*='\"upDownBars\":true']"
+      },
+      "xfail": true,
+      "note": "ledger row: chart.up-down-bars (menu:Chart elements ▾) — KNOWN GAP: the chart-selection pre + two-step trigger reach toggleChartElement, but CHART_ELEMENT_SUPPORT limits upDownBars to line charts (editor.js:13705) and the runner's chart-selection fixture is a bar chart — the handler only setStatus(\"Chart element upDownBars not available for bar charts\") and data-spec never changes. Needs a line-type fixture option in the pre to flip"
+    },
+    "dialog.link-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-link",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        { "name": "text to display input", "selector": "#link-text" },
+        { "name": "url input", "selector": "#link-url" },
+        { "name": "cancel action", "selector": "#btn-link-cancel" },
+        { "name": "insert action", "selector": "#btn-link-ok" }
+      ],
+      "note": "ledger row: dialog.link-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-link') — #btn-link click -> insertLink -> #link-dialog with the OO Text to display/URL fields (2/2 L4 field parity)"
+    },
+    "dialog.table-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-table",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#table-dialog"
+      },
+      "subFeatures": [
+        { "name": "rows input", "selector": "#table-rows" },
+        { "name": "columns input", "selector": "#table-cols" },
+        { "name": "cancel action", "selector": "#btn-table-cancel" },
+        { "name": "insert action", "selector": "#btn-table-ok" }
+      ],
+      "note": "ledger row: dialog.table-dialog.l4 (L4 pinned, evidence: 'opens via real clicks (Insert tab + #btn-table); title Insert table, Rows/Columns number fields') — insertTable() adds .open to the anchored #table-dialog insert-pop with defaults 2/3 (editor.js:2121); the insert mutation itself is contracted at table.table"
+    },
+    "dialog.equation-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-equation",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#equation-dialog"
+      },
+      "subFeatures": [
+        { "name": "linear notation input", "selector": "#equation-input" },
+        { "name": "preview", "selector": "#equation-preview" },
+        { "name": "cancel action", "selector": "#btn-equation-cancel" },
+        { "name": "insert action", "selector": "#btn-equation-ok" }
+      ],
+      "note": "ledger row: dialog.equation-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-equation (tab insert)') — btnEquation click -> openDlg(\"equation-dialog\") with the OO Linear notation/Preview fields (editor.js:13941)"
+    },
+    "dialog.pagecolor-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#pagecolor",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#pagecolor-dialog"
+      },
+      "subFeatures": [
+        { "name": "swatches", "selector": "#pagecolor-swatches" },
+        { "name": "custom color", "selector": "#pagecolor-custom" }
+      ],
+      "note": "ledger row: dialog.pagecolor-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #pagecolor (tab layout)') — OO-parity palette dialog: the #pagecolor preview input's click handler preventDefaults the native picker and calls openPageColorDialog() -> openOverlayDialog(\"pagecolor-dialog\") (editor.js:6602)"
+    },
+    "dialog.comment-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#comment-dialog"
+      },
+      "subFeatures": [
+        { "name": "comment body", "selector": "#comment-body" },
+        { "name": "cancel action", "selector": "#btn-comment-cancel" },
+        { "name": "insert action", "selector": "#btn-comment-ok" }
+      ],
+      "note": "ledger row: dialog.comment-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-comment (tab collaboration)') — commentBtn click -> openCommentDialog -> #comment-dialog (editor.js:8730)"
+    },
+    "dialog.compare-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"compareVersion\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#compare-dialog"
+      },
+      "subFeatures": [
+        { "name": "document select", "selector": "#compare-document-select" },
+        { "name": "cancel action", "selector": "#btn-compare-cancel" },
+        { "name": "apply action", "selector": "#btn-compare-apply" }
+      ],
+      "note": "ledger row: dialog.compare-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=compareVersion] (tab collaboration)') — openCompareView -> #compare-dialog with the OO 'Select document to compare' surface; the offline compare itself is the declared not-provable divergence, only the dialog is gated"
+    },
+    "dialog.combine-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"combineRevisions\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#combine-dialog"
+      },
+      "subFeatures": [
+        { "name": "document select", "selector": "#combine-document-select" },
+        { "name": "cancel action", "selector": "#btn-combine-cancel" },
+        { "name": "apply action", "selector": "#btn-combine-apply" }
+      ],
+      "note": "ledger row: dialog.combine-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=combineRevisions] (tab collaboration)') — openCombineView -> #combine-dialog; same offline divergence as compare, only the dialog is gated"
+    },
+    "dialog.textfromfile-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#textfromfile-dialog"
+      },
+      "subFeatures": [
+        { "name": "choose file input", "selector": "#textfromfile-input" },
+        { "name": "format mode", "selector": "#textfromfile-mode" },
+        { "name": "cancel action", "selector": "#btn-textfromfile-cancel" }
+      ],
+      "note": "ledger row: dialog.textfromfile-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-textfile (tab insert)') — btnTextFile click -> openDlg(\"textfromfile-dialog\") with the OO 'Choose file…' field (editor.js:12828)"
+    },
+    "dialog.field-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-field",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#field-dialog"
+      },
+      "subFeatures": [
+        { "name": "field type select", "selector": "#field-type" },
+        { "name": "cancel action", "selector": "#btn-field-cancel" },
+        { "name": "insert action", "selector": "#btn-field-ok" }
+      ],
+      "note": "ledger row: dialog.field-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-field (tab references)') — btnField click -> openDlg(\"field-dialog\") with the OO 'Field type' select (editor.js:13176)"
+    },
+    "references.dlg-bookmarks": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"bookmark\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#bookmark-dialog"
+      },
+      "subFeatures": [
+        { "name": "name input", "selector": "#bookmark-name" },
+        { "name": "cancel action", "selector": "#btn-bookmark-cancel" },
+        { "name": "insert action", "selector": "#btn-bookmark-ok" }
+      ],
+      "note": "ledger row: references.dlg-bookmarks (dialog:Bookmarks, token bookmark-dialog shared with references.bookmark) — same WO opener: data-cmd=bookmark -> openBookmarkDialog -> #bookmark-dialog; the OO manage-list controls (Sort by / Hidden bookmarks / Go to / Delete) are the declared divergence noted at references.bookmark, the insert surface is what WO ships"
+    },
+    "references.dlg-insert-caption": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"insertCaption\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#caption-dialog"
+      },
+      "subFeatures": [],
+      "xfail": true,
+      "note": "ledger row: references.dlg-insert-caption (dialog:Insert caption with Caption/Label/Numbering fields) — KNOWN GAP (declared divergence): WO has no caption dialog; insertCaptionCommand inserts the caption inline at the caret (centered p>em, contracted as the real behavior at references.caption). No #caption-dialog exists in index.html, so the OO dialog surface is ungated"
+    }
+  }
+}
