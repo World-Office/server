@@ -1,50 +1,106 @@
 {
-  "$comment": "L2E-05-CTX-CHART: ctx chart rows (on-chart). Census claims OO shows chart-element rows (Axis Titles, Data Labels, Legend, Trendline, Error Bars, Up/Down Bars, Gridlines, Chart Title, Data Table) plus Edit data / Update field in the context menu on a chart. WO's #ctx-menu has NO chart-specific rows: the only chart-adjacent surface is data-showif=\"object\" rows (wrap ops, ConvertToShape, EditPoints, ResizeToCell — verified live: right-click on the img.vector-object[data-kind=chart] fixture shows exactly those, EditObject stays hidden because isEditableObject() requires div.object, Distribute* stay hidden at <2 objects, FrameSettings/EquationSettings explicitly exclude img.vector-object[data-kind=chart]). The chartElement toggles the census points at live only in the chart-design ribbon rb-menu (hidden ul.menu-list, unreachable by the runner's hit-test — see chart-tab2.json $skipped) and the ctx pre cannot reach them. Empirical probe (right-click fixture chart): visible ctx items = Cut/Copy/Paste/lists/Undo/Redo/Bold/Italic/... + WrapInline/Square/Tight/Behind/Front/Through + EditWrapBoundary + ConvertToShape + EditPoints + ResizeToCell + UpdateField/UpdateTOC/... ; chart-design ribbon tab stays hidden (activation listens on editor 'click', a right-click never fires it).",
-  "entries": {},
+  "$comment": "L2H-01-CTX-CHART: ctx chart rows (on-chart). Supersedes the L2E-05 all-skipped verdict: the ledger binds every ctx.chart* row's WO surface to 'Chart Design Chart elements>… (chartElement <flag>)' (ledger evidence strings), and the runner now supports exactly that two-step: pre 'chart-selection' injects an img.vector-object[data-kind=chart] fixture and left-clicks it (lastChartPick set, contextual chart-design tab unhides + activates), the row selector clicks the 'Chart elements ▾' rb-menu trigger (editor.js:10682-10686 discloses ul.menu-list), and ov.post (runner contract-runner.cjs:546-547) clicks the disclosed menu item 250ms later — each button[role=menuitem][data-cmd=chartElement] has a direct click listener routing through runCommand -> toggleChartElement (editor.js:10688-10693, 1510-1512). With the fixture chart selected, toggleChartElement (editor.js:13710-13722) flips spec.elements[<flag>] and rerenderChart -> reloadVectorTarget rewrites img[data-spec] — asserted as dom-mutation on #fixture-chart[data-spec*=…]. Item values verified in index.html:889-898: title|legend|gridlines|dataLabels|axes|axisTitles|trendline|errorBars|upDownBars|dataTable. Pure ctx-menu rows still don't exist in WO (#ctx-menu has no chart-element data-ctx rows), so the chart-design controls ARE the ledger's stated WO surface for these ids.",
+  "entries": {
+    "ctx.axis-titles": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"axisTitles\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"axisTitles\"]" },
+      "note": "ledger row: ctx.axis-titles (WO surface: Chart Design Chart elements>Axis Titles, chartElement axisTitles) — pre chart-selection selects the fixture chart and activates the contextual tab; trigger click discloses the Chart elements rb-menu (editor.js:10682-10686); post click on the axisTitles menuitem (index.html:894) runs runCommand -> toggleChartElement('axisTitles') which flips spec.elements.axisTitles and rerenderChart rewrites img[data-spec] (editor.js:13710-13722) — dom-mutation on [data-spec*=\"axisTitles\"] (absent from the pristine fixture spec, robust to the runner's retry double-toggle since true/false both match)"
+    },
+    "ctx.chart-title": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"title\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*='elements\":{\"title']" },
+      "note": "ledger row: ctx.chart-title (chartElement title) — same two-step as ctx.axis-titles; toggleChartElement writes spec.elements.title (editor.js:13718-13720). Assertion anchors on 'elements\":{\"title' because the pristine fixture spec already contains a top-level \"title\":\"Fixture\" — elements:{\"title only exists after the toggle (and matches both on/off, surviving the retry double-toggle)"
+    },
+    "ctx.data-labels": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"dataLabels\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"dataLabels\"]" },
+      "note": "ledger row: ctx.data-labels (chartElement dataLabels, index.html:892) — same two-step; toggleChartElement flips spec.elements.dataLabels and rerenderChart rewrites img[data-spec] (editor.js:13710-13722); type-agnostic (not in CHART_ELEMENT_SUPPORT, editor.js:13705) so the fixture bar chart toggles for real"
+    },
+    "ctx.chart.datatable": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"dataTable\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"dataTable\"]" },
+      "note": "ledger row: ctx.chart.datatable (WO surface per ledger: 'chartElement dataTable toggle renders data table in chartSVG', index.html:898) — same two-step; toggleChartElement flips spec.elements.dataTable and rerenderChart re-renders chartSVG with the data table while reloadVectorTarget rewrites img[data-spec] (editor.js:13710-13722)"
+    },
+    "ctx.error-bars": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"errorBars\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"errorBars\"]" },
+      "note": "ledger row: ctx.error-bars (chartElement errorBars, index.html:896) — same two-step; CHART_ELEMENT_SUPPORT allows errorBars on bar charts (editor.js:13705) so the fixture bar chart toggles spec.elements.errorBars for real (dom-mutation on img[data-spec], editor.js:13710-13722)"
+    },
+    "ctx.gridlines": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"gridlines\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"gridlines\"]" },
+      "note": "ledger row: ctx.gridlines (chartElement gridlines, index.html:891) — the chart-element toggle, NOT the document-gridlines #btn-gridlines view row (that one is owned by the view wave under its own key); same two-step, spec.elements.gridlines flipped + img[data-spec] rewritten (editor.js:13710-13722)"
+    },
+    "ctx.legend": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"legend\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"legend\"]" },
+      "note": "ledger row: ctx.legend (chartElement legend, index.html:890) — same two-step; type-agnostic so the fixture bar chart toggles spec.elements.legend for real (editor.js:13705, 13710-13722)"
+    },
+    "ctx.trendline": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"trendline\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"trendline\"]" },
+      "note": "ledger row: ctx.trendline (chartElement trendline, index.html:895) — same two-step; trendline is NOT gated in CHART_ELEMENT_SUPPORT (editor.js:13705 only gates upDownBars/errorBars) so the fixture bar chart toggles spec.elements.trendline for real"
+    },
+    "ctx.edit-data": {
+      "effektClass": "dialog",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartEditData\"]",
+      "assertion": { "kind": "dialog-visible", "dialogSelector": "#chart-dialog" },
+      "subFeatures": [
+        { "name": "chart type select", "selector": "#chart-type-select" },
+        { "name": "chart title input", "selector": "#chart-title" },
+        { "name": "chart data grid", "selector": "#chart-data input" }
+      ],
+      "note": "ledger row: ctx.edit-data (WO surface per ledger: 'Chart Design tab chartEditData -> openVectorEditor(chart)') — WO keeps Edit data on the chart-design tab (chartEditData), no ctx-menu copy exists; pre chart-selection makes editSelectedChartData() reach openVectorEditor(\"chart\", spec, img) which opens #chart-dialog and fills type select, title input and #chart-data grid (editor.js:13723-13728) — same proven path as chart-tab2.json charteditdata, contracted here under its own ledger id"
+    },
+    "ctx.up-down-bars": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
+      "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"upDownBars\"]",
+      "assertion": { "kind": "dom-mutation", "selector": "#fixture-chart[data-spec*=\"upDownBars\"]" },
+      "xfail": true,
+      "note": "ledger row: ctx.up-down-bars — real feature gap on the runner's fixture: CHART_ELEMENT_SUPPORT gates upDownBars to line charts (editor.js:13705) and the chart-selection pre's fixture is a bar chart (spec.type 'bar'), so chartElementSupported() is false and toggleChartElement only setStatus('Chart element upDownBars not available for bar charts') without any spec mutation (editor.js:13714-13716) — no assertable DOM effect; the control/menu plumbing itself is verified (see ctx.axis-titles)"
+    }
+  },
   "$skipped": [
     {
-      "row": "ctx.axis-titles",
-      "reason": "no ctx item (ribbon-only row): WO's #ctx-menu has no Axis Titles row; the census WO binding is the chart-design 'Chart elements' rb-menu item (data-cmd=chartElement data-value=axisTitles) which sits in a hidden ul.menu-list — unreachable by the runner's single-click hit-test (same verdict as chart.axis-titles in chart-tab2.json); the ctx-menu-on-chart pre cannot reach it either"
-    },
-    {
-      "row": "ctx.data-labels",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement dataLabels rb-menu item on the chart-design tab; no data-ctx row exists"
-    },
-    {
-      "row": "ctx.legend",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement legend rb-menu item; no data-ctx row exists"
-    },
-    {
-      "row": "ctx.trendline",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement trendline rb-menu item; additionally CHART_ELEMENT_SUPPORT gates trendline off bar charts, so even the ribbon path would only setStatus on the fixture bar chart"
-    },
-    {
-      "row": "ctx.error-bars",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement errorBars rb-menu item; no data-ctx row exists"
-    },
-    {
-      "row": "ctx.up-down-bars",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement upDownBars rb-menu item; CHART_ELEMENT_SUPPORT limits upDownBars to line charts — the fixture bar chart would only setStatus"
-    },
-    {
-      "row": "ctx.gridlines",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement gridlines rb-menu item; the ungated #btn-gridlines view-tab toggle is the document gridlines row (already contracted by the view wave) and must not be hijacked for the chart element"
-    },
-    {
-      "row": "ctx.chart-title",
-      "reason": "no ctx item (ribbon-only row): census binding is the hidden chartElement title rb-menu item on the chart-design tab; no data-ctx row exists"
-    },
-    {
-      "row": "ctx.chart.datatable",
-      "reason": "no ctx item (ribbon-only row): the dataTable toggle (chartElement dataTable, re-renders chartSVG with the data table) exists only as a hidden chart-design rb-menu item; no data-ctx row exists"
-    },
-    {
-      "row": "ctx.edit-data",
-      "reason": "no ctx item (ribbon-only row): the WO surface per census is the chart-design tab's chartEditData button -> openVectorEditor(\"chart\") #chart-dialog, already contracted PASSING as chart.edit-data (pilot3.json) and charteditdata (chart-tab2.json). The ctx candidates are all dead ends (verified live): EditObject is hidden for imgs (isEditableObject requires div.object), FrameSettings/EquationSettings exclude img.vector-object[data-kind=chart] (setStatus 'No object selected'), and the dblclick re-open path is not expressible with the runner's single synthetic click"
-    },
-    {
       "row": "ctx.update-field",
-      "reason": "ctx item exists ([data-ctx=UpdateField], ungated — visible on-chart too), but the row is already owned by ctx-fieldlink.json (same key, which also wins the merge: it sorts after this file); fieldOpAtSelection(\"update\") only dispatches the fire-and-forget wo:field-op CustomEvent (editor.js:3057-3066) and the runner's op-emitted observer is a stub returning ok:false — nothing assertable, xfail there"
+      "reason": "ctx item exists ([data-ctx=UpdateField], ungated — visible on-chart too), but the row is already owned by ctx-fieldlink.json (same key; ctx-fieldlink sorts after this file and wins the merge); duplicating it here would be dead weight"
     }
   ]
 }
