@@ -1,0 +1,240 @@
+{
+  "entries": {
+    "page.orientation": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Orientation\"]",
+      "selector": "[data-cmd=\"applyPageOrientation\"][data-value=\"landscape\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"16838\"][data-page-h=\"11906\"][data-orient=\"landscape\"]"
+      },
+      "note": "ledger row: page.orientation — Orientation ▾ Landscape swaps the portrait 11906x16838 twips via applyPageOrientationPreset -> writePageSetupMarker (editor.js:6367), which creates the div.page-setup marker with the swapped w/h plus data-orient"
+    },
+    "page.breaks": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+      "selector": "[data-cmd=\"insertPageBreak\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .page-break"
+      },
+      "note": "ledger row: page.breaks — Breaks ▾ 'Insert page break' (identical data-i18n trigger in the insert and layout tabs; the pre opens the first = insert tab's list, matching the ledger binding tab:insert) inserts div.page-break + trailing p via execCommand insertHTML (editor.js:1180)"
+    },
+    "page.wrapping": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-i18n=\"Layout.Wrapping\"]",
+      "post": "[data-cmd=\"objectOp\"][data-value=\"wrap-square\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor [data-wrap=\"square\"]"
+      },
+      "note": "ledger row: page.wrapping — OO control is disabled until an object is selected; the ctx-menu-on-image pre sets lastObjectPick (editor.js:3815) so applyObjectOp('wrap-square') lands on it: obj-square class + data-wrap attribute (editor.js:3581). The trigger->post chain opens the hidden Wrapping dropdown first (runner has a single pre)"
+    },
+    "page.align": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-i18n=\"Layout.Align\"]",
+      "post": "[data-cmd=\"objectOp\"][data-value=\"align-center\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .obj-center"
+      },
+      "note": "ledger row: page.align — Align ▾ Align center needs a selected object (ctx-menu-on-image pre sets lastObjectPick); applyObjectOp align-* adds obj-center (editor.js:3616)"
+    },
+    "page.group": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "ctx-menu-two-objects",
+      "selector": "[data-cmd=\"objectOp\"][data-value=\"group\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .object-group"
+      },
+      "note": "ledger row: page.group — Group is a visible layout ribbon button (data-cmd=objectOp data-value=group); groupSelectedObjects (editor.js:3414) needs >=2 sibling img/div.object in one parent, which the shift+click two-objects pre provides; wraps them into div.object-group"
+    },
+    "page.merge-shapes": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-i18n=\"Layout.MergeShapes\"]",
+      "post": "[data-cmd=\"objectOp\"][data-value=\"merge-union\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor [data-merge-op=\"union\"]"
+      },
+      "note": "ledger row: page.merge-shapes — Merge shapes ▾ Union stamps data-merge-op on the selected object (editor.js:3640); needs only one object pick, seeded by the ctx-menu-on-image pre; trigger->post chain opens the hidden dropdown"
+    },
+    "page.custom-columns": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Columns\"]",
+      "selector": "[data-cmd=\"openColumnsDialog\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#columns-dialog"
+      },
+      "subFeatures": [
+        { "name": "number of columns", "selector": "#columns-count" },
+        { "name": "column gap", "selector": "#columns-gap" },
+        { "name": "insert action", "selector": "#btn-columns-ok" },
+        { "name": "cancel action", "selector": "#btn-columns-cancel" }
+      ],
+      "note": "ledger row: page.custom-columns — Columns ▾ 'Custom columns' (data-cmd=openColumnsDialog, editor.js:1549) opens the same #columns-dialog as the visible Columns ribbon button"
+    },
+    "table.table-of-contents": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"updateToc\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#updatetoc-dialog"
+      },
+      "subFeatures": [
+        { "name": "update scope select", "selector": "#toc-update" },
+        { "name": "update action", "selector": "#btn-updatetoc-ok" },
+        { "name": "cancel action", "selector": "#btn-updatetoc-close" }
+      ],
+      "note": "ledger row: table.table-of-contents — References 'Update TOC' (data-cmd=updateToc -> openUpdateTocDialog, editor.js:9332) opens the whole-table vs page-numbers-only choice dialog"
+    },
+    "table.table-of-figures": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"insertTableOfFigures\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#tableoffigures-dialog"
+      },
+      "subFeatures": [
+        { "name": "label input", "selector": "#tof-title" },
+        { "name": "style select", "selector": "#tof-style" },
+        { "name": "insert action", "selector": "#btn-tof-ok" },
+        { "name": "cancel action", "selector": "#btn-tof-close" }
+      ],
+      "note": "ledger row: table.table-of-figures — References 'Table of figures' (data-cmd=insertTableOfFigures) runs the live insertTableOfFiguresCommand (editor.js:7866, later definition wins) -> openOverlayDialog('tableoffigures-dialog')"
+    },
+    "protect.protect-document": {
+      "effektClass": "op",
+      "woTab": "protection",
+      "selector": "[data-cmd=\"restrictEditing\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "attr": "contenteditable",
+        "equals": "false"
+      },
+      "xfail": true,
+      "note": "ledger row: protect.protect-document — honest gap: the Protect Document toggle (data-cmd=restrictEditing, editor.js:8360 toggleRestrictEditing) POSTs api('protect'), which 404s 'not found' for the runner's unstored demo.docx (editor_docs.rs document_protect requires store.get_content and lacks the demo_or_stored fallback its GET sibling document_protect_state has), so the handler shows 'protection failed' and editor.contentEditable stays true; verified live against the docserver binary"
+    },
+    "view.zoom-to-100": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-reset",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1"
+      },
+      "note": "ledger row: view.zoom-to-100 — OO 'Zoom to 100%' binds to the statusbar #btn-zoom-reset; the click handler pins zoomLevel=1 and applyZoom (editor.js:10415/9527) writes editor.style.zoom='1' plus the 100% statusbar label"
+    },
+    "statusbar.btn-zoom-topage": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-fit",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#sb-zoom-label",
+        "contains": "181%"
+      },
+      "xfail": true,
+      "note": "ledger row: statusbar.btn-zoom-topage — OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10419). Verified passing in isolation, but honest xfail at full-run scale: applyZoom persists wo-zoom=1.81 in localStorage and this row runs at manifest 235/236 directly before the order-fragile statusbar.btn-zoom-down/up contracts (view-flags.json, 237/238) that assume a clean 1.0 persisted zoom; the single-pre vocabulary has no zoom-restore step"
+    },
+    "statusbar.btn-zoom-towidth": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-fit",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#sb-zoom-label",
+        "contains": "181%"
+      },
+      "xfail": true,
+      "note": "ledger row: statusbar.btn-zoom-towidth — same single WO control as btn-zoom-topage (#btn-zoom-fit fits the page width into the viewport, editor.js:10419; deterministic 181% at 1600px); same full-run-scale xfail reason: the persisted 1.81 zoom breaks the immediately following zoom-down/up pair (view-flags.json 237/238)" 
+    },
+    "plugins.highlight-code": {
+      "effektClass": "format",
+      "woTab": "plugins",
+      "selector": ".plugin-card[data-cmd=\"code\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span[style*=\"Consolas\"]"
+      },
+      "note": "ledger row: plugins.highlight-code — the Plugins tab 'Highlight code' card (data-cmd=code) runs toggleMonospace (editor.js:847): styleWithCSS + execCommand fontName Consolas wraps the word under the caret in a span style font-family:Consolas; the plugins menu item (first [data-cmd=code] in DOM) stays hidden, hence the scoped .plugin-card selector"
+    },
+    "headerfooter.field": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-field",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#field-dialog"
+      },
+      "subFeatures": [
+        { "name": "field type select", "selector": "#field-type" },
+        { "name": "insert action", "selector": "#btn-field-ok" },
+        { "name": "cancel action", "selector": "#btn-field-cancel" }
+      ],
+      "note": "ledger row: headerfooter.field — Field button (references tab, editor.js:13176) opens #field-dialog (PAGE/DATE/TIME/AUTHOR/FILENAME/WORDS select + insert/cancel actions)"
+    },
+    "headerfooter.close": {
+      "effektClass": "view",
+      "woTab": "header-footer",
+      "selector": "#btn-hf-close",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-tab[data-tab=\"header-footer\"]",
+        "hasClass": "contextual"
+      },
+      "xfail": true,
+      "note": "ledger row: headerfooter.close — honest gap: #btn-hf-close lives in the contextual header-footer ribbon tab that is hidden until HF mode is entered by double-clicking a .page-header (editor.js:9649 enterHFMode); the insertHeader command does NOT enter HF mode and no runner pre can synthesize the dblclick, so the control is unreachable for the hit-test"
+    },
+    "chart.wrapping": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "ctx-menu-on-chart",
+      "selector": "[data-i18n=\"Layout.Wrapping\"]",
+      "post": "[data-cmd=\"objectOp\"][data-value=\"wrap-square\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-wrap=\"square\"]"
+      },
+      "note": "ledger row: chart.wrapping — the ledger binds OO chart-tab Wrapping to the same layout Wrapping menu (tab:layout); the ctx-menu-on-chart pre selects the chart vector object (lastObjectPick) so applyObjectOp('wrap-square') wraps the chart img itself (data-wrap on #fixture-chart); trigger->post chain opens the hidden dropdown"
+    },
+    "chart.width": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": "#chart-width-input",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-width]"
+      },
+      "xfail": true,
+      "note": "ledger row: chart.width — honest gap: input-set vocabulary. Chart width is #chart-width-input (number input) committed by the 'Apply size' button (data-cmd=chartSize -> applyChartSize, editor.js:1523); the runner cannot type a value into the input and no stepper button exists, so the real flow is unreachable"
+    },
+    "chart.height": {
+      "effektClass": "op",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": "#chart-height-input",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-chart[data-height]"
+      },
+      "xfail": true,
+      "note": "ledger row: chart.height — honest gap: input-set vocabulary, same as chart.width (#chart-height-input + Apply size; no stepper button to click)"
+    }
+  }
+}
