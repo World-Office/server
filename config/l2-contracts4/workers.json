@@ -1,0 +1,50 @@
+{
+ "defaults": {
+  "max_attempts": 3,
+  "accept_timeout_s": 1200,
+  "agent_timeout_s": 5400,
+  "retry_delay_s": 60
+ },
+ "workers": [
+  {
+   "name": "l2g-w0",
+   "provider": "litellm",
+   "model": "litellm/glm-5.3-flash",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+   "output": "text",
+   "params_b": 5.3
+  },
+  {
+   "name": "l2g-w1",
+   "provider": "litellm",
+   "model": "litellm/glm-5.3-flash",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+   "output": "text",
+   "params_b": 5.3
+  },
+  {
+   "name": "l2g-w2",
+   "provider": "litellm",
+   "model": "litellm/glm-5.3-flash",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+   "output": "text",
+   "params_b": 5.3
+  },
+  {
+   "name": "l2g-w3",
+   "provider": "litellm",
+   "model": "litellm/glm-5.3-flash",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+   "output": "text",
+   "params_b": 5.3
+  }
+ ]
+}

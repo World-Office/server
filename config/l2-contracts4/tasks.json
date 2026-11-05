@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "project": "l2-contracts-wave4",
+    "base": "208e65f1f"
+  },
+  "defaults": {
+    "max_attempts": 3,
+    "accept_timeout_s": 1200,
+    "agent_timeout_s": 5400,
+    "retry_delay_s": 60
+  },
+  "tasks": [
+    {
+      "id": "L2G-01-PAGE-MENU",
+      "repo": "server",
+      "title": "Layout margins+size ribbon menus",
+      "deps": [],
+      "priority": 10,
+      "scope": [
+        "tests/parity/overrides-dropins/page-menus.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/page-menus.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/page-menus.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/page-menus.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (menus: margins presets (normal 1440/narrow 720/moderate l+r 1080/wide l+r 2880 on .page-setup data-margin-*), size presets (data-page-w/h - grep applyPageSizePreset/PS sizes for exact twips), custom-margins (opens page-setup dialog), last-custom (status no-op w/o prior custom - xfail honest). pre 'menu:[data-i18n=\"Layout.Margins\"]' / 'menu:[data-i18n=\"Layout.Size\"]' (runner activates tab + opens dropdown).).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 8 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-01-PAGE-MENU-*.",
+      "manual": false
+    },
+    {
+      "id": "L2G-02-REVIEW-SB",
+      "repo": "server",
+      "title": "review/collaboration controls + statusbar",
+      "deps": [],
+      "priority": 9,
+      "scope": [
+        "tests/parity/overrides-dropins/review-statusbar.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/review-statusbar.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/review-statusbar.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/review-statusbar.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (insertComment/btn-comment (comment dialog - grep id), coedit-mode, delete/resolve comment (comment fixture first: insert via dialog or DOM), track-changes (dialog), prev/next tracked change (track fixture ins.track-insert/del.track-delete; effect selection/status - xfail honest if unobservable). statusbar 7 rows (sb-*) - keep existing xfails unless real observable.).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 6 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-02-REVIEW-SB-*.",
+      "manual": false
+    },
+    {
+      "id": "L2G-03-PLUGINS-VIEW",
+      "repo": "server",
+      "title": "plugins + view controls",
+      "deps": [],
+      "priority": 8,
+      "scope": [
+        "tests/parity/overrides-dropins/plugins-view.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/plugins-view.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/plugins-view.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/plugins-view.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (plugins.plugin-manager -> plugins-dialog (dialog-visible). pluginUnavailable rows (youtube/mendeley/zotero): grep handler - status/toast; assert text-mutation on statusbar if it exists, else xfail honest. ocrRun/aiTranslate: ai panel open or status. view: btn-view-headings/btn-view-fit-width/btn-multipage - viewport-flag assertion on class/attr changes.).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 6 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-03-PLUGINS-VIEW-*.",
+      "manual": false
+    },
+    {
+      "id": "L2G-04-INSERT-FILE",
+      "repo": "server",
+      "title": "insert menus/controls + file controls",
+      "deps": [],
+      "priority": 7,
+      "scope": [
+        "tests/parity/overrides-dropins/insert-file.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/insert-file.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/insert-file.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/insert-file.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (equation menu rows (fractions/scripts/radicals/...) - grep WO for equation menu (data-cmd); xfail 'no WO control' if absent. insert menu items via pre 'menu:<trigger>' (symbols, equation). file.* backstage rows use pre 'backstage:<pane>' + dialog-visible inside backstage (save/back etc).).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 6 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-04-INSERT-FILE-*.",
+      "manual": false
+    },
+    {
+      "id": "L2G-05-CHART-REF-OTHER",
+      "repo": "server",
+      "title": "chart menu rows + references/other dialogs",
+      "deps": [],
+      "priority": 6,
+      "scope": [
+        "tests/parity/overrides-dropins/chart-ref-other.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/chart-ref-other.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/chart-ref-other.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/chart-ref-other.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (chart axis-titles/data-labels/error-bars/legend/trendline/up-down-bars: pre 'chart-selection' (chart fixture + contextual tab) then chart-design menu/controls; many dispatch wo:chart-settings - use op-emitted event or attr on fixture. references: bookmark-dialog/crossref-dialog/insertCaption (dialog-visible). other/dialog 9 rows: grep ids.).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 5 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-05-CHART-REF-OTHER-*.",
+      "manual": false
+    },
+    {
+      "id": "L2G-06-FORMAT-CTRL",
+      "repo": "server",
+      "title": "formatting controls",
+      "deps": [],
+      "priority": 5,
+      "scope": [
+        "tests/parity/overrides-dropins/format-controls.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/format-controls.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((168 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/format-controls.json)))",
+      "acceptance_prose": "## Background\nWord-parity contract layer on main at 208e65f1f: 168 passing / 46 known-gap / 0 FAIL. Your task: write contracts into tests/parity/overrides-dropins/format-controls.json - key = ledger feature id exactly; grep ../wo-test-harness/census/ledger/ledger.json for candidate rows (font-family/font-size inputs (if <input> needs typing -> xfail 'input-set vocabulary'), bold/italic/underline ctrl duplicates (same format-mark assertion as shortcut rows, selector #btn-bold etc - grep passing rows for the exact assertion shape), change-case menu (pre 'menu:[aria-label=\"Change case\"]', data-cmd items), font grow/shrink (computed style or format attr).).\n\n## Method (STRICT)\n1. Grep BEFORE trust: find the ledger row, then the real WO control (apps/web/apps/documenteditor-wysiwyg/index.html data-cmd / [data-ctx], editor.js handler) and its actual DOM effect.\n2. Verify by RUNNING: node tests/parity/contract-runner.cjs --only <token> (tokens come from word-parity-contracts.json - regenerate with node tests/parity/generate-manifest.cjs if needed; tokens are label-derived e.g. 'narrow').\n3. Only assert what the code actually does. xfail:true + honest note for real gaps.\n4. Do NOT touch files outside your drop-in. No editor.js / index.html changes.\n5. Runner vocabulary: effektClass {format,structure,dialog,op,view}; assertion kinds: dom-mutation (selector; optional absent:true), dialog-visible, text-mutation (contains/containsDate), format-mark, viewport-flag (selector/prop/equals), selection-check, op-emitted (event wo:*; armed names: follow-move chart-3d chart-settings field-op chart-elements). pre: none, list, table, file-menu, backstage:<pane>, menu:<trigger-selector>, ctx-menu*, chart-selection, link-at-caret. pre runs BEFORE the woTab click; ctx rows need [data-ctx=X] selectors; shortcuts use key:'Ctrl+B'.\n6. Minimum 8 passing rows in your drop-in (xfails do not count toward the gate).\n\n## Acceptance gate\nYour work passes when: bash tests/parity/af-gate.sh <N> exits 0 (N = 168 + your non-xfail row count) - i.e. the full contract run on your branch has 0 FAIL and >= that pass count. Run it yourself before finishing (takes ~10 min; /usr/bin/node only, NO_PROXY=127.0.0.1,localhost, WO_PORT 19500-19599 if free).\nCommit only your drop-in file to branch tf/L2G-06-FORMAT-CTRL-*.",
+      "manual": false
+    }
+  ]
+}
