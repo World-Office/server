@@ -1,0 +1,206 @@
+{
+  "entries": {
+    "page.normal": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"normal\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-margin-top=\"1440\"][data-margin-left=\"1440\"]"
+      },
+      "note": "ledger row: page.normal — Margins ▾ Normal writes PS_MARGIN_PRESETS.normal (t/b/l/r 1440 twips) onto the .page-setup marker (editor.js applyPageMarginsPreset)"
+    },
+    "page.custom-margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-i18n=\"Layout.Margins.Custom\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#page-setup-dialog"
+      },
+      "subFeatures": [
+        { "name": "page size select", "selector": "#ps-size" },
+        { "name": "margin top", "selector": "#ps-mt" },
+        { "name": "margin bottom", "selector": "#ps-mb" },
+        { "name": "margin left", "selector": "#ps-ml" },
+        { "name": "margin right", "selector": "#ps-mr" },
+        { "name": "apply action", "selector": "#btn-ps-apply" }
+      ],
+      "note": "ledger row: page.custom-margins — Margins ▾ 'Custom margins' item (data-cmd=openPageSetup) opens the same #page-setup-dialog as the visible Page setup ribbon button"
+    },
+    "page.last-custom": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"last-custom\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-margin-top]"
+      },
+      "xfail": true,
+      "note": "ledger row: page.last-custom — honest gap: re-applying the stored custom margins (localStorage wo-last-custom-margins, editor.js readCustomMargins) needs prior dialog state the runner pre vocabulary cannot seed; on a fresh page the item is a documented no-op ('No custom margins yet' status only, no marker write)"
+    },
+    "page.us-letter": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"Letter\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"12240\"][data-page-h=\"15840\"]"
+      },
+      "note": "ledger row: page.us-letter — Size ▾ US Letter applies PS_SIZES.Letter [12240,15840] twips via applyPageSizePreset"
+    },
+    "page.us-legal": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"Legal\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"12240\"][data-page-h=\"20160\"]"
+      },
+      "note": "ledger row: page.us-legal — Size ▾ US Legal applies PS_SIZES.Legal [12240,20160] twips"
+    },
+    "page.a4": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"A4\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"11906\"][data-page-h=\"16838\"]"
+      },
+      "note": "ledger row: page.a4 — Size ▾ A4 applies PS_SIZES.A4 [11906,16838] twips (the marker only exists once a preset wrote it)"
+    },
+    "page.a5": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"A5\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"8391\"][data-page-h=\"11906\"]"
+      },
+      "note": "ledger row: page.a5 — Size ▾ A5 applies PS_SIZES.A5 [8391,11906] twips"
+    },
+    "page.b5": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"B5\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"10318\"][data-page-h=\"14570\"]"
+      },
+      "note": "ledger row: page.b5 — Size ▾ B5 applies PS_SIZES.B5 [10318,14570] twips"
+    },
+    "page.envelope-10": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"Env10\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"5940\"][data-page-h=\"13680\"]"
+      },
+      "note": "ledger row: page.envelope-10 — Size ▾ Envelope #10 applies PS_SIZES.Env10 [5940,13680] twips"
+    },
+    "page.envelope-dl": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"EnvDL\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"6236\"][data-page-h=\"12472\"]"
+      },
+      "note": "ledger row: page.envelope-dl — Size ▾ Envelope DL applies PS_SIZES.EnvDL [6236,12472] twips"
+    },
+    "page.tabloid": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"Tabloid\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"15840\"][data-page-h=\"24480\"]"
+      },
+      "note": "ledger row: page.tabloid — Size ▾ Tabloid applies PS_SIZES.Tabloid [15840,24480] twips"
+    },
+    "page.a3": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"A3\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"16838\"][data-page-h=\"23811\"]"
+      },
+      "note": "ledger row: page.a3 — Size ▾ A3 applies PS_SIZES.A3 [16838,23811] twips"
+    },
+    "page.tabloid-oversize": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"TabloidOversize\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"15840\"][data-page-h=\"25920\"]"
+      },
+      "note": "ledger row: page.tabloid-oversize — Size ▾ Tabloid Oversize applies PS_SIZES.TabloidOversize [15840,25920] twips"
+    },
+    "page.roc-16k": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"ROC16K\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"11170\"][data-page-h=\"15591\"]"
+      },
+      "note": "ledger row: page.roc-16k — Size ▾ ROC 16K applies PS_SIZES.ROC16K [11170,15591] twips"
+    },
+    "page.envelope-choukei-3": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"EnvChoukei3\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"6803\"][data-page-h=\"13323\"]"
+      },
+      "note": "ledger row: page.envelope-choukei-3 — Size ▾ Envelope Choukei 3 applies PS_SIZES.EnvChoukei3 [6803,13323] twips"
+    },
+    "page.super-b-a3": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"applyPageSize\"][data-value=\"SuperB\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-page-w=\"18720\"][data-page-h=\"27360\"]"
+      },
+      "note": "ledger row: page.super-b-a3 — Size ▾ Super B/A3 applies PS_SIZES.SuperB [18720,27360] twips"
+    },
+    "page.custom-page-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-i18n=\"Layout.Size.Custom\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#page-setup-dialog"
+      },
+      "subFeatures": [
+        { "name": "page size select", "selector": "#ps-size" },
+        { "name": "orientation radios", "selector": "input[name=\"ps-orient\"][value=\"landscape\"]" },
+        { "name": "apply action", "selector": "#btn-ps-apply" },
+        { "name": "cancel action", "selector": "#btn-ps-cancel" }
+      ],
+      "note": "ledger row: page.custom-page-size — Size ▾ 'Custom page size' item (data-cmd=openPageSetup) opens the same #page-setup-dialog"
+    }
+  }
+}
