@@ -1,0 +1,96 @@
+{
+  "$comment": "L2H-06: real-keyboard shortcut contracts. Keys are driven through page.keyboard in contract-runner (fresh page each). Passing rows assert real DOM/status/event effects; xfail rows document honest gaps (headless clipboard, native-only ops, confirm-gated close, deletion has no absence-assert vocabulary).",
+  "entries": {
+    "shortcut.applyheading1": {
+      "key": "Control+Alt+Digit1",
+      "pre": "list",
+      "effektClass": "format",
+      "assertion": { "kind": "dom-mutation", "selector": "#editor h1", "note": "Ctrl+Alt+1 wraps the selection block in H1 via emitCommand('formatBlock','H1') (editor.js ~11078); the list fixture starts with zero headings, so the first #editor h1 appearing is the chord's effect" }
+    },
+    "shortcut.applyheading2": {
+      "key": "Control+Alt+Digit2",
+      "pre": "list",
+      "effektClass": "format",
+      "assertion": { "kind": "dom-mutation", "selector": "#editor h2", "note": "Ctrl+Alt+2 wraps the block in H2 (editor.js ~11078)" }
+    },
+    "shortcut.applyheading3": {
+      "key": "Control+Alt+Digit3",
+      "pre": "list",
+      "effektClass": "format",
+      "assertion": { "kind": "dom-mutation", "selector": "#editor h3", "note": "Ctrl+Alt+3 wraps the block in H3 (editor.js ~11078)" }
+    },
+    "shortcut.copyformat": {
+      "key": "Control+Alt+KeyC",
+      "effektClass": "op",
+      "assertion": { "kind": "text-mutation", "selector": "#status", "contains": "Format copied", "note": "copyFormat captures paintedFormat + setStatus(Status.FormatCopied) (editor.js ~11047, i18n.js:855 'Format copied — select target text and press Ctrl+Alt+V'); boot status is 'Ready'" }
+    },
+    "shortcut.pasteformat": {
+      "key": "Control+Alt+KeyV",
+      "effektClass": "op",
+      "assertion": { "kind": "text-mutation", "selector": "#status", "contains": "Copy a format first", "note": "pasteFormat with paintedFormat=null on a fresh page sets Status.NoFormatToPaste (editor.js ~11048, i18n.js:866 'Copy a format first (Ctrl+Alt+C)')" }
+    },
+    "shortcut.endash": {
+      "key": "Control+Minus",
+      "effektClass": "op",
+      "assertion": { "kind": "text-mutation", "selector": "#editor", "contains": "\u2013", "note": "Ctrl+Minus (ev.code Minus, !shift !alt) emits insertSymbol U+2013 at the caret (editor.js ~10990); the default doc contains no en-dash" }
+    },
+    "shortcut.insertlinebreak": {
+      "key": "Shift+Enter",
+      "effektClass": "structure",
+      "assertion": { "kind": "dom-mutation", "selector": "#editor br", "note": "Shift+Enter is not intercepted by editor.js; native contentEditable inserts <br> at the caret; the default doc has zero br" }
+    },
+    "shortcut.updatefields": {
+      "key": "F9",
+      "effektClass": "op",
+      "assertion": { "kind": "op-emitted", "event": "wo:field-op", "note": "F9 runs fieldOpAtSelection('update') which always dispatches the wo:field-op window CustomEvent (editor.js ~11061); contract-runner arms a window listener for it" }
+    },
+    "shortcut.openfilepanel": {
+      "key": "Control+Alt+KeyF",
+      "pre": "list",
+      "effektClass": "dialog",
+      "assertion": { "kind": "viewport-flag", "rootSelector": "#backstage-overlay", "prop": "display", "equals": "flex", "note": "Ctrl+Alt+F runs openBackstage('open') (editor.js ~11029): #backstage-overlay (.open -> display:flex, style.css:2520) switches from display:none to flex — same observable as the proven closemenu contract inverted" }
+    },
+    "shortcut.paste": {
+      "xfail": true,
+      "key": "Control+KeyV",
+      "effektClass": "op",
+      "note": "native paste path (editor.js ~9726) needs real clipboardData; Playwright headless keyboard paste delivers an empty clipboard, nothing observable changes"
+    },
+    "shortcut.pastetextwithoutformat": {
+      "xfail": true,
+      "key": "Control+Shift+KeyV",
+      "effektClass": "op",
+      "note": "Ctrl+Shift+V is not bound in editor.js (the text-only paste chord is Ctrl+T, ~11242); the chord reaches the browser default paste which is a no-op with an empty headless clipboard"
+    },
+    "shortcut.copy": {
+      "xfail": true,
+      "key": "Control+KeyC",
+      "effektClass": "op",
+      "note": "no keydown binding for Ctrl+C (only Ctrl+Alt+C copyformat exists, editor.js ~11047); native clipboard copy has no in-page DOM observable"
+    },
+    "shortcut.cut": {
+      "xfail": true,
+      "key": "Control+KeyX",
+      "effektClass": "op",
+      "note": "no keydown binding for Ctrl+X in editor.js; native clipboard cut shrinks the text but the contract vocabulary has no text-absence assertion to pin it"
+    },
+    "shortcut.deleteleftchar": {
+      "xfail": true,
+      "key": "Backspace",
+      "effektClass": "op",
+      "note": "Backspace interception only handles selected strokes/objects (editor.js ~8113); plain text falls to native deletion of the placeCaret 4-char selection; text-mutation has no absence assertion to verify the shrink"
+    },
+    "shortcut.deleterightchar": {
+      "xfail": true,
+      "key": "Delete",
+      "effektClass": "op",
+      "note": "Delete interception only handles selected strokes/objects (editor.js ~8198); native deletion of the selection is not observable with the current assertion vocabulary"
+    },
+    "shortcut.closefile": {
+      "xfail": true,
+      "key": "Control+KeyW",
+      "effektClass": "dialog",
+      "note": "Ctrl+W on a dirty doc opens window.confirm (editor.js ~11093) which Playwright auto-dismisses, so the close aborts; the real effects are the wo:close-document CustomEvent + notifyHost('close'), neither observable in-page (wo:close-document is not in the runner's armed event set)"
+    }
+  }
+}
