@@ -13821,8 +13821,11 @@
       }
       return;
     }
-    // Clear multi-selection on regular click
-    if (!ev.shiftKey && o) {
+    // Clear multi-selection on regular (left) click. A RIGHT-click opens
+    // the ctx menu and must keep the selection its items gate on — clearing
+    // here made ctx Distribute Horizontally/Vertically permanently
+    // unreachable (multi-object parity, WO-21).
+    if (!ev.shiftKey && o && ev.button === 0) {
       clearMultiSelection();
     }
   });

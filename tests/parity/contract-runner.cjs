@@ -80,10 +80,12 @@ async function checkEffect(page, ov, assertion) {
       }, { prop: assertion.prop, equals: assertion.equals }));
     }
     case 'dom-mutation': {
-      return poll(page, (sel) => page.evaluate((s) => {
-        const el = document.querySelector(s);
-        return { ok: !!el, observed: el ? 'found' : `no ${s}` };
-      }, assertion.selector), undefined);
+      return poll(page, (sel) => page.evaluate((a) => {
+        const el = document.querySelector(a.sel);
+        const want = a.want; // {absent:true} inverts: element must be GONE
+        const ok = want ? !el : !!el;
+        return { ok, observed: want ? (el ? `still present: ${a.sel}` : 'gone') : (el ? 'found' : `no ${a.sel}`) };
+      }, { sel: assertion.selector, want: assertion.absent }), undefined);
     }
     case 'dialog-visible': {
       return poll(page, () => page.evaluate((sel) => {
@@ -169,7 +171,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.waitForTimeout(1200);
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection'].includes(ov.pre) || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects'].includes(ov.pre) || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -344,6 +346,78 @@ async function subFeatureAudit(page, ov, dialogSel) {
         });
         if (!r) throw new Error('link-at-caret pre: no selection rect');
         await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-misspelled') {
+        // misspell-gated ctx rows (Ignore/IgnoreAll/AddToDictionary…):
+        // fixture a pre-marked misspelling and right-click ON it (the gate
+        // is misspellAtSelection() || event target inside span.wo-misspelled)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <span id="fixture-miss" class="wo-misspelled" data-word="wordd">wordd</span> after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-miss', { timeout: 3000 });
+        const box = await page.locator('#fixture-miss').boundingBox();
+        if (!box) throw new Error('ctx-menu-misspelled: no span box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-trackchanges') {
+        // trackchange-gated ctx rows (Accept/Reject change…): enable track
+        // changes via the real UI toggle, fixture a tracked insertion, and
+        // right-click inside it
+        await page.evaluate(() => {
+          const btn = document.querySelector('#btn-track-changes');
+          if (btn) btn.click(); // setTrackChanges(true) + opens the dialog
+          const close = document.querySelector('#btn-trackchanges-close');
+          if (close) close.click();
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p><ins id="fixture-track" class="track-insert">added words</ins> tail text</p>';
+          const range = document.createRange();
+          range.selectNodeContents(ed.querySelector('#fixture-track'));
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-track', { timeout: 3000 });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-trackchanges pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-two-objects') {
+        // multi-object ctx rows (Distribute h/v…): two fixture images, real
+        // click on the first, Shift+click on the second (mousedown handler
+        // adds to selectedObjects), then right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const px = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+          ed.innerHTML = '<p><img id="fixture-obj-a" alt="a" style="width:100px;height:60px" src="' + px + '"> <img id="fixture-obj-b" alt="b" style="width:100px;height:60px" src="' + px + '"> tail</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-obj-a', { timeout: 3000 });
+        // multi-select needs SHIFT on BOTH clicks — a plain click only sets
+        // lastObjectPick (single-object path), not selectedObjects[]
+        await page.keyboard.down('Shift');
+        await page.locator('#fixture-obj-a').click({ timeout: 5000 });
+        await page.locator('#fixture-obj-b').click({ timeout: 5000 });
+        await page.keyboard.up('Shift');
+        const box = await page.locator('#fixture-obj-b').boundingBox();
+        if (!box) throw new Error('ctx-menu-two-objects: no img box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }

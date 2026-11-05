@@ -1,0 +1,86 @@
+{
+  "entries": {
+    "ctx.ignore": {
+      "effektClass": "op",
+      "pre": "ctx-menu-misspelled",
+      "selector": "[data-ctx=\"Ignore\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .wo-misspelled",
+        "absent": true
+      },
+      "note": "pilot4: misspelled pre \u2014 Ignore drops the wo-misspelled mark (spellState.ignoreSet)"
+    },
+    "ctx.ignore-all": {
+      "effektClass": "op",
+      "pre": "ctx-menu-misspelled",
+      "selector": "[data-ctx=\"IgnoreAll\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .wo-misspelled",
+        "absent": true
+      },
+      "note": "pilot4: IgnoreAll persists to localStorage wo-ignore-all"
+    },
+    "ctx.add-to-dictionary": {
+      "effektClass": "op",
+      "pre": "ctx-menu-misspelled",
+      "selector": "[data-ctx=\"AddToDictionary\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor .wo-misspelled",
+        "absent": true
+      },
+      "note": "pilot4: AddToDictionary adds to user dict, unmarks the span"
+    },
+    "ctx.accept-change": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-ctx=\"AcceptChange\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert",
+        "absent": true
+      },
+      "note": "pilot4: trackchanges pre \u2014 acceptChange unwraps the ins.track-insert"
+    },
+    "ctx.reject-change": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-ctx=\"RejectChange\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert",
+        "absent": true
+      },
+      "note": "pilot4: rejectChange removes the tracked insertion entirely"
+    },
+    "ctx.follow-move": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-ctx=\"FollowMove\"]",
+      "xfail": true,
+      "note": "pilot4: FollowMove dispatches wo:follow-move CustomEvent only \u2014 needs an event-observer assertion kind (real vocab gap)"
+    },
+    "ctx.distribute-horizontally": {
+      "effektClass": "op",
+      "pre": "ctx-menu-two-objects",
+      "selector": "[data-ctx=\"DistributeHorizontally\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[style*=\"absolute\"]"
+      },
+      "note": "pilot4: two-object pre \u2014 distribute sets absolute positioning on the objects"
+    },
+    "ctx.distribute-vertically": {
+      "effektClass": "op",
+      "pre": "ctx-menu-two-objects",
+      "selector": "[data-ctx=\"DistributeVertically\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[style*=\"absolute\"]"
+      },
+      "note": "pilot4: distribute vertically sets absolute positioning too"
+    }
+  }
+}
