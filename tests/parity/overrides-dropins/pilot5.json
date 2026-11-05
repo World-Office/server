@@ -1,0 +1,47 @@
+{
+  "entries": {
+    "page.narrow": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"narrow\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-margin-top=\"720\"]"
+      },
+      "note": "pilot5: menu pre \u2014 narrow preset writes data-margin-top=720 on the page-setup marker"
+    },
+    "page.moderate": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"moderate\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-margin-left=\"1080\"]"
+      },
+      "note": "pilot5: moderate preset data-margin-left=1080"
+    },
+    "page.wide": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"wide\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": ".page-setup[data-margin-left=\"2880\"]"
+      },
+      "note": "pilot5: wide preset data-margin-left=2880"
+    },
+    "ctx.follow-move": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-ctx=\"FollowMove\"]",
+      "assertion": {
+        "kind": "op-emitted",
+        "event": "wo:follow-move"
+      },
+      "note": "pilot5: op-emitted observer \u2014 FollowMove dispatches wo:follow-move from ctx menu"
+    }
+  }
+}

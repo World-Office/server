@@ -114,7 +114,12 @@ async function checkEffect(page, ov, assertion) {
       }, assertion));
     }
     case 'op-emitted':
-      return { ok: false, observed: `observer for ${assertion.kind} not exercised yet` };
+      return poll(page, (ev) => page.evaluate((name) => ({
+        ok: (window.__woEvents || []).includes(name),
+        observed: (window.__woEvents || []).length
+          ? `events: ${(window.__woEvents || []).join(',')}`
+          : 'no wo:* events observed',
+      }), assertion.event || `wo:${assertion.selector || ''}`), undefined);
     case 'viewport-flag': {
       // read a class / attribute / computed-style prop on a root element
       // (body, main, #editor …) after the click — for toggles that change
@@ -171,7 +176,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.waitForTimeout(1200);
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects'].includes(ov.pre) || (ov.pre || '').startsWith('backstage'); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -421,6 +426,25 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if ((ov.pre || '').startsWith('menu:')) {
+        // ribbon dropdown menu: pre = 'menu:<trigger-selector>' — click the
+        // caret-btn trigger, wait for its .menu-list to unhide. The contract
+        // selector then targets a button[role=menuitem] inside that list.
+        const trig = ov.pre.slice(5);
+        await page.evaluate((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) throw new Error('menu pre: trigger missing ' + sel);
+          // menus live inside their ribbon page — activate it first or the
+          // list would unhide inside a display:none ancestor (invisible)
+          const pg = el.closest('.ribbon-page[data-tab]');
+          if (pg && getComputedStyle(pg).display === 'none') {
+            document.querySelector(`.ribbon-tab[data-tab="${pg.dataset.tab}"]`).click();
+          }
+          el.click();
+        }, trig);
+        await page.waitForSelector('.ribbon-page .menu-list:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       else if ((ov.pre || '').startsWith('backstage:')) {
         // 'backstage:<pane>' — open the File backstage, then switch it to
         // <pane> (rows like [data-pane=info] swap the backstage panel;
@@ -482,6 +506,21 @@ async function subFeatureAudit(page, ov, dialogSel) {
       if (!preMenu) {
         // place the caret over the first word that actually has text
         await placeCaret(page);
+      }
+
+      // 3b. event collector for op-emitted assertions: a fresh window-level
+      // wo:* CustomEvent listener per contract (arrow prefix keeps earlier
+      // contracts' events out)
+      if ((ov.assertion || {}).kind === 'op-emitted') {
+        await page.evaluate(() => {
+          window.__woEvents = [];
+          window.__woCollect = (ev) => { if (window.__woEvents) window.__woEvents.push(ev.type); };
+          window.addEventListener('wo:follow-move', window.__woCollect);
+          window.addEventListener('wo:chart-3d', window.__woCollect);
+          window.addEventListener('wo:chart-settings', window.__woCollect);
+          window.addEventListener('wo:field-op', window.__woCollect);
+          window.addEventListener('wo:chart-elements', window.__woCollect);
+        });
       }
 
       // 4. trigger — hit-test was proven with elementFromPoint above; the
