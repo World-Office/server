@@ -1,0 +1,147 @@
+{
+  "entries": {
+    "review.comment": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"insertComment\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#comment-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "comment body",
+          "selector": "#comment-body"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-comment-cancel"
+        },
+        {
+          "name": "comment action",
+          "selector": "#btn-comment-ok"
+        }
+      ],
+      "note": "ledger row: review.comment — insertComment runs openCommentDialog() (editor.js:1346/4348): #comment-dialog.dialog-overlay gains .open (style.css .dialog-overlay.open display:flex) with body textarea + cancel/comment actions"
+    },
+    "review.add-comment": {
+      "effektClass": "dialog",
+      "selector": "#btn-comment",
+      "woTab": "collaboration",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#comment-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "comment body",
+          "selector": "#comment-body"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-comment-cancel"
+        },
+        {
+          "name": "comment action",
+          "selector": "#btn-comment-ok"
+        }
+      ],
+      "note": "ledger row: review.add-comment — the collaboration-tab #btn-comment click listener IS openCommentDialog (editor.js:8730), same #comment-dialog surface as insertComment"
+    },
+    "review.co-editing-mode": {
+      "effektClass": "view",
+      "xfail": true,
+      "selector": "#coedit-mode",
+      "woTab": "collaboration",
+      "note": "KNOWN GAP: ledger row review.co-editing-mode — the #coedit-mode select's change handler only dispatches the wo:coedit-mode window CustomEvent + console.info (editor.js:8733-8736); the event is not in the armed op-emitted collector, the runner's synthetic click cannot fire a change on a select, and no DOM state changes — mode switch is unobservable with the contract vocabulary"
+    },
+    "review.delete": {
+      "effektClass": "op",
+      "xfail": true,
+      "selector": "[data-cmd=\"deleteComment\"]",
+      "woTab": "collaboration",
+      "note": "KNOWN GAP: ledger row review.delete — deleteComment (editor.js:1468) acts on commentAtSelection() (#editor span.comment closest) and would unwrap it (removeComment, dom-mutation absent); no contract pre builds a span.comment fixture (the runner pre vocabulary has list/table/image/chart/link/misspelled/trackchanges fixtures only), so the unwrap is unobservable"
+    },
+    "review.resolve": {
+      "effektClass": "op",
+      "xfail": true,
+      "selector": "[data-cmd=\"resolveComment\"]",
+      "woTab": "collaboration",
+      "note": "KNOWN GAP: ledger row review.resolve — resolveComment (editor.js:1456) toggles data-resolved=\"1\" on the span.comment at the caret (toggleResolved, editor.js:128); no comment fixture pre exists in the runner vocabulary, so the attribute flip is unobservable"
+    },
+    "review.track-changes": {
+      "effektClass": "dialog",
+      "selector": "#btn-track-changes",
+      "woTab": "collaboration",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#trackchanges-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "track changes checkbox",
+          "selector": "#tc-enabled"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-trackchanges-close"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-trackchanges-ok"
+        }
+      ],
+      "note": "ledger row: review.track-changes — #btn-track-changes click emits toggleTrackChanges, syncs #tc-enabled and opens trackchanges-dialog via openOverlayDialog (editor.js:8724)"
+    },
+    "review.previous": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-cmd=\"prevTrackedChange\"]",
+      "woTab": "collaboration",
+      "note": "KNOWN GAP: ledger row review.previous — navigateTrackedChange(-1) (editor.js:4293) needs the caret strictly AFTER a change end to flash (.nav-flash) and select it; the ctx-menu-trackchanges pre anchors the caret inside the only fixture change (selectNodeContents on the ins), so the walk takes the Status.NoPrevChange path and the success effect is unobservable with the fixed fixture vocabulary"
+    },
+    "review.next": {
+      "effektClass": "op",
+      "xfail": true,
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-cmd=\"nextTrackedChange\"]",
+      "woTab": "collaboration",
+      "note": "KNOWN GAP: ledger row review.next — navigateTrackedChange(1) needs the caret strictly BEFORE a change start to flash (.nav-flash) and select it; the ctx-menu-trackchanges pre anchors the caret inside the only fixture change, so the walk takes the Status.NoNextChange path and the success effect is unobservable with the fixed fixture vocabulary"
+    },
+    "review.accept": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-cmd=\"acceptTrackedChange\"]",
+      "woTab": "collaboration",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert",
+        "absent": true
+      },
+      "note": "ledger row: review.accept — acceptTrackedChange runs trackedChangeAtSelection(\"accept\") (editor.js:1454/3041) on the ins.track-insert at the caret; acceptChange unwraps the insertion into plain text (same path as the passing ctx.accept-change)"
+    },
+    "review.reject": {
+      "effektClass": "op",
+      "pre": "ctx-menu-trackchanges",
+      "selector": "[data-cmd=\"rejectTrackedChange\"]",
+      "woTab": "collaboration",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert",
+        "absent": true
+      },
+      "note": "ledger row: review.reject — rejectTrackedChange runs trackedChangeAtSelection(\"reject\") (editor.js:1455); rejectChange removes the tracked insertion entirely (same path as the passing ctx.reject-change)"
+    },
+    "statusbar.status-btn-multiple-pages": {
+      "effektClass": "view",
+      "selector": "#btn-multipage",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "body",
+        "hasClass": "multi-page-view"
+      },
+      "note": "ledger row: statusbar.status-btn-multiple-pages — #btn-multipage click runs setMultipage (editor.js:13023): toggles body.multi-page-view page-separator gutters + aria-pressed on the statusbar/View mirrors. NOTE: the zoom ledger rows statusbar.btn-zoom-topage/btn-zoom-towidth (both bound to #btn-zoom-fit, fit-width only) are deliberately NOT contracted here: any click on #btn-zoom-fit persists wo-zoom=1.81205 in localStorage and breaks the downstream relative-zoom contracts (view-flags btn-zoom-out 1→0.9, btn-zoom-in 0.9→1) that run later in manifest order and assume a fresh zoom=1; #btn-zoom-fit has no post-hoc reset hook in the runner vocabulary (post runs before the effect check)"
+    }
+  }
+}
