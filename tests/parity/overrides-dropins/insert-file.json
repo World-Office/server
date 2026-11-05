@@ -1,0 +1,237 @@
+{
+  "entries": {
+    "insert.symbols": {
+      "effektClass": "dialog",
+      "selector": "[data-i18n=\"Insert.EquationGallery\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-wo-id=\"btn-equation\"] .menu-list"
+      },
+      "subFeatures": [
+        { "name": "fractions family", "selector": "[data-value=\"fractions\"]" },
+        { "name": "scripts family", "selector": "[data-value=\"scripts\"]" },
+        { "name": "radicals family", "selector": "[data-value=\"radicals\"]" },
+        { "name": "integrals family", "selector": "[data-value=\"integrals\"]" },
+        { "name": "large operators family", "selector": "[data-value=\"large-operators\"]" },
+        { "name": "brackets family", "selector": "[data-value=\"brackets\"]" },
+        { "name": "functions family", "selector": "[data-value=\"functions\"]" },
+        { "name": "accents family", "selector": "[data-value=\"accents\"]" },
+        { "name": "limits family", "selector": "[data-value=\"limits-and-logarithms\"]" },
+        { "name": "operators family", "selector": "[data-value=\"operators\"]" },
+        { "name": "matrices family", "selector": "[data-value=\"matrices\"]" }
+      ],
+      "note": "ledger row: insert.symbols — the insert-tab Symbols ▾ menu-trigger (editor.js .rb-menu wiring, setMenu) discloses the equation gallery menu-list carrying all 11 template families"
+    },
+    "insert.fractions": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"fractions\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.fractions — gallery Fractions row dispatches equationTemplate(\"fractions\") → insertEquationTemplate → insertVectorObject renders img.vector-object[data-kind=equation] into #editor (editor.js:1548, 2359, 13072)"
+    },
+    "insert.scripts": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"scripts\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.scripts — gallery Scripts row inserts the scripts equation template as img[data-kind=equation]"
+    },
+    "insert.radicals": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"radicals\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.radicals — gallery Radicals row inserts the radicals equation template"
+    },
+    "insert.integrals": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"integrals\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.integrals — gallery Integrals row inserts the integrals equation template"
+    },
+    "insert.large-operators": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"large-operators\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.large-operators — gallery Large operators row inserts the large-operators equation template"
+    },
+    "insert.brackets": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"brackets\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.brackets — gallery Brackets row inserts the brackets equation template"
+    },
+    "insert.functions": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"functions\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.functions — gallery Functions row inserts the functions equation template"
+    },
+    "insert.accents": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"accents\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.accents — gallery Accents row inserts the accents equation template"
+    },
+    "insert.limits-and-logarithms": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"limits-and-logarithms\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.limits-and-logarithms — gallery Limits and logarithms row inserts the limits equation template"
+    },
+    "insert.operators": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"operators\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.operators — gallery Operators row inserts the operators equation template"
+    },
+    "insert.matrices": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Insert.EquationGallery\"]",
+      "selector": "[data-cmd=\"equationTemplate\"][data-value=\"matrices\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor img[data-kind=\"equation\"]"
+      },
+      "note": "ledger row: insert.matrices — gallery Matrices row inserts the matrices equation template"
+    },
+    "insert.insert-page-break": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+      "selector": "[data-cmd=\"insertPageBreak\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.page-break"
+      },
+      "note": "ledger row: insert.insert-page-break — Breaks menu item emits insertPageBreak which execCommands <div class=page-break> + trailing <p> into #editor (editor.js:1177-1194)"
+    },
+    "insert.insert-column-break": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+      "selector": "[data-cmd=\"insertColumnBreak\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.column-break"
+      },
+      "note": "ledger row: insert.insert-column-break — Breaks menu item emits insertColumnBreak planting div.column-break + trailing <p> (editor.js:1212-1228)"
+    },
+    "insert.insert-section-break": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+      "selector": "[data-cmd=\"insertSectionBreak\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor hr.section-break"
+      },
+      "note": "ledger row: insert.insert-section-break — Breaks menu item emits insertSectionBreak planting hr.section-break + trailing <p> (editor.js:1196-1211)"
+    },
+    "insert.more-symbols": {
+      "effektClass": "dialog",
+      "selector": "#btn-symbol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#symbol-dialog"
+      },
+      "subFeatures": [
+        { "name": "font select", "selector": "#symbol-font" },
+        { "name": "range select", "selector": "#symbol-range" },
+        { "name": "symbol grid", "selector": "#symbol-grid" },
+        { "name": "close action", "selector": "#btn-symbol-close" }
+      ],
+      "note": "ledger row: insert.more-symbols — OO reaches the Symbol dialog from the equation gallery's More symbols item; WO's gallery ships no More-symbols entry (census matched the Symbols ▸ trigger instead) — the dialog is one hop away via the adjacent Ω button, #btn-symbol → openSymbolDialog → #symbol-dialog"
+    },
+    "file.file": {
+      "effektClass": "dialog",
+      "selector": "#btn-textfile",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#textfromfile-dialog"
+      },
+      "subFeatures": [
+        { "name": "file input", "selector": "#textfromfile-input" },
+        { "name": "insertion mode", "selector": "#textfromfile-mode" },
+        { "name": "format select", "selector": "#textfromfile-format" },
+        { "name": "insert action", "selector": "#btn-textfromfile-insert" },
+        { "name": "cancel action", "selector": "#btn-textfromfile-cancel" }
+      ],
+      "note": "ledger row: file.file — insert-tab Text from File button opens #textfromfile-dialog (editor.js:12829 openDlg), not a native picker"
+    },
+    "file.save": {
+      "effektClass": "op",
+      "pre": "backstage:save",
+      "selector": "[data-cmd=\"saveDocument\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#status",
+        "contains": "Saved"
+      },
+      "note": "ledger row: file.save — backstage Save pane's primary button routes saveDocument() (editor.js:1429, 630); successful POST api(save) flips the status bar to Status.Saved \"Saved ✓\""
+    },
+    "file.back": {
+      "effektClass": "view",
+      "pre": "backstage:info",
+      "selector": "[data-cmd=\"closeFileMenu\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#backstage-overlay",
+        "attr": "class",
+        "equals": "backstage-overlay"
+      },
+      "note": "ledger row: file.back — backstage Back row routes closeFileMenu → closeBackstage → hideBackstage which removes the .open class from #backstage-overlay (editor.js:1266, 10503-10508)"
+    }
+  }
+}
