@@ -1,0 +1,162 @@
+{
+  "$comment": "L2G-06-FORMAT-CTRL: formatting-controls contracts, keys = ledger feature ids exactly (the runner resolves overrides[e.token] || overrides[e.feature], so feature-id keys also disambiguate the three entries that share token 'font-size'). Net-new rows only: formatting.bold-ctrl-b / formatting.italic-ctrl-i / formatting.underline-ctrl-u duplicates are already covered by base token overrides ('bold'/'italic'/'underline' in word-parity-overrides.json) and are deliberately NOT redeclared here — redeclaring would inflate the drop-in's non-xfail count without adding net-new passing rows. Dropdown controls (font family/sizes, change case, numbering style) use the visible menu trigger as selector and the real menuitem as ov.post: the synthetic trigger click opens the list without collapsing the caret selection (placeCaret runs first because these rows have no menu: pre), then the post click fires the item on the live selection.",
+  "entries": {
+    "formatting.font": {
+      "effektClass": "format",
+      "selector": "[aria-label=\"More font families\"]",
+      "woTab": "home",
+      "post": "[data-cmd=\"fontName\"][data-value=\"Arial\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-family",
+        "equals": "Arial"
+      },
+      "note": "ledger row: formatting.font — #font-family is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font families' dropdown: trigger click unhides the list, post clicks the Arial menuitem; styleWithCSS is on, so execCommand('fontName') wraps the selected h1 word in <span style=\"font-family: Arial\"> which the runner's closest b,i,u,span,p reader reaches"
+    },
+    "formatting.font-size": {
+      "effektClass": "format",
+      "selector": "[aria-label=\"More font sizes\"]",
+      "woTab": "home",
+      "post": "[data-cmd=\"fontSize\"][data-value=\"7\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-size",
+        "equals": "48px"
+      },
+      "note": "ledger row: formatting.font-size — #font-size is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font sizes' dropdown: post clicks the 36 (HTML size 7) menuitem; styleWithCSS wraps the 32px h1 word in <span style=\"font-size: xxx-large\"> -> computed 48px (same ladder the proven shortcut.increasefontsize row steps to)"
+    },
+    "formatting.increment-font-size-ctrl": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"fontSizeInc\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-size",
+        "equals": "48px"
+      },
+      "note": "ledger row: formatting.increment-font-size-ctrl — toolbar A+ button (Ctrl+]) emits fontSizeInc, which steps the HTML size ladder and falls through to runCommand(\"fontSize\"): 32px h1 word -> <span style=\"font-size: xxx-large\"> -> computed 48px (identical effect to the proven shortcut.increasefontsize chord)"
+    },
+    "formatting.decrement-font-size-ctrl": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"fontSizeDec\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-size",
+        "equals": "24px"
+      },
+      "note": "ledger row: formatting.decrement-font-size-ctrl — toolbar A- button (Ctrl+[) emits fontSizeDec: 32px h1 word -> <span style=\"font-size: x-large\"> -> computed 24px (identical effect to the proven shortcut.decreasefontsize chord)"
+    },
+    "formatting.change-case": {
+      "effektClass": "format",
+      "selector": "[data-i18n-aria-label=\"Home.ChangeCase\"]",
+      "woTab": "home",
+      "post": "[data-cmd=\"changeCase\"][data-value=\"upper\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "contains": "WILL"
+      },
+      "note": "ledger row: formatting.change-case — 'Change case' is a dropdown (data-i18n-keyed selector per the page-menus precedent): trigger click opens the list without collapsing the selection, post clicks UPPERCASE; changeCase rewrites the selected first word via execCommand insertText — the fixture's first text node is 'Willkommen bei World Office' and placeCaret selects chars 0..4 = 'Will' -> 'WILL'"
+    },
+    "formatting.heading-2": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"formatBlock\"][data-value=\"H2\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor h2"
+      },
+      "note": "ledger row: formatting.heading-2 — style-gallery card (first DOM match, ahead of the hidden more-styles menuitem) runs formatBlock H2 on the caret block; the default h1 'Willkommen' block is converted, planting the document's only <h2>"
+    },
+    "formatting.heading-3": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"formatBlock\"][data-value=\"H3\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor h3"
+      },
+      "note": "ledger row: formatting.heading-3 — style-gallery card runs formatBlock H3 on the caret block, planting the document's only <h3>"
+    },
+    "formatting.increase-indent-ctrl-m": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"indent\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor blockquote"
+      },
+      "note": "ledger row: formatting.increase-indent-ctrl-m — toolbar indent button (Ctrl+M) runs execCommand('indent'); Chromium wraps the caret block in <blockquote style=\"margin: 0 0 0 40px\"> — the wrapper's existence is the observable effect (same shape as the proven shortcut.indent row)"
+    },
+    "formatting.text-direction": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"directionRtl\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor [style*=\"direction: rtl\"]"
+      },
+      "note": "ledger row: formatting.text-direction — toolbar RTL button (editor.js:1087) routes through toggleBlockDirection, an inline block-level style write (not an execCommand): the caret block gains style=\"direction: rtl\" (updateActiveStates reads blk.style.direction === 'rtl')"
+    },
+    "formatting.bullets": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"insertUnorderedList\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ul"
+      },
+      "note": "ledger row: formatting.bullets — toolbar bullet-list button (Ctrl+Shift+8) runs execCommand('insertUnorderedList'), converting the caret block into the document's first <ul>"
+    },
+    "formatting.numbering": {
+      "effektClass": "structure",
+      "selector": "[aria-label=\"Numbering style options\"]",
+      "woTab": "home",
+      "post": "[data-cmd=\"listStyle\"][data-value=\"decimal\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ol"
+      },
+      "note": "ledger row: formatting.numbering — wo.match 'Numbering style options' is the caret dropdown next to the numbered-list button: trigger click opens the list, post clicks the 1. 2. 3. item; applyListStyle creates the list first when the selection is not inside one (editor.js listStyle branch), planting the document's first <ol>"
+    },
+    "formatting.font-color": {
+      "effektClass": "format",
+      "xfail": true,
+      "selector": "#text-color",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "color",
+        "equals": "rgb(255, 0, 0)"
+      },
+      "note": "ledger row: formatting.font-color — #text-color is <input type=\"color\"> wired to its change event (editor.js:10772 emitCommand(\"foreColor\")); the contract layer has no input-set vocabulary (no fill/setValue/change-dispatch step), so the picker value can never be driven from a contract — real gap, honest xfail"
+    },
+    "formatting.highlight-color": {
+      "effektClass": "format",
+      "xfail": true,
+      "selector": "#highlight-color",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "background-color",
+        "equals": "rgb(255, 224, 178)"
+      },
+      "note": "ledger row: formatting.highlight-color — #highlight-color is <input type=\"color\"> wired to its change event (emitCommand(\"hiliteColor\")); same missing input-set vocabulary as formatting.font-color — real gap, honest xfail"
+    },
+    "dialog.font-dialog.l4": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "[data-cmd=\"fontSizeInc\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#font-dialog"
+      },
+      "subFeatures": [
+        { "name": "font family", "selector": "#font-family" },
+        { "name": "font size", "selector": "#font-size" }
+      ],
+      "note": "ledger row: dialog.font-dialog.l4 — the L4 'font dialog' is the harness font-group field test (font-dialog-l4.test.mjs); the WO editor has NO dedicated font dialog — its font-group fields are the home-tab family/size pickers plus Inc/Dec buttons, each contracted individually by the passing rows in this drop-in — real UI gap, honest xfail"
+    }
+  }
+}
