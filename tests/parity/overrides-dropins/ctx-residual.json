@@ -1,0 +1,163 @@
+{
+  "$comment": "L2H-02-CTX-RESIDUAL: residual ctx-menu ledger rows. Verify-first facts: UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); TextAlignment is a table-gated submenu (toggleCtxSubmenu, editor.js:9831) whose TextAlignCenter child sets td inline text-align (applyCellTextAlign, editor.js:10267/10320); Insert-tab #btn-header inserts <header class=page-header> directly (editor.js:1274); the WO table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871) — no ctx-menu item exists for it (right-panel #rp-table-advanced routes to borders-dialog instead, editor.js:7261/7797); clipboard rows have no in-page DOM observable (system clipboard / status messages) -> honest xfails.",
+  "entries": {
+    "ctx.justify": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"justifyFull\"]",
+      "woTab": "home",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "justify"
+      },
+      "note": "ledger ctx.justify — WO surface elsewhere: ribbon data-cmd=justifyFull (not in the WO ctx menu); execCommand('justifyFull') justifies the block under the caret (same proven contract as home-format.json justifyfull)"
+    },
+    "ctx.text-alignment": {
+      "effektClass": "format",
+      "pre": "ctx-menu-in-table",
+      "selector": "[data-ctx=\"TextAlignment\"]",
+      "post": "[data-ctx=\"TextAlignCenter\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "text-align",
+        "equals": "center"
+      },
+      "note": "ledger ctx.text-alignment — TextAlignment is a data-showif=table submenu header (toggleCtxSubmenu keeps the menu open, editor.js:9831); the TextAlignCenter child applies inline text-align:center on the selected td (applyCellTextAlign, editor.js:10267/10320); computed-style reads the td the selection sits in"
+    },
+    "ctx.edit-header": {
+      "effektClass": "structure",
+      "selector": "#btn-header",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor header.page-header"
+      },
+      "note": "ledger ctx.edit-header — WO surface elsewhere: insert-tab header button (data-cmd=insertHeader) inserts <header class=page-header> as #editor's first child on first press (editor.js:1274-1295; not in the WO ctx menu)"
+    },
+    "ctx.update-entire-table": {
+      "effektClass": "structure",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"UpdateTOC\"]",
+      "post": "#btn-updatetoc-ok",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor nav.toc"
+      },
+      "note": "ledger ctx.update-entire-table — ctx UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); its Update button (confirmUpdateTocDialog, editor.js:9336) inserts <nav class=toc> when absent and runs refreshToc — the whole-table update op"
+    },
+    "ctx.update-table-of-contents": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"UpdateTOC\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#updatetoc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "update-scope select",
+          "selector": "#toc-update"
+        },
+        {
+          "name": "update button",
+          "selector": "#btn-updatetoc-ok"
+        }
+      ],
+      "note": "ledger ctx.update-table-of-contents — same UpdateTOC ctx row opens the Update Table of Contents dialog (openUpdateTocDialog, editor.js:9332/9950)"
+    },
+    "ctx.update-page-numbers-only": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"UpdateTOC\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#updatetoc-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "update-scope select",
+          "selector": "#toc-update"
+        },
+        {
+          "name": "page-numbers-only option",
+          "selector": "#toc-update option[value=\"pages\"]"
+        }
+      ],
+      "note": "ledger ctx.update-page-numbers-only — the updatetoc-dialog's #toc-update select carries the 'Update page numbers only' option value=pages (index.html:2403); confirmUpdateTocDialog branches choice===pages (editor.js:9337/9350)"
+    },
+    "ctx.table-advanced-settings": {
+      "effektClass": "dialog",
+      "selector": "#btn-table-ops",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#table-ops-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "insert row above",
+          "selector": "#op-row-above"
+        },
+        {
+          "name": "merge cells",
+          "selector": "#op-merge"
+        },
+        {
+          "name": "border style select",
+          "selector": "#table-ops-border-style"
+        }
+      ],
+      "note": "ledger ctx.table-advanced-settings — WO surface elsewhere per the ledger (table-ops-dialog): no ctx-menu item exists (index.html ctx census); the reachable table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871); the right-panel #rp-table-advanced link routes to borders-dialog instead (editor.js:7261/7797)"
+    },
+    "ctx.copy": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Copy\"]",
+      "assertion": {
+        "kind": "unspecified"
+      },
+      "xfail": true,
+      "note": "ledger ctx.copy KNOWN GAP: ctx Copy runs document.execCommand('copy') (editor.js:9845) — writes the system clipboard, zero in-page DOM delta, nothing contract-observable"
+    },
+    "ctx.paste": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Paste\"]",
+      "assertion": {
+        "kind": "unspecified"
+      },
+      "xfail": true,
+      "note": "ledger ctx.paste KNOWN GAP: ctx Paste needs navigator.clipboard.readText/richPaste (editor.js:9847-9856) — headless harness has no clipboard-read permission, so the op is a silent no-op; no deterministic DOM contract"
+    },
+    "ctx.cut": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Cut\"]",
+      "assertion": {
+        "kind": "unspecified"
+      },
+      "xfail": true,
+      "note": "ledger ctx.cut KNOWN GAP: ctx Cut runs document.execCommand('cut') (editor.js:9845) — requires real user activation; the runner's synthetic evaluate-click has none, so the cut is not deterministic in-harness (and Copy/Paste siblings are pure clipboard ops)"
+    },
+    "ctx.copy-hyperlink-address": {
+      "effektClass": "op",
+      "pre": "link-at-caret",
+      "selector": "[data-ctx=\"CopyHyperlinkAddress\"]",
+      "assertion": {
+        "kind": "unspecified"
+      },
+      "xfail": true,
+      "note": "ledger ctx.copy-hyperlink-address KNOWN GAP: data-showif=link row copies linkEl.href via navigator.clipboard.writeText and only sets a status message (editor.js:9922-9933) — system clipboard + status line, no DOM contract"
+    },
+    "ctx.frame-advanced-settings": {
+      "effektClass": "op",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"FrameSettings\"]",
+      "assertion": {
+        "kind": "unspecified"
+      },
+      "xfail": true,
+      "note": "ledger ctx.frame-advanced-settings KNOWN GAP: FrameSettings needs a vector/image object at the selection (vectorObjectAtSelection -> openVectorEditor, editor.js:10186-10200); without such a fixture it only sets Status.NoObjectSelected and dispatches wo:frame-settings — not one of the runner's armed op-emitted events"
+    }
+  }
+}
