@@ -1,0 +1,155 @@
+{
+  "entries": {
+    "insert.breaks": {
+      "effektClass": "structure",
+      "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+      "selector": "[data-cmd=\"insertPageBreak\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.page-break"
+      },
+      "note": "ledger row: insert.breaks — Breaks ▾ menu on the insert ribbon (index.html:415-422, menu items carry data-cmd, first in DOM wins over the layout-tab twin); editor.js:1177-1194 insertPageBreak inserts div.page-break + trailing <p> via insertHTML"
+    },
+    "image.image": {
+      "effektClass": "dialog",
+      "selector": "#btn-hf-image",
+      "woTab": "header-footer",
+      "xfail": true,
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#image-dialog"
+      },
+      "subFeatures": [
+        { "name": "image file input", "selector": "#image-file" },
+        { "name": "ok action", "selector": "#btn-image-ok" }
+      ],
+      "note": "ledger row: image.image — btn-hf-image (index.html:961) → insertImage() opens #image-dialog (editor.js:9690, 2897), but the button lives on the CONTEXTUAL header-footer ribbon tab which stays hidden until enterHFMode (editor.js:9650-9657), reachable only by dblclick on a page-header/footer (editor.js:9658-9661) — no runner pre exists for HF mode, so the control is unreachable"
+    },
+    "insert.link": {
+      "effektClass": "dialog",
+      "selector": "#btn-link",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#link-dialog"
+      },
+      "subFeatures": [
+        { "name": "text input", "selector": "#link-text" },
+        { "name": "url input", "selector": "#link-url" },
+        { "name": "cancel action", "selector": "#btn-link-cancel" },
+        { "name": "insert action", "selector": "#btn-link-ok" }
+      ],
+      "note": "ledger row: insert.link — btn-link (index.html:444) → insertLink() (editor.js:5342-5343, 2927) adds .open to #link-dialog (dialog-overlay.open → display:flex)"
+    },
+    "headerfooter.header-footer": {
+      "effektClass": "dialog",
+      "selector": "#btn-headerfooter-combined",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#headerfooter-dialog"
+      },
+      "subFeatures": [
+        { "name": "header radio", "selector": "#hf-type-header" },
+        { "name": "footer radio", "selector": "#hf-type-footer" },
+        { "name": "different first page", "selector": "#hf-different-first" },
+        { "name": "distance input", "selector": "#hf-distance" },
+        { "name": "close action", "selector": "#btn-headerfooter-close" },
+        { "name": "insert action", "selector": "#btn-headerfooter-ok" }
+      ],
+      "note": "ledger row: headerfooter.header-footer — btn-headerfooter-combined data-cmd=insertHeaderFooter (index.html:448) → openOverlayDialog(\"headerfooter-dialog\") (editor.js:1270-1273, 8848-8854); the L3 hf structure surfaces as this overlay dialog with type radios + distance"
+    },
+    "insert.text-box": {
+      "effektClass": "dialog",
+      "selector": "#btn-textbox",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "subFeatures": [
+        { "name": "type select", "selector": "#object-type" },
+        { "name": "label input", "selector": "#object-label" },
+        { "name": "content textarea", "selector": "#object-content" },
+        { "name": "cancel action", "selector": "#btn-object-cancel" },
+        { "name": "insert action", "selector": "#btn-object-ok" }
+      ],
+      "note": "ledger row: insert.text-box — btn-textbox data-cmd=insertTextbox (index.html:452) → openObjectDialog(\"textbox\") (editor.js:1344, 3704-3728) opens #object-dialog with the textbox preset preselected"
+    },
+    "insert.text-art": {
+      "effektClass": "dialog",
+      "selector": "#btn-textart",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "subFeatures": [
+        { "name": "type select", "selector": "#object-type" },
+        { "name": "label input", "selector": "#object-label" },
+        { "name": "content textarea", "selector": "#object-content" },
+        { "name": "cancel action", "selector": "#btn-object-cancel" },
+        { "name": "insert action", "selector": "#btn-object-ok" }
+      ],
+      "note": "ledger row: insert.text-art — btn-textart data-cmd=insertTextart (index.html:455) → openObjectDialog(\"textart\") (editor.js:1345, 3704-3728) opens #object-dialog with the textart preset"
+    },
+    "insert.field": {
+      "effektClass": "dialog",
+      "selector": "#btn-field",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#field-dialog"
+      },
+      "subFeatures": [
+        { "name": "field type select", "selector": "#field-type" },
+        { "name": "cancel action", "selector": "#btn-field-cancel" },
+        { "name": "insert action", "selector": "#btn-field-ok" }
+      ],
+      "note": "ledger row: insert.field — btn-field lives on the references ribbon (index.html:726-728) → openDlg(\"field-dialog\") (editor.js:13176-13177) opens the PAGE/DATE/TIME/AUTHOR/FILENAME/WORDS field dialog"
+    },
+    "references.footnote": {
+      "effektClass": "structure",
+      "selector": "#btn-footnote",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor sup.footnote-citation"
+      },
+      "note": "ledger row: references.footnote — btn-footnote data-cmd=insertFootnote (index.html:719) → editor.js:1228-1243 inserts sup.footnote-citation[1] + span.footnote \"Footnote text\" via insertHTML (the same click also opens notes-dialog via the editor.js:8859 wiring; the mutation is the structure contract)"
+    },
+    "insert.insert-spreadsheet": {
+      "effektClass": "dialog",
+      "pre": "menu:#btn-insert-more",
+      "selector": "#btn-spreadsheet",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "subFeatures": [
+        { "name": "type select", "selector": "#object-type" },
+        { "name": "cancel action", "selector": "#btn-object-cancel" },
+        { "name": "insert action", "selector": "#btn-object-ok" }
+      ],
+      "note": "ledger row: insert.insert-spreadsheet — Spreadsheet item in the Insert tools ▾ menu (index.html:560-567, data-cmd=insertObject data-value=spreadsheet, wo binding menu:btn-insert-more) → editor.js:1330-1337 openObjectDialog(\"spreadsheet\") opens #object-dialog with the spreadsheet preset"
+    },
+    "table.insert-custom-table": {
+      "effektClass": "dialog",
+      "selector": "#btn-table",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#table-dialog"
+      },
+      "subFeatures": [
+        { "name": "rows input", "selector": "#table-rows" },
+        { "name": "columns input", "selector": "#table-cols" },
+        { "name": "cancel action", "selector": "#btn-table-cancel" },
+        { "name": "insert action", "selector": "#btn-table-ok" }
+      ],
+      "note": "ledger row: table.insert-custom-table — btn-table (index.html:425) → insertTable() (editor.js:5016, 2119-2132) opens the .insert-pop #table-dialog with rows/columns inputs (.insert-pop.open → display:block, style.css:1077)"
+    }
+  }
+}
