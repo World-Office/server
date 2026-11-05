@@ -168,6 +168,13 @@ async function subFeatureAudit(page, ov, dialogSel) {
     const ov = overrides[e.token] || overrides[e.feature] || {};
     const woTab = ov.woTab || e.woTab;
     const res = { token: e.token, feature: e.feature, tab: e.tab, cls: e.effektClass, xfail: !!ov.xfail };
+    // xfail fast-path: known gaps are counted without driving the page —
+    // at CI scale their hidden-control scroll waits dominate the runtime.
+    // Set WO_RUN_XFAILS=1 to exercise them for real (vocabulary debugging).
+    if (res.xfail && !process.env.WO_RUN_XFAILS) {
+      res.ok = false; res.observed = 'known-gap (fast-path: not driven)';
+      results.push(res); continue;
+    }
     try {
       // fresh page per contract: contracts must be independent (no state
       // bleed from previous toggles/inserts)
