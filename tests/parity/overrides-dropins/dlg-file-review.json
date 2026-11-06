@@ -1,0 +1,163 @@
+{
+  "comment": "L2I-01-FILE-REVIEW: dialog-DEPTH contracts (dialog-action) for the file/review dialog action rows. Deviation note (same situation as L2I-04): every ledger row assigned to this task (file.file, file.view, file.plugins, file.protect, file.download-as, file.suggest-a-feature, review.comment, review.add-comment, review.track-changes, review.display-mode, review.compare, review.combine, review.grammar-spelling) is ALREADY bound to a green override via token-precedence (overrides[token] || overrides[feature]) — btn-textfile (insert-b.json), plugins-dialog (plugins.json), btn-comment/btn-track-changes (review-statusbar.json), compareversion/combinerevisions (review.json), btn-ai-grammar (ai-tab.json), file.download-as/file.protect/file.suggest-a-feature (stragglers.json), file.view/review.display-mode (base). Because overrides-dropins files are merged sorted by filename (last file wins) and dlg-file-review.json sorts BEFORE all of those, any ledger/token key here would either be shadowed (dead) or replace a green row (+0 pass, breaks the gate arithmetic). Therefore the contracts are keyed as override-only entries (match no ledger token/feature) and deepen the SAME dialogs from dialog-visible to dialog-action (button closes dialog), reusing the proven openers from the green rows. Grep-verified handlers: #btn-textfromfile-cancel closeDlg (editor.js:12918), #btn-displaymode-ok ROUND2 closeOverlayDialog (editor.js:9375-9379), #btn-plugins-close (index.html:2930, proven by L2I-04), #btn-protect-apply confirmProtectDialog closes on 2xx (editor.js:8318-8354, Rust docserver POST /api/documents/{id}/protect exists, editor_docs.rs:674), #btn-suggest-cancel closeDlg (editor.js:12731), #btn-comment-cancel closeCommentDialog (editor.js:8740), #btn-trackchanges-close wired loop (editor.js:8964), [data-export] closeAllMenus -> doExport (editor.js:10743), #btn-ai-propose-cancel (index.html:2767, proven by L2I-04). KNOWN GAPS (xfail honest): #btn-textfromfile-insert stays disabled until a file is chosen (editor.js:12845-12852, click no-ops without file), #btn-compare-apply/#btn-combine-apply keep the dialog open by design when no document is selected (error path editor.js:7678-7684/7755-7761).",
+  "entries": {
+    "dialogdepth-fr.textfromfile-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-cancel",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "depth (ledger file.file cancel action): #textfromfile-dialog opened by #btn-textfile (proven by insert-b btn-textfile row) is closed by #btn-textfromfile-cancel (closeDlg, editor.js:12918)"
+    },
+    "dialogdepth-fr.textfromfile-insert": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-insert",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "KNOWN GAP (ledger file.file insert action): #btn-textfromfile-insert is disabled until a file is picked in #textfromfile-input (editor.js:12846-12852) and its click handler returns early without one — the dialog never closes; inserting needs a real file, which the contract vocabulary cannot provide"
+    },
+    "dialogdepth-fr.displaymode-ok-view": {
+      "effektClass": "dialog",
+      "woTab": "view",
+      "selector": ".ribbon-page[data-tab=\"view\"] [data-cmd=\"displayMode\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-displaymode-ok",
+        "dialog": "#displaymode-dialog"
+      },
+      "note": "depth (ledger file.view): #displaymode-dialog opened from the view tab (proven by base file.view row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379)"
+    },
+    "dialogdepth-fr.displaymode-ok-collab": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": ".ribbon-page[data-tab=\"collaboration\"] [data-cmd=\"displayMode\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-displaymode-ok",
+        "dialog": "#displaymode-dialog"
+      },
+      "note": "depth (ledger review.display-mode): same #displaymode-dialog opened from the collaboration tab (proven by base review.display-mode row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379)"
+    },
+    "dialogdepth-fr.plugins-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "[data-cmd=\"managePlugins\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-plugins-close",
+        "dialog": "#plugins-dialog"
+      },
+      "note": "depth (ledger file.plugins): #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins.json plugins-dialog row) is closed by #btn-plugins-close (index.html:2930; same shape as L2I-04 dialogdepth.plugins-close)"
+    },
+    "dialogdepth-fr.protect-apply": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "woTab": "protection",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-protect-apply",
+        "dialog": "#protect-dialog"
+      },
+      "note": "KNOWN GAP (ledger file.protect apply action, protection-tab opener proven by L2I-04 dialogdepth.protect-cancel): #btn-protect-apply runs confirmProtectDialog, whose POST /api/documents/{id}/protect returns 404 in the parity environment (the editor doc demo.docx is not in the docserver store — probed live) so the error path keeps #protect-dialog open by design (editor.js:8340-8341); the success path would close it via closeProtectDialog (editor.js:8349)"
+    },
+    "dialogdepth-fr.downloadas-pdf": {
+      "effektClass": "dialog",
+      "pre": "backstage:export",
+      "selector": "#btn-export",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "[data-export=\"pdf\"]",
+        "dialog": "#export-sub"
+      },
+      "note": "depth (ledger file.download-as, opener proven by stragglers file.download-as row): clicking the [data-export=pdf] format item runs closeAllMenus (editor.js:10744-10748) which hides the #export-sub format menu before doExport fires — menu-close is the assertable effect; the download itself (blob + a.click, editor.js:741-745) is not observable headless"
+    },
+    "dialogdepth-fr.suggest-cancel": {
+      "effektClass": "dialog",
+      "pre": "backstage:suggest",
+      "selector": "#btn-filesuggest",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-suggest-cancel",
+        "dialog": "#suggest-dialog"
+      },
+      "note": "depth (ledger file.suggest-a-feature, opener proven by stragglers file.suggest-a-feature row): #suggest-dialog (openDlg via #btn-filesuggest) is closed by #btn-suggest-cancel (closeDlg, editor.js:12731-12732)"
+    },
+    "dialogdepth-fr.comment-cancel-insertcomment": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "[data-cmd=\"insertComment\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-cancel",
+        "dialog": "#comment-dialog"
+      },
+      "note": "depth (ledger review.comment, opener proven by review-statusbar review.comment row): #comment-dialog opened by insertComment is closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741)"
+    },
+    "dialogdepth-fr.comment-cancel-collab": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-cancel",
+        "dialog": "#comment-dialog"
+      },
+      "note": "depth (ledger review.add-comment, opener proven by review-statusbar review.add-comment row): the collaboration-tab #btn-comment opens the same #comment-dialog, closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741)"
+    },
+    "dialogdepth-fr.trackchanges-close": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-track-changes",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-trackchanges-close",
+        "dialog": "#trackchanges-dialog"
+      },
+      "note": "depth (ledger review.track-changes, opener proven by review-statusbar review.track-changes row): #trackchanges-dialog opened by #btn-track-changes is closed by #btn-trackchanges-close (wired close loop editor.js:8964; the runner's own ctx-menu-trackchanges pre uses the same button to dismiss the dialog)"
+    },
+    "dialogdepth-fr.compare-apply": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"compareVersion\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-compare-apply",
+        "dialog": "#compare-dialog"
+      },
+      "note": "KNOWN GAP (ledger review.compare apply action): compareDocuments with an empty #compare-document-select (the placeholder option stays selected) takes the error path and RETURNS WITHOUT closing the dialog (editor.js:7678-7684) — Compare only applies once a real second document is selected"
+    },
+    "dialogdepth-fr.combine-apply": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"combineRevisions\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-combine-apply",
+        "dialog": "#combine-dialog"
+      },
+      "note": "KNOWN GAP (ledger review.combine apply action): combineDocuments with no selected documents takes the error path and RETURNS WITHOUT closing the dialog (editor.js:7755-7761) — Combine only applies once a real second document is multi-selected"
+    },
+    "dialogdepth-fr.grammar-ai-propose-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "selector": "#btn-ai-grammar",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ai-propose-cancel",
+        "dialog": "#ai-propose-dialog"
+      },
+      "note": "depth (ledger review.grammar-spelling, opener proven by ai-tab btn-ai-grammar row): #ai-propose-dialog opened by #btn-ai-grammar (fix-grammar-and-spelling instruction) is closed by #btn-ai-propose-cancel (index.html:2767; same shape as L2I-04 dialogdepth.ai-propose-cancel)"
+    }
+  }
+}
