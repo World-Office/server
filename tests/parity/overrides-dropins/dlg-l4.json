@@ -1,0 +1,93 @@
+{
+  "comment": "L2I-06-L4-DIALOGS: dialog-DEPTH contracts (dialog-action) for the eight ledger rows dialog.*-dialog.l4. Deviation note (same as L2I-04): every ledger id assigned to this task is ALREADY bound to a green dialog-visible override from chart-ref-other.json (merged at baseline bce10603c, inside the 294) via token-precedence (overrides[token] || overrides[feature]) — keying rows here as dialog.*-dialog.l4 would REPLACE those green rows (+0 pass, breaks the gate arithmetic) and delete their dialog-visible/subFeature coverage. Therefore the contracts are keyed as override-only entries (dialogdepth.*, match no ledger token/feature) and deepen the SAME eight dialogs from dialog-visible to dialog-action (cancel button closes dialog), reusing the proven openers from the green chart-ref-other rows. All eight buttons verified in index.html (Cancel buttons #btn-*-cancel, editor-wysiwyg).",
+  "entries": {
+    "dialogdepth.link-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-link",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-link-cancel",
+        "dialog": "#link-dialog"
+      },
+      "note": "depth: ledger row dialog.link-dialog.l4 — #link-dialog (opener #btn-link proven by the green dialog.link-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-link-cancel"
+    },
+    "dialogdepth.table-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-table",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-table-cancel",
+        "dialog": "#table-dialog"
+      },
+      "note": "depth: ledger row dialog.table-dialog.l4 — #table-dialog insert-pop (opener #btn-table proven by the green dialog.table-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-table-cancel"
+    },
+    "dialogdepth.equation-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-equation",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-equation-cancel",
+        "dialog": "#equation-dialog"
+      },
+      "note": "depth: ledger row dialog.equation-dialog.l4 — #equation-dialog (opener #btn-equation proven by the green dialog.equation-dialog.l4 dialog-visible row; insert.equation row also closes via this button) is closed by its Cancel button #btn-equation-cancel"
+    },
+    "dialogdepth.comment-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-cancel",
+        "dialog": "#comment-dialog"
+      },
+      "note": "depth: ledger row dialog.comment-dialog.l4 — #comment-dialog (opener #btn-comment proven by the green dialog.comment-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-comment-cancel"
+    },
+    "dialogdepth.compare-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"compareVersion\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-compare-cancel",
+        "dialog": "#compare-dialog"
+      },
+      "note": "depth: ledger row dialog.compare-dialog.l4 — #compare-dialog (opener [data-cmd=compareVersion] proven by the green dialog.compare-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-compare-cancel"
+    },
+    "dialogdepth.combine-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"combineRevisions\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-combine-cancel",
+        "dialog": "#combine-dialog"
+      },
+      "note": "depth: ledger row dialog.combine-dialog.l4 — #combine-dialog (opener [data-cmd=combineRevisions] proven by the green dialog.combine-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-combine-cancel"
+    },
+    "dialogdepth.textfromfile-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-cancel",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "depth: ledger row dialog.textfromfile-dialog.l4 — #textfromfile-dialog (opener #btn-textfile proven by the green dialog.textfromfile-dialog.l4 dialog-visible row; insert.text-from-file row also closes via this button) is closed by its Cancel button #btn-textfromfile-cancel"
+    },
+    "dialogdepth.field-cancel": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-field",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-field-cancel",
+        "dialog": "#field-dialog"
+      },
+      "note": "depth: ledger row dialog.field-dialog.l4 — #field-dialog (opener #btn-field proven by the green dialog.field-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-field-cancel"
+    }
+  }
+}
