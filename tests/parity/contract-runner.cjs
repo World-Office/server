@@ -68,6 +68,40 @@ async function openFileMenu(page) {
 // Effect observers per assertion kind ---------------------------------------
 async function checkEffect(page, ov, assertion) {
   switch (assertion.kind) {
+    case 'dialog-input': {
+      // depth contract: the OUTER trigger (ov.selector) already opened the
+      // dialog. Fill assertion.set = [{selector, value}] (input/textarea →
+      // fill, select → selectOption, checkbox → check/uncheck), optionally
+      // click assertion.click (apply button), then assert EITHER a
+      // dom-mutation (assertion.expect = {selector, absent?}) OR that the
+      // dialog closed (assertion.dialog).
+      for (const s of (assertion.set || [])) {
+        const loc = page.locator(s.selector).first();
+        if (await loc.count() === 0) return { ok: false, observed: `dialog-input: field missing ${s.selector}` };
+        const info = await loc.evaluate(el => ({ tag: el.tagName.toLowerCase(), type: el.type || '' }));
+        if (info.tag === 'select') await loc.selectOption(String(s.value));
+        else if (info.type === 'checkbox') { s.value ? await loc.check() : await loc.uncheck(); }
+        else await loc.fill(String(s.value));
+      }
+      if (assertion.click) {
+        const btn = page.locator(assertion.click).first();
+        if (await btn.count() === 0) return { ok: false, observed: `dialog-input: button missing ${assertion.click}` };
+        await btn.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+        await btn.click();
+        await sleep(300);
+      }
+      if (assertion.expect && assertion.expect.selector) {
+        return poll(page, (sel) => page.evaluate((a) => {
+          const el = document.querySelector(a.sel);
+          const ok = a.want ? !el : !!el;
+          return { ok, observed: a.want ? (el ? `still present: ${a.sel}` : 'gone') : (el ? 'found' : `no ${a.sel}`) };
+        }, { sel: assertion.expect.selector, want: assertion.expect.absent }), undefined);
+      }
+      const dlg = assertion.dialog || '.dialog-overlay';
+      const stillOpen = await page.evaluate((sel) =>
+        [...document.querySelectorAll(sel)].filter(d => getComputedStyle(d).display !== 'none' && !d.hidden).length, dlg);
+      return { ok: !stillOpen, observed: stillOpen ? `dialog still open after ${assertion.click || 'set'}` : `dialog closed after ${assertion.click || 'set'}` };
+    }
     case 'dialog-action': {
       // depth contract: the OUTER trigger (ov.selector) already opened the
       // dialog; here we click assertion.button and assert the dialog closed.

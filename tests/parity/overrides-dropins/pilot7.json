@@ -1,0 +1,46 @@
+{
+  "entries": {
+    "insert.link": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-link",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#link-url",
+            "value": "https://example.com/p7"
+          }
+        ],
+        "click": "#btn-link-ok",
+        "expect": {
+          "selector": "#editor a[href=\"https://example.com/p7\"]"
+        }
+      },
+      "note": "pilot7: link dialog input-set -> anchor inserted"
+    },
+    "table.insert-custom-table": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-table",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#table-rows",
+            "value": "3"
+          },
+          {
+            "selector": "#table-cols",
+            "value": "4"
+          }
+        ],
+        "click": "#btn-table-ok",
+        "expect": {
+          "selector": "#editor table"
+        }
+      },
+      "note": "pilot7: custom table 3x4 -> table inserted"
+    }
+  }
+}
