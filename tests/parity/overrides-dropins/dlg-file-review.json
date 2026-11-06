@@ -59,7 +59,6 @@
     },
     "dialogdepth-fr.protect-apply": {
       "effektClass": "dialog",
-      "xfail": true,
       "woTab": "protection",
       "selector": "[data-cmd=\"protectDialog\"]",
       "assertion": {
@@ -67,7 +66,7 @@
         "button": "#btn-protect-apply",
         "dialog": "#protect-dialog"
       },
-      "note": "KNOWN GAP (ledger file.protect apply action, protection-tab opener proven by L2I-04 dialogdepth.protect-cancel): #btn-protect-apply runs confirmProtectDialog, whose POST /api/documents/{id}/protect returns 404 in the parity environment (the editor doc demo.docx is not in the docserver store — probed live) so the error path keeps #protect-dialog open by design (editor.js:8340-8341); the success path would close it via closeProtectDialog (editor.js:8349)"
+      "note": "PROMOTED from xfail 2026-11-06: passes driven — confirmProtectDialog now closes the dialog on apply (earlier 404-error-path premise no longer holds in the parity environment); protection-tab opener proven by L2I-04 dialogdepth.protect-cancel"
     },
     "dialogdepth-fr.downloadas-pdf": {
       "effektClass": "dialog",

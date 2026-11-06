@@ -41,7 +41,6 @@
     },
     "file.copy-ctrl-insert": {
       "effektClass": "op",
-      "xfail": true,
       "selector": "#btn-copy",
       "woTab": "home",
       "assertion": {
@@ -54,7 +53,6 @@
     },
     "file.copy-style-ctrl-alt-c": {
       "effektClass": "op",
-      "xfail": true,
       "selector": "#btn-copy",
       "woTab": "home",
       "assertion": {
