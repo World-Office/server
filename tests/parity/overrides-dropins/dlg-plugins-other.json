@@ -1,0 +1,116 @@
+{
+  "comment": "L2I-04-PLUGINS-OTHER: dialog-DEPTH contracts (dialog-action) for plugins/other/ai dialogs. Deviation note: every ledger row assigned to this task (plugins.*, other.*, review.grammar-spelling, file.mail-merge, protect.encrypt, headerfooter.*) is ALREADY bound to a green dialog-visible override from base or a sibling drop-in (plugins.json / plugins-view.json / ai-tab.json / review.json / insert-struct.json etc.) via token-precedence (overrides[token] || overrides[feature]) — any feature/token key here would either be shadowed (dead) or REPLACE a green row (+0 pass, breaks the gate arithmetic). Therefore the contracts are keyed as override-only entries (match no ledger token/feature) and deepen the SAME dialogs from dialog-visible to dialog-action (button closes dialog), reusing the proven openers from the green rows.",
+  "entries": {
+    "dialogdepth.plugins-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "[data-cmd=\"managePlugins\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-plugins-close",
+        "dialog": "#plugins-dialog"
+      },
+      "note": "depth: #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins-dialog token row) is closed by #btn-plugins-close"
+    },
+    "dialogdepth.ocr-cancel": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "#btn-ocr",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ocr-cancel",
+        "dialog": "#ocr-dialog"
+      },
+      "note": "depth: #ocr-dialog (opener proven by ocrrun token row) is closed by #btn-ocr-cancel"
+    },
+    "dialogdepth.ai-propose-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "selector": "#btn-ai-assistant",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ai-propose-cancel",
+        "dialog": "#ai-propose-dialog"
+      },
+      "note": "depth: #ai-propose-dialog (opener proven by btn-ai-assistant token row) is closed by #btn-ai-propose-cancel"
+    },
+    "dialogdepth.speech-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"readAloud\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-speech-close",
+        "dialog": "#speech-dialog"
+      },
+      "note": "depth: #speech-dialog (opener proven by btn-speech token row) is closed by its Cancel button #btn-speech-close"
+    },
+    "dialogdepth.speechinput-cancel": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "woTab": "plugins",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"dictate\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-speechinput-cancel",
+        "dialog": "#speechinput-dialog"
+      },
+      "note": "KNOWN GAP: clicking Cancel on #speechinput-dialog does not close it (observed: dialog still open after #btn-speechinput-cancel; the OK button closes fine) — cancel likely only stops listening"
+    },
+    "dialogdepth.settings-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiSettings\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-settings-cancel",
+        "dialog": "#settings-dialog"
+      },
+      "note": "depth: #settings-dialog (opener proven by aisettings token row) is closed by #btn-settings-cancel"
+    },
+    "dialogdepth.settings-ok": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiSettings\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-settings-ok",
+        "dialog": "#settings-dialog"
+      },
+      "note": "depth: #settings-dialog (opener proven by aisettings token row) is closed by its Apply button #btn-settings-ok"
+    },
+    "dialogdepth.mailmerge-close": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"mailMerge\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-mailmerge-close",
+        "dialog": "#mailmerge-dialog"
+      },
+      "note": "depth: #mailmerge-dialog (opener proven by mailmerge token row) is closed by #btn-mailmerge-close"
+    },
+    "dialogdepth.protect-cancel": {
+      "effektClass": "dialog",
+      "woTab": "protection",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-protect-cancel",
+        "dialog": "#protect-dialog"
+      },
+      "note": "depth: #protect-dialog (opener proven by base protect.encrypt row) is closed by #btn-protect-cancel"
+    },
+    "dialogdepth.speechinput-ok": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"dictate\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-speechinput-ok",
+        "dialog": "#speechinput-dialog"
+      },
+      "note": "depth: #speechinput-dialog (opener proven by dictate token row) is closed by its OK button #btn-speechinput-ok"
+    }
+  }
+}
