@@ -1,0 +1,120 @@
+{
+  "entries": {
+    "dialoginput.bookmark": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-bookmark",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#bookmark-name", "value": "DiInputBm" }
+        ],
+        "click": "#btn-bookmark-ok",
+        "expect": { "selector": "#editor h1 span" }
+      },
+      "note": "dialog-input depth: #bookmark-name + Insert -> confirmBookmarkDialog (editor.js ~3960) insertHTMLs the bookmark at the placeCaret selection in the fixture h1 (its first text node). The editor's pagination/normalization round-trip re-renders the inserted bookmark as a plain span carrying the bookmark name text (class/data-name are normalized away \u2014 grep+run-verified), so the honest post-apply observable is the NEW span inside the otherwise span-less fixture h1 (#editor h1 span, grep-verified absent pre-apply); opener #btn-bookmark opens #bookmark-dialog (index.html ~2652)"
+    },
+    "dialoginput.insert-field": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-field",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#field-type", "value": "PAGE" }
+        ],
+        "click": "#btn-field-ok",
+        "expect": { "selector": "#editor span.field[data-field=\"PAGE\"]" }
+      },
+      "note": "dialog-input depth: #field-type select + Insert -> btnFieldOk handler (editor.js ~13181) builds <span class=field data-field=PAGE> and insertHTMLs it at the caret, then closes #field-dialog; opener #btn-field lives in the references ribbon (index.html ~727)"
+    },
+    "dialoginput.comment": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#comment-body", "value": "dialog-input comment body" }
+        ],
+        "click": "#btn-comment-ok",
+        "expect": { "selector": "#editor span.comment" }
+      },
+      "note": "dialog-input depth: review-tab #btn-comment opens #comment-dialog capturing the placeCaret range as commentRange; #comment-body + Comment -> confirmCommentDialog (editor.js ~4365) surroundContents <span class=comment data-comment=...> over the selected word"
+    },
+    "dialoginput.insert-comment": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "[data-cmd=\"insertComment\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#comment-body", "value": "insert-tab comment body" }
+        ],
+        "click": "#btn-comment-ok",
+        "expect": { "selector": "#editor span.comment" }
+      },
+      "note": "dialog-input depth: insert-tab Comment button (index.html ~441) routes cmd insertComment -> openCommentDialog (editor.js ~1346); same #comment-body + #btn-comment-ok flow writes span.comment into #editor"
+    },
+    "dialoginput.ctx-add-comment": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AddComment\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#comment-body", "value": "ctx comment body" }
+        ],
+        "click": "#btn-comment-ok",
+        "expect": { "selector": "#editor span.comment" }
+      },
+      "note": "dialog-input depth: ctx-menu AddComment item (index.html ~1607, ungated) opens #comment-dialog over the ctx-menu pre's preserved word selection; #comment-body + Comment -> confirmCommentDialog wraps it in span.comment. No woTab: the runner switches ribbon tabs only AFTER the pre, and the tab switch overlays the already-open ctx menu (run-verified hit-test block) \u2014 the item lives in the ctx menu, not the ribbon"
+    },
+    "dialoginput.cross-reference": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#crossref-target", "value": "DiInputBm" },
+          { "selector": "#crossref-text", "value": "see DiInputBm" }
+        ],
+        "click": "#btn-crossref-ok",
+        "expect": { "selector": "#editor a[href=\"#DiInputBm\"]" }
+      },
+      "note": "dialog-input depth: cross-reference select + display text -> confirmCrossrefDialog (editor.js ~4018) insertHTMLs <a href=#bookmark>. Honest xfail: #crossref-target is repopulated ONLY from existing span.bookmark[data-name] anchors (openCrossrefDialog, editor.js ~3988) and contracts run on a fresh page each — with no seeded bookmark the select holds only the '(no bookmarks yet)' placeholder (value=''), confirm bails on the empty name and the dialog stays open; no existing pre seeds a bookmark anchor and runner/pre changes are out of scope",
+      "xfail": true
+    },
+    "dialoginput.headerfooter-field": {
+      "effektClass": "dialog",
+      "woTab": "header-footer",
+      "selector": "#btn-hf-field",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#field-type", "value": "PAGE" }
+        ],
+        "click": "#btn-field-ok",
+        "expect": { "selector": "#editor header.page-header span.field" }
+      },
+      "note": "dialog-input depth, hf variant: honest xfail — #btn-hf-field lives in the CONTEXTUAL header-footer ribbon tab (index.html ~960), reachable only while header/footer edit mode is active, and no pre type establishes that state; its handler (editor.js ~9688) also only dispatches a wo:header-field marker event + status message, so a field node in header page furniture is unobservable headless without runner/pre changes (out of scope)",
+      "xfail": true
+    },
+    "dialoginput.find-replace-all": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "selector": "#btn-find",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#find-query", "value": "lorem" },
+          { "selector": "#find-replace", "value": "replaced" }
+        ],
+        "click": "#btn-find-replace-all"
+      },
+      "note": "dialog-input depth, replace path: #btn-find opens #find-dialog; #find-query + #find-replace + Replace all bulk-replaces fixture text (replaceAllBtn, editor.js ~4857). Honest xfail: the effect is a plain text-node mutation — dialog-input's expect observer only asserts selector presence/close (contract-runner.cjs dialog-input case), there is no text-mutation observer inside the dialog-input flow, and the find panel stays open after replace-all, so the mutation is not observable with the existing assertion vocabulary; no runner changes allowed",
+      "xfail": true
+    }
+  }
+}
