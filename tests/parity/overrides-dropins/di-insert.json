@@ -1,0 +1,106 @@
+{
+  "entries": {
+    "dialoginput.dropcap": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "button[data-cmd=\"toggleDropcap\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#dropcap-position", "value": "dropped" },
+          { "selector": "#dropcap-lines", "value": "3" },
+          { "selector": "#dropcap-distance", "value": "0" }
+        ],
+        "click": "#btn-dropcap-ok",
+        "expect": { "selector": "#editor span.dropcap" }
+      },
+      "note": "insert.drop-cap depth: confirmDropcapDialog -> applyDropcap wraps the paragraph's first char in span.dropcap (editor.js:8989)"
+    },
+    "dialoginput.contentcontrol": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-contentcontrol",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#cc-type", "value": "checkbox" },
+          { "selector": "#cc-title", "value": "L2J-02 cc" }
+        ],
+        "click": "#btn-cc-ok",
+        "expect": { "selector": "#editor span.content-control[data-cc=\"checkbox\"]" }
+      },
+      "note": "insert.content-controls depth: btn-cc-ok writes span.content-control[data-cc=checkbox] with the typed title (editor.js:13434)"
+    },
+    "dialoginput.equation": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-equation",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#equation-input", "value": "x^2" }
+        ],
+        "click": "#btn-equation-ok",
+        "expect": { "selector": "#editor img.vector-object[data-kind=\"equation\"]" }
+      },
+      "note": "insert.equation depth: linear notation -> equationSVG -> insertVectorObject renders img.vector-object[data-kind=equation] (editor.js:13953)"
+    },
+    "dialoginput.textbox": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textbox",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#object-type", "value": "textbox" },
+          { "selector": "#object-label", "value": "L2J-02 box" }
+        ],
+        "click": "#btn-object-ok",
+        "expect": { "selector": "#editor div.object[data-type=\"textbox\"][data-label=\"L2J-02 box\"]" }
+      },
+      "note": "insert.text-box depth: openObjectDialog('textbox') -> confirmObjectDialog inserts div.object[data-type=textbox] carrying the typed label (editor.js:3789)"
+    },
+    "dialoginput.textart": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textart",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#object-type", "value": "textart" },
+          { "selector": "#object-label", "value": "L2J-02 art" }
+        ],
+        "click": "#btn-object-ok",
+        "expect": { "selector": "#editor div.object[data-type=\"textart\"][data-label=\"L2J-02 art\"]" }
+      },
+      "note": "insert.text-art depth: openObjectDialog('textart') preset -> confirmObjectDialog inserts div.object[data-type=textart] (editor.js:1344)"
+    },
+    "dialoginput.symbol": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-symbol",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#symbol-range", "value": "391-3ce" }
+        ],
+        "click": "#symbol-grid button.symbol-btn",
+        "dialog": "#symbol-dialog"
+      },
+      "note": "insert.symbol depth: range select rebuilds the grid (change), first Greek glyph click inserts the char at the caret and closes the dialog (editor.js:8813)"
+    },
+    "dialoginput.shape": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "button[data-cmd=\"insertObject\"][data-value=\"shape\"]",
+      "xfail": true,
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [],
+        "click": "#btn-shape-ok",
+        "expect": { "selector": "#editor div.object.drawing-shape[data-shape]" }
+      },
+      "note": "insert.shape depth is NOT expressible via dialog-input: the shape picker keeps #btn-shape-ok disabled until a .shape-option button is selected, and the runner's dialog-input contract has exactly one click slot — the two-step select-then-insert cannot be encoded headless"
+    }
+  }
+}
