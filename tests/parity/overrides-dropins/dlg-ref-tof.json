@@ -1,0 +1,259 @@
+{
+  "entries": {
+    "page.margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-page-setup",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ps-apply",
+        "dialog": "#page-setup-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.custom-margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "selector": "[data-cmd=\"openPageSetup\"][data-i18n=\"Layout.Margins.Custom\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ps-apply",
+        "dialog": "#page-setup-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-page-setup",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ps-apply",
+        "dialog": "#page-setup-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.custom-page-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Size\"]",
+      "selector": "[data-cmd=\"openPageSetup\"][data-i18n=\"Layout.Size.Custom\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ps-apply",
+        "dialog": "#page-setup-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.columns": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-columns",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-columns-ok",
+        "dialog": "#columns-dialog"
+      },
+      "note": "Columns: WO-only layout button opens #columns-dialog; Insert wraps section and closes"
+    },
+    "page.dlg-columns": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-columns",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-columns-ok",
+        "dialog": "#columns-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.custom-columns": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "pre": "menu:[data-i18n=\"Layout.Columns\"]",
+      "selector": "[data-cmd=\"openColumnsDialog\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-columns-ok",
+        "dialog": "#columns-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "page.line-numbers": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleLineNumbers\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-linenumbers-ok",
+        "dialog": "#linenumbers-dialog"
+      },
+      "note": "Line numbers dialog; OK sets section marker and closes"
+    },
+    "page.hyphenation": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleHyphenation\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-hyphenation-ok",
+        "dialog": "#hyphenation-dialog"
+      },
+      "note": "Hyphenation dialog; OK sets section marker and closes"
+    },
+    "page.none": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleHyphenation\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-hyphenation-ok",
+        "dialog": "#hyphenation-dialog"
+      },
+      "note": "None option lives in #hyphenation-dialog (#hy-mode value none); OK closes"
+    },
+    "page.automatic": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleHyphenation\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-hyphenation-ok",
+        "dialog": "#hyphenation-dialog"
+      },
+      "note": "Automatic is the default #hy-mode option; OK closes"
+    },
+    "page.hyphenation-options": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleHyphenation\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-hyphenation-ok",
+        "dialog": "#hyphenation-dialog"
+      },
+      "note": "Hyphenation options dialog; OK closes"
+    },
+    "page.watermark": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleWatermark\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-watermark-ok",
+        "dialog": "#watermark-dialog"
+      },
+      "note": "Watermark dialog; OK writes watermark section marker and closes"
+    },
+    "page.colors": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#themecolors",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-colors-ok",
+        "dialog": "#colors-dialog"
+      },
+      "note": "Colors: clicking the #themecolors select opens the scheme dialog (OO-parity handler); OK applies scheme and closes"
+    },
+    "table.table-of-contents": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-toc",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-toc-ok",
+        "dialog": "#toc-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "table.update-table": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"updateToc\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-updatetoc-ok",
+        "dialog": "#updatetoc-dialog"
+      },
+      "note": "Update table/TOC ribbon buttons (both data-cmd=updateToc) open #updatetoc-dialog; Update refreshes TOC and closes"
+    },
+    "table.table-of-figures": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"insertTableOfFigures\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-tof-ok",
+        "dialog": "#tableoffigures-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "references.add-text": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"addText\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-addtext-close",
+        "dialog": "#addtext-dialog"
+      },
+      "note": "Add Text dialog; Close/Cancel closes (btn-addtext-close is the Cancel button)"
+    },
+    "references.link": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"link\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-link-cancel",
+        "dialog": "#link-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "references.bookmark": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"bookmark\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-bookmark-cancel",
+        "dialog": "#bookmark-dialog"
+      },
+      "note": "merge-shadowed: this key is re-defined by a later-sorted drop-in (layout/layout-protect/page-menus/references) whose dialog-visible binding already passes in the 294 baseline; a dialog-action upgrade cannot win the overrides merge from dlg-ref-tof.json (sorts before those files) and editing them is out of scope \u2014 grep-verified: opener+action buttons exist (page-setup/#btn-ps-apply, columns-dialog/#btn-columns-ok, toc-dialog/#btn-toc-ok, tableoffigures-dialog/#btn-tof-ok, bookmark-dialog/#btn-bookmark-cancel, link-dialog/#btn-link-cancel)",
+      "xfail": true
+    },
+    "references.cross-reference": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-crossref-cancel",
+        "dialog": "#crossref-dialog"
+      },
+      "note": "Cross-reference dialog; Cancel closes"
+    },
+    "references.dlg-cross-reference": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-crossref-cancel",
+        "dialog": "#crossref-dialog"
+      },
+      "note": "Cross-reference dialog depth: same #crossref-dialog, Cancel closes"
+    }
+  }
+}
