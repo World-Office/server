@@ -1,0 +1,89 @@
+{
+  "entries": {
+    "dialoginput.page-setup-margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-page-setup",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#ps-mt", "value": "2.5" },
+          { "selector": "#ps-mr", "value": "0.75" }
+        ],
+        "click": "#btn-ps-apply",
+        "expect": {
+          "selector": ".page-setup[data-margin-top=\"3600\"][data-margin-right=\"1080\"]"
+        }
+      },
+      "note": "dialoginput override-only: Page setup dialog #ps-mt=2.5in/#ps-mr=0.75in + Apply -> writePageSetupMarker writes data-margin-top=3600 / data-margin-right=1080 twips on the .page-setup marker (editor.js btn-ps-apply: Math.round(inches*1440))"
+    },
+    "dialoginput.page-setup-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-page-setup",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#ps-size", "value": "12240x20160" },
+          { "selector": "#ps-mb", "value": "2" }
+        ],
+        "click": "#btn-ps-apply",
+        "expect": {
+          "selector": ".page-setup[data-page-w=\"12240\"][data-page-h=\"20160\"][data-margin-bottom=\"2880\"]"
+        }
+      },
+      "note": "dialoginput override-only: Page setup dialog size select Legal (12240x20160 twips, apply path splits ps-size WxH value) + #ps-mb=2in -> marker data-page-w/h + data-margin-bottom=2880"
+    },
+    "dialoginput.page-setup-custom-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-page-setup",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#ps-size", "value": "custom" }
+        ],
+        "click": "#btn-ps-apply",
+        "expect": {
+          "selector": ".page-setup[data-page-w=\"11906\"][data-page-h=\"16838\"][data-orient=\"portrait\"]"
+        }
+      },
+      "note": "dialoginput override-only: Page setup dialog size select Custom exercises the psSize.value==='custom' branch (rememberCustomSize + dialog dataset.w/h fallback -> 11906x16838 portrait on a fresh page) -> marker written with data-orient"
+    },
+    "dialoginput.columns-count-gap": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-columns",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#columns-count", "value": "4" },
+          { "selector": "#columns-gap", "value": "80" }
+        ],
+        "click": "#btn-columns-ok",
+        "expect": {
+          "selector": "#editor section[data-columns=\"4\"][data-column-gap=\"80\"]"
+        }
+      },
+      "note": "dialoginput override-only: Columns dialog #columns-count=4/#columns-gap=80 + Insert -> confirmColumnsDialog insertHTML <section data-columns=4 data-column-gap=80> at the caret"
+    },
+    "dialoginput.watermark-custom-text": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "[data-cmd=\"toggleWatermark\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#wm-mode", "value": "custom" },
+          { "selector": "#wm-text", "value": "TOPSECRET" },
+          { "selector": "#wm-color", "value": "#CC3333" }
+        ],
+        "click": "#btn-watermark-ok",
+        "expect": {
+          "selector": "#editor div.watermark[data-text=\"TOPSECRET\"][data-color=\"#CC3333\"]"
+        }
+      },
+      "note": "dialoginput override-only: Watermark ribbon button -> dialog, wm-mode=custom unhides #wm-text, fill TOPSECRET (no spaces: setSectionMarker splits attrs on whitespace) + color Red -> div.watermark marker data-text/data-color"
+    }
+  }
+}
