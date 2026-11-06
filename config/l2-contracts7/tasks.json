@@ -1,0 +1,78 @@
+{
+  "_meta": {
+    "project": "l2-contracts-wave7",
+    "base": "ad26c5404"
+  },
+  "defaults": {
+    "max_attempts": 3,
+    "accept_timeout_s": 1200,
+    "agent_timeout_s": 5400,
+    "retry_delay_s": 60
+  },
+  "tasks": [
+    {
+      "id": "L2J-01-PAGE-INPUTS",
+      "repo": "server",
+      "title": "page dialogs with numeric/select inputs",
+      "deps": [],
+      "priority": 10,
+      "scope": [
+        "tests/parity/overrides-dropins/di-page.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/di-page.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((338 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/di-page.json)))",
+      "acceptance_prose": "## Background\nContract layer on main at ad26c5404: 338 pass / 90 known-gap / 0 FAIL.\nYour task: INPUT-SET depth contracts into tests/parity/overrides-dropins/di-page.json. Candidate rows:\npage.columns + page.custom-columns + page.dlg-columns (#columns-count / #columns-gap, #btn-columns-ok; effect: column layout - grep handler at editor.js ~8626 for the DOM write, e.g. .page-setup data-cols or column-count style -> dom-mutation expect), page.watermark (custom text input + #btn-watermark-ok -> watermark node/style), page.margins + page.custom-margins (margin inputs -> data-margin-* on .page-setup), page.custom-page-size (width/height inputs -> data-page-*). Prefer override-only keys dialoginput.* (guaranteed +1 pass each).\n\n## Method (STRICT)\n1. Grep BEFORE trust: dialog markup in index.html (input/select ids) + the confirm handler in editor.js (what DOM it writes) + the opener button.\n2. Contract shape: effektClass:'dialog', woTab, selector=<opener>, assertion {kind:'dialog-input', set:[{selector,value}...], click:'<apply #id>', expect:{selector:'<post-apply DOM node>'}} (or dialog:'<id>' to assert close).\n3. GATE MATH IS STRICT: a dialog-input row replacing an existing GREEN row adds +0 pass but your gate threshold rises by N -> gate FAILS. Two legal plays: (a) OVERRIDE-ONLY keys prefixed 'dialoginput.*' (key matches no ledger token/feature -> emitted as extra runnable entry, +1 pass each when green), or (b) a ledger key whose current binding is xfail or absent (verify in the MERGED overrides dump first). Do NOT replace green rows.\n4. Verify each row by RUNNING: /usr/bin/node tests/parity/contract-runner.cjs --only <token-or-key> (WO_PORT 19800+, NO_PROXY=127.0.0.1,localhost, WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json, WO_DOCSERVER_BIN=$PWD/target/debug/wo-docserver if needed; regen manifest first).\n5. Drop-in top-level key MUST be 'entries' (loader silently skips files without it).\n6. xfail:true + honest note when the effect is unobservable headless (file pickers, clipboard, server round-trips). Do not touch anything outside your drop-in. No runner/editor/index.html changes.\n7. Minimum 4 passing (non-xfail) rows.\n\n## Acceptance gate\nbash tests/parity/af-gate.sh <N> exits 0, N = 338 + your non-xfail row count. Full run ~7 min. Commit only your drop-in to branch tf/L2J-01-PAGE-INPUTS-*.",
+      "manual": false
+    },
+    {
+      "id": "L2J-02-INSERT-INPUTS",
+      "repo": "server",
+      "title": "insert dialogs with inputs/selects",
+      "deps": [],
+      "priority": 9,
+      "scope": [
+        "tests/parity/overrides-dropins/di-insert.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/di-insert.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((338 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/di-insert.json)))",
+      "acceptance_prose": "## Background\nContract layer on main at ad26c5404: 338 pass / 90 known-gap / 0 FAIL.\nYour task: INPUT-SET depth contracts into tests/parity/overrides-dropins/di-insert.json. Candidate rows:\ninsert.drop-cap (#dropcap-position select + #dropcap-lines, #btn-dropcap-ok -> grep applyDropcap for the dropcap DOM marker), insert.content-controls (#cc type select + title input + ok -> inserted control node), insert.text-box / insert.text-art (type select + label -> inserted object node), insert.equation (linear notation input -> inserted math node - grep confirmEquationDialog), insert.symbol / insert.more-symbols (symbol char -> inserted char, text observable), insert.shape (shape option -> inserted svg/div). Prefer override-only keys dialoginput.*.\n\n## Method (STRICT)\n1. Grep BEFORE trust: dialog markup in index.html (input/select ids) + the confirm handler in editor.js (what DOM it writes) + the opener button.\n2. Contract shape: effektClass:'dialog', woTab, selector=<opener>, assertion {kind:'dialog-input', set:[{selector,value}...], click:'<apply #id>', expect:{selector:'<post-apply DOM node>'}} (or dialog:'<id>' to assert close).\n3. GATE MATH IS STRICT: a dialog-input row replacing an existing GREEN row adds +0 pass but your gate threshold rises by N -> gate FAILS. Two legal plays: (a) OVERRIDE-ONLY keys prefixed 'dialoginput.*' (key matches no ledger token/feature -> emitted as extra runnable entry, +1 pass each when green), or (b) a ledger key whose current binding is xfail or absent (verify in the MERGED overrides dump first). Do NOT replace green rows.\n4. Verify each row by RUNNING: /usr/bin/node tests/parity/contract-runner.cjs --only <token-or-key> (WO_PORT 19800+, NO_PROXY=127.0.0.1,localhost, WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json, WO_DOCSERVER_BIN=$PWD/target/debug/wo-docserver if needed; regen manifest first).\n5. Drop-in top-level key MUST be 'entries' (loader silently skips files without it).\n6. xfail:true + honest note when the effect is unobservable headless (file pickers, clipboard, server round-trips). Do not touch anything outside your drop-in. No runner/editor/index.html changes.\n7. Minimum 4 passing (non-xfail) rows.\n\n## Acceptance gate\nbash tests/parity/af-gate.sh <N> exits 0, N = 338 + your non-xfail row count. Full run ~7 min. Commit only your drop-in to branch tf/L2J-02-INSERT-INPUTS-*.",
+      "manual": false
+    },
+    {
+      "id": "L2J-03-REF-REVIEW-INPUTS",
+      "repo": "server",
+      "title": "references/review/dialog inputs",
+      "deps": [],
+      "priority": 8,
+      "scope": [
+        "tests/parity/overrides-dropins/di-ref-review.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/di-ref-review.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((338 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/di-ref-review.json)))",
+      "acceptance_prose": "## Background\nContract layer on main at ad26c5404: 338 pass / 90 known-gap / 0 FAIL.\nYour task: INPUT-SET depth contracts into tests/parity/overrides-dropins/di-ref-review.json. Candidate rows:\nreferences.bookmark + references.dlg-bookmarks (name input + ok -> bookmark anchor node), references.cross-reference + references.dlg-cross-reference (selects -> inserted ref), review.comment + review.add-comment + ctx.add-comment (comment body textarea + ok -> comment node), headerfooter.field + insert.field (field type select + ok -> field node - needs header state pre for hf variant: xfail honest if too complex), formatting.replace-ctrl-h / file.find-ctrl-f replace path (#find-replace + #btn-find-replace-all -> text-mutation: fixture text replaced - needs a pre that seeds text: ask before adding a new pre type; if no existing pre seeds editable text, xfail honest). Prefer override-only keys dialoginput.*.\n\n## Method (STRICT)\n1. Grep BEFORE trust: dialog markup in index.html (input/select ids) + the confirm handler in editor.js (what DOM it writes) + the opener button.\n2. Contract shape: effektClass:'dialog', woTab, selector=<opener>, assertion {kind:'dialog-input', set:[{selector,value}...], click:'<apply #id>', expect:{selector:'<post-apply DOM node>'}} (or dialog:'<id>' to assert close).\n3. GATE MATH IS STRICT: a dialog-input row replacing an existing GREEN row adds +0 pass but your gate threshold rises by N -> gate FAILS. Two legal plays: (a) OVERRIDE-ONLY keys prefixed 'dialoginput.*' (key matches no ledger token/feature -> emitted as extra runnable entry, +1 pass each when green), or (b) a ledger key whose current binding is xfail or absent (verify in the MERGED overrides dump first). Do NOT replace green rows.\n4. Verify each row by RUNNING: /usr/bin/node tests/parity/contract-runner.cjs --only <token-or-key> (WO_PORT 19800+, NO_PROXY=127.0.0.1,localhost, WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json, WO_DOCSERVER_BIN=$PWD/target/debug/wo-docserver if needed; regen manifest first).\n5. Drop-in top-level key MUST be 'entries' (loader silently skips files without it).\n6. xfail:true + honest note when the effect is unobservable headless (file pickers, clipboard, server round-trips). Do not touch anything outside your drop-in. No runner/editor/index.html changes.\n7. Minimum 4 passing (non-xfail) rows.\n\n## Acceptance gate\nbash tests/parity/af-gate.sh <N> exits 0, N = 338 + your non-xfail row count. Full run ~7 min. Commit only your drop-in to branch tf/L2J-03-REF-REVIEW-INPUTS-*.",
+      "manual": false
+    },
+    {
+      "id": "L2J-04-CTX-LIST-INPUTS",
+      "repo": "server",
+      "title": "ctx dialogs on list state with inputs",
+      "deps": [],
+      "priority": 7,
+      "scope": [
+        "tests/parity/overrides-dropins/di-ctx-list.json"
+      ],
+      "touch": [
+        "tests/parity/overrides-dropins/di-ctx-list.json"
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh $((338 + $(/usr/bin/python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d['entries'].values() if not v.get('xfail')) if 'entries' in d else 0)\" tests/parity/overrides-dropins/di-ctx-list.json)))",
+      "acceptance_prose": "## Background\nContract layer on main at ad26c5404: 338 pass / 90 known-gap / 0 FAIL.\nYour task: INPUT-SET depth contracts into tests/parity/overrides-dropins/di-ctx-list.json. Candidate rows:\nctx.set-numbering-value (#numbering-value input + #btn-numbering-ok, pre ctx-menu-in-list -> numbering value change), ctx.adjust-list-indents (indent inputs + #btn-list-indents-ok, pre ctx-menu-in-list -> style change - grep), ctx.several-rows-columns (count input + apply rows action, pre ctx-menu-in-table -> row count), ctx.paragraph-advanced-settings (select + #ps-keep-next, pre ctx-menu -> paragraph-settings-dialog apply -> style change), ctx.drop-cap-settings (#dropcap inputs, pre ctx-menu). Prefer override-only keys dialoginput.*.\n\n## Method (STRICT)\n1. Grep BEFORE trust: dialog markup in index.html (input/select ids) + the confirm handler in editor.js (what DOM it writes) + the opener button.\n2. Contract shape: effektClass:'dialog', woTab, selector=<opener>, assertion {kind:'dialog-input', set:[{selector,value}...], click:'<apply #id>', expect:{selector:'<post-apply DOM node>'}} (or dialog:'<id>' to assert close).\n3. GATE MATH IS STRICT: a dialog-input row replacing an existing GREEN row adds +0 pass but your gate threshold rises by N -> gate FAILS. Two legal plays: (a) OVERRIDE-ONLY keys prefixed 'dialoginput.*' (key matches no ledger token/feature -> emitted as extra runnable entry, +1 pass each when green), or (b) a ledger key whose current binding is xfail or absent (verify in the MERGED overrides dump first). Do NOT replace green rows.\n4. Verify each row by RUNNING: /usr/bin/node tests/parity/contract-runner.cjs --only <token-or-key> (WO_PORT 19800+, NO_PROXY=127.0.0.1,localhost, WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json, WO_DOCSERVER_BIN=$PWD/target/debug/wo-docserver if needed; regen manifest first).\n5. Drop-in top-level key MUST be 'entries' (loader silently skips files without it).\n6. xfail:true + honest note when the effect is unobservable headless (file pickers, clipboard, server round-trips). Do not touch anything outside your drop-in. No runner/editor/index.html changes.\n7. Minimum 4 passing (non-xfail) rows.\n\n## Acceptance gate\nbash tests/parity/af-gate.sh <N> exits 0, N = 338 + your non-xfail row count. Full run ~7 min. Commit only your drop-in to branch tf/L2J-04-CTX-LIST-INPUTS-*.",
+      "manual": false
+    }
+  ]
+}
