@@ -90,6 +90,14 @@ async function checkEffect(page, ov, assertion) {
         await btn.click();
         await sleep(300);
       }
+      if (assertion.event) {
+        // dispatch-only dialogs (e.g. #coedit-mode change -> wo:coedit-mode):
+        // assert the event was collected instead of a DOM/dialog effect
+        return poll(page, (ev) => page.evaluate((name) => ({
+          ok: (window.__woEvents || []).includes(name),
+          observed: (window.__woEvents || []).length ? `events: ${(window.__woEvents || []).join(',')}` : 'no wo:* events observed',
+        }), assertion.event), undefined);
+      }
       if (assertion.expect && assertion.expect.selector) {
         return poll(page, (sel) => page.evaluate((a) => {
           const el = document.querySelector(a.sel);
@@ -185,8 +193,8 @@ async function checkEffect(page, ov, assertion) {
           ok = text.includes(iso(d)) || text.includes(iso(y));
           return { ok, observed: `text ${ok ? 'contains' : 'lacks'} today/yesterday (${iso(d)}/${iso(y)})` };
         }
-        ok = a.contains ? text.includes(a.contains) : text.trim().length > 0;
-        return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}` : `text lacks ${JSON.stringify(a.contains)}` };
+        ok = (a.contains ? text.includes(a.contains) : text.trim().length > 0) && (a.lacks ? !text.includes(a.lacks) : true);
+        return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}${a.lacks ? ` and lacks ${JSON.stringify(a.lacks)}` : ''}` : `text lacks ${JSON.stringify(a.contains)} or still contains ${JSON.stringify(a.lacks)}` };
       }, assertion));
     }
     case 'op-emitted':
@@ -594,7 +602,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // 3b. event collector for op-emitted assertions: a fresh window-level
       // wo:* CustomEvent listener per contract (arrow prefix keeps earlier
       // contracts' events out)
-      if ((ov.assertion || {}).kind === 'op-emitted') {
+      if ((ov.assertion || {}).kind === 'op-emitted' || (ov.assertion || {}).event) {
         await page.evaluate(() => {
           window.__woEvents = [];
           window.__woCollect = (ev) => { if (window.__woEvents) window.__woEvents.push(ev.type); };
@@ -603,6 +611,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:chart-settings', window.__woCollect);
           window.addEventListener('wo:field-op', window.__woCollect);
           window.addEventListener('wo:chart-elements', window.__woCollect);
+          window.addEventListener('wo:coedit-mode', window.__woCollect);
         });
       }
 

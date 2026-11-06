@@ -49,11 +49,15 @@
       "note": "ledger row: review.add-comment — the collaboration-tab #btn-comment click listener IS openCommentDialog (editor.js:8730), same #comment-dialog surface as insertComment"
     },
     "review.co-editing-mode": {
-      "effektClass": "view",
-      "xfail": true,
+      "effektClass": "dialog",
       "selector": "#coedit-mode",
       "woTab": "collaboration",
-      "note": "KNOWN GAP: ledger row review.co-editing-mode — the #coedit-mode select's change handler only dispatches the wo:coedit-mode window CustomEvent + console.info (editor.js:8733-8736); the event is not in the armed op-emitted collector, the runner's synthetic click cannot fire a change on a select, and no DOM state changes — mode switch is unobservable with the contract vocabulary"
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [ { "selector": "#coedit-mode", "value": "strict" } ],
+        "event": "wo:coedit-mode"
+      },
+      "note": "PROMOTED 2026-11-06: dialog-input selectOption fires the change event the synthetic click could not; the runner now arms wo:coedit-mode in the event collector and dialog-input asserts dispatch (strict -> wo:coedit-mode {mode:'strict'})"
     },
     "review.delete": {
       "effektClass": "op",

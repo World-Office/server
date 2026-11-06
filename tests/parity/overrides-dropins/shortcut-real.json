@@ -69,22 +69,37 @@
       "note": "no keydown binding for Ctrl+C (only Ctrl+Alt+C copyformat exists, editor.js ~11047); native clipboard copy has no in-page DOM observable"
     },
     "shortcut.cut": {
-      "xfail": true,
       "key": "Control+KeyX",
       "effektClass": "op",
-      "note": "no keydown binding for Ctrl+X in editor.js; native clipboard cut shrinks the text but the contract vocabulary has no text-absence assertion to pin it"
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen",
+        "lacks": "Will"
+      },
+      "note": "PROMOTED 2026-11-06: native clipboard cut shrinks the placeCaret selection; text-mutation lacks pins the shrink (copied clipboard content is not observable headless, but the deletion effect is)"
     },
     "shortcut.deleteleftchar": {
-      "xfail": true,
       "key": "Backspace",
       "effektClass": "op",
-      "note": "Backspace interception only handles selected strokes/objects (editor.js ~8113); plain text falls to native deletion of the placeCaret 4-char selection; text-mutation has no absence assertion to verify the shrink"
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen",
+        "lacks": "Will"
+      },
+      "note": "PROMOTED 2026-11-06: the interception only handles strokes/objects; plain text falls to native deletion of the placeCaret 4-char selection ('Will' from the fixture h1) — text-mutation now has a lacks assertion to pin the shrink"
     },
     "shortcut.deleterightchar": {
-      "xfail": true,
       "key": "Delete",
       "effektClass": "op",
-      "note": "Delete interception only handles selected strokes/objects (editor.js ~8198); native deletion of the selection is not observable with the current assertion vocabulary"
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen",
+        "lacks": "Will"
+      },
+      "note": "PROMOTED 2026-11-06: same native-selection deletion path as Backspace, now observable via text-mutation lacks"
     },
     "shortcut.closefile": {
       "xfail": true,

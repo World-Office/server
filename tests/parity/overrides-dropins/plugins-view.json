@@ -133,17 +133,15 @@
       "note": "ledger row: statusbar.status-btn-multiple-pages — same #btn-multipage control as view.multiple-pages; the runner's fresh page per contract lets both ledger rows pass independently (multi-page-view is not persisted)"
     },
     "view.interface-theme": {
-      "effektClass": "view",
-      "xfail": true,
+      "effektClass": "dialog",
       "selector": "#view-theme-select",
       "woTab": "view",
       "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#view-theme-select",
-        "attr": "data-applied-theme",
-        "equals": "classic"
+        "kind": "dialog-input",
+        "set": [ { "selector": "#view-theme-select", "value": "dark" } ],
+        "expect": { "selector": "#btn-theme[aria-pressed=\"true\"]" }
       },
-      "note": "ledger row: view.interface-theme — honest known gap: theme switching fires only on the select's change event (editor.js:6526, localStorage wo-theme + applyTheme); a synthetic click cannot fire change and no DOM flag marks the applied theme, so there is nothing observable to assert"
+      "note": "PROMOTED 2026-11-06: dialog-input selectOption fires change (synthetic click could not) -> localStorage wo-theme + applyTheme -> btn-theme aria-pressed=true; html.light drops. End state stays dark for the rest of the run (theme colors don't affect any other contract's DOM assertions)"
     }
   }
 }
