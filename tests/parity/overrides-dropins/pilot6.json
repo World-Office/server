@@ -1,0 +1,37 @@
+{
+  "entries": {
+    "file.protection": {
+      "effektClass": "dialog",
+      "woTab": "protection",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-protect-cancel",
+        "dialog": "#protect-dialog"
+      },
+      "note": "pilot6: protect dialog Cancel closes it"
+    },
+    "file.find-ctrl-f": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "selector": "#btn-find",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-find-close",
+        "dialog": "#find-dialog"
+      },
+      "note": "pilot6: find dialog close button"
+    },
+    "formatting.borders": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "selector": "[data-cmd=\"openBorders\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-borders-cancel",
+        "dialog": "#borders-dialog"
+      },
+      "note": "pilot6: borders dialog cancel"
+    }
+  }
+}

@@ -68,6 +68,40 @@ async function openFileMenu(page) {
 // Effect observers per assertion kind ---------------------------------------
 async function checkEffect(page, ov, assertion) {
   switch (assertion.kind) {
+    case 'dialog-action': {
+      // depth contract: the OUTER trigger (ov.selector) already opened the
+      // dialog; here we click assertion.button and assert the dialog closed.
+      // assertion.open is optional — when present we open the dialog here
+      // instead (used when the contract has no natural opener trigger).
+      if (assertion.open && !ov.selector) {
+        await page.keyboard.press('Escape').catch(() => {});
+        await sleep(100);
+        if (assertion.open.backstage) {
+          await openFileMenu(page);
+          await page.evaluate((p) => { const b = document.querySelector(`[data-pane="${p}"]`); if (!b) throw new Error('backstage row missing: ' + p); b.click(); }, assertion.open.backstage);
+          await page.click(`[data-pane="${assertion.open.backstage}"]`).catch(() => {});
+        } else if (assertion.open.selector) {
+          if (assertion.open.woTab) {
+            const needsClick = await page.evaluate((t) => { const pg = document.querySelector(`.ribbon-page[data-tab="${t}"]`); return pg && getComputedStyle(pg).display === 'none'; }, assertion.open.woTab);
+            if (needsClick) { await page.click(`.ribbon-tab[data-tab="${assertion.open.woTab}"]`); await sleep(150); }
+          }
+          await page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('dialog-action: opener missing ' + sel); el.click(); }, assertion.open.selector);
+          await sleep(300);
+        }
+      }
+      const btn = page.locator(assertion.button);
+      if (await btn.count() === 0) return { ok: false, observed: `dialog-action: button missing ${assertion.button}` };
+      await btn.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      await btn.click();
+      await sleep(300);
+      // most actions close the dialog; assert the targeted dialog is gone
+      const dlg = assertion.dialog || '.dialog-overlay';
+      const stillOpen = await page.evaluate((sel) => {
+        const roots = [...document.querySelectorAll(sel)].filter(d => getComputedStyle(d).display !== 'none' && !d.hidden);
+        return roots.length;
+      }, dlg);
+      return { ok: !stillOpen, observed: stillOpen ? `dialog still open after ${assertion.button}` : `dialog closed after ${assertion.button}` };
+    }
     case 'computed-style': {
       // Select the word under the caret, then read computed style of its element.
       return poll(page, () => page.evaluate(({ prop, equals }) => {
