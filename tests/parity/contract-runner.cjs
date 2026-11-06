@@ -193,8 +193,9 @@ async function checkEffect(page, ov, assertion) {
           ok = text.includes(iso(d)) || text.includes(iso(y));
           return { ok, observed: `text ${ok ? 'contains' : 'lacks'} today/yesterday (${iso(d)}/${iso(y)})` };
         }
-        ok = (a.contains ? text.includes(a.contains) : text.trim().length > 0) && (a.lacks ? !text.includes(a.lacks) : true);
-        return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}${a.lacks ? ` and lacks ${JSON.stringify(a.lacks)}` : ''}` : `text lacks ${JSON.stringify(a.contains)} or still contains ${JSON.stringify(a.lacks)}` };
+        const base = a.contains ? text.includes(a.contains) : ((a.lacks || a.empty) ? true : text.trim().length > 0);
+        ok = base && (a.lacks ? !text.includes(a.lacks) : true) && (a.empty ? text.trim() === '' : true);
+        return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}${a.lacks ? ` and lacks ${JSON.stringify(a.lacks)}` : ''}${a.empty ? ' and is empty' : ''}` : `text mismatch (contains=${a.contains}, lacks=${a.lacks}, empty=${a.empty})` };
       }, assertion));
     }
     case 'op-emitted':
@@ -267,7 +268,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.waitForTimeout(1200);
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -517,6 +518,148 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if (ov.pre === 'ctx-menu-on-comment') {
+        // comment-gated ctx rows (Delete/Resolve comment…): fixture a
+        // span.comment, select inside it, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <span id="fixture-comment" class="comment" data-comment-id="c1">annotated text</span> after</p>';
+          const sp = ed.querySelector('#fixture-comment');
+          const range = document.createRange();
+          range.selectNodeContents(sp);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-on-comment pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-field') {
+        // field-gated ctx rows (Update/Edit/ToggleFieldCodes/Clear field…):
+        // fixture a page-number field, select inside it, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <span id="fixture-field" class="page-number" data-field="page">1</span> after</p>';
+          const sp = ed.querySelector('#fixture-field');
+          const range = document.createRange();
+          range.selectNodeContents(sp);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-on-field pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-cc') {
+        // content-control ctx rows (Settings/Remove…): fixture a
+        // span.content-control, select inside it, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <span id="fixture-cc" class="content-control" data-cc="rich">controlled text</span> after</p>';
+          const sp = ed.querySelector('#fixture-cc');
+          const range = document.createRange();
+          range.selectNodeContents(sp);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-on-cc pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-vertical') {
+        // text-direction rows (Horizontal): fixture a vertical-rl block,
+        // select inside it, right-click — applyTextDirection('horizontal')
+        // then has something to revert
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p id="fixture-vp" class="wo-textdir-down" style="writing-mode: vertical-rl" data-textdir="down">vertical text here</p>';
+          const p = ed.querySelector('#fixture-vp');
+          const range = document.createRange();
+          range.selectNodeContents(p);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-on-vertical pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'grouped-objects') {
+        // grouped-object rows (Ungroup): two fixture images multi-selected
+        // (SHIFT on both clicks), grouped via the real Layout > Group command
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const px = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+          ed.innerHTML = '<p><img id="fixture-obj-a" alt="a" style="width:100px;height:60px" src="' + px + '"> <img id="fixture-obj-b" alt="b" style="width:100px;height:60px" src="' + px + '"> tail</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-obj-a', { timeout: 3000 });
+        await page.keyboard.down('Shift');
+        await page.locator('#fixture-obj-a').click({ timeout: 5000 });
+        await page.locator('#fixture-obj-b').click({ timeout: 5000 });
+        await page.keyboard.up('Shift');
+        await page.evaluate(() => {
+          const btn = document.querySelector('[data-cmd="objectOp"][data-value="group"]');
+          if (!btn) throw new Error('grouped-objects pre: group button missing');
+          btn.click();
+        });
+        await page.waitForSelector('#editor .object-group', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'hf-editing') {
+        // header/footer contextual tab rows: fixture a page-header and
+        // double-click it — the editor dblclick handler runs enterHFMode,
+        // which reveals the hidden header-footer ribbon tab
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<header class="page-header" id="fixture-hf"><p>Header text</p></header><p>body text</p>';
+        });
+        await page.waitForSelector('#fixture-hf', { timeout: 3000 });
+        await page.locator('#fixture-hf').dblclick({ timeout: 5000 });
+        await page.waitForSelector('.ribbon-tab[data-tab="header-footer"]:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       else if ((ov.pre || '').startsWith('menu:')) {
         // ribbon dropdown menu: pre = 'menu:<trigger-selector>' — click the
         // caret-btn trigger, wait for its .menu-list to unhide. The contract
@@ -612,6 +755,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:field-op', window.__woCollect);
           window.addEventListener('wo:chart-elements', window.__woCollect);
           window.addEventListener('wo:coedit-mode', window.__woCollect);
+          window.addEventListener('wo:header-field', window.__woCollect);
         });
       }
 
