@@ -1,0 +1,120 @@
+{
+  "$comment": "L2I-05-CTX-DIALOGS: dialog-depth contracts for ctx-menu dialog rows. Each entry overrides the shallower ctx-* drop-in definition (overrides-loader sorts by filename; dlg-ctx.json loads after all ctx-* files, before dlg-insert-img.json). depth chain: pre opens #ctx-menu (or the in-table/on-image variant) -> trigger clicks the [data-ctx] row (or #btn-table-ops) -> assertion dialog-action clicks the dialog's action button and asserts the dialog closed. Buttons' close behaviour grep-verified in frontend-dist/word/editor.js.",
+  "entries": {
+    "ctx.link": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"Link\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-link-ok",
+        "dialog": "#link-dialog"
+      },
+      "note": "ledger row: ctx.link — ctx data-ctx=Link (closeCtx + insertLink) opens #link-dialog; #btn-link-ok -> confirmLinkDialog removes .open unconditionally before the URL guard (editor.js:2943-2947), so the dialog-action depth click observes a clean close"
+    },
+    "ctx.content-control-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ContentControlSettings\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-cc-ok",
+        "dialog": "#cc-dialog"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ctx data-ctx=ContentControlSettings (editor.js:10058) requires contentControlAtSelection(); with no content control it sets Status.NoContentControl and returns WITHOUT opening #cc-dialog, and no runner pre builds a content control — #btn-cc-ok is unreachable, dialog-action cannot fire (honest xfail; grep-verified)"
+    },
+    "ctx.convert-to-shape": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"ConvertToShape\"]",
+      "post": ".shape-option",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-shape-ok",
+        "dialog": "#shape-dialog"
+      },
+      "note": "ledger row: ctx.convert-to-shape — ctx data-ctx=ConvertToShape (editor.js:9872) -> openShapePicker(selectedObject()) opens #shape-dialog with #btn-shape-ok DISABLED (editor.js:3852); post clicks the first .shape-option so selectShape arms the button, then dialog-action #btn-shape-ok -> confirmShapePicker -> closeShapePicker removes .open (editor.js:3877-3879)"
+    },
+    "ctx.replace-image": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"ReplaceImage\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-image-ok",
+        "dialog": "#image-dialog"
+      },
+      "xfail": true,
+      "note": "KNOWN GAP: ctx data-ctx=ReplaceImage (editor.js:9751) -> applyObjectOp(\"replace-image\") -> insertImage() opens #image-dialog but #btn-image-ok stays disabled until a file is picked (editor.js:2901 okBtn.disabled=true; armed only in onImageFileChange) and the runner vocab has no set-input-files — dialog-action cannot fire without file input (honest xfail, same gap as image.image)"
+    },
+    "ctx.table-advanced-settings": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "pre": "ctx-menu-in-table",
+      "selector": "#btn-table-ops",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#op-row-above",
+        "dialog": "#table-ops-dialog"
+      },
+      "note": "ledger row: ctx.table-advanced-settings — no ctx-menu row exists; the reachable surface is #btn-table-ops -> openTableOps -> #table-ops-dialog (editor.js:2869-2871); #op-row-above runs insertTableRow(true) then closeTableOpsDialog removes .open (editor.js:5016+5026), so the depth click both inserts a fixture row (ctx-menu-in-table pre keeps currentTableCell() live) and closes the dialog"
+    },
+    "ctx.paragraph-advanced-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ParagraphSettings\"]",
+      "post": "#ps-keep-next",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#ps-keep-next:checked"
+      },
+      "note": "ledger row: ctx.paragraph-advanced-settings — ctx data-ctx=ParagraphSettings opens openParagraphSettingsDialog -> #paragraph-settings-dialog (editor.js:5139); the prescribed #ps-keep-next is a checkbox whose only sink is applyParagraphSettings via #btn-ps-ok (editor.js:2614-2616), so the toggle itself never closes the dialog — depth observable is the flipped checkbox state (#ps-keep-next:checked matches only after the post click)"
+    },
+    "ctx.set-numbering-value": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"SetNumberingValue\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-numbering-ok",
+        "dialog": "#numbering-value-dialog"
+      },
+      "note": "ledger row: ctx.set-numbering-value — ctx data-ctx=SetNumberingValue opens openNumberingValueDialog -> #numbering-value-dialog (editor.js:5045); #btn-numbering-ok -> confirmNumberingValueDialog removes .open (editor.js:5060-5064), dialog-action observes the clean close"
+    },
+    "ctx.adjust-list-indents": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"AdjustListIndents\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-list-indents-ok",
+        "dialog": "#list-indents-dialog"
+      },
+      "note": "ledger row: ctx.adjust-list-indents — ctx data-ctx=AdjustListIndents opens openListIndentsDialog -> #list-indents-dialog (editor.js:5083); #btn-list-indents-ok -> confirmListIndentsDialog removes .open (editor.js:5095-5099), dialog-action observes the clean close"
+    },
+    "ctx.several-rows-columns": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "pre": "ctx-menu-in-table",
+      "selector": "#btn-table-ops",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#op-apply-rows",
+        "dialog": "#table-ops-dialog"
+      },
+      "note": "ledger row: ctx.several-rows-columns — the prescribed #op-insert-count is a number input (input-set, not in runner vocab); the wired button #op-apply-rows does the depth action: insertTableRow(false, severalCount()) reading #op-insert-count, then closeTableOpsDialog removes .open (editor.js:5036-5038) — dialog-action with the ctx-menu-in-table pre keeps currentTableCell() live for a real fixture insert"
+    },
+    "ctx.add-comment": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AddComment\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-ok",
+        "dialog": "#comment-dialog"
+      },
+      "note": "ledger row: ctx.add-comment — ctx data-ctx=AddComment -> openCommentDialog opens #comment-dialog (editor.js:9894/4345); #btn-comment-ok -> confirmCommentDialog removes .open unconditionally before the commentRange guard (editor.js:4362-4366), dialog-action observes the clean close"
+    }
+  }
+}
