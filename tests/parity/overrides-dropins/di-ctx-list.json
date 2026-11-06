@@ -1,0 +1,80 @@
+{
+  "$comment": "L2J-04-CTX-LIST-INPUTS: INPUT-SET depth contracts (dialog-input) on the ctx dialogs. All keys are override-only (dialoginput.* matches no ledger token) so they emit as extra runnable entries instead of replacing the green L2D-03/L2H rows. Verify-first facts: #numbering-value-dialog opens via data-ctx=SetNumberingValue (openNumberingValueDialog, editor.js:5048) and #btn-numbering-ok -> confirmNumberingValueDialog (editor.js:5063) -> applyNumberingValue (editor.js:2558) splits the caret <ol> and appends a fresh <ol start=N> tail sibling; #list-indents-dialog opens via data-ctx=AdjustListIndents (openListIndentsDialog, editor.js:5078) and #btn-list-indents-ok -> confirmListIndentsDialog (editor.js:5090) -> applyListIndents (editor.js:2660) writes ol inline margin-left/text-indent; #table-ops-dialog (opener #btn-table-ops, openTableOps editor.js:2871) carries the #op-insert-count number input whose wired #op-apply-rows runs insertTableRow(false, severalCount()) (editor.js:2392, 5039) and then closes the dialog; #paragraph-settings-dialog opens via data-ctx=ParagraphSettings (openParagraphSettingsDialog, editor.js:10170) and #btn-ps-ok -> applyParagraphSettings (editor.js:2605) writes ps-align text-align + keep-with-next class on the caret block; #dropcap-dialog opens via data-ctx=DropcapSettings (openDropcapDialog, editor.js:9365) and #btn-dropcap-ok -> confirmDropcapDialog (editor.js:9022) -> applyDropcap (editor.js:9008) wraps the paragraph's first char in span.dropcap with in-margin class + --drop-lines custom property.",
+  "entries": {
+    "dialoginput.set-numbering-value": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"SetNumberingValue\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#numbering-value", "value": "5" }
+        ],
+        "click": "#btn-numbering-ok",
+        "expect": { "selector": "#editor ol[start=\"5\"]" }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.set-numbering-value open row): fill #numbering-value=5 (fixture beta is item 2, dialog prefills 2), OK -> applyNumberingValue(5) splits at beta and appends <ol start=\"5\"> as a sibling — start attribute only exists after the apply"
+    },
+    "dialoginput.adjust-list-indents": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"AdjustListIndents\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#list-indent-left", "value": "100" },
+          { "selector": "#list-indent-hanging", "value": "20" }
+        ],
+        "click": "#btn-list-indents-ok",
+        "expect": { "selector": "#editor ol[style*=\"margin-left: 100px\"]" }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.adjust-list-indents open row): left=100/hanging=20 -> applyListIndents writes ol.style.marginLeft=100px + text-indent=-20px; the pristine fixture <ol> carries no inline style, so [style*=margin-left: 100px] only matches once the apply ran"
+    },
+    "dialoginput.several-rows-columns": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "pre": "ctx-menu-in-table",
+      "selector": "#btn-table-ops",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#op-insert-count", "value": "3" }
+        ],
+        "click": "#op-apply-rows",
+        "expect": { "selector": "#editor table tr:nth-child(5)" }
+      },
+      "xfail": true,
+      "note": "dialoginput depth row (override-only sibling of the green ctx.several-rows-columns open row) — KNOWN GAP (state prerequisite destroyed by the input-set itself): insertTableRow(false, severalCount()) needs currentTableCell() (editor.js:2392-2394), but the runner's dialog-input fill() focuses #op-insert-count and the document selection leaves the fixture cell (probed: sel.focusNode moves to the input, inCell=false), so the wired #op-apply-rows listener (editor.js:5039-5040) no-ops and the 2x2 fixture stays at 2 rows; unlike confirmNumberingValueDialog/confirmListIndentsDialog this path never calls restoreFocus() before applying, so no fill-then-apply ordering can observe the insert"
+    },
+    "dialoginput.paragraph-advanced-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ParagraphSettings\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#ps-align", "value": "right" },
+          { "selector": "#ps-keep-next", "value": true }
+        ],
+        "click": "#btn-ps-ok",
+        "expect": { "selector": "#editor .keep-with-next" }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.paragraph-advanced-settings open row): set the alignment select to right + check #ps-keep-next, OK -> applyParagraphSettings writes text-align and toggles the keep-with-next class on the caret block; no block in the pristine document carries that class, so the expect anchors on the op's own class write (tag-agnostic: caret block may be p/li/h*)"
+    },
+    "dialoginput.drop-cap-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"DropcapSettings\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          { "selector": "#dropcap-position", "value": "in-margin" },
+          { "selector": "#dropcap-lines", "value": "4" }
+        ],
+        "click": "#btn-dropcap-ok",
+        "expect": { "selector": "#editor span.dropcap.in-margin[style*=\"--drop-lines: 4\"]" }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.drop-cap-settings open row): position=in-margin + lines=4 -> applyDropcap wraps the paragraph's first character in span.dropcap.in-margin with the --drop-lines custom property set to 4 (clamped 2..5, so 4 passes through); neither the in-margin class nor the custom property exist before the apply"
+    }
+  }
+}
