@@ -1,0 +1,215 @@
+{
+  "entries": {
+    "insert.smartart": {
+      "effektClass": "dialog",
+      "selector": "#btn-smartart",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-smartart-ok",
+        "dialog": "#smartart-dialog"
+      },
+      "note": "ledger row: insert.smartart \u2014 #btn-smartart (index.html:438) opens the #smartart-dialog insert-pop (editor.js:13993-14003); #btn-smartart-ok inserts the SVG diagram via insertVectorObject then closeDlg('smartart-dialog') (editor.js:14010-14017) \u2014 assert closes. Sibling #btn-smartart-cancel \u2192 closeDlg (editor.js:14008-14009, code-verified, not run)."
+    },
+    "insert.drop-cap": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"toggleDropcap\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-dropcap-ok",
+        "dialog": "#dropcap-dialog"
+      },
+      "note": "ledger row: insert.drop-cap \u2014 data-cmd=toggleDropcap (index.html:457) \u2192 openDropcapDialog opens #dropcap-dialog (editor.js:1566, 9365); #btn-dropcap-ok wired by the ROUND2 loop: closeOverlayDialog + confirmDropcapDialog (editor.js:9369-9376)."
+    },
+    "insert.text-from-file": {
+      "effektClass": "dialog",
+      "selector": "#btn-textfile",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-cancel",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "ledger row: insert.text-from-file \u2014 #btn-textfile (index.html:459) \u2192 openDlg('textfromfile-dialog') (editor.js:12827-12828); #btn-textfromfile-cancel closes it (editor.js:12836+)."
+    },
+    "insert.equation": {
+      "effektClass": "dialog",
+      "selector": "#btn-equation",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-equation-cancel",
+        "dialog": "#equation-dialog"
+      },
+      "note": "ledger row: insert.equation \u2014 #btn-equation (index.html:462) \u2192 openDlg('equation-dialog') (editor.js:13941-13950); #btn-equation-cancel \u2192 closeDlg('equation-dialog') (editor.js:13951-13952)."
+    },
+    "insert.symbol": {
+      "effektClass": "dialog",
+      "selector": "#btn-symbol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-symbol-close",
+        "dialog": "#symbol-dialog"
+      },
+      "note": "ledger row: insert.symbol \u2014 #btn-symbol \u03a9 button (index.html:545) \u2192 openSymbolDialog opens #symbol-dialog (editor.js:8829-8840); #btn-symbol-close removes .open (editor.js:9514-9519)."
+    },
+    "insert.content-controls": {
+      "effektClass": "dialog",
+      "selector": "#btn-contentcontrol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-cc-cancel",
+        "dialog": "#cc-dialog"
+      },
+      "note": "ledger row: insert.content-controls \u2014 #btn-contentcontrol (index.html:548) \u2192 openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel \u2192 closeDlg (editor.js:13373-13374)."
+    },
+    "insert.link": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-link",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-link-cancel",
+        "dialog": "#link-dialog"
+      },
+      "note": "ledger row: insert.link \u2014 #btn-link \u2192 insertLink opens #link-dialog (editor.js:2927-2946); #btn-link-cancel removes .open (editor.js:5348-5352) \u2014 code-verified, but this drop-in definition is inert: overrides-loader merges drop-ins sorted by filename (last file wins) and insert-struct.json loads AFTER dlg-insert-img.json with its own confirmed dialog-visible row, so this entry can never become the live definition; kept xfail so gate math stays honest"
+    },
+    "insert.text-box": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-textbox",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-object-cancel",
+        "dialog": "#object-dialog"
+      },
+      "note": "ledger row: insert.text-box \u2014 #btn-textbox \u2192 openObjectDialog('textbox') (editor.js:1342); #btn-object-cancel \u2192 closeObjectDialog (editor.js:8658-8659) \u2014 code-verified, but superseded by insert-struct.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+    },
+    "insert.text-art": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-textart",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-object-cancel",
+        "dialog": "#object-dialog"
+      },
+      "note": "ledger row: insert.text-art \u2014 #btn-textart \u2192 openObjectDialog('textart') (editor.js:1344); #btn-object-cancel \u2192 closeObjectDialog (editor.js:8658-8659) \u2014 code-verified, but superseded by insert-struct.json (loads later, last file wins); kept xfail"
+    },
+    "insert.insert-spreadsheet": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-spreadsheet",
+      "pre": "menu:btn-insert-more",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-object-cancel",
+        "dialog": "#object-dialog"
+      },
+      "note": "ledger row: insert.insert-spreadsheet \u2014 btn-insert-more menu item #btn-spreadsheet (index.html:565) data-cmd=insertObject data-value=spreadsheet \u2192 openObjectDialog('spreadsheet') (editor.js:1336-1339); #btn-object-cancel \u2192 closeObjectDialog (editor.js:8658-8659) \u2014 code-verified, but superseded by insert-struct.json (loads later, last file wins); kept xfail"
+    },
+    "chart.chart": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "[data-cmd=\"insertObject\"][data-value=\"chart\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-object-cancel",
+        "dialog": "#object-dialog"
+      },
+      "note": "ledger row: chart.chart \u2014 [data-cmd=insertObject][data-value=chart] (index.html:439) \u2192 openObjectDialog('chart') (editor.js:1336-1339); #btn-object-cancel \u2192 closeObjectDialog (editor.js:8658-8659) \u2014 code-verified, but superseded by insert-b.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+    },
+    "insert.shape": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "[data-cmd=\"insertObject\"][data-value=\"shape\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-shape-cancel",
+        "dialog": "#shape-dialog"
+      },
+      "note": "ledger row: insert.shape \u2014 [data-cmd=insertObject][data-value=shape] (index.html:437) \u2192 openShapePicker opens #shape-dialog (editor.js:1338, 3844); #btn-shape-cancel \u2192 closeShapePicker (editor.js:8663-8664) \u2014 code-verified, but superseded by insert-b.json (loads later, last file wins); kept xfail"
+    },
+    "insert.field": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-field",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-field-cancel",
+        "dialog": "#field-dialog"
+      },
+      "note": "ledger row: insert.field \u2014 #btn-field (references tab, index.html:727) \u2192 openDlg('field-dialog') (editor.js:13177-13178); #btn-field-cancel \u2192 closeDlg (editor.js:13178-13179) \u2014 code-verified, but superseded by insert-struct.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+    },
+    "insert.more-symbols": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-symbol",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-symbol-close",
+        "dialog": "#symbol-dialog"
+      },
+      "note": "ledger row: insert.more-symbols \u2014 ledger binds 'Symbols \u25be' ([data-i18n=Insert.EquationGallery] trigger, index.html:463) but that rb-menu only discloses equationTemplate rows (no path to #symbol-dialog), so the reachable symbol-dialog opener is #btn-symbol \u2192 openSymbolDialog (editor.js:8840, 8829); #btn-symbol-close removes .open (editor.js:9514-9519) \u2014 no clean dialog-action observable from the ledger's own control, and superseded by insert-file.json (loads later, last file wins); kept xfail"
+    },
+    "image.image": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-image",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-image-ok",
+        "dialog": "#image-dialog"
+      },
+      "note": "ledger row: image.image \u2014 #btn-image (index.html:436) opens the #image-dialog insert-pop but #btn-image-ok stays disabled until a file is chosen (editor.js:2901 okBtn.disabled=true; enabled only in onImageFileChange) \u2014 a dialog-action click cannot fire without file input, and the ledger opener btn-hf-image sits on the contextual header-footer tab (reachable only via enterHFMode, no runner pre); superseded by insert-struct.json xfail (loads later, last file wins)"
+    },
+    "image.photo-editor": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "[data-cmd=\"photoEditor\"]",
+      "woTab": "plugins",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-photo-editor-apply",
+        "dialog": "#photo-editor-dialog"
+      },
+      "note": "ledger row: image.photo-editor \u2014 data-cmd=photoEditor (plugins tab, index.html:832) \u2192 openPhotoEditorDialog opens #photo-editor-dialog (editor.js:1591, 12195-12200); #btn-photo-editor-apply \u2192 photoEditorApply closes it (editor.js:12384) \u2014 code-verified, but superseded by plugins.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+    },
+    "table.insert-custom-table": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-table",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-table-cancel",
+        "dialog": "#table-dialog"
+      },
+      "note": "ledger row: table.insert-custom-table \u2014 #btn-table (index.html:425) \u2192 insertTable opens the #table-dialog insert-pop (editor.js:5016, 2119-2131); #btn-table-cancel \u2192 closeTableDialog (editor.js:10863-10864, 2174-2179) \u2014 code-verified, but superseded by insert-struct.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+    },
+    "insert.page-number": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "selector": "#btn-pagenumber",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-pagenumber-close",
+        "dialog": "#pagenumber-dialog"
+      },
+      "note": "ledger row: insert.page-number \u2014 #btn-pagenumber opens #pagenumber-dialog (editor.js:8860) but #btn-pagenumber-close has NO click handler anywhere in editor.js (grep: 0 hits; only btn-pagenumber-ok is wired at 8905) \u2014 clicking it leaves the dialog open, no clean observable; superseded by insnum.json (loads later, last file wins) which carries the live dialog-visible row"
+    }
+  }
+}
