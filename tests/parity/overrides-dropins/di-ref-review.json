@@ -108,13 +108,13 @@
       "assertion": {
         "kind": "dialog-input",
         "set": [
-          { "selector": "#find-query", "value": "lorem" },
-          { "selector": "#find-replace", "value": "replaced" }
+          { "selector": "#find-query", "value": "Willkommen" },
+          { "selector": "#find-replace", "value": "Ersetzt" }
         ],
-        "click": "#btn-find-replace-all"
+        "click": "#btn-find-replace-all",
+        "expect": { "selector": "#editor h1", "contains": "Ersetzt", "lacks": "Willkommen" }
       },
-      "note": "dialog-input depth, replace path: #btn-find opens #find-dialog; #find-query + #find-replace + Replace all bulk-replaces fixture text (replaceAllBtn, editor.js ~4857). Honest xfail: the effect is a plain text-node mutation — dialog-input's expect observer only asserts selector presence/close (contract-runner.cjs dialog-input case), there is no text-mutation observer inside the dialog-input flow, and the find panel stays open after replace-all, so the mutation is not observable with the existing assertion vocabulary; no runner changes allowed",
-      "xfail": true
+      "note": "PROMOTED 2026-11-06: dom-mutation expect with Playwright :has-text() observes the replaced fixture h1 ('Willkommen' -> 'Ersetzt', doReplaceAll bulk edit); 'lorem' had 0 matches in the fixture so the replace no-oped — the query must be a real fixture word"
     }
   }
 }

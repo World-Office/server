@@ -93,9 +93,17 @@ async function checkEffect(page, ov, assertion) {
       if (assertion.expect && assertion.expect.selector) {
         return poll(page, (sel) => page.evaluate((a) => {
           const el = document.querySelector(a.sel);
-          const ok = a.want ? !el : !!el;
-          return { ok, observed: a.want ? (el ? `still present: ${a.sel}` : 'gone') : (el ? 'found' : `no ${a.sel}`) };
-        }, { sel: assertion.expect.selector, want: assertion.expect.absent }), undefined);
+          const text = el ? (el.textContent || '') : '';
+          const textOk = a.contains ? text.includes(a.contains) : true;
+          const lacksOk = a.lacks ? !text.includes(a.lacks) : true;
+          const ok = (a.want ? !el : !!el) && textOk && lacksOk;
+          const observed = a.want ? (el ? `still present: ${a.sel}` : 'gone')
+            : (!el ? `no ${a.sel}`
+              : !textOk ? `${a.sel} found but lacks "${a.contains}"`
+              : !lacksOk ? `${a.sel} found but still contains "${a.lacks}"`
+              : 'found');
+          return { ok, observed };
+        }, { sel: assertion.expect.selector, want: assertion.expect.absent, contains: assertion.expect.contains, lacks: assertion.expect.lacks }), undefined);
       }
       const dlg = assertion.dialog || '.dialog-overlay';
       const stillOpen = await page.evaluate((sel) =>

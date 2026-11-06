@@ -2370,13 +2370,22 @@
   // ------------------------------------------------------------------
   // Table actions: insert/delete row or column, merge/split cells.
   // ------------------------------------------------------------------
+  let lastTableCell = null;
   function currentTableCell() {
     const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || !sel.focusNode) return null;
-    const node = sel.focusNode.nodeType === 1 ? sel.focusNode : sel.focusNode.parentElement;
-    if (!node) return null;
-    const cell = node.closest ? node.closest("td, th") : null;
-    return cell && editor.contains(cell) ? cell : null;
+    if (sel && sel.rangeCount > 0 && sel.focusNode) {
+      const node = sel.focusNode.nodeType === 1 ? sel.focusNode : sel.focusNode.parentElement;
+      if (node) {
+        const cell = node.closest ? node.closest("td, th") : null;
+        if (cell && editor.contains(cell)) { lastTableCell = cell; return cell; }
+      }
+    }
+    // Focus was stolen by a dialog field (table-ops count inputs): fall
+    // back to the last cell the caret sat in so row/column/cell ops still
+    // apply where the user was working (same pattern as lastObjectPick);
+    // isConnected guards against stale cells after undo/restore.
+    if (lastTableCell && lastTableCell.isConnected) return lastTableCell;
+    return null;
   }
 
   // Table under the caret (or under a multi-cell selection).

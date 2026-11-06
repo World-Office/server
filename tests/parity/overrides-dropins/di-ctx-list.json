@@ -43,8 +43,7 @@
         "click": "#op-apply-rows",
         "expect": { "selector": "#editor table tr:nth-child(5)" }
       },
-      "xfail": true,
-      "note": "dialoginput depth row (override-only sibling of the green ctx.several-rows-columns open row) — KNOWN GAP (state prerequisite destroyed by the input-set itself): insertTableRow(false, severalCount()) needs currentTableCell() (editor.js:2392-2394), but the runner's dialog-input fill() focuses #op-insert-count and the document selection leaves the fixture cell (probed: sel.focusNode moves to the input, inCell=false), so the wired #op-apply-rows listener (editor.js:5039-5040) no-ops and the 2x2 fixture stays at 2 rows; unlike confirmNumberingValueDialog/confirmListIndentsDialog this path never calls restoreFocus() before applying, so no fill-then-apply ordering can observe the insert"
+      "note": "PROMOTED 2026-11-06 after PRODUCT FIX: currentTableCell() now falls back to lastTableCell when a dialog field steals focus (same pattern as lastObjectPick) — fill() no longer destroys the cell context, insertTableRow(false, severalCount()) applies to the remembered fixture cell and the 2x2 table grows to 5 rows"
     },
     "dialoginput.paragraph-advanced-settings": {
       "effektClass": "dialog",
