@@ -9377,8 +9377,10 @@
   for (const [name, confirm] of ROUND2) {
     const ok = document.getElementById("btn-" + name + "-ok");
     const close = document.getElementById("btn-" + name + "-close");
+    const cancel = document.getElementById("btn-" + name + "-cancel");
     if (ok && confirm) ok.addEventListener("click", () => { closeOverlayDialog(name + "-dialog"); confirm(); });
     if (close) close.addEventListener("click", () => closeOverlayDialog(name + "-dialog"));
+    if (cancel) cancel.addEventListener("click", () => closeOverlayDialog(name + "-dialog"));
   }
   const speechRate = document.getElementById("speech-rate");
   const speechRateValue = document.getElementById("speech-rate-value");

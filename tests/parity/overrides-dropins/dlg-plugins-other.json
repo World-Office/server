@@ -47,7 +47,6 @@
     },
     "dialogdepth.speechinput-cancel": {
       "effektClass": "dialog",
-      "xfail": true,
       "woTab": "plugins",
       "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"dictate\"]",
       "assertion": {
@@ -55,7 +54,7 @@
         "button": "#btn-speechinput-cancel",
         "dialog": "#speechinput-dialog"
       },
-      "note": "KNOWN GAP: clicking Cancel on #speechinput-dialog does not close it (observed: dialog still open after #btn-speechinput-cancel; the OK button closes fine) — cancel likely only stops listening"
+      "note": "PROMOTED 2026-11-06 after PRODUCT FIX: the ROUND2 wiring loop (editor.js) only wired btn-<name>-ok/-close, never -cancel — #btn-speechinput-cancel was a dead button; the loop now wires cancel to closeOverlayDialog"
     },
     "dialogdepth.settings-cancel": {
       "effektClass": "dialog",

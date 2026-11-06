@@ -213,28 +213,30 @@
       "note": "ledger row: chart.wrapping — the ledger binds OO chart-tab Wrapping to the same layout Wrapping menu (tab:layout); the ctx-menu-on-chart pre selects the chart vector object (lastObjectPick) so applyObjectOp('wrap-square') wraps the chart img itself (data-wrap on #fixture-chart); trigger->post chain opens the hidden dropdown"
     },
     "chart.width": {
-      "effektClass": "op",
+      "effektClass": "dialog",
       "woTab": "chart-design",
       "pre": "chart-selection",
       "selector": "#chart-width-input",
       "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#fixture-chart[data-width]"
+        "kind": "dialog-input",
+        "set": [ { "selector": "#chart-width-input", "value": "421" } ],
+        "click": "button[data-cmd=\"chartSize\"]",
+        "expect": { "selector": "#fixture-chart[data-spec*=\":421\"]" }
       },
-      "xfail": true,
-      "note": "ledger row: chart.width — honest gap: input-set vocabulary. Chart width is #chart-width-input (number input) committed by the 'Apply size' button (data-cmd=chartSize -> applyChartSize, editor.js:1523); the runner cannot type a value into the input and no stepper button exists, so the real flow is unreachable"
+      "note": "ledger row: chart.width — PROMOTED 2026-11-06: dialog-input fills #chart-width-input and clicks the Apply size button (data-cmd=chartSize -> applyChartSize, editor.js:1523), which writes spec.width into the data-spec JSON; the old xfail premise (click-only trigger + [data-width] attribute) was stale on both counts"
     },
     "chart.height": {
-      "effektClass": "op",
+      "effektClass": "dialog",
       "woTab": "chart-design",
       "pre": "chart-selection",
       "selector": "#chart-height-input",
       "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#fixture-chart[data-height]"
+        "kind": "dialog-input",
+        "set": [ { "selector": "#chart-height-input", "value": "331" } ],
+        "click": "button[data-cmd=\"chartSize\"]",
+        "expect": { "selector": "#fixture-chart[data-spec*=\":331\"]" }
       },
-      "xfail": true,
-      "note": "ledger row: chart.height — honest gap: input-set vocabulary, same as chart.width (#chart-height-input + Apply size; no stepper button to click)"
+      "note": "ledger row: chart.height — PROMOTED 2026-11-06: dialog-input fills #chart-height-input + Apply size (chartSize -> applyChartSize writes spec.height into data-spec); same stale-premise fix as chart.width"
     }
   }
 }
