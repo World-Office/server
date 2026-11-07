@@ -1,0 +1,326 @@
+{
+ "_meta": {
+  "name": "l2m-product-gaps",
+  "baseline": {
+   "pass": 431,
+   "knownGap": 22,
+   "fail": 0
+  },
+  "notes": "Close the remaining product-side known gaps (L2M wave). 14 rows promotable: protect fallback (Rust), compare/combine array shape, ctx Rotate/TopAndBottom items, ctx copy/cut clipboard fallback + pastetext bind, zoom-out/footnote rebinds + sb-lang, datetime dialog, caption dialog. Serialized dispatch (af parallel kills opencode). Word canon: Ctrl+Hyphen=en-dash, Ctrl+Minus=zoom-out."
+ },
+ "defaults": {
+  "max_attempts": 3,
+  "branch": "tf/{taskid}",
+  "commit_style": "parity: promote <rows> via L2M product work"
+ },
+ "tasks": [
+  {
+   "id": "L2M-01",
+   "title": "Docserver protect demo-doc fallback + promote protect row",
+   "files": [
+    "core/crates/wo-docserver/src/editor_docs.rs",
+    "tests/parity/overrides-dropins/layout-protect.json"
+   ],
+   "bindings": {
+    "protect.protect-document": {
+     "effektClass": "op",
+     "woTab": "protection",
+     "selector": "[data-cmd=\"restrictEditing\"]",
+     "assertion": {
+      "kind": "viewport-flag",
+      "rootSelector": "#editor",
+      "attr": "contenteditable",
+      "equals": "false"
+     }
+    }
+   },
+   "steps": [
+    "ROOT CAUSE: POST /api/documents/{id}/protect uses state.store.get_content(&id) which 404s for the harness demo.docx; the sibling GET handler uses demo_or_stored(&state, &id) (editor_docs.rs:76). Make document_protect use the same demo_or_stored fallback (keep the ODT rejection above it).",
+    "Verify Rust: cargo test -p wo-docserver --lib (nightly toolchain; test_protect_locks_document_against_save must stay green). Run in server/.",
+    "Promote protect.protect-document with the binding above (drop xfail; note 'PROMOTED 2026-11-07: protect POST demo fallback -> applyProtectionView sets contenteditable=false').",
+    "Verify: bash tests/parity/af-gate.sh 432",
+    "Commit ONLY the two listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 432"
+  },
+  {
+   "id": "L2M-02",
+   "title": "Compare/combine loaders accept array shape + promote both rows",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "tests/parity/overrides-dropins/dlg-file-review.json"
+   ],
+   "bindings": {
+    "dialogdepth-fr.compare-apply": {
+     "effektClass": "dialog",
+     "woTab": "collaboration",
+     "selector": "[data-cmd=\"compareVersion\"]",
+     "pre": "peer-doc",
+     "assertion": {
+      "kind": "dialog-action",
+      "set": [
+       {
+        "selector": "#compare-document-select",
+        "pickFirstOption": true
+       }
+      ],
+      "button": "#btn-compare-apply",
+      "dialog": "#compare-dialog"
+     }
+    },
+    "dialogdepth-fr.combine-apply": {
+     "effektClass": "dialog",
+     "woTab": "collaboration",
+     "selector": "[data-cmd=\"combineRevisions\"]",
+     "pre": "peer-doc",
+     "assertion": {
+      "kind": "dialog-action",
+      "set": [
+       {
+        "selector": "#combine-document-select",
+        "pickFirstOption": true
+       }
+      ],
+      "button": "#btn-combine-apply",
+      "dialog": "#combine-dialog"
+     }
+    }
+   },
+   "steps": [
+    "ROOT CAUSE: GET /api/documents returns a bare JSON array (editor_docs.rs:502) but loadCompareDocuments (~editor.js:7665) and loadCombineDocuments (~7742) read data.documents -> undefined -> selects stay placeholder-only. Backstage already handles both shapes (bsDocsCache logic ~10638): use `Array.isArray(data) ? data : (data.documents || [])` in both loaders.",
+    "The runner peer-doc pre (contract-runner.cjs) POSTs /api/documents/new so the select has a second doc; pickFirstOption selects option index 1.",
+    "Promote both rows with the bindings above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 433",
+    "Commit ONLY the two listed files. Do NOT touch the runner."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 433"
+  },
+  {
+   "id": "L2M-03",
+   "title": "Add Rotate + Top-and-Bottom ctx items, promote rows",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/overrides-dropins/ctx-imgops.json",
+    "tests/parity/overrides-dropins/ctx-wrap.json"
+   ],
+   "bindings": {
+    "ctx.rotate": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-image",
+     "selector": "[data-ctx=\"Rotate90\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#fixture-img[style*=\"rotate\"]"
+     }
+    },
+    "ctx.top-and-bottom": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-image",
+     "selector": "[data-ctx=\"TopAndBottom\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#fixture-img.obj-center"
+     }
+    }
+   },
+   "steps": [
+    "Add a Rotate 90\u00b0 ctx item: [data-ctx=\"Rotate90\"] with data-showif=\"image\" in the image ctx group, wired to the same handler the right panel uses (rp-image-rotate -> applyImageRotate90). i18n key e.g. Ctx.Rotate90 (add en+de to i18n.js).",
+    "Add a Top and Bottom ctx item: [data-ctx=\"TopAndBottom\"] with data-showif=\"image\", applying the center/inline wrap (same as the wrap control's center option -> the object gains class obj-center; mirror what the existing wrap handler does).",
+    "If the ctx menu is built from index.html markup, add the items there; if items are registered in editor.js, add them there. Either way the selectors above must exist after a right-click on an image.",
+    "Promote ctx.rotate (ctx-imgops.json) and ctx.top-and-bottom (ctx-wrap.json) with the bindings above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 433 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test ctx-menu.test.mjs label-parity.test.mjs)",
+    "Commit ONLY the five listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 433 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test ctx-menu.test.mjs label-parity.test.mjs)"
+  },
+  {
+   "id": "L2M-04",
+   "title": "ctx copy/cut clipboard fallback + pastetext bind, promote 3 rows",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "tests/parity/parity-overrides.json",
+    "tests/parity/overrides-dropins/ctx-residual.json",
+    "tests/parity/overrides-dropins/shortcut-real.json"
+   ],
+   "bindings": {
+    "ctx.copy": {
+     "effektClass": "op",
+     "pre": "ctx-menu",
+     "selector": "[data-ctx=\"Copy\"]",
+     "assertion": {
+      "kind": "clipboard"
+     }
+    },
+    "ctx.cut": {
+     "effektClass": "op",
+     "pre": "ctx-menu",
+     "selector": "[data-ctx=\"Cut\"]",
+     "assertion": {
+      "kind": "clipboard"
+     }
+    },
+    "shortcut.pastetextwithoutformat": {
+     "effektClass": "op",
+     "key": "Control+Shift+KeyV",
+     "seedClipboard": "PASTE-TEXTONLY-MARKER plain",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#editor",
+      "contains": "PASTE-TEXTONLY-MARKER"
+     }
+    }
+   },
+   "steps": [
+    "NOTE: tests/parity/parity-overrides.json may not exist \u2014 if it does not, skip it (only touch ctx-residual.json and shortcut-real.json plus editor.js).",
+    "ctx Copy/Cut handlers: after the existing execCommand('copy'/'cut') call, add a fallback navigator.clipboard.writeText(String(getSelection() || '')) so headless/no-activation environments still fill the system clipboard (guard: only if clipboard write is available; catch rejections). Keep the existing DOM effect for cut (delete selection).",
+    "Bind Ctrl+Shift+V (Control+Shift+KeyV) to the paste-as-plain-text path: read navigator.clipboard.readText() and insert the plain text (same code path as the toolbar paste-text fallback / richPaste text-only branch).",
+    "The ctx-menu pre places the caret over word 1 and right-clicks (selection persists through right-click in Chromium) \u2014 copy/cut therefore operate on a real non-empty selection.",
+    "Promote ctx.copy and ctx.cut (ctx-residual.json) and shortcut.pastetextwithoutformat (shortcut-real.json) with the bindings above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 434 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test ctx-menu.test.mjs label-parity.test.mjs)",
+    "Commit ONLY the touched listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 434 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test ctx-menu.test.mjs label-parity.test.mjs)"
+  },
+  {
+   "id": "L2M-05",
+   "title": "Rebind Ctrl+Minus zoom-out (en-dash to Ctrl+Hyphen) + Ctrl+Alt+F footnote + sb-lang click, promote 4 rows",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "tests/parity/overrides-dropins/key-panels.json",
+    "tests/parity/overrides-dropins/key-insert.json",
+    "tests/parity/overrides-dropins/stragglers.json"
+   ],
+   "bindings": {
+    "shortcut.zoomout": {
+     "effektClass": "view",
+     "pre": "list",
+     "key": "Control+-",
+     "post": "#btn-zoom-reset",
+     "assertion": {
+      "kind": "viewport-flag",
+      "rootSelector": "#editor",
+      "prop": "zoom",
+      "equals": "0.9"
+     }
+    },
+    "shortcut.endash": {
+     "effektClass": "op",
+     "key": "Control+Hyphen",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#editor",
+      "contains": "\u2013"
+     }
+    },
+    "shortcut.insertfootnotenow": {
+     "effektClass": "structure",
+     "key": "Control+Alt+f",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#editor",
+      "contains": "Footnote text"
+     }
+    },
+    "statusbar.english-united-states": {
+     "effektClass": "op",
+     "selector": "#sb-lang",
+     "post": "#sb-lang-menu [data-lang=\"en-US\"]",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#sb-lang",
+      "contains": "English (US)"
+     }
+    }
+   },
+   "bindings2": {
+    "statusbar.btn-doc-lang": {
+     "effektClass": "op",
+     "selector": "#sb-doc-lang",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#sb-doc-lang",
+      "contains": "English (US)"
+     }
+    }
+   },
+   "steps": [
+    "WORD CANON: optional hyphen/en-dash inserts are NOT Ctrl+Minus (that is zoom-out). Rebind the existing en-dash keydown handler (ev.code Minus, !shift !alt, currently inserting U+2013) to Control+Hyphen (ev.code Hyphen), and wire plain Ctrl+Minus to zoomOut() (same as the statusbar zoom-out button).",
+    "Update the shortcut.endash row key to Control+Hyphen (binding above, keep passing).",
+    "Promote shortcut.zoomout with the binding above (pre list + post #btn-zoom-reset already reset zoom to 1.0; drop xfail).",
+    "Control+Alt+F currently opens the backstage \u2014 keep that ONLY when it does not conflict; if the existing handler uses ev.code KeyF with ctrl+alt, move the footnote call to insertFootnote() instead (insertFootnote inserts the footnote block whose text contains 'Footnote text'). Promote shortcut.insertfootnotenow (key-insert.json).",
+    "sb-lang: make the statusbar language label clickable \u2014 click opens a small language menu (element with id sb-lang-menu, items with data-lang codes), picking an item sets the document language and updates the label. Promote statusbar.english-united-states with the binding above (post clicks the en-US item; assertion = label text contains 'English (US)'). Ensure the DEFAULT doc language is NOT already English (US) (otherwise text-mutation cannot observe a change) \u2014 e.g. default de-DE, or have the menu always re-apply so the label text updates.",
+    "statusbar.btn-doc-lang: if a second statusbar lang control exists (#sb-doc-lang), wire it to the same language set and promote with bindings2 above; if the row is the same control as #sb-lang, promote it with the same binding shape (selector #sb-lang + post en-US pick).",
+    "Verify: bash tests/parity/af-gate.sh 435 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test statusbar.test.mjs shortcuts-gate.test.mjs label-parity.test.mjs)",
+    "Commit ONLY the touched listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 435 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test statusbar.test.mjs shortcuts-gate.test.mjs label-parity.test.mjs)"
+  },
+  {
+   "id": "L2M-06",
+   "title": "Date & time dialog + promote both rows",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/overrides-dropins/insnum.json"
+   ],
+   "bindings": {
+    "insert.dlg-date-time": {
+     "effektClass": "dialog",
+     "woTab": "insert",
+     "selector": "#btn-datetime",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#datetime-dialog"
+     }
+    },
+    "headerfooter.dlg-date-time": {
+     "effektClass": "dialog",
+     "woTab": "insert",
+     "selector": "#btn-datetime",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#datetime-dialog"
+     }
+    }
+   },
+   "steps": [
+    "Add a #datetime-dialog in a .dialog-overlay (mirror existing dialogs): title 'Date and time', a listbox of date/time formats (data-format codes), an 'Update automatically' checkbox, OK + Cancel buttons. #btn-datetime (insert tab, also used from header/footer context) opens it; OK inserts the formatted date at the caret; Cancel closes. data-i18n labels + i18n keys (en+de).",
+    "Promote insert.dlg-date-time and headerfooter.dlg-date-time with the bindings above (drop xfail). Note: headerfooter row keeps woTab insert because the control is shared.",
+    "Verify: bash tests/parity/af-gate.sh 433 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)",
+    "Commit ONLY the four listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 433 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)"
+  },
+  {
+   "id": "L2M-07",
+   "title": "Caption dialog + promote row",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/overrides-dropins/chart-ref-other.json"
+   ],
+   "bindings": {
+    "references.dlg-insert-caption": {
+     "effektClass": "dialog",
+     "woTab": "references",
+     "selector": "[data-cmd=\"insertCaption\"]",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#caption-dialog"
+     }
+    }
+   },
+   "steps": [
+    "Add a #caption-dialog in a .dialog-overlay: fields Caption (text input), Label (select: Figure/Table/Equation), Numbering (checkbox), Position select, OK + Cancel. [data-cmd=\"insertCaption\"] (references tab) opens it; OK inserts a caption block (e.g. <figure><figcaption>) below the current selection; Cancel closes. data-i18n labels + i18n keys (en+de).",
+    "Promote references.dlg-insert-caption with the binding above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 432 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)",
+    "Commit ONLY the four listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 432 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)"
+  }
+ ]
+}
