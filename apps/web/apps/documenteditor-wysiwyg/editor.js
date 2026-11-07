@@ -9734,6 +9734,18 @@
     }
     return false;
   }
+  // L2M-04 pastetext bind: plain-text paste, shared by the Ctrl+T keep-text-only
+  // chord and the new Ctrl+Shift+V binding (OO PasteTextWithoutFormat, ledger
+  // shortcut.pastetextwithoutformat). Reads the system clipboard as plain text
+  // and inserts it unformatted (no sanitizer on the plain path).
+  function pasteTextOnly() {
+    navigator.clipboard.readText().then((text) => {
+      if (!text) return;
+      editorEl.focus();
+      document.execCommand("insertText", false, text);
+      setStatus(t("Status.PastedTextOnly"));
+    }).catch(() => setStatus(t("Status.ClipboardReadDenied")));
+  }
   const editorEl = document.getElementById("editor");
   // BUG6-EDGE: close the F-063 bypass — the native Ctrl+V paste event used to
   // insert external HTML raw into the live DOM (only the ctx-menu/ribbon
@@ -9860,7 +9872,25 @@
       closeCtx();
       // Clipboard
       if (action === "Cut" || action === "Copy") {
-        document.execCommand(action.toLowerCase());
+        // L2M-04 ctx-copy-cut-clipboard-fallback: execCommand copy/cut needs
+        // transient user activation in modern Chromium — synthetic clicks
+        // (assistive tech, automation) have none, so the native path can
+        // silently no-op. Fallback: write the selected plain text to the
+        // system clipboard via the async Clipboard API (permission-gated,
+        // works without activation); Cut additionally deletes the selection
+        // because the native cut is the only op that copies AND deletes in
+        // one step.
+        const sel = window.getSelection();
+        const selText = sel && sel.rangeCount ? sel.toString() : "";
+        const nativeOk = selText ? document.execCommand(action.toLowerCase()) : true;
+        if (!nativeOk) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(selText).catch(() => {});
+          }
+          if (action === "Cut" && sel && sel.rangeCount && !sel.isCollapsed) {
+            document.execCommand("delete");
+          }
+        }
       } else if (action === "Paste") {
         richPaste().then((rich) => {
           if (rich) return;
@@ -11050,6 +11080,10 @@
       // De-indent: Ctrl+Shift+M (OO convention; the Tab-in-list handler covers
       // list outdenting, this is the paragraph-level command).
       if (k === "m") { ev.preventDefault(); emitCommand("outdent"); return; }
+      // Paste text only: Ctrl+Shift+V / Cmd+Shift+V (OO PasteTextWithoutFormat,
+      // ledger shortcut.pastetextwithoutformat) — the same plain-text path as
+      // the Ctrl+T chord below (pasteTextOnly()).
+      if (k === "v") { ev.preventDefault(); pasteTextOnly(); return; }
     }
     if ((ev.ctrlKey || ev.metaKey) && ev.altKey) {
       const k = ev.key.toLowerCase();
@@ -11273,12 +11307,7 @@
       // hyperlink collision, recorded in the shortcut census).
       if (k === "t" && !ev.shiftKey) {
         ev.preventDefault();
-        navigator.clipboard.readText().then((text) => {
-          if (!text) return;
-          editorEl.focus();
-          document.execCommand("insertText", false, text);
-          setStatus(t("Status.PastedTextOnly"));
-        }).catch(() => setStatus(t("Status.ClipboardReadDenied")));
+        pasteTextOnly();
         return;
       }
     }

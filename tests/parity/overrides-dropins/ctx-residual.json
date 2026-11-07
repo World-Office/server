@@ -1,5 +1,5 @@
 {
-  "$comment": "L2H-02-CTX-RESIDUAL: residual ctx-menu ledger rows. Verify-first facts: UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); TextAlignment is a table-gated submenu (toggleCtxSubmenu, editor.js:9831) whose TextAlignCenter child sets td inline text-align (applyCellTextAlign, editor.js:10267/10320); Insert-tab #btn-header inserts <header class=page-header> directly (editor.js:1274); the WO table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871) \u2014 no ctx-menu item exists for it (right-panel #rp-table-advanced routes to borders-dialog instead, editor.js:7261/7797); clipboard rows have no in-page DOM observable (system clipboard / status messages) -> honest xfails.",
+  "$comment": "L2H-02-CTX-RESIDUAL: residual ctx-menu ledger rows. Verify-first facts: UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); TextAlignment is a table-gated submenu (toggleCtxSubmenu, editor.js:9831) whose TextAlignCenter child sets td inline text-align (applyCellTextAlign, editor.js:10267/10320); Insert-tab #btn-header inserts <header class=page-header> directly (editor.js:1274); the WO table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871) \u2014 no ctx-menu item exists for it (right-panel #rp-table-advanced routes to borders-dialog instead, editor.js:7261/7797); clipboard rows observe the system clipboard itself (runner clipboard assertion, _boot grants read/write permissions) -> ctx copy/cut promoted 2026-11-07 via the L2M-04 clipboard fallback.",
   "entries": {
     "ctx.justify": {
       "effektClass": "format",
@@ -114,10 +114,10 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"Copy\"]",
       "assertion": {
-        "kind": "unspecified"
+        "kind": "clipboard",
+        "contains": "Will"
       },
-      "xfail": true,
-      "note": "ledger ctx.copy KNOWN GAP: ctx Copy runs document.execCommand('copy') (editor.js:9845) \u2014 writes the system clipboard, zero in-page DOM delta, nothing contract-observable"
+      "note": "ledger ctx.copy PROMOTED 2026-11-07 — the ctx Copy handler (editor.js) copies the placeCaret selection to the system clipboard (native execCommand copy; L2M-04 clipboard fallback writes the selection via navigator.clipboard.writeText when the synthetic click lacks user activation); the clipboard assertion reads the payload back — placeCaret selects the leading 'Will' of the fixture h1"
     },
     "ctx.paste": {
       "effektClass": "op",
@@ -136,10 +136,10 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"Cut\"]",
       "assertion": {
-        "kind": "unspecified"
+        "kind": "clipboard",
+        "contains": "Will"
       },
-      "xfail": true,
-      "note": "ledger ctx.cut KNOWN GAP: ctx Cut runs document.execCommand('cut') (editor.js:9845) \u2014 requires real user activation; the runner's synthetic evaluate-click has none, so the cut is not deterministic in-harness (and Copy/Paste siblings are pure clipboard ops)"
+      "note": "ledger ctx.cut PROMOTED 2026-11-07 — execCommand cut needs transient user activation (the synthetic ctx click has none), so the L2M-04 clipboard fallback in the Cut handler writes the placeCaret selection ('Will', fixture h1) to the system clipboard via navigator.clipboard.writeText and deletes it (execCommand delete); the clipboard assertion pins the copied payload"
     },
     "ctx.copy-hyperlink-address": {
       "effektClass": "op",
