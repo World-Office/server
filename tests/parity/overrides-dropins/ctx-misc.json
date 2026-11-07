@@ -77,15 +77,15 @@
     },
     "ctx.horizontal": {
       "effektClass": "format",
-      "pre": "ctx-menu-in-table",
+      "pre": "ctx-menu-on-vertical",
       "selector": "[data-ctx=\"TextDirection\"]",
       "post": "[data-ctx=\"TextDirHorizontal\"]",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": "#editor [data-textdir=\"horizontal\"]"
+        "selector": "#editor [data-textdir]",
+        "absent": true
       },
-      "xfail": true,
-      "note": "ledger ctx.horizontal KNOWN GAP: applyTextDirection('horizontal') reverts to the default state (removes writing-mode/data-textdir) — a no-op on default-state text; observing it needs a pre with a pre-rotated (vertical) fixture, which the pre vocabulary lacks (editor.js:10268/10327)"
+      "note": "ledger ctx.horizontal promoted: ctx-menu-on-vertical pre fixtures a vertical-rl block carrying data-textdir; TextDirHorizontal runs applyTextDirection('horizontal') which reverts it — drops the wo-textdir class, the writing-mode style and the data-textdir attribute, so the assertion is absence of #editor [data-textdir] (editor.js:10282/10345)"
     },
     "ctx.accept-change": {
       "effektClass": "op",
@@ -155,7 +155,7 @@
     },
     "ctx.select-language": {
       "effektClass": "dialog",
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-misspelled",
       "selector": "[data-ctx=\"SelectLanguage\"]",
       "assertion": {
         "kind": "dialog-visible",
@@ -163,12 +163,11 @@
       },
       "subFeatures": [
         {
-          "name": "document language select",
-          "selector": "#doc-lang"
+          "name": "document language select options",
+          "selector": "#doc-lang option"
         }
       ],
-      "xfail": true,
-      "note": "ledger ctx.select-language KNOWN GAP: data-showif=\"misspelled\" keeps the ctx item hidden without a misspelled-word fixture; the handler only showPicker()s the #doc-lang select (no dialog) — needs misspelled-word fixture pre"
+      "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522)"
     },
     "ctx.update-1-style": {
       "effektClass": "op",
