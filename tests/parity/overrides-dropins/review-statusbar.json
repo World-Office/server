@@ -61,17 +61,26 @@
     },
     "review.delete": {
       "effektClass": "op",
-      "xfail": true,
+      "pre": "ctx-menu-on-comment",
       "selector": "[data-cmd=\"deleteComment\"]",
       "woTab": "collaboration",
-      "note": "KNOWN GAP: ledger row review.delete — deleteComment (editor.js:1468) acts on commentAtSelection() (#editor span.comment closest) and would unwrap it (removeComment, dom-mutation absent); no contract pre builds a span.comment fixture (the runner pre vocabulary has list/table/image/chart/link/misspelled/trackchanges fixtures only), so the unwrap is unobservable"
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span.comment",
+        "absent": true
+      },
+      "note": "PROMOTED 2026-11-07: ledger row review.delete — ctx-menu-on-comment pre builds the span.comment fixture the old note called a vocabulary gap; the collaboration-tab [data-cmd=deleteComment] ribbon button then runs deleteComment (editor.js:1468) -> commentAtSelection() (anchor inside the fixture span) -> removeComment (editor.js:141) unwraps it, so #editor span.comment goes absent (dom-mutation)"
     },
     "review.resolve": {
       "effektClass": "op",
-      "xfail": true,
+      "pre": "ctx-menu-on-comment",
       "selector": "[data-cmd=\"resolveComment\"]",
       "woTab": "collaboration",
-      "note": "KNOWN GAP: ledger row review.resolve — resolveComment (editor.js:1456) toggles data-resolved=\"1\" on the span.comment at the caret (toggleResolved, editor.js:128); no comment fixture pre exists in the runner vocabulary, so the attribute flip is unobservable"
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor span.comment[data-resolved=\"1\"]"
+      },
+      "note": "PROMOTED 2026-11-07: ledger row review.resolve — ctx-menu-on-comment pre anchors the selection inside the fixture span.comment; [data-cmd=resolveComment] runs resolveComment (editor.js:1456) -> toggleResolved (editor.js:128) flips data-resolved=\"1\" (afterTrackEdit only marks history/collab state, the attribute survives), so #editor span.comment[data-resolved=1] becomes present (dom-mutation, default want=present)"
     },
     "review.track-changes": {
       "effektClass": "dialog",
