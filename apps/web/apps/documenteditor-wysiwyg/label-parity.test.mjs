@@ -243,6 +243,28 @@ assert.ok(editorSrc.includes('getElementById("chart-height-input")'),
   "chart-height-input must be read in editor.js")
 console.log("Chart Width/Height inputs present and wired\n")
 
+// ── (f2) Date & time dialog (insert.dlg-date-time / headerfooter.dlg-date-time)
+console.log("Checking Date & time dialog...")
+assert.ok(htmlSrc.includes('id="datetime-dialog"'), "datetime-dialog overlay must exist")
+const dtDialog = sliceBetween(htmlSrc, 'id="datetime-dialog"', "</div>\n  </div>")
+assert.ok(dtDialog.includes('id="datetime-format"'), "format list must exist")
+assert.ok(dtDialog.includes('id="datetime-update-auto"'), "Update automatically checkbox must exist")
+assert.ok(dtDialog.includes('id="btn-datetime-default"'), "Set as default button must exist")
+assert.ok(dtDialog.includes('id="btn-datetime-ok"') && dtDialog.includes('id="btn-datetime-close"'),
+  "OK/Cancel buttons must exist")
+assert.ok(dtDialog.includes('data-i18n="Dialog.DateTime.UpdateAuto"'), "checkbox carries the i18n marker")
+for (const key of ["Dialog.DateTime.Title", "Dialog.DateTime.Format", "Dialog.DateTime.UpdateAuto", "Dialog.DateTime.SetDefault"]) {
+  assert.ok(i18nSrc.includes(`"${key}": `), `${key} must exist in the catalogs`)
+}
+assert.ok(editorSrc.includes("openDatetimeDialog") &&
+  editorSrc.includes('dtBtn.addEventListener("click", openDatetimeDialog)'),
+  "btn-datetime must open the dialog, not quick-insert")
+assert.ok(editorSrc.includes('["datetime", confirmDatetimeDialog]'),
+  "datetime OK must route through the ROUND2 confirm wiring")
+assert.ok(editorSrc.includes('data-field", "DATE"'),
+  "Update automatically must insert a live DATE field")
+console.log("Date & time dialog complete\n")
+
 // ── (g) No bare console.log anywhere in editor.js ────────────────────
 console.log("Checking console.log ban...")
 assert.ok(!editorSrc.includes("console.log("),

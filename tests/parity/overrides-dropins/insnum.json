@@ -67,48 +67,72 @@
     "insert.date-time": {
       "effektClass": "structure",
       "selector": "#btn-datetime",
+      "post": "#btn-datetime-ok",
       "woTab": "insert",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor",
         "containsDate": true
       },
-      "note": "ledger row: insert.date-time \u2014 #btn-datetime emits insertDate which inserts a plain local YYYY-MM-DD text run at the caret (editor.js:8839/1297); text-mutation observer (runner) asserts today appears in #editor text"
+      "note": "ledger row: insert.date-time — #btn-datetime now opens #datetime-dialog (L2M-06, openDatetimeDialog); post clicks OK whose confirmDatetimeDialog inserts the default (iso) local YYYY-MM-DD text run at the caret (editor.js); text-mutation observer asserts today appears in #editor text"
     },
     "headerfooter.date-time": {
       "effektClass": "structure",
       "selector": "#btn-datetime",
+      "post": "#btn-datetime-ok",
       "woTab": "insert",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor",
         "containsDate": true
       },
-      "note": "ledger row: headerfooter.date-time \u2014 #btn-datetime emits insertDate which inserts a plain local YYYY-MM-DD text run at the caret (editor.js:8839/1297); text-mutation observer (runner) asserts today appears in #editor text"
+      "note": "ledger row: headerfooter.date-time — same bound trigger #btn-datetime as insert.date-time (wo.match btn-datetime, where tab:insert); dialog opens, post clicks OK, confirmDatetimeDialog inserts the iso local date text run; text-mutation observer asserts today appears in #editor text"
     },
     "insert.dlg-date-time": {
       "effektClass": "dialog",
       "selector": "#btn-datetime",
       "woTab": "insert",
       "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#datetime-dialog"
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#datetime-format",
+            "value": "de"
+          },
+          {
+            "selector": "#datetime-update-auto",
+            "value": true
+          }
+        ],
+        "click": "#btn-datetime-ok",
+        "expect": {
+          "selector": "#editor span.field[data-field=\"DATE\"]"
+        }
       },
-      "subFeatures": [],
-      "xfail": true,
-      "note": "ledger row: insert.dlg-date-time \u2014 OO promises a Date & time dialog (fields: Update automatically; buttons: Set as default/OK/Cancel); WO has NO datetime dialog (not in DIALOG_IDS, not in markup): #btn-datetime inserts a plain date string instead \u2014 real parity gap, dialog never appears"
+      "note": "ledger row: insert.dlg-date-time PROMOTED 2026-11-07 (L2M-06) — the OO Date & time dialog exists now: #btn-datetime opens #datetime-dialog (openDatetimeDialog; in DIALOG_IDS), fields Format + 'Update automatically' checkbox, buttons Set as default/OK/Cancel; OK (ROUND2 -> confirmDatetimeDialog) inserts the live span.field[data-field=DATE] carrying the chosen de format"
     },
     "headerfooter.dlg-date-time": {
       "effektClass": "dialog",
       "selector": "#btn-datetime",
       "woTab": "insert",
       "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#datetime-dialog"
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#datetime-format",
+            "value": "de"
+          },
+          {
+            "selector": "#datetime-update-auto",
+            "value": true
+          }
+        ],
+        "click": "#btn-datetime-ok",
+        "expect": {
+          "selector": "#editor span.field[data-field=\"DATE\"]"
+        }
       },
-      "subFeatures": [],
-      "xfail": true,
-      "note": "ledger row: headerfooter.dlg-date-time \u2014 same gap as insert.dlg-date-time: the OO-promised Date & time dialog does not exist in WO; both date/time entry points (insert-tab #btn-datetime, HF-tab #btn-hf-datetime) emit insertDate plain-text insertion"
+      "note": "ledger row: headerfooter.dlg-date-time PROMOTED 2026-11-07 (L2M-06) — same WO binding as insert.dlg-date-time (wo.match btn-datetime, where tab:insert): one dialog surface, two census rows, identical executable contract; each entry runs on a fresh page"
     },
     "sb-track-changes": {
       "effektClass": "op",

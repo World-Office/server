@@ -2038,7 +2038,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -8854,7 +8854,86 @@
   const symbolBtn = document.getElementById("btn-symbol");
   if (symbolBtn) symbolBtn.addEventListener("click", openSymbolDialog);
   const dtBtn = document.getElementById("btn-datetime");
-  if (dtBtn) dtBtn.addEventListener("click", () => emitCommand("insertDate"));
+  if (dtBtn) dtBtn.addEventListener("click", openDatetimeDialog);
+
+  // --- Date & time dialog (OO insert.dlg-date-time / headerfooter.dlg-date-time)
+  // The insert-tab date button no longer quick-inserts: like OO it opens the
+  // Date & time dialog (format list, "Update automatically", Set as default,
+  // OK/Cancel). Static formats insert plain text via the old insertDate
+  // machinery; "Update automatically" inserts a live span.field[data-field=
+  // DATE] so the field-op refresh path (fieldOpAtSelection) keeps it current.
+  const DT_FORMATS = {
+    iso: (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+    de: (d) => `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`,
+    us: (d) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`,
+    long: (d) => d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+  };
+  const DT_DEFAULT_KEY = "wo.datetime.default";
+  function dtStoredDefault() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DT_DEFAULT_KEY) || "{}");
+      return { format: DT_FORMATS[saved.format] ? saved.format : "iso", update: !!saved.update };
+    } catch { return { format: "iso", update: false }; }
+  }
+  function openDatetimeDialog() {
+    if (READ_ONLY) return;
+    const dlg = document.getElementById("datetime-dialog");
+    if (!dlg) return;
+    const fmt = document.getElementById("datetime-format");
+    const upd = document.getElementById("datetime-update-auto");
+    const def = dtStoredDefault();
+    if (fmt) fmt.value = def.format;
+    if (upd) upd.checked = def.update;
+    rememberFocus();
+    openOverlayDialog("datetime-dialog");
+  }
+  function confirmDatetimeDialog() {
+    if (READ_ONLY) return;
+    const fmtTok = (document.getElementById("datetime-format") || {}).value || "iso";
+    const update = !!(document.getElementById("datetime-update-auto") || {}).checked;
+    const fmtFn = DT_FORMATS[fmtTok] || DT_FORMATS.iso;
+    // execCommand needs editable focus; a dialog-button click leaves focus
+    // on the ribbon — restore the editor (and caret) like insertDate does.
+    if (document.activeElement !== editor) {
+      editor.focus();
+      if (window.getSelection().isCollapsed) restoreFocus();
+    }
+    moveCaretPastStructuralMarkers();
+    const now = new Date();
+    if (update) {
+      // Direct DOM insertion (see insertCitation): Chromium's insertHTML
+      // sanitizer strips the class/data attributes of content-bearing
+      // markup, so the live field marker must be built node-by-node.
+      const sel = document.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      const f = document.createElement("span");
+      f.className = "field";
+      f.setAttribute("data-field", "DATE");
+      f.setAttribute("data-dt-format", fmtTok);
+      f.textContent = fmtFn(now);
+      range.deleteContents();
+      range.insertNode(f);
+      range.setStartAfter(f);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      document.execCommand("insertText", false, fmtFn(now));
+    }
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+  const dtDefault = document.getElementById("btn-datetime-default");
+  if (dtDefault) dtDefault.addEventListener("click", () => {
+    const format = (document.getElementById("datetime-format") || {}).value || "iso";
+    const update = !!(document.getElementById("datetime-update-auto") || {}).checked;
+    try { localStorage.setItem(DT_DEFAULT_KEY, JSON.stringify({ format, update })); } catch {}
+  });
 
   // --- OO-parity option modals (p2 divergence fixes) ----------------------
   // Each dialog opens from its ribbon button, offers the options OO offers,
@@ -9388,6 +9467,7 @@
     ["pagecolor", confirmPageColorDialog], ["colors", confirmColorsDialog],
     ["addtext", null], ["updatetoc", confirmUpdateTocDialog],
     ["displaymode", confirmDisplayModeDialog],
+    ["datetime", confirmDatetimeDialog],
   ];
   for (const [name, confirm] of ROUND2) {
     const ok = document.getElementById("btn-" + name + "-ok");

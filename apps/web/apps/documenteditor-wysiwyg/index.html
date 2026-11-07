@@ -2932,6 +2932,30 @@
     </div>
   </div>
 
+  <div id="datetime-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="datetime-dialog-title">
+    <div class="dialog">
+      <h3 id="datetime-dialog-title" data-i18n="Dialog.DateTime.Title">Date &amp; time</h3>
+      <div class="dialog-field">
+        <label for="datetime-format" data-i18n="Dialog.DateTime.Format">Format</label>
+        <select id="datetime-format">
+          <option value="iso" data-i18n="Dialog.DateTime.FormatIso">YYYY-MM-DD</option>
+          <option value="de" data-i18n="Dialog.DateTime.FormatDe">DD.MM.YYYY</option>
+          <option value="us" data-i18n="Dialog.DateTime.FormatUs">MM/DD/YYYY</option>
+          <option value="long" data-i18n="Dialog.DateTime.FormatLong">Weekday, Month D, YYYY</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="datetime-update-auto" data-i18n="Dialog.DateTime.UpdateAuto">Update automatically</label>
+        <input id="datetime-update-auto" type="checkbox">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-datetime-default" data-i18n="Dialog.DateTime.SetDefault">Set as default</button>
+        <button id="btn-datetime-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-datetime-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="plugins-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="plugins-dialog-title">
     <div class="dialog plugins-dialog">
       <h3 id="plugins-dialog-title" data-i18n="Plugins.Manage">Plugins</h3>
