@@ -160,7 +160,7 @@
         "rootSelector": "body",
         "hasClass": "multi-page-view"
       },
-      "note": "ledger row: statusbar.status-btn-multiple-pages — #btn-multipage click runs setMultipage (editor.js:13023): toggles body.multi-page-view page-separator gutters + aria-pressed on the statusbar/View mirrors. NOTE: the zoom ledger rows statusbar.btn-zoom-topage/btn-zoom-towidth (both bound to #btn-zoom-fit, fit-width only) are deliberately NOT contracted here: any click on #btn-zoom-fit persists wo-zoom=1.81205 in localStorage and breaks the downstream relative-zoom contracts (view-flags btn-zoom-out 1→0.9, btn-zoom-in 0.9→1) that run later in manifest order and assume a fresh zoom=1; #btn-zoom-fit has no post-hoc reset hook in the runner vocabulary (post runs before the effect check)"
+      "note": "ledger row: statusbar.status-btn-multiple-pages — #btn-multipage click runs setMultipage (editor.js:13023): toggles body.multi-page-view page-separator gutters + aria-pressed on the statusbar/View mirrors. NOTE: the zoom ledger rows statusbar.btn-zoom-topage/btn-zoom-towidth (both bound to #btn-zoom-fit, fit-width only) are contracted in layout-protect.json (PROMOTED 2026-11-08, L2N-03): the persisted wo-zoom=1.81 side effect that used to break the downstream relative-zoom contracts is now handled by the runner's zoom-reset pre + cleanup hook (cleanup clicks #btn-zoom-reset AFTER the effect check — the old blocker was that post runs before the check)"
     }
   }
 }
