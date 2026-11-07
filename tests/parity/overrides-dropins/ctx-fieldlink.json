@@ -54,51 +54,44 @@
     },
     "ctx.clear-field": {
       "effektClass": "op",
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-on-field",
       "selector": "[data-ctx=\"ClearField\"]",
       "assertion": {
         "kind": "text-mutation",
-        "selector": "#editor .page-number, #editor [data-field]"
+        "selector": "#editor .page-number, #editor [data-field]",
+        "empty": true
       },
-      "xfail": true,
-      "note": "needs field-at-caret pre — row is data-showif=\"field\" (index.html:1663, hidden unless .page-number/[data-field] sits at the caret) and the handler early-returns via setStatus(NoFieldAtCaret) (editor.js:9931-9944); the pre vocabulary cannot plant a field"
+      "note": "ctx-menu-on-field pre plants span.page-number[data-field=page] ('1') and right-clicks it, un-hiding the data-showif=\"field\" row (index.html:1663, editor.js:9825-9827); ClearField then empties the field at the caret (editor.js:9945-9956, fieldEl.textContent = \"\") — text-mutation empty:true observes the cleared text"
     },
     "ctx.update-field": {
       "effektClass": "op",
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-on-field",
       "selector": "[data-ctx=\"UpdateField\"]",
       "assertion": {
-        "kind": "op-emitted"
+        "kind": "op-emitted",
+        "event": "wo:field-op"
       },
-      "xfail": true,
-      "note": "KNOWN GAP: fieldOpAtSelection('update') only dispatches a fire-and-forget wo:field-op CustomEvent — no listener in editor.js, promised field-dialog slice unimplemented (editor.js:3054-3066); the runner's op-emitted observer is a stub (contract-runner.cjs:112-113), so nothing is assertable"
+      "note": "pilot pattern (ctx.follow-move): UpdateField runs fieldOpAtSelection('update'), whose observable contract is the wo:field-op window CustomEvent (editor.js:3067-3078, 10185-10186); contract-runner arms a window listener for it (contract-runner.cjs:755)"
     },
     "ctx.edit-field": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu",
+      "effektClass": "op",
+      "pre": "ctx-menu-on-field",
       "selector": "[data-ctx=\"EditField\"]",
       "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#field-dialog"
+        "kind": "op-emitted",
+        "event": "wo:field-op"
       },
-      "subFeatures": [
-        {
-          "name": "field dialog exists",
-          "selector": "#field-dialog .dialog"
-        }
-      ],
-      "xfail": true,
-      "note": "KNOWN GAP: fieldOpAtSelection('edit') only dispatches a fire-and-forget wo:field-op CustomEvent — no listener, promised #field-dialog edit slice never opens (editor.js:3054-3066); op-emitted observer is a stub (contract-runner.cjs:112-113)"
+      "note": "pilot pattern (ctx.follow-move): EditField runs fieldOpAtSelection('edit') — the promised #field-dialog edit slice is unimplemented, so the observable contract is the wo:field-op window CustomEvent (editor.js:3067-3078, 10187-10188); contract-runner arms a window listener for it (contract-runner.cjs:755)"
     },
     "ctx.toggle-field-codes": {
-      "effektClass": "view",
-      "pre": "ctx-menu",
+      "effektClass": "op",
+      "pre": "ctx-menu-on-field",
       "selector": "[data-ctx=\"ToggleFieldCodes\"]",
       "assertion": {
-        "kind": "op-emitted"
+        "kind": "op-emitted",
+        "event": "wo:field-op"
       },
-      "xfail": true,
-      "note": "KNOWN GAP: fieldOpAtSelection('toggle-codes') only dispatches a fire-and-forget wo:field-op CustomEvent — no field-code view toggle exists in the DOM model (editor.js:3054-3066); op-emitted observer is a stub (contract-runner.cjs:112-113)"
+      "note": "pilot pattern (ctx.follow-move): ToggleFieldCodes runs fieldOpAtSelection('toggle-codes') — no field-code view toggle exists in the DOM model, so the observable contract is the wo:field-op window CustomEvent (editor.js:3067-3078, 10189-10190); contract-runner arms a window listener for it (contract-runner.cjs:755)"
     },
     "ctx.content-control-settings": {
       "effektClass": "dialog",
