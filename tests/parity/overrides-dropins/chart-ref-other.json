@@ -230,12 +230,21 @@
       "selector": "[data-cmd=\"insertCaption\"]",
       "woTab": "references",
       "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#caption-dialog"
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#caption-text",
+            "value": "My caption"
+          }
+        ],
+        "click": "#btn-caption-ok",
+        "expect": {
+          "selector": "#editor p[style*=\"center\"] em.wo-caption",
+          "contains": "My caption"
+        }
       },
       "subFeatures": [],
-      "xfail": true,
-      "note": "ledger row: references.dlg-insert-caption (dialog:Insert caption with Caption/Label/Numbering fields) — KNOWN GAP (declared divergence): WO has no caption dialog; insertCaptionCommand inserts the caption inline at the caret (centered p>em, contracted as the real behavior at references.caption). No #caption-dialog exists in index.html, so the OO dialog surface is ungated"
+      "note": "ledger row: references.dlg-insert-caption PROMOTED 2026-11-07 (L2M-07) — the OO Insert caption dialog exists now: References-tab Caption (data-cmd=insertCaption) opens #caption-dialog (openCaptionDialog; in DIALOG_IDS), fields Caption text + Label select + 'Exclude label from caption'/Numbering/'Include chapter number'/'Use separator' checkboxes + 'Chapter starts with style' select, buttons OK/Cancel; OK (ROUND2 -> confirmCaptionDialog) inserts the centered caption paragraph node-by-node carrying the typed text (em.wo-caption marker — insertHTML's sanitizer strips classes, same lesson as insertCitation; the marker also disambiguates from the sample doc's pre-existing 'Abbildung 1:' caption em). Declared divergence (census fidelity): OO's custom-label controls (Insert field, Add label/Delete label buttons) are not shipped — WO offers fixed Figure/Table/Equation labels"
     }
   }
 }

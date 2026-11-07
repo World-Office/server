@@ -107,12 +107,13 @@
     "references.caption": {
       "effektClass": "structure",
       "selector": "[data-cmd=\"insertCaption\"]",
+      "post": "#btn-caption-ok",
       "woTab": "references",
       "assertion": {
         "kind": "dom-mutation",
         "selector": "#editor p[style*=\"center\"] em"
       },
-      "note": "ledger row: references.caption — feature-keyed (references.dlg-insert-caption shares token insertcaption); real behavior is inline, not the OO dialog: insertCaptionCommand drops a centered <p><em>Caption</em></p> at the caret (or figure/figcaption around a table); census evidence 'mutated #editor DOM: DIV:+P'"
+      "note": "ledger row: references.caption — feature-keyed (references.dlg-insert-caption shares token insertcaption); since L2M-07 the trigger opens #caption-dialog, post clicks OK whose confirmCaptionDialog drops the centered caption paragraph at the caret (empty input -> 'Figure: Caption'; figure/figcaption around a table); census evidence 'mutated #editor DOM: DIV:+P'"
     }
   }
 }

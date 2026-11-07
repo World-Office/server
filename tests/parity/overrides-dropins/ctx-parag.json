@@ -4,12 +4,13 @@
       "effektClass": "op",
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"Caption\"]",
+      "post": "#btn-caption-ok",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor",
         "contains": "Caption"
       },
-      "note": "ledger row: ctx.insert-caption \u2014 ctx data-ctx=Caption runs insertCaptionCommand (editor.js:7516), which at a plain-text caret inserts a centered <p><em>Caption</em></p> run (no dialog at this surface; the figure/figcaption path only fires inside a table cell)"
+      "note": "ledger row: ctx.insert-caption — ctx data-ctx=Caption emits insertCaption which since L2M-07 opens #caption-dialog (no quick-insert at this surface any more); post clicks OK whose confirmCaptionDialog inserts the centered caption run (empty input -> 'Figure: Caption'; the figure/figcaption path only fires inside a table cell)"
     },
     "ctx.paragraph-advanced-settings": {
       "effektClass": "dialog",
