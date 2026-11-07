@@ -1,5 +1,5 @@
 {
-  "$comment": "L2D-04-CTX-TABLE: ctx-menu in-table rows (split/select/cell ops). All entries run with pre ctx-menu-in-table (2x2 table fixture, cell[0] selected, right-click opens #ctx-menu; ctx items live at '#ctx-menu [data-ctx=X]'). ctx.row-above is already contracted in pilot2.json. Deletion ops are asserted via :only-child selectors that only match AFTER the mutation; distribute ops via style attributes only the op writes (fixture cells carry no inline styles).",
+  "$comment": "L2D-04-CTX-TABLE: ctx-menu in-table rows (split/select/cell ops). All entries run with pre ctx-menu-in-table (2x2 table fixture, cell[0] selected, right-click opens #ctx-menu; ctx items live at '#ctx-menu [data-ctx=X]') EXCEPT ctx.split-cell, which uses the ctx-menu-in-colspan-cell pre (3-column fixture, caret in a colspan=2 cell — splitTableCell() no-ops on unspanned cells). ctx.row-above is already contracted in pilot2.json. Deletion ops are asserted via :only-child selectors that only match AFTER the mutation; distribute ops via style attributes only the op writes (fixture cells carry no inline styles).",
   "entries": {
     "ctx.several-rows-columns": {
       "effektClass": "dialog",
@@ -99,14 +99,13 @@
     },
     "ctx.split-cell": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu-in-table",
+      "pre": "ctx-menu-in-colspan-cell",
       "selector": "[data-ctx=\"TableSplitCell\"]",
       "assertion": {
         "kind": "dom-mutation",
         "selector": "#editor td br"
       },
-      "note": "KNOWN GAP (state prerequisite + no dialog): OO opens a 'Split cell...' dialog; WO's splitTableCell() no-ops unless the cell at the caret has colSpan/rowSpan>1 (a working split emits <td><br>) and no split dialog exists. The 2x2 fixture cells are unspanned and the pre cannot build a spanned cell."
+      "note": "ledger row: ctx.split-cell — ctx data-ctx=TableSplitCell runs splitTableCell (editor.js:10195-10197) which un-spans the caret cell and back-fills the freed grid slots with <td><br>. Promoted from xfail by the ctx-menu-in-colspan-cell pre (3-column table, row-1 cell colspan=2 at the caret): splitTableCell() early-returns on an unspanned cell, which is why the old ctx-menu-in-table 2x2 fixture could never exercise it. Fixture cells hold plain text, so td br only matches after the op. Residual divergence: OO opens a 'Split cell…' dialog first; WO splits immediately (no split dialog exists)."
     }
   },
   "$skipped": [
