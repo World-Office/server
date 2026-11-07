@@ -66,10 +66,14 @@
     },
     "ctx.remove-content-control": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu-on-image",
+      "pre": "ctx-menu-on-cc",
       "selector": "[data-ctx=\"RemoveContentControl\"]",
-      "note": "KNOWN GAP: ledger row ctx.remove-content-control — the ctx item is ungated and the handler no-ops gracefully (setStatus NoContentControl) because there is no content control at the caret under the ctx-menu-on-image pre; unwrapping a [data-cc] element would need a content-control fixture pre."
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor #fixture-cc",
+        "absent": true
+      },
+      "note": "ledger row ctx.remove-content-control — ctx-menu-on-cc pre plants span#fixture-cc.content-control[data-cc=rich] and selects its contents; the ungated row unwraps the control at the caret (editor.js:10075-10089, children hoisted into the parent p, span removed) — dom-mutation absent:true observes the unwrap"
     },
     "ctx.resize-to-cell": {
       "effektClass": "op",
