@@ -191,14 +191,15 @@
     "headerfooter.close": {
       "effektClass": "view",
       "woTab": "header-footer",
+      "pre": "hf-editing",
       "selector": "#btn-hf-close",
       "assertion": {
         "kind": "viewport-flag",
         "rootSelector": ".ribbon-tab[data-tab=\"header-footer\"]",
-        "hasClass": "contextual"
+        "attr": "hidden",
+        "equals": ""
       },
-      "xfail": true,
-      "note": "ledger row: headerfooter.close — honest gap: #btn-hf-close lives in the contextual header-footer ribbon tab that is hidden until HF mode is entered by double-clicking a .page-header (editor.js:9649 enterHFMode); the insertHeader command does NOT enter HF mode and no runner pre can synthesize the dblclick, so the control is unreachable for the hit-test"
+      "note": "ledger row: headerfooter.close — PROMOTED 2026-11-07: the hf-editing pre (contract-runner.cjs) plants a .page-header fixture and dblclicks it, running enterHFMode (editor.js:9661) which reveals the contextual tab; #btn-hf-close (editor.js:9681-9682) then runs exitHFMode(false), which exits directly (hfHasUnsavedChanges is false after a fresh enter, so no confirm dialog) and re-hides the tab (hfTab.hidden=true, editor.js:9648-9660); viewport-flag reads the restored hidden content attribute (getAttribute -> \"\") because the runner's hasClass path has no negative form"
     },
     "chart.wrapping": {
       "effektClass": "op",

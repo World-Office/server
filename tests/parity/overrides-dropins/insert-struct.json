@@ -15,7 +15,7 @@
       "effektClass": "dialog",
       "selector": "#btn-hf-image",
       "woTab": "header-footer",
-      "xfail": true,
+      "pre": "hf-editing",
       "assertion": {
         "kind": "dialog-visible",
         "dialogSelector": "#image-dialog"
@@ -24,7 +24,7 @@
         { "name": "image file input", "selector": "#image-file" },
         { "name": "ok action", "selector": "#btn-image-ok" }
       ],
-      "note": "ledger row: image.image — btn-hf-image (index.html:961) → insertImage() opens #image-dialog (editor.js:9690, 2897), but the button lives on the CONTEXTUAL header-footer ribbon tab which stays hidden until enterHFMode (editor.js:9650-9657), reachable only by dblclick on a page-header/footer (editor.js:9658-9661) — no runner pre exists for HF mode, so the control is unreachable"
+      "note": "ledger row: image.image — PROMOTED 2026-11-07: btn-hf-image (index.html:961) → insertImage() opens #image-dialog (editor.js:9700-9701, 2908); the hf-editing pre (contract-runner.cjs) dblclicks a planted .page-header fixture, running enterHFMode (editor.js:9661) which reveals the contextual header-footer ribbon tab the button lives on; #btn-image-ok stays disabled until a file is chosen (editor.js) but the sub-feature audit checks presence only"
     },
     "insert.link": {
       "effektClass": "dialog",

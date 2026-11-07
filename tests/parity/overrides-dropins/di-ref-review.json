@@ -89,17 +89,13 @@
     "dialoginput.headerfooter-field": {
       "effektClass": "dialog",
       "woTab": "header-footer",
+      "pre": "hf-editing",
       "selector": "#btn-hf-field",
       "assertion": {
         "kind": "dialog-input",
-        "set": [
-          { "selector": "#field-type", "value": "PAGE" }
-        ],
-        "click": "#btn-field-ok",
-        "expect": { "selector": "#editor header.page-header span.field" }
+        "event": "wo:header-field"
       },
-      "note": "dialog-input depth, hf variant: honest xfail — #btn-hf-field lives in the CONTEXTUAL header-footer ribbon tab (index.html ~960), reachable only while header/footer edit mode is active, and no pre type establishes that state; its handler (editor.js ~9688) also only dispatches a wo:header-field marker event + status message, so a field node in header page furniture is unobservable headless without runner/pre changes (out of scope)",
-      "xfail": true
+      "note": "dialog-input depth, hf variant — PROMOTED 2026-11-07: the hf-editing pre (contract-runner.cjs) dblclicks a planted .page-header fixture, running enterHFMode (editor.js:9661) which reveals the contextual header-footer ribbon tab (index.html ~960) where #btn-hf-field lives; the handler (editor.js:9698-9699) fires the established marker pattern CustomEvent wo:header-field + status message, and the runner already collects that exact event name in its assertion.event listener set, so the dispatch-only dialog-input vocabulary observes it honestly (no field node lands in header page furniture by design)"
     },
     "dialoginput.find-replace-all": {
       "effektClass": "dialog",
