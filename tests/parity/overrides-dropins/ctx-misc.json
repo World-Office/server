@@ -163,8 +163,8 @@
       },
       "subFeatures": [
         {
-          "name": "document language select",
-          "selector": "#doc-lang"
+          "name": "document language select options",
+          "selector": "#doc-lang option"
         }
       ],
       "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522)"
