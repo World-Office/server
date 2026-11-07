@@ -86,6 +86,12 @@
         "kind": "dialog-visible",
         "dialogSelector": "#object-dialog"
       },
+      "subFeatures": [
+        { "name": "type select", "selector": "#object-type" },
+        { "name": "label input", "selector": "#object-label" },
+        { "name": "insert action", "selector": "#btn-object-ok" },
+        { "name": "cancel action", "selector": "#btn-object-cancel" }
+      ],
       "note": "editSelectedObject requires a div.object (isEditableObject) \u2014 ctx-menu-on-object seeds one and right-clicks it; opens #object-dialog"
     },
     "ctx.remove-content-control": {

@@ -2301,6 +2301,83 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_protect_demo_doc_fallback() {
+        // The editor's Protect Document toggle runs against the served demo
+        // document before anything is stored under "demo.docx" — the POST
+        // handler must resolve it through the same demo_or_stored fallback
+        // as its GET sibling instead of answering 404.
+        let dir = std::env::temp_dir().join(format!(
+            "wo-protdemo-{}-{}",
+            std::process::id(),
+            rand_suffix()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        // restrict editing on the unstored demo doc — must succeed now
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/demo.docx/protect")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": true}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "demo fallback must work");
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(v["restrict_editing"].as_bool().unwrap());
+
+        // the demo doc stays ephemeral: nothing is stored under demo.docx,
+        // so the state endpoint still reads the pristine (unrestricted) demo
+        // — a later page load boots editable again
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/documents/demo.docx/protect")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(!v["restrict_editing"].as_bool().unwrap());
+
+        // no password was set: lifting the restriction needs no password
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/demo.docx/protect")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": false}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
     async fn test_collab_hub_routes() {
         let mut cfg = test_config();
         cfg.data_dir = std::env::temp_dir()

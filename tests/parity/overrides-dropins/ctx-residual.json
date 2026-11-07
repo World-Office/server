@@ -159,6 +159,13 @@
         "kind": "dialog-visible",
         "dialogSelector": "#image-alt-dialog"
       },
+      "subFeatures": [
+        { "name": "width input", "selector": "#image-size-width" },
+        { "name": "height input", "selector": "#image-size-height" },
+        { "name": "alt text input", "selector": "#image-alt-input" },
+        { "name": "apply action", "selector": "#btn-image-alt-ok" },
+        { "name": "cancel action", "selector": "#btn-image-alt-cancel" }
+      ],
       "note": "FrameSettings on a plain image falls through to openImageAltDialog (#image-alt-dialog); vector/equation path is the equation-settings row"
     }
   }
