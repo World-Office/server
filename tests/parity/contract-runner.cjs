@@ -333,7 +333,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -402,6 +402,36 @@ async function subFeatureAudit(page, ov, dialogSel) {
           return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
         });
         if (!r) throw new Error('ctx-menu-in-table pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-in-colspan-cell') {
+        // ctx rows gated on data-showif="table" whose handler additionally
+        // needs a SPANNED cell at the caret (TableSplitCell): splitTableCell()
+        // early-returns unless the caret cell has colSpan/rowSpan > 1, so
+        // build a 3-column table whose row-1 cell spans 2 columns, select a
+        // word inside that merged cell, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tr><td colspan="2">alpha cell</td><td>beta cell</td></tr><tr><td>gamma</td><td>delta</td><td>epsilon</td></tr></table><p>after</p>';
+          const cell = ed.querySelector('td[colspan]');
+          if (!cell || !cell.firstChild) throw new Error('colspan fixture cell missing');
+          const range = document.createRange();
+          range.selectNodeContents(cell.firstChild);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-in-colspan-cell pre: no selection rect');
         await page.mouse.click(r.x, r.y, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
