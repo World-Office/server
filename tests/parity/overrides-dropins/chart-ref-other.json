@@ -64,15 +64,14 @@
     "chart.up-down-bars": {
       "effektClass": "op",
       "woTab": "chart-design",
-      "pre": "chart-selection",
+      "pre": "chart-selection-line",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger",
       "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"upDownBars\"]",
       "assertion": {
         "kind": "dom-mutation",
         "selector": "#fixture-chart[data-spec*='\"upDownBars\":true']"
       },
-      "xfail": true,
-      "note": "ledger row: chart.up-down-bars (menu:Chart elements ▾) — KNOWN GAP: the chart-selection pre + two-step trigger reach toggleChartElement, but CHART_ELEMENT_SUPPORT limits upDownBars to line charts (editor.js:13705) and the runner's chart-selection fixture is a bar chart — the handler only setStatus(\"Chart element upDownBars not available for bar charts\") and data-spec never changes. Needs a line-type fixture option in the pre to flip"
+      "note": "ledger row: chart.up-down-bars (menu:Chart elements ▾) — same two-step as chart.axis-titles but on the chart-selection-line pre: CHART_ELEMENT_SUPPORT limits upDownBars to line charts (editor.js:13529 chartElementSupported) and the line-type fixture passes the gate, so toggleChartElement flips spec.elements.upDownBars and rerenderChart rewrites img[data-spec] with \"upDownBars\":true"
     },
     "dialog.link-dialog.l4": {
       "effektClass": "dialog",
