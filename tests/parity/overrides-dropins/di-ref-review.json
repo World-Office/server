@@ -73,18 +73,18 @@
     "dialoginput.cross-reference": {
       "effektClass": "dialog",
       "woTab": "references",
+      "pre": "bookmark-at-caret",
       "selector": "[data-cmd=\"openCrossref\"]",
       "assertion": {
         "kind": "dialog-input",
         "set": [
-          { "selector": "#crossref-target", "value": "DiInputBm" },
-          { "selector": "#crossref-text", "value": "see DiInputBm" }
+          { "selector": "#crossref-target", "value": "bm1" },
+          { "selector": "#crossref-text", "value": "see bm1" }
         ],
         "click": "#btn-crossref-ok",
-        "expect": { "selector": "#editor a[href=\"#DiInputBm\"]" }
+        "expect": { "selector": "#editor a[href=\"#bm1\"]" }
       },
-      "note": "dialog-input depth: cross-reference select + display text -> confirmCrossrefDialog (editor.js ~4018) insertHTMLs <a href=#bookmark>. Honest xfail: #crossref-target is repopulated ONLY from existing span.bookmark[data-name] anchors (openCrossrefDialog, editor.js ~3988) and contracts run on a fresh page each — with no seeded bookmark the select holds only the '(no bookmarks yet)' placeholder (value=''), confirm bails on the empty name and the dialog stays open; no existing pre seeds a bookmark anchor and runner/pre changes are out of scope",
-      "xfail": true
+      "note": "PROMOTED 2026-11-07 (L2L-05): the bookmark-at-caret pre seeds span.bookmark[data-name=bm1], so openCrossrefDialog (editor.js:3992-4021) repopulates #crossref-target with a real 'bm1' option; confirmCrossrefDialog (editor.js:4027-4047) passes the non-empty-name guard and insertHTMLs <a href='#bm1'>see bm1</a> at the caret — asserted via the anchor"
     },
     "dialoginput.headerfooter-field": {
       "effektClass": "dialog",
