@@ -103,10 +103,15 @@
       "note": "trusted CDP key chord + seedClipboard: the native paste path inserts the seeded system clipboard text"
     },
     "shortcut.pastetextwithoutformat": {
-      "xfail": true,
-      "key": "Control+Shift+KeyV",
       "effektClass": "op",
-      "note": "Ctrl+Shift+V is not bound in editor.js (the text-only paste chord is Ctrl+T, ~11242); the chord reaches the browser default paste which is a no-op with an empty headless clipboard"
+      "key": "Control+Shift+KeyV",
+      "seedClipboard": "PASTE-MARKER text-only paste",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "PASTE-MARKER"
+      },
+      "note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted"
     },
     "shortcut.copy": {
       "effektClass": "op",
