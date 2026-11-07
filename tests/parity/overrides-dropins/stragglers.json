@@ -70,15 +70,33 @@
     },
     "statusbar.english-united-states": {
       "effektClass": "view",
-      "xfail": true,
       "selector": "#sb-lang",
-      "note": "KNOWN GAP: ledger row statusbar.english-united-states (token sb-lang) — #sb-lang is a passive statusbar label mirrored from the #doc-lang select (syncStatusbarLang); it has NO click handler, so the promised language-picker affordance never appears. The picker only opens via #doc-lang-caret showPicker(), which throws in headless chromium."
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#doc-lang"
+      },
+      "subFeatures": [
+        {
+          "name": "document language select options",
+          "selector": "#doc-lang option"
+        }
+      ],
+      "note": "PROMOTED 2026-11-07 (L2M-05): #sb-lang now carries a click listener that discloses the document-language picker through the caret's showPicker()/focus() path (editor.js ~8807). dialog-visible on #doc-lang is the same disclosure vocabulary the promoted ctx.select-language contract uses — the select is the picker surface the click surfaces"
     },
     "statusbar.btn-doc-lang": {
       "effektClass": "view",
-      "xfail": true,
       "selector": "#sb-lang",
-      "note": "KNOWN GAP: ledger row statusbar.btn-doc-lang (token sb-lang, same physical control as statusbar.english-united-states) — #sb-lang has no click listener; clicking never surfaces a language UI."
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#doc-lang"
+      },
+      "subFeatures": [
+        {
+          "name": "document language select options",
+          "selector": "#doc-lang option"
+        }
+      ],
+      "note": "PROMOTED 2026-11-07 (L2M-05): ledger row statusbar.btn-doc-lang (token sb-lang, same physical control as statusbar.english-united-states) — the new #sb-lang click listener surfaces the language UI via showPicker() with the headless-safe focus fallback, observed the same way as the english-united-states row"
     },
     "ctx.actual-size": {
       "effektClass": "op",

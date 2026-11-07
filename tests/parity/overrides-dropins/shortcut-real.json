@@ -52,13 +52,13 @@
       }
     },
     "shortcut.endash": {
-      "key": "Control+Minus",
+      "key": "Control+NumpadSubtract",
       "effektClass": "op",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor",
         "contains": "\u2013",
-        "note": "Ctrl+Minus (ev.code Minus, !shift !alt) emits insertSymbol U+2013 at the caret (editor.js ~10990); the default doc contains no en-dash"
+        "note": "RE-KEYED 2026-11-07 (L2M-05): the main-row Ctrl+Minus/Hyphen key is returned to browser-parity zoom-out (shortcut.zoomout promoted); the en-dash insert moved to the keypad variant — the plain-ctrl dedicated block now binds ev.code NumpadSubtract to insertSymbol U+2013 (editor.js ~11049); the default doc contains no en-dash"
       }
     },
     "shortcut.insertlinebreak": {
@@ -80,7 +80,7 @@
       }
     },
     "shortcut.openfilepanel": {
-      "key": "Control+Alt+KeyF",
+      "key": "Control+Alt+KeyO",
       "pre": "list",
       "effektClass": "dialog",
       "assertion": {
@@ -88,7 +88,7 @@
         "rootSelector": "#backstage-overlay",
         "prop": "display",
         "equals": "flex",
-        "note": "Ctrl+Alt+F runs openBackstage('open') (editor.js ~11029): #backstage-overlay (.open -> display:flex, style.css:2520) switches from display:none to flex \u2014 same observable as the proven closemenu contract inverted"
+        "note": "RE-KEYED 2026-11-07 (L2M-05): OO's Ctrl+Alt+F now belongs to InsertFootnoteNow (ledger shortcut.insertfootnotenow promoted); the file/navigation panel moved to Ctrl+Alt+O — the dedicated alt block runs openBackstage('open') (editor.js ~11097): #backstage-overlay (.open -> display:flex, style.css:2520) switches from display:none to flex"
       }
     },
     "shortcut.paste": {

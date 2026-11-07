@@ -115,15 +115,12 @@
       "effektClass": "view",
       "pre": "list",
       "key": "Control+-",
-      "post": "#btn-zoom-reset",
       "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#editor",
-        "prop": "zoom",
-        "equals": "0.9"
+        "kind": "text-mutation",
+        "selector": "#sb-zoom-label",
+        "contains": "100%"
       },
-      "xfail": true,
-      "note": "ledger feature shortcut.zoomout — REAL GAP: the editor-scoped handler intercepts plain Ctrl+Minus earlier for the en-dash insert (editor.js:10987, '(OO convention; takes precedence over browser zoom-out)') and returns, so the Ctrl+Minus zoom-out arm (editor.js:11205) is unreachable via the physical Minus key; zoom stays 1 instead of 0.9. post #btn-zoom-reset keeps the persisted wo-zoom clean for downstream contracts"
+      "note": "PROMOTED 2026-11-07 (L2M-05): the plain-ctrl en-dash intercept moved off the main-row hyphen key (en-dash now lives on the keypad variant, Ctrl+NumpadSubtract), so the physical Control+- reaches the guarded zoom-out arm (editor.js ~11205). Runs right after shortcut.zoomin, which leaves persisted zoom 1.1 — one zoom-out step writes Math.round(1.1-0.1)*100 = 100% into #sb-zoom-label (1.1-0.1 = 1.0000000000000002; a broken arm would keep 110%). No post: the runner clicks post BEFORE asserting, so the old #btn-zoom-reset post erased the observation (that, not the intercept alone, is what the old xfail diagnosis saw)"
     },
     "shortcut.openchatpanel": {
       "effektClass": "dialog",
