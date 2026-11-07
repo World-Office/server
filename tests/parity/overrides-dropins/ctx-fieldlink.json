@@ -43,14 +43,14 @@
     },
     "ctx.remove-link": {
       "effektClass": "op",
-      "pre": "ctx-menu",
+      "pre": "link-at-caret",
       "selector": "[data-ctx=\"RemoveLink\"]",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": "#editor a[href]"
+        "selector": "#editor a[href]",
+        "absent": true
       },
-      "xfail": true,
-      "note": "needs link-at-caret pre — removeLinkAtSelection early-returns via setStatus('… removeLink') when anchorAtSelection() finds no <a href> at the selection (editor.js:3015-3021); unlinking an anchor that cannot be planted is unassertable"
+      "note": "ledger ctx.remove-link promoted: link-at-caret pre plants <a href=\"https://example.com/\"> and selects it, so anchorAtSelection() resolves and removeLinkAtSelection unwraps the anchor via document.execCommand(\"unlink\") — assertion is absence of #editor a[href] (editor.js:3015-3030)"
     },
     "ctx.clear-field": {
       "effektClass": "op",

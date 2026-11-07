@@ -174,22 +174,20 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"FormattingAsStyle\"]",
       "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#style-gallery .style-chip"
+        "kind": "op-emitted",
+        "event": "wo:style-from-format"
       },
-      "xfail": true,
-      "note": "ledger ctx.update-1-style KNOWN GAP: shares the FormattingAsStyle ctx row which only dispatches the wo:style-from-format CustomEvent — style update is owned by the host shell channel, no listener mutates the editor page DOM (editor.js:10163)"
+      "note": "ledger ctx.update-1-style promoted: the ctx data-ctx=FormattingAsStyle handler dispatches the wo:style-from-format window CustomEvent with detail source=ctx-menu (editor.js:10016-10018) — the style update itself stays owned by the host shell channel, so the observable contract is the event; contract-runner arms a window listener for it (contract-runner.cjs:918)"
     },
     "ctx.formatting-as-style": {
       "effektClass": "op",
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"FormattingAsStyle\"]",
       "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#style-gallery .style-chip"
+        "kind": "op-emitted",
+        "event": "wo:style-from-format"
       },
-      "xfail": true,
-      "note": "ledger ctx.formatting-as-style KNOWN GAP: FormattingAsStyle dispatches wo:style-from-format at window level; the style gallery/host shell owns the effect — no observable DOM mutation in the editor page (editor.js:10163)"
+      "note": "ledger ctx.formatting-as-style promoted: FormattingAsStyle dispatches wo:style-from-format at window level (detail source=ctx-menu, editor.js:10016-10018); the style gallery/host shell owns the style-save effect, so the observable contract is the CustomEvent; contract-runner arms a window listener for it (contract-runner.cjs:918)"
     }
   },
   "$skipped": [
