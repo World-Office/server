@@ -296,6 +296,7 @@
       <option value="2">2.0</option>
       <option value="2.5">2.5</option>
       <option value="3">3.0</option>
+      <option value="options" data-i18n="Toolbar.LineSpacingOptions">Line spacing options…</option>
     </select>
     <button class="rb" data-cmd="directionRtl"  title="Right-to-left paragraph" data-i18n-title="Toolbar.DirectionRtlTitle" aria-label="Right-to-left" data-i18n-aria-label="Toolbar.DirectionRtl" aria-pressed="false"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 3.5h8M12.5 3.5h-1M6.5 10.5h6M1.5 10.5h1M9.5 1.5l2 2-2 2M4.5 8.5l-2 2 2 2"/></svg></button>
     <span class="menu rb-menu" >
@@ -1891,7 +1892,15 @@
       </div>
       <div class="dialog-field">
         <label for="ps-first-line" data-i18n="ParagraphSettings.FirstLine">First line indent</label>
-        <input id="ps-first-line" type="number" min="-200" max="200" value="0" />
+        <input id="ps-first-line" name="first-line" type="number" min="-200" max="200" value="0" />
+      </div>
+      <div class="dialog-field">
+        <label for="ps-spacing-before" data-i18n="ParagraphSettings.SpacingBefore">Spacing before</label>
+        <input id="ps-spacing-before" name="spacing-before" type="number" min="0" max="200" value="0" />
+      </div>
+      <div class="dialog-field">
+        <label for="ps-spacing-after" data-i18n="ParagraphSettings.SpacingAfter">Spacing after</label>
+        <input id="ps-spacing-after" name="spacing-after" type="number" min="0" max="200" value="0" />
       </div>
       <div class="dialog-field">
         <label for="ps-spacing" data-i18n="ParagraphSettings.Spacing">Line spacing</label>
@@ -1902,6 +1911,7 @@
         </select>
       </div>
       <div class="dialog-field">
+        <label><input type="checkbox" id="ps-widow" name="widow"> <span data-i18n="ParagraphSettings.Widow">Widow/orphan control</span></label>
         <label><input type="checkbox" id="ps-keep-lines"> <span data-i18n="ParagraphSettings.KeepLines">Keep lines together</span></label>
         <label><input type="checkbox" id="ps-keep-next"> <span data-i18n="ParagraphSettings.KeepNext">Keep with next</span></label>
         <label><input type="checkbox" id="ps-page-break"> <span data-i18n="ParagraphSettings.PageBreak">Page break before</span></label>

@@ -2601,8 +2601,9 @@
     return true;
   }
   // C4-1: paragraph settings — caret block gets text-align, indents,
-  // line-height + keep/break classes (renders now; DOCX p-margin round-trip
-  // is a converter ceiling, text-align/background already round-trip F-040).
+  // spacing before/after, line-height + keep/break/widow classes (renders
+  // now; DOCX p-margin round-trip is a converter ceiling, text-align/
+  // background already round-trip F-040).
   function caretParagraph() {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return null;
@@ -2621,10 +2622,19 @@
     if (il && Number(il.value) > 0) p.style.marginLeft = il.value + "px"; else p.style.removeProperty("margin-left");
     if (ir && Number(ir.value) > 0) p.style.marginRight = ir.value + "px"; else p.style.removeProperty("margin-right");
     if (fl && Number(fl.value) !== 0) p.style.textIndent = fl.value + "px"; else p.style.removeProperty("text-indent");
+    // L2N-01: spacing before/after -> margin-top/bottom (OO Paragraph
+    // dialog "Spacing" group); 0 removes the inline override so the
+    // stylesheet default shows through again
+    const sb = document.getElementById("ps-spacing-before");
+    const sa = document.getElementById("ps-spacing-after");
+    if (sb && Number(sb.value) > 0) p.style.marginTop = sb.value + "px"; else p.style.removeProperty("margin-top");
+    if (sa && Number(sa.value) > 0) p.style.marginBottom = sa.value + "px"; else p.style.removeProperty("margin-bottom");
     if (sp && Number(sp.value) > 1) p.style.lineHeight = sp.value; else p.style.removeProperty("line-height");
+    const wd = document.getElementById("ps-widow");
     const kl = document.getElementById("ps-keep-lines");
     const kn = document.getElementById("ps-keep-next");
     const pb = document.getElementById("ps-page-break");
+    p.classList.toggle("widow-control", !!(wd && wd.checked));
     p.classList.toggle("keep-lines-together", !!(kl && kl.checked));
     p.classList.toggle("keep-with-next", !!(kn && kn.checked));
     p.classList.toggle("page-break-before", !!(pb && pb.checked));
@@ -5160,9 +5170,15 @@
     set("ps-indent-left", String(parseInt(p.style.marginLeft || cs.marginLeft || "0", 10) || 0));
     set("ps-indent-right", String(parseInt(p.style.marginRight || cs.marginRight || "0", 10) || 0));
     set("ps-first-line", String(parseInt(p.style.textIndent || cs.textIndent || "0", 10) || 0));
+    // L2N-01: spacing before/after prefill from the caret paragraph's
+    // (inline, else computed) margins — parseInt rounds the computed px
+    // back into the number inputs the dialog applies
+    set("ps-spacing-before", String(parseInt(p.style.marginTop || cs.marginTop || "0", 10) || 0));
+    set("ps-spacing-after", String(parseInt(p.style.marginBottom || cs.marginBottom || "0", 10) || 0));
     const lh = p.style.lineHeight || cs.lineHeight;
     set("ps-spacing", (lh === "1.5" || lh === "2") ? lh : "1");
     const ck = (id, on) => { const el = document.getElementById(id); if (el) el.checked = on; };
+    ck("ps-widow", p.classList.contains("widow-control"));
     ck("ps-keep-lines", p.classList.contains("keep-lines-together"));
     ck("ps-keep-next", p.classList.contains("keep-with-next"));
     ck("ps-page-break", p.classList.contains("page-break-before"));
@@ -11167,6 +11183,15 @@
   const lineSpacingSel = document.getElementById("line-spacing");
   if (lineSpacingSel) lineSpacingSel.addEventListener("change", () => {
     if (READ_ONLY) return;
+    // L2N-01: the trailing "Line spacing options…" entry mirrors OO's
+    // line-spacing picker — it opens the Paragraph settings dialog
+    // (spacing before/after, line spacing, widow/orphan control…)
+    // instead of applying a preset.
+    if (lineSpacingSel.value === "options") {
+      lineSpacingSel.value = ""; // next updateActiveStates() re-reflects it
+      openParagraphSettingsDialog();
+      return;
+    }
     emitCommand("lineHeight", lineSpacingSel.value);
     lineSpacingSel.value = ""; // next updateActiveStates() re-reflects it
   });
