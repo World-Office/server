@@ -82,17 +82,25 @@
     },
     "ctx.actual-size": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-on-image",
       "selector": "[data-ctx=\"ActualSize\"]",
-      "note": "KNOWN GAP: ledger row ctx.actual-size — the ctx item is data-showif=\"image\" gated (hidden over a text selection, which is the only state the ctx-menu pre can build) and applyObjectOp(\"actual-size\") without a selected object no-ops into Status.NotAvailable."
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#fixture-img",
+        "attr": "style",
+        "equals": ""
+      },
+      "note": "ledger row: ctx.actual-size promoted — the data-showif=image item is revealed by the ctx-menu-on-image pre (right-click ON the img sets lastObjectPick, so selectedObject() resolves the fixture); applyObjectOp(\"actual-size\") (editor.js:3596-3602) clears the inline width/height sizing (naturalWidth>0 on the 1x1 fixture), collapsing the style attribute to empty"
     },
     "ctx.print-selection": {
       "effektClass": "op",
-      "xfail": true,
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"PrintSelection\"]",
-      "note": "KNOWN GAP: ledger row ctx.print-selection — the ctx item exists and emits wo-command printSelection; runCommand dispatches the wo:print-selection window event and opens a scratch print window via window.open — the effect lives outside the page DOM (popup target + window event), so no contract assertion kind can observe it."
+      "assertion": {
+        "kind": "op-emitted",
+        "event": "wo:print-selection"
+      },
+      "note": "ledger row: ctx.print-selection promoted — the ungated ctx item (index.html:1681) emits wo-command printSelection; runCommand dispatches the wo:print-selection CustomEvent (editor.js:1383-1391) BEFORE any popup work, so the runner's armed window listener observes the event even though the scratch print window lives outside the page DOM"
     },
     "ctx.rotate": {
       "effektClass": "op",
