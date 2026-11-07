@@ -140,16 +140,14 @@
       "note": "ledger row: ctx.equation-settings \u2014 the ctx data-ctx=EquationSettings handler (editor.js:10195) opens #equation-dialog via openVectorEditor ONLY when vectorObjectAtSelection() returns an equation object; with a plain word selection (all ctx-menu pre states) it takes the else branch: status message + wo:equation-settings event only, no dialog \u2014 handler needs equation-at-caret state the pre cannot build"
     },
     "ctx.create-new-style": {
-      "effektClass": "dialog",
+      "effektClass": "op",
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"FormattingAsStyle\"]",
       "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#style-save-dialog"
+        "kind": "op-emitted",
+        "event": "wo:style-from-format"
       },
-      "subFeatures": [],
-      "xfail": true,
-      "note": "ledger row: ctx.create-new-style \u2014 the ctx data-ctx=FormattingAsStyle handler (editor.js:10163) ONLY dispatches the wo:style-from-format CustomEvent (host-shell channel, style-save owned by the host shell); nothing in the standalone editor listens for it and no style-save dialog exists in DIALOG_IDS/markup \u2014 control exists, promised Create-new-style effect never appears"
+      "note": "ledger row: ctx.create-new-style promoted — the ctx data-ctx=FormattingAsStyle handler (editor.js:10016-10018) dispatches the wo:style-from-format CustomEvent (host-shell channel, style-save owned by the host shell, no style-save dialog in DIALOG_IDS/markup), so the observable contract is the event instead of the promised #style-save-dialog; contract-runner arms a window listener for it (contract-runner.cjs:918)"
     }
   },
   "$skipped": [
