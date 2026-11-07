@@ -60,6 +60,7 @@ async function launchBrowser() {
 
 async function openEditor(browser, base) {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 }, reducedMotion: 'reduce' });
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
   const page = await ctx.newPage();
   await page.goto(`${base}/word/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('#editor', { timeout: 15000 });

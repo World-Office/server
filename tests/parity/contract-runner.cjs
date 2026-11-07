@@ -205,6 +205,13 @@ async function checkEffect(page, ov, assertion) {
           ? `events: ${(window.__woEvents || []).join(',')}`
           : 'no wo:* events observed',
       }), assertion.event || `wo:${assertion.selector || ''}`), undefined);
+    case 'clipboard': {
+      // headless clipboard: _boot grants clipboard-read/write permissions;
+      // row asserts the system-clipboard payload (ctx copy/copy-hyperlink)
+      const txt = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+      const ok = assertion.contains ? txt.includes(assertion.contains) : txt.trim().length > 0;
+      return { ok, detail: `clipboard=${txt.slice(0, 40)}` };
+    }
     case 'viewport-flag': {
       // read a class / attribute / computed-style prop on a root element
       // (body, main, #editor …) after the click — for toggles that change
@@ -268,7 +275,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.waitForTimeout(1200);
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -660,6 +667,158 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('.ribbon-tab[data-tab="header-footer"]:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if (ov.pre === 'formatted-selection') {
+        // clear-format rows: seed a strong run and select it — removeFormat
+        // unwraps the inline formatting carrier
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>plain <strong id="fixture-fmt">bold text</strong> plain</p>';
+          const st = ed.querySelector('#fixture-fmt');
+          const range = document.createRange();
+          range.selectNodeContents(st);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+      }
+      else if (ov.pre === 'tracked-ahead' || ov.pre === 'tracked-behind') {
+        // review.next/previous: seed one tracked change (ins.track-insert);
+        // 'ahead' collapses the caret BEFORE it (next's first target),
+        // 'behind' collapses it AFTER (prev's last target)
+        await page.evaluate((which) => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>aaa<ins class="track-insert" id="fixture-tc">bbb</ins>ccc</p>';
+          const range = document.createRange();
+          if (which === 'ahead') range.setStart(ed.firstChild.firstChild, 1);
+          else range.setStart(ed.firstChild.lastChild, 3);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        }, ov.pre === 'tracked-ahead' ? 'ahead' : 'behind');
+        await sleep(100);
+      }
+      else if (ov.pre === 'ctx-menu-in-two-lists') {
+        // continue-numbering: the merge needs a PRECEDING <ol> sibling;
+        // seed two adjacent lists, caret inside the second, right-click
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<ol id="ol-a"><li>first</li><li>second</li></ol><ol id="ol-b"><li>third</li></ol><p>tail</p>';
+          const li = ed.querySelector('#ol-b li');
+          const range = document.createRange();
+          range.selectNodeContents(li);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
+        const r = await page.evaluate(() => {
+          const s = window.getSelection();
+          const rect = s && s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+          return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+        });
+        if (!r) throw new Error('ctx-menu-in-two-lists pre: no selection rect');
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'bookmark-at-caret') {
+        // cross-reference: the dialog target select is repopulated from
+        // span.bookmark[data-name] — seed one bookmark, no menu needed
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>see <span class="bookmark" data-name="bm1" id="fixture-bm">the marker</span> here</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-bm', { timeout: 3000 });
+        await sleep(100);
+      }
+      else if (ov.pre === 'ctx-menu-on-equation') {
+        // equation-settings: vectorObjectAtSelection() needs an
+        // img.vector-object[data-kind=equation] at the selection
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const img = '<img id="fixture-eq" class="vector-object" data-kind="equation" alt="equation" style="width:90px;height:36px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">';
+          ed.innerHTML = '<p>before ' + img + ' after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-eq', { timeout: 3000 });
+        await page.locator('#fixture-eq').click({ timeout: 5000 });
+        const r = await page.evaluate(() => {
+          const rect = document.querySelector('#fixture-eq').getBoundingClientRect();
+          return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+        });
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        // vectorObjectAtSelection() reads the DOM selection anchor — anchor
+        // it on the equation img itself (re-set after the right-click, which
+        // collapses text selections)
+        await page.evaluate(() => {
+          const img = document.querySelector('#fixture-eq');
+          window.getSelection().setBaseAndExtent(img, 0, img, 0);
+        });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-image-in-cell') {
+        // resize-to-cell: resizeSelectedObjectToCell needs the object inside
+        // a table cell (obj.closest('td'))
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tbody><tr><td>cell <img id="fixture-img" alt="fixture" style="width:120px;height:80px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></td></tr></tbody></table>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-img', { timeout: 3000 });
+        await page.locator('#fixture-img').click({ timeout: 5000 });
+        const r = await page.evaluate(() => {
+          const rect = document.querySelector('#fixture-img').getBoundingClientRect();
+          return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+        });
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'custom-margins') {
+        // page.last-custom: readCustomMargins() reads localStorage
+        // wo-last-custom-margins at click time — seed it, then open the
+        // Layout margins dropdown (same flow as the menu: pre)
+        await page.evaluate(() => {
+          localStorage.setItem('wo-last-custom-margins', JSON.stringify({ top: 120, bottom: 120, left: 130, right: 130 }));
+          document.querySelector('.ribbon-tab[data-tab="layout"]').click();
+        });
+        await page.evaluate((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) throw new Error('custom-margins pre: margins trigger missing ' + sel);
+          el.click();
+        }, '[data-i18n="Layout.Margins"]');
+        await page.waitForSelector('.ribbon-page .menu-list:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'chart-selection-line') {
+        // up/down bars are line-only (CHART_ELEMENT_SUPPORT): same chart
+        // fixture as chart-selection but type 'line' so the gate opens
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const spec = { type: 'line', title: 'Fixture', rows: [['A', '1'], ['B', '2']], elements: {} };
+          const img = '<img id="fixture-chart" class="vector-object" data-kind="chart" alt="chart" style="width:420px;height:240px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-spec="' + JSON.stringify(spec).replace(/"/g, '&quot;').replace(/&(?!(amp|lt|gt|quot);)/g, '&amp;') + '">';
+          ed.innerHTML = '<p>before ' + img + ' after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-chart', { timeout: 3000 });
+        await page.locator('#fixture-chart').click({ timeout: 5000 });
+        await page.waitForSelector('.ribbon-tab[data-tab="chart-design"]:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
       else if ((ov.pre || '').startsWith('menu:')) {
         // ribbon dropdown menu: pre = 'menu:<trigger-selector>' — click the
         // caret-btn trigger, wait for its .menu-list to unhide. The contract
@@ -756,6 +915,8 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:chart-elements', window.__woCollect);
           window.addEventListener('wo:coedit-mode', window.__woCollect);
           window.addEventListener('wo:header-field', window.__woCollect);
+          window.addEventListener('wo:style-from-format', window.__woCollect);
+          window.addEventListener('wo:print-selection', window.__woCollect);
         });
       }
 
@@ -772,6 +933,19 @@ async function subFeatureAudit(page, ov, dialogSel) {
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
         if (!preMenu) placeCaret(page);
+        if (ov.setValue !== undefined) {
+          // synthetic-change trigger: <input type=color> handlers listen for
+          // 'change' (editor.js ~10782); a real pick is undrivable headless
+          // and a real click opens the native picker — set the value and
+          // dispatch change instead of clicking
+          return page.evaluate(({ sel, val }) => {
+            const el = document.querySelector(sel);
+            if (!el) throw new Error('setValue: control missing ' + sel);
+            el.value = val;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }, { sel: selector, val: ov.setValue })
+            .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
+        }
         return page.evaluate((sel) => document.querySelector(sel).click(), selector)
           .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
       };
