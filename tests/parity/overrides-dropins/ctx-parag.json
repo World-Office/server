@@ -129,15 +129,14 @@
     },
     "ctx.equation-settings": {
       "effektClass": "dialog",
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-on-equation",
       "selector": "[data-ctx=\"EquationSettings\"]",
       "assertion": {
         "kind": "dialog-visible",
         "dialogSelector": "#equation-dialog"
       },
       "subFeatures": [],
-      "xfail": true,
-      "note": "ledger row: ctx.equation-settings \u2014 the ctx data-ctx=EquationSettings handler (editor.js:10195) opens #equation-dialog via openVectorEditor ONLY when vectorObjectAtSelection() returns an equation object; with a plain word selection (all ctx-menu pre states) it takes the else branch: status message + wo:equation-settings event only, no dialog \u2014 handler needs equation-at-caret state the pre cannot build"
+      "note": "ledger row: ctx.equation-settings promoted — the ctx-menu-on-equation pre seeds img.vector-object[data-kind=equation] and anchors the DOM selection on it, so vectorObjectAtSelection() (editor.js:3098) returns the fixture and the data-ctx=EquationSettings handler (editor.js:10213-10221) routes into openVectorEditor(\"equation\", \u2026) -> openDlg(#equation-dialog)"
     },
     "ctx.create-new-style": {
       "effektClass": "op",

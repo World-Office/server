@@ -144,10 +144,10 @@
       "pre": "link-at-caret",
       "selector": "[data-ctx=\"CopyHyperlinkAddress\"]",
       "assertion": {
-        "kind": "unspecified"
+        "kind": "clipboard",
+        "contains": "https://example.com/"
       },
-      "xfail": true,
-      "note": "ledger ctx.copy-hyperlink-address KNOWN GAP: data-showif=link row copies linkEl.href via navigator.clipboard.writeText and only sets a status message (editor.js:9922-9933) — system clipboard + status line, no DOM contract"
+      "note": "ledger ctx.copy-hyperlink-address promoted — in the link-at-caret pre the data-showif=link row is visible and the handler (editor.js:9932-9937) resolves linkEl.closest(\"#editor a[href]\") from the preserved selection anchor and writes linkEl.href (https://example.com/, the fixture link) to the system clipboard; _boot grants clipboard-read/write permissions so the runner's clipboard assertion reads the payload back (probe-verified roundtrip)"
     },
     "ctx.frame-advanced-settings": {
       "effektClass": "op",
