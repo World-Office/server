@@ -1823,6 +1823,52 @@ main {
 
 .dialog-actions button.primary:hover { background: var(--accent-hover); }
 
+/* Font dialog (dialog.font-dialog.l4): the OO font-group family in dialog
+   form. The Style/Color/Size-steps rows are one label + a wrap of toggles,
+   and the preview box renders the live mix of the current settings. */
+.font-dialog .dialog-field > span { font-size: 13px; color: var(--muted); }
+.font-dialog .font-dialog-checks {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.font-dialog .font-dialog-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.font-dialog .font-dialog-check input[type="checkbox"] { width: auto; height: auto; }
+.font-dialog .font-dialog-check input[type="color"] { width: 34px; height: 24px; padding: 1px 2px; }
+.font-dialog .font-dialog-checks button {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.font-dialog .font-dialog-checks button:hover { background: var(--hover); }
+.font-dialog .font-dialog-preview {
+  min-width: 180px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 /* ---- responsive / mobile ---- */
 
 /* Tablet / small-laptop: pull the page margins in so the editor keeps its
