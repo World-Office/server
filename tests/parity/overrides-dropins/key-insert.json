@@ -135,8 +135,7 @@
         "selector": "#editor",
         "contains": "Footnote text"
       },
-      "xfail": true,
-      "note": "ledger row: shortcut.insertfootnotenow — REAL GAP: Ctrl+Alt+F is NOT bound to insertFootnote; editor.js:11029 binds it to openBackstage('open') (recent-files pane). The promised footnote insertion never appears from the chord (insertFootnote exists only via toolbar #btn-footnote, the ctx Insert menu and the reference dialog)."
+      "note": "PROMOTED 2026-11-07 (L2M-05): Ctrl+Alt+F is now bound in the dedicated alt block to emitCommand('insertFootnote') (editor.js ~11094), the same runCommand target as toolbar #btn-footnote/ctx Insert; the chord inserts sup.footnote-citation + span.footnote 'Footnote text' (editor.js ~1228). The file/navigation panel that previously owned the chord moved to Ctrl+Alt+O (shortcut.openfilepanel re-keyed in shortcut-real.json)"
     }
   },
   "$skipped": [

@@ -8804,6 +8804,13 @@
   if (docLangCaret && docLang) docLangCaret.addEventListener("click", () => {
     try { docLang.showPicker(); } catch (err) { docLang.focus(); }
   });
+  // L2M-05: the #sb-lang indicator is the clickable OO affordance for the
+  // same disclosure — clicking it surfaces the document-language picker via
+  // the caret's showPicker/focus path.
+  const sbLang = document.getElementById("sb-lang");
+  if (sbLang && docLang) sbLang.addEventListener("click", () => {
+    try { docLang.showPicker(); } catch (err) { docLang.focus(); }
+  });
   // Symbol picker — OO's dialog contract is Font + Range over a glyph grid;
   // both filters are real: font-family renders the grid in that font, range
   // selects the Unicode block (hex bounds live in the <option> values).
@@ -11046,8 +11053,11 @@
       if (ev.shiftKey) { ev.preventDefault(); emitCommand("insertSymbol", "\u00a0"); return; }
     }
     if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {
-      // En dash: Ctrl+Minus (OO convention; takes precedence over browser zoom-out).
-      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+      // En dash: Ctrl+NumpadSubtract (L2M-05: the main-row Ctrl+Hyphen key is
+      // returned to browser-parity zoom-out via the guarded arm below; the
+      // keypad variant carries the dash insert, the same numpad adaptation
+      // the census records for the em-dash combo).
+      if (ev.code === "NumpadSubtract") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
       // Line spacing (Word/OO convention): Ctrl+1 single, Ctrl+2 double,
       // Ctrl+5 one-and-a-half. Match on ev.code so layout-independent.
       if (ev.code === "Digit1" || ev.code === "Digit2" || ev.code === "Digit5") {
@@ -11091,9 +11101,12 @@
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2014"); return; }
       // Insert equation: Ctrl+Alt+= (OO convention; free in WO).
       if (ev.code === "Equal") { ev.preventDefault(); emitCommand("equationTemplate"); return; }
-      // File/navigation panel: Ctrl+Alt+F (OO parity) focuses the Recent/Open
-      // backstage pane and the recent-files list.
-      if (k === "f" && !ev.shiftKey) { ev.preventDefault(); openBackstage("open"); const rec = document.getElementById("backstage-recent"); if (rec) rec.focus(); return; }
+      // Footnote now: Ctrl+Alt+F (OO convention; ledger shortcut.insertfootnotenow).
+      if (k === "f" && !ev.shiftKey) { ev.preventDefault(); emitCommand("insertFootnote"); return; }
+      // File/navigation panel: Ctrl+Alt+O (web adaptation — OO's Ctrl+Alt+F
+      // now belongs to InsertFootnoteNow) focuses the Recent/Open backstage
+      // pane and the recent-files list.
+      if (k === "o" && !ev.shiftKey) { ev.preventDefault(); openBackstage("open"); const rec = document.getElementById("backstage-recent"); if (rec) rec.focus(); return; }
       // Endnote now: Ctrl+Alt+D.
       if (k === "d") { ev.preventDefault(); emitCommand("insertEndnote"); return; }
       // Chat/co-editing panel: Ctrl+Alt+Q (OO chat convention).
