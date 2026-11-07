@@ -1,137 +1,178 @@
 {
-  "entries": {
-    "file.insert": {
-      "effektClass": "structure",
-      "selector": "[data-cmd=\"insertBlankPage\"]",
-      "woTab": "insert",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor div.page-break"
-      },
-      "note": "ledger row: file.insert — Insert-tab Blank page button dispatches insertBlankPage, which reuses the page-break contract: execCommand insertHTML plants <div class=\"page-break\"><br></div> plus a trailing empty <p> into #editor (editor.js:1174-1194), the fresh page's first block"
+ "entries": {
+  "file.insert": {
+   "effektClass": "structure",
+   "selector": "[data-cmd=\"insertBlankPage\"]",
+   "woTab": "insert",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor div.page-break"
+   },
+   "note": "ledger row: file.insert \u2014 Insert-tab Blank page button dispatches insertBlankPage, which reuses the page-break contract: execCommand insertHTML plants <div class=\"page-break\"><br></div> plus a trailing empty <p> into #editor (editor.js:1174-1194), the fresh page's first block"
+  },
+  "file.protection": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"protectDialog\"]",
+   "woTab": "protection",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#protect-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "restrict editing checkbox",
+     "selector": "#protect-check-restrict"
     },
-    "file.protection": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"protectDialog\"]",
-      "woTab": "protection",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#protect-dialog"
-      },
-      "subFeatures": [
-        { "name": "restrict editing checkbox", "selector": "#protect-check-restrict" },
-        { "name": "new password field", "selector": "#protect-new-password" },
-        { "name": "current password field", "selector": "#protect-current-password" },
-        { "name": "clear password checkbox", "selector": "#protect-check-clear" },
-        { "name": "apply action", "selector": "#btn-protect-apply" },
-        { "name": "cancel action", "selector": "#btn-protect-cancel" }
-      ],
-      "note": "ledger row: file.protection — Protection-tab Encrypt button (data-cmd=protectDialog, same command as backstage btn-fileprotect) opens #protect-dialog (editor.js:8288-8311 protectDialog, protectionError starts empty); dialog carries the restrict/password/editable-range controls"
+    {
+     "name": "new password field",
+     "selector": "#protect-new-password"
     },
-    "file.cut-ctrl-x": {
-      "effektClass": "op",
-      "selector": "#btn-cut",
-      "woTab": "home",
-      "assertion": {
-        "kind": "text-mutation",
-        "selector": "#editor h1",
-        "contains": "kommen bei World Office"
-      },
-      "note": "ledger row: file.cut-ctrl-x — toolbar Cut button runs document.execCommand(\"cut\") (editor.js:9745-9748); the runner's placed selection is \"Will\" (first 4 chars of the demo h1 \"Willkommen bei World Office\"), so the h1 reads \"kommen bei World Office\" afterwards"
+    {
+     "name": "current password field",
+     "selector": "#protect-current-password"
     },
-    "file.copy-ctrl-insert": {
-      "effektClass": "op",
-      "selector": "#btn-copy",
-      "woTab": "home",
-      "assertion": {
-        "kind": "text-mutation",
-        "selector": "#editor h1",
-        "contains": "Willkommen bei World Office"
-      },
-      "reason": "#btn-copy runs document.execCommand(\"copy\") (editor.js:9747) — it writes the OS clipboard only; no DOM mutation, status change or wo:* event is emitted, and the runner's assertion vocabulary cannot read the clipboard (headless clipboard-read is permission-denied), so Copy has no observable contract effect",
-      "note": "ledger row: file.copy-ctrl-insert — real gap: clipboard write is invisible to DOM-observer assertions; honest xfail"
+    {
+     "name": "clear password checkbox",
+     "selector": "#protect-check-clear"
     },
-    "file.copy-style-ctrl-alt-c": {
-      "effektClass": "op",
-      "selector": "#btn-copy",
-      "woTab": "home",
-      "assertion": {
-        "kind": "text-mutation",
-        "selector": "#editor h1",
-        "contains": "Willkommen bei World Office"
-      },
-      "reason": "OO's Copy style (Ctrl+Alt+C) is a format painter; WO ships no copy-style control anywhere in editor.js (no copyStyle/formatPainter wiring — census fuzzy-matched #btn-copy), and clicking #btn-copy executes a plain clipboard copy with no style-state observable",
-      "note": "ledger row: file.copy-style-ctrl-alt-c — real gap: no WO format-painter control exists; honest xfail"
+    {
+     "name": "apply action",
+     "selector": "#btn-protect-apply"
     },
-    "file.paste-ctrl-v": {
-      "effektClass": "op",
-      "xfail": true,
-      "selector": "#btn-paste",
-      "woTab": "home",
-      "assertion": {
-        "kind": "text-mutation",
-        "selector": "#editor",
-        "contains": "PASTE-MARKER"
-      },
-      "reason": "#btn-paste routes richPaste() -> navigator.clipboard.read() then readText() (editor.js:9736-9744); both are permission-denied in the contract browser (probed: \"Read permission denied\") so the handlers' catch paths run and nothing is inserted — the contract layer cannot seed or read the clipboard",
-      "note": "ledger row: file.paste-ctrl-v — real gap: clipboard read permission is unavailable headless, paste inserts nothing observable; honest xfail"
-    },
-    "formatting.clear-style": {
-      "effektClass": "format",
-      "xfail": true,
-      "selector": "[data-cmd=\"removeFormat\"]",
-      "woTab": "home",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor strong",
-        "absent": true
-      },
-      "reason": "data-cmd=removeFormat routes to execCommand(\"removeFormat\") on the runner's placed selection, which is always the first 4 chars of the plain demo <h1> (\"Will\") — no b/i/u marks to strip; the pre vocabulary (list/table/file-menu/backstage/menu) cannot craft a bold selection first, so the command is a structural no-op with no observable",
-      "note": "ledger row: formatting.clear-style — real gap: no selection-crafting vocabulary to give removeFormat something to clear; honest xfail"
-    },
-    "formatting.decrease-indent-ctrl-shift-m": {
-      "effektClass": "format",
-      "pre": "list",
-      "selector": "[data-cmd=\"outdent\"]",
-      "woTab": "home",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor ol li:nth-child(2)",
-        "absent": true
-      },
-      "note": "ledger row: formatting.decrease-indent-ctrl-shift-m — toolbar Decrease-indent button (same emitCommand(\"outdent\") as the Ctrl+Shift+M chord, editor.js:11022) routes to execCommand(\"outdent\"); with the list pre (caret in <li>beta</li> of the two-item ordered list) Chromium pulls the second item out of the <ol>, so ol li:nth-child(2) disappears"
-    },
-    "formatting.shading": {
-      "effektClass": "format",
-      "xfail": true,
-      "selector": "#shading-color",
-      "woTab": "home",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor p[style*=\"background-color\"]"
-      },
-      "reason": "#shading-color is <input type=\"color\"> wired to its change event (editor.js:10781-10787 applyParagraphShading sets background-color on the caret block); the More-formatting menu item only calls input.showPicker() (needs real user activation, editor.js:10698-10705) — the contract layer has no input-set vocabulary (same gap as the proven formatting.font-color / formatting.highlight-color xfails), so the picker value can never be driven",
-      "note": "ledger row: formatting.shading — real gap: native color picker undrivable from contracts; honest xfail"
-    },
-    "formatting.borders": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"openBorders\"]",
-      "woTab": "home",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#borders-dialog"
-      },
-      "subFeatures": [
-        { "name": "top side checkbox", "selector": "#bd-top" },
-        { "name": "bottom side checkbox", "selector": "#bd-bottom" },
-        { "name": "left side checkbox", "selector": "#bd-left" },
-        { "name": "right side checkbox", "selector": "#bd-right" },
-        { "name": "width select", "selector": "#bd-width" },
-        { "name": "color input", "selector": "#bd-color" },
-        { "name": "ok action", "selector": "#btn-borders-ok" },
-        { "name": "cancel action", "selector": "#btn-borders-cancel" }
-      ],
-      "note": "ledger row: formatting.borders — Home-tab Borders button (data-cmd=openBorders, same command as the More-formatting menu row) opens #borders-dialog (editor.js:7797-7802 openBordersDialog adds .open); dialog carries the four side checkboxes + width/color and ok/cancel"
+    {
+     "name": "cancel action",
+     "selector": "#btn-protect-cancel"
     }
+   ],
+   "note": "ledger row: file.protection \u2014 Protection-tab Encrypt button (data-cmd=protectDialog, same command as backstage btn-fileprotect) opens #protect-dialog (editor.js:8288-8311 protectDialog, protectionError starts empty); dialog carries the restrict/password/editable-range controls"
+  },
+  "file.cut-ctrl-x": {
+   "effektClass": "op",
+   "selector": "#btn-cut",
+   "woTab": "home",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor h1",
+    "contains": "kommen bei World Office"
+   },
+   "note": "ledger row: file.cut-ctrl-x \u2014 toolbar Cut button runs document.execCommand(\"cut\") (editor.js:9745-9748); the runner's placed selection is \"Will\" (first 4 chars of the demo h1 \"Willkommen bei World Office\"), so the h1 reads \"kommen bei World Office\" afterwards"
+  },
+  "file.copy-ctrl-insert": {
+   "effektClass": "op",
+   "selector": "#btn-copy",
+   "woTab": "home",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor h1",
+    "contains": "Willkommen bei World Office"
+   },
+   "reason": "#btn-copy runs document.execCommand(\"copy\") (editor.js:9747) \u2014 it writes the OS clipboard only; no DOM mutation, status change or wo:* event is emitted, and the runner's assertion vocabulary cannot read the clipboard (headless clipboard-read is permission-denied), so Copy has no observable contract effect",
+   "note": "ledger row: file.copy-ctrl-insert \u2014 real gap: clipboard write is invisible to DOM-observer assertions; honest xfail"
+  },
+  "file.copy-style-ctrl-alt-c": {
+   "effektClass": "op",
+   "selector": "#btn-copy",
+   "woTab": "home",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor h1",
+    "contains": "Willkommen bei World Office"
+   },
+   "reason": "OO's Copy style (Ctrl+Alt+C) is a format painter; WO ships no copy-style control anywhere in editor.js (no copyStyle/formatPainter wiring \u2014 census fuzzy-matched #btn-copy), and clicking #btn-copy executes a plain clipboard copy with no style-state observable",
+   "note": "ledger row: file.copy-style-ctrl-alt-c \u2014 real gap: no WO format-painter control exists; honest xfail"
+  },
+  "file.paste-ctrl-v": {
+   "effektClass": "op",
+   "xfail": true,
+   "selector": "#btn-paste",
+   "woTab": "home",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "PASTE-MARKER"
+   },
+   "reason": "#btn-paste routes richPaste() -> navigator.clipboard.read() then readText() (editor.js:9736-9744); both are permission-denied in the contract browser (probed: \"Read permission denied\") so the handlers' catch paths run and nothing is inserted \u2014 the contract layer cannot seed or read the clipboard",
+   "note": "ledger row: file.paste-ctrl-v \u2014 real gap: clipboard read permission is unavailable headless, paste inserts nothing observable; honest xfail"
+  },
+  "formatting.clear-style": {
+   "effektClass": "format",
+   "pre": "formatted-selection",
+   "woTab": "home",
+   "selector": "[data-cmd=\"removeFormat\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor strong",
+    "absent": true
+   },
+   "note": "PROMOTED 2026-11-07 (L2L follow-up): formatted-selection pre seeds a strong run; removeFormat unwraps it -> #editor strong absent."
+  },
+  "formatting.decrease-indent-ctrl-shift-m": {
+   "effektClass": "format",
+   "pre": "list",
+   "selector": "[data-cmd=\"outdent\"]",
+   "woTab": "home",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor ol li:nth-child(2)",
+    "absent": true
+   },
+   "note": "ledger row: formatting.decrease-indent-ctrl-shift-m \u2014 toolbar Decrease-indent button (same emitCommand(\"outdent\") as the Ctrl+Shift+M chord, editor.js:11022) routes to execCommand(\"outdent\"); with the list pre (caret in <li>beta</li> of the two-item ordered list) Chromium pulls the second item out of the <ol>, so ol li:nth-child(2) disappears"
+  },
+  "formatting.shading": {
+   "effektClass": "format",
+   "xfail": true,
+   "selector": "#shading-color",
+   "woTab": "home",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor p[style*=\"background-color\"]"
+   },
+   "reason": "#shading-color is <input type=\"color\"> wired to its change event (editor.js:10781-10787 applyParagraphShading sets background-color on the caret block); the More-formatting menu item only calls input.showPicker() (needs real user activation, editor.js:10698-10705) \u2014 the contract layer has no input-set vocabulary (same gap as the proven formatting.font-color / formatting.highlight-color xfails), so the picker value can never be driven",
+   "note": "ledger row: formatting.shading \u2014 real gap: native color picker undrivable from contracts; honest xfail"
+  },
+  "formatting.borders": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"openBorders\"]",
+   "woTab": "home",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#borders-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "top side checkbox",
+     "selector": "#bd-top"
+    },
+    {
+     "name": "bottom side checkbox",
+     "selector": "#bd-bottom"
+    },
+    {
+     "name": "left side checkbox",
+     "selector": "#bd-left"
+    },
+    {
+     "name": "right side checkbox",
+     "selector": "#bd-right"
+    },
+    {
+     "name": "width select",
+     "selector": "#bd-width"
+    },
+    {
+     "name": "color input",
+     "selector": "#bd-color"
+    },
+    {
+     "name": "ok action",
+     "selector": "#btn-borders-ok"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-borders-cancel"
+    }
+   ],
+   "note": "ledger row: formatting.borders \u2014 Home-tab Borders button (data-cmd=openBorders, same command as the More-formatting menu row) opens #borders-dialog (editor.js:7797-7802 openBordersDialog adds .open); dialog carries the four side checkboxes + width/color and ok/cancel"
   }
+ }
 }

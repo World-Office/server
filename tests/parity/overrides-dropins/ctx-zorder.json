@@ -1,282 +1,281 @@
 {
-  "entries": {
-    "ctx.bring-forward": {
-      "effektClass": "format",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-forward\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "zIndex",
-        "equals": "1"
-      },
-      "note": "ledger row ctx.bring-forward \u2014 WO control is the Layout tab objectOp button (index.html Layout.Object.BringForward); ctx-menu-on-image pre right-clicks the fixture img so selectedObject() falls back to lastObjectPick; applyObjectOp sets position:relative and zIndex 0->1"
-    },
-    "ctx.send-backward": {
-      "effektClass": "format",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"send-backward\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "zIndex",
-        "equals": "-1"
-      },
-      "note": "ledger row ctx.send-backward \u2014 Layout tab objectOp send-backward decrements the picked img's zIndex 0->-1 (applyObjectOp z-order branch)"
-    },
-    "ctx.bring-to-foreground": {
-      "effektClass": "op",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-to-foreground\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "zIndex",
-        "equals": "1"
-      },
-      "note": "ledger row ctx.bring-to-foreground \u2014 Layout tab objectOp bring-to-foreground sets zIndex to siblings' max+1 (single fixture img: 0+1); override reclassifies the unclassified census row so the contract runs"
-    },
-    "ctx.send-to-background": {
-      "effektClass": "op",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"send-to-background\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "zIndex",
-        "equals": "-1"
-      },
-      "note": "ledger row ctx.send-to-background \u2014 Layout tab objectOp send-to-background sets zIndex to siblings' min-1 (single fixture img: 0-1); census class 'dialog' was a ledger mislabel, reclassified as op"
-    },
-    "ctx.align-left": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-left\"]",
-        "expect": {
-          "selector": "#fixture-img.obj-square"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square (wrap) \u2014 trigger opens the Layout Align dropdown, click applies",
-      "woTab": "layout"
-    },
-    "ctx.align-center": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-center\"]",
-        "expect": {
-          "selector": "#fixture-img.obj-center"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-center",
-      "woTab": "layout"
-    },
-    "ctx.align-right": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-right\"]",
-        "expect": {
-          "selector": "#fixture-img.obj-square.obj-right"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square + obj-right",
-      "woTab": "layout"
-    },
-    "ctx.align-top": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-top\"]",
-        "expect": {
-          "selector": "#fixture-img[style*=\"vertical-align: top\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: top on #fixture-img",
-      "woTab": "layout"
-    },
-    "ctx.align-middle": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-middle\"]",
-        "expect": {
-          "selector": "#fixture-img[style*=\"vertical-align: middle\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: middle on #fixture-img",
-      "woTab": "layout"
-    },
-    "ctx.align-bottom": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-bottom\"]",
-        "expect": {
-          "selector": "#fixture-img[style*=\"vertical-align: bottom\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: bottom on #fixture-img",
-      "woTab": "layout"
-    },
-    "ctx.distribute-horizontally": {
-      "effektClass": "op",
-      "pre": "ctx-menu-on-image",
-      "selector": "[data-ctx=\"DistributeHorizontally\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "position",
-        "equals": "absolute"
-      },
-      "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.distribute-horizontally \u2014 ctx row is visible under data-showif=object, but distributeObjectsHorizontally needs selectedObjects.length >= 2 (shift-click multi-select); the ctx-menu-on-image pre picks a single fixture img so the handler no-ops with Status.DistributeNeedsTwoObjects \u2014 needs a multi-object pre (real runner vocabulary gap)"
-    },
-    "ctx.distribute-vertically": {
-      "effektClass": "op",
-      "pre": "ctx-menu-on-image",
-      "selector": "[data-ctx=\"DistributeVertically\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "prop": "position",
-        "equals": "absolute"
-      },
-      "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.distribute-vertically \u2014 distributeObjectsVertically needs selectedObjects.length >= 2 (shift-click multi-select); single-fixture-img pre leaves the handler no-oping \u2014 needs a multi-object pre (real runner vocabulary gap)"
-    },
-    "ctx.merge-shapes": {
-      "effektClass": "op",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"merge-union\"]",
-      "assertion": {
-        "kind": "viewport-flag",
-        "rootSelector": "#fixture-img",
-        "attr": "data-merge-op"
-      },
-      "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.merge-shapes \u2014 census binds it to the Layout tab objectOp merge-union/intersect/subtract items, which sit in the hidden 'Merge shapes \u25be' dropdown (ul.menu-list[hidden]) AND boolean shape merge needs >=2 selected shapes; double gap (dropdown-open pre + multi-object pre)"
-    },
-    "ctx.group": {
-      "effektClass": "format",
-      "pre": "ctx-menu-on-image",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"group\"]",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor div.object-group"
-      },
-      "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.group \u2014 Layout tab Group button is reachable (objectOp group -> groupSelectedObjects), but grouping requires >=2 img/div.object siblings in the parent; the single fixture img returns false and nothing mutates \u2014 needs a multi-object pre (real runner vocabulary gap)"
-    },
-    "ctx.ungroup": {
-      "effektClass": "op",
-      "pre": "grouped-objects",
-      "woTab": "layout",
-      "selector": "[data-cmd=\"objectOp\"][data-value=\"ungroup\"]",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor div.object-group",
-        "absent": true
-      },
-      "note": "ledger row ctx.ungroup — grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) — dom-mutation absent:true observes the group gone"
-    },
-    "ctx.top": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignTop\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"vertical-align: top\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignTop sets inline vertical-align: top on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    },
-    "ctx.middle": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignMiddle\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"vertical-align: middle\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignMiddle sets inline vertical-align: middle on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    },
-    "ctx.bottom": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignBottom\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"vertical-align: bottom\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignBottom sets inline vertical-align: bottom on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    },
-    "ctx.left": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignLeft\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"text-align: left\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignLeft sets inline text-align: left on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    },
-    "ctx.center": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignCenter\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"text-align: center\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignCenter sets inline text-align: center on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    },
-    "ctx.right": {
-      "effektClass": "dialog",
-      "pre": "ctx-menu-in-table",
-      "selector": "[data-ctx=\"TextAlignment\"]",
-      "assertion": {
-        "kind": "dialog-input",
-        "click": "[data-ctx=\"TextAlignRight\"]",
-        "expect": {
-          "selector": "#editor td[style*=\"text-align: right\"]"
-        }
-      },
-      "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignRight sets inline text-align: right on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
-    }
+ "entries": {
+  "ctx.bring-forward": {
+   "effektClass": "format",
+   "pre": "ctx-menu-on-image",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-forward\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "zIndex",
+    "equals": "1"
+   },
+   "note": "ledger row ctx.bring-forward \u2014 WO control is the Layout tab objectOp button (index.html Layout.Object.BringForward); ctx-menu-on-image pre right-clicks the fixture img so selectedObject() falls back to lastObjectPick; applyObjectOp sets position:relative and zIndex 0->1"
   },
-  "$skipped": []
+  "ctx.send-backward": {
+   "effektClass": "format",
+   "pre": "ctx-menu-on-image",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"send-backward\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "zIndex",
+    "equals": "-1"
+   },
+   "note": "ledger row ctx.send-backward \u2014 Layout tab objectOp send-backward decrements the picked img's zIndex 0->-1 (applyObjectOp z-order branch)"
+  },
+  "ctx.bring-to-foreground": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"bring-to-foreground\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "zIndex",
+    "equals": "1"
+   },
+   "note": "ledger row ctx.bring-to-foreground \u2014 Layout tab objectOp bring-to-foreground sets zIndex to siblings' max+1 (single fixture img: 0+1); override reclassifies the unclassified census row so the contract runs"
+  },
+  "ctx.send-to-background": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"send-to-background\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "zIndex",
+    "equals": "-1"
+   },
+   "note": "ledger row ctx.send-to-background \u2014 Layout tab objectOp send-to-background sets zIndex to siblings' min-1 (single fixture img: 0-1); census class 'dialog' was a ledger mislabel, reclassified as op"
+  },
+  "ctx.align-left": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-left\"]",
+    "expect": {
+     "selector": "#fixture-img.obj-square"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square (wrap) \u2014 trigger opens the Layout Align dropdown, click applies",
+   "woTab": "layout"
+  },
+  "ctx.align-center": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-center\"]",
+    "expect": {
+     "selector": "#fixture-img.obj-center"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-center",
+   "woTab": "layout"
+  },
+  "ctx.align-right": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-right\"]",
+    "expect": {
+     "selector": "#fixture-img.obj-square.obj-right"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square + obj-right",
+   "woTab": "layout"
+  },
+  "ctx.align-top": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-top\"]",
+    "expect": {
+     "selector": "#fixture-img[style*=\"vertical-align: top\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: top on #fixture-img",
+   "woTab": "layout"
+  },
+  "ctx.align-middle": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-middle\"]",
+    "expect": {
+     "selector": "#fixture-img[style*=\"vertical-align: middle\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: middle on #fixture-img",
+   "woTab": "layout"
+  },
+  "ctx.align-bottom": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-on-image",
+   "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-cmd=\"objectOp\"][data-value=\"align-bottom\"]",
+    "expect": {
+     "selector": "#fixture-img[style*=\"vertical-align: bottom\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: bottom on #fixture-img",
+   "woTab": "layout"
+  },
+  "ctx.distribute-horizontally": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "selector": "[data-ctx=\"DistributeHorizontally\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "position",
+    "equals": "absolute"
+   },
+   "xfail": true,
+   "note": "KNOWN GAP: ledger row ctx.distribute-horizontally \u2014 ctx row is visible under data-showif=object, but distributeObjectsHorizontally needs selectedObjects.length >= 2 (shift-click multi-select); the ctx-menu-on-image pre picks a single fixture img so the handler no-ops with Status.DistributeNeedsTwoObjects \u2014 needs a multi-object pre (real runner vocabulary gap)"
+  },
+  "ctx.distribute-vertically": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "selector": "[data-ctx=\"DistributeVertically\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "prop": "position",
+    "equals": "absolute"
+   },
+   "xfail": true,
+   "note": "KNOWN GAP: ledger row ctx.distribute-vertically \u2014 distributeObjectsVertically needs selectedObjects.length >= 2 (shift-click multi-select); single-fixture-img pre leaves the handler no-oping \u2014 needs a multi-object pre (real runner vocabulary gap)"
+  },
+  "ctx.merge-shapes": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"merge-union\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#fixture-img",
+    "attr": "data-merge-op"
+   },
+   "xfail": true,
+   "note": "KNOWN GAP: ledger row ctx.merge-shapes \u2014 census binds it to the Layout tab objectOp merge-union/intersect/subtract items, which sit in the hidden 'Merge shapes \u25be' dropdown (ul.menu-list[hidden]) AND boolean shape merge needs >=2 selected shapes; double gap (dropdown-open pre + multi-object pre)"
+  },
+  "ctx.group": {
+   "effektClass": "op",
+   "pre": "ctx-menu-two-objects",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"group\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor .object-group"
+   },
+   "note": "PROMOTED 2026-11-07 (L2L follow-up): ctx-menu-two-objects pre SHIFT-multi-selects 2 imgs; groupSelectedObjects wraps them in .object-group."
+  },
+  "ctx.ungroup": {
+   "effektClass": "op",
+   "pre": "grouped-objects",
+   "woTab": "layout",
+   "selector": "[data-cmd=\"objectOp\"][data-value=\"ungroup\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor div.object-group",
+    "absent": true
+   },
+   "note": "ledger row ctx.ungroup \u2014 grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) \u2014 dom-mutation absent:true observes the group gone"
+  },
+  "ctx.top": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignTop\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"vertical-align: top\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignTop sets inline vertical-align: top on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  },
+  "ctx.middle": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignMiddle\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"vertical-align: middle\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignMiddle sets inline vertical-align: middle on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  },
+  "ctx.bottom": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignBottom\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"vertical-align: bottom\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignBottom sets inline vertical-align: bottom on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  },
+  "ctx.left": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignLeft\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"text-align: left\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignLeft sets inline text-align: left on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  },
+  "ctx.center": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignCenter\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"text-align: center\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignCenter sets inline text-align: center on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  },
+  "ctx.right": {
+   "effektClass": "dialog",
+   "pre": "ctx-menu-in-table",
+   "selector": "[data-ctx=\"TextAlignment\"]",
+   "assertion": {
+    "kind": "dialog-input",
+    "click": "[data-ctx=\"TextAlignRight\"]",
+    "expect": {
+     "selector": "#editor td[style*=\"text-align: right\"]"
+    }
+   },
+   "note": "PROMOTED 2026-11-06: dialog-input chains the submenu header click (opens children in place, AF14-CTX-DEPTH) then the row click; TextAlignRight sets inline text-align: right on the selected td (applyCellVerticalAlign/applyCellTextAlign). Old single-click binding failed the row's visibility check"
+  }
+ },
+ "$skipped": []
 }
