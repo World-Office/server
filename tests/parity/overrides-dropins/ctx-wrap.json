@@ -64,12 +64,11 @@
       "effektClass": "op",
       "pre": "ctx-menu-on-image",
       "selector": "[data-ctx=\"TopAndBottom\"]",
-      "xfail": true,
       "assertion": {
         "kind": "dom-mutation",
         "selector": "#fixture-img.obj-center"
       },
-      "note": "ledger ctx.top-and-bottom — REAL gap: no TopAndBottom row in the WO ctx menu; WO surface elsewhere: obj-center block flow (top-and-bottom ≈ own-line block), ledger level 1"
+      "note": "ledger ctx.top-and-bottom — PROMOTED (L2M-03): the ctx menu now has a TopAndBottom row (data-showif=object) applying wrap-top-and-bottom = obj-center own-line block flow (display block + auto margins), data-wrap=top-and-bottom records the wrap choice (editor.js applyObjectOp)"
     },
     "ctx.edit-wrap-boundary": {
       "effektClass": "op",

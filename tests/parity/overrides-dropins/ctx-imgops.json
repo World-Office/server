@@ -66,10 +66,13 @@
     },
     "ctx.rotate": {
       "effektClass": "op",
-      "xfail": true,
       "pre": "ctx-menu-on-image",
-      "selector": "#rp-image-rotate",
-      "note": "KNOWN GAP: ledger row ctx.rotate \u2014 WO has no Rotate ctx item at all; the census maps the capability to the right-panel #rp-image-rotate (applyImageRotate90). The ctx-menu-on-image pre DOES satisfy the image pick (lastObjectPick), but the #right-panel aside stays hidden until its View rail toggle is clicked and no contract pre opens it, so the control never reaches a hit-testable state."
+      "selector": "[data-ctx=\"Rotate\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img[data-rotate-steps=\"1\"]"
+      },
+      "note": "ledger ctx.rotate — PROMOTED (L2M-03): the ctx menu now has a Rotate row (data-showif=image) driving applyImageRotate90 — the same handler as the right-panel #rp-image-rotate; one click sets data-rotate-steps=1 on the picked img. NOTE: this definition is shadowed by the identical entry in stragglers.json (last drop-in wins)."
     },
     "ctx.edit-points": {
       "effektClass": "op",

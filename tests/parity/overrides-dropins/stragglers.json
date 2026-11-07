@@ -104,9 +104,13 @@
     },
     "ctx.rotate": {
       "effektClass": "op",
-      "xfail": true,
-      "selector": "#rp-image-rotate",
-      "note": "KNOWN GAP: ledger row ctx.rotate — WO has no Rotate ctx item at all; the census maps the capability to the right-panel #rp-image-rotate (applyImageRotate90), which needs an image selection — state no contract pre can build — so the promised ctx-menu Rotate never appears."
+      "pre": "ctx-menu-on-image",
+      "selector": "[data-ctx=\"Rotate\"]",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#fixture-img[data-rotate-steps=\"1\"]"
+      },
+      "note": "ledger ctx.rotate — PROMOTED (L2M-03): the ctx menu now has a Rotate row (data-showif=image) driving applyImageRotate90 — the same handler as the right-panel #rp-image-rotate; one click sets data-rotate-steps=1 on the picked img (applyImageTransform), observed as dom-mutation"
     }
   }
 }
