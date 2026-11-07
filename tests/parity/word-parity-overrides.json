@@ -54,16 +54,21 @@
     },
     "formatting.paragraph-line-spacing": {
       "effektClass": "dialog",
-      "xfail": true,
-      "note": "KNOWN GAP: OO's line-spacing entry leads to a ParagraphSettings dialog (alignment/indent/spacing/widow control). WO only has a line-height select — no dialog exists. Full OO ParagraphSettings lives in the right panel, which the census walk does not capture.",
+      "woTab": "home",
       "selector": "#line-spacing",
+      "setValue": "options",
       "assertion": {
-        "kind": "dialog-visible"
+        "kind": "dialog-visible",
+        "dialogSelector": "#paragraph-settings-dialog"
       },
       "subFeatures": [
         {
-          "name": "spacing before/after numeric",
+          "name": "spacing before numeric",
           "selector": "[name=spacing-before]"
+        },
+        {
+          "name": "spacing after numeric",
+          "selector": "[name=spacing-after]"
         },
         {
           "name": "first-line indent",
@@ -73,7 +78,8 @@
           "name": "widow/orphan control",
           "selector": "[name=widow]"
         }
-      ]
+      ],
+      "note": "ledger row promoted (L2N-01): the #line-spacing select carries a trailing value=options entry ('Line spacing options…', index.html) whose change handler (editor.js) opens openParagraphSettingsDialog -> #paragraph-settings-dialog, mirroring OO's line-spacing picker leading to the paragraph dialog. setValue drives it headless (a plain .click() on a <select> fires no change); the dialog now carries the OO Spacing group fields — before/after number inputs (name=spacing-before/spacing-after -> margin-top/bottom via applyParagraphSettings) and the widow/orphan checkbox (name=widow -> class widow-control) alongside the pre-existing first-line/line-spacing/keeps. Residual divergence: OO's dialog also has 'Don't add interval between paragraphs of the same style' (right-panel census); WO defers that to the right panel."
     },
     "info": {
       "effektClass": "dialog",

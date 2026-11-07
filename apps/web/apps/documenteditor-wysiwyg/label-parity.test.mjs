@@ -293,6 +293,37 @@ assert.ok(editorSrc.includes('em.className = "wo-caption"'),
   "inserted caption em must carry the wo-caption marker (sanitizer-proof, unique test hook)")
 console.log("Caption dialog complete\n")
 
+// ── (f4) Line-spacing options entry -> Paragraph settings dialog ────
+console.log("Checking Line-spacing options entry + ps spacing/widow fields...")
+const lsSelect = sliceBetween(htmlSrc, '<select id="line-spacing"', "</select>")
+assert.ok(lsSelect.includes('<option value="options" data-i18n="Toolbar.LineSpacingOptions">'),
+  "line-spacing select must carry the trailing value=options entry")
+const psDialog = sliceBetween(htmlSrc, 'id="paragraph-settings-dialog"', "</div>\n  </div>")
+for (const [id, name] of [
+  ["ps-spacing-before", "spacing-before"],
+  ["ps-spacing-after", "spacing-after"],
+  ["ps-first-line", "first-line"],
+]) {
+  assert.ok(psDialog.includes(`id="${id}" name="${name}" type="number"`),
+    `${id} must be a number input carrying name=${name} (parity contract selectors)`)
+}
+assert.ok(psDialog.includes('<input type="checkbox" id="ps-widow" name="widow">'),
+  "ps-widow must be a checkbox carrying name=widow (parity contract selector)")
+for (const key of ["ParagraphSettings.SpacingBefore", "ParagraphSettings.SpacingAfter",
+  "ParagraphSettings.Widow", "Toolbar.LineSpacingOptions"]) {
+  const occurrences = (i18nSrc.match(new RegExp(`"${key}":`, "g")) || []).length
+  assert.ok(occurrences === 2, `${key} must exist in BOTH en and de catalogs`)
+}
+assert.ok(editorSrc.includes('if (lineSpacingSel.value === "options") {') &&
+  editorSrc.includes("openParagraphSettingsDialog();"),
+  "the options entry must open the Paragraph settings dialog, not apply a preset")
+assert.ok(editorSrc.includes('p.style.marginTop = sb.value + "px"') &&
+  editorSrc.includes('p.style.marginBottom = sa.value + "px"'),
+  "spacing before/after must apply to margin-top/bottom of the caret paragraph")
+assert.ok(editorSrc.includes('p.classList.toggle("widow-control", !!(wd && wd.checked))'),
+  "widow/orphan control must toggle the widow-control class")
+console.log("Line-spacing options entry + ps fields complete\n")
+
 // ── (g) No bare console.log anywhere in editor.js ────────────────────
 console.log("Checking console.log ban...")
 assert.ok(!editorSrc.includes("console.log("),
