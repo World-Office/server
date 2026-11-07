@@ -35,6 +35,20 @@ if (!entries.length) { console.error('no runnable contracts (add overrides with 
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Materialized fixture files for file-input contracts (assertion.files):
+// real bytes on disk so Playwright setInputFiles produces a genuine FileList
+// (setting input.value on type=file is a no-op). GIF passes IMAGE_TYPES.
+const FIXTURE_FILES = {
+  '1x1.gif': Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'),
+};
+function resolveFixtureFile(name) {
+  const data = FIXTURE_FILES[name];
+  if (!data) throw new Error(`dialog-action: unknown fixture file ${name}`);
+  const p = path.join(require('os').tmpdir(), 'wo-parity-fixture-' + name);
+  fs.writeFileSync(p, data);
+  return p;
+}
+
 function placeCaret(page) {
   return page.evaluate(() => {
     const sel = window.getSelection(); const r = document.createRange();
@@ -138,6 +152,15 @@ async function checkEffect(page, ov, assertion) {
           await page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('dialog-action: opener missing ' + sel); el.click(); }, assertion.open.selector);
           await sleep(300);
         }
+      }
+      for (const f of (assertion.files || [])) {
+        // file-input contracts (ctx.replace-image): setInputFiles fires the
+        // input's change handler (onImageFileChange reads the file async and
+        // arms the action button) — the click below auto-waits for enabled
+        const fl = page.locator(f.selector).first();
+        if (await fl.count() === 0) return { ok: false, observed: `dialog-action: file input missing ${f.selector}` };
+        await fl.setInputFiles(resolveFixtureFile(f.fixture || '1x1.gif'));
+        await sleep(150);
       }
       const btn = page.locator(assertion.button);
       if (await btn.count() === 0) return { ok: false, observed: `dialog-action: button missing ${assertion.button}` };

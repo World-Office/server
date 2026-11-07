@@ -42,10 +42,12 @@
       "assertion": {
         "kind": "dialog-action",
         "button": "#btn-image-ok",
-        "dialog": "#image-dialog"
+        "dialog": "#image-dialog",
+        "files": [
+          { "selector": "#image-file", "fixture": "1x1.gif" }
+        ]
       },
-      "xfail": true,
-      "note": "KNOWN GAP: ctx data-ctx=ReplaceImage (editor.js:9751) -> applyObjectOp(\"replace-image\") -> insertImage() opens #image-dialog but #btn-image-ok stays disabled until a file is picked (editor.js:2901 okBtn.disabled=true; armed only in onImageFileChange) and the runner vocab has no set-input-files — dialog-action cannot fire without file input (honest xfail, same gap as image.image)"
+      "note": "ledger row: ctx data-ctx=ReplaceImage (editor.js:9752) -> applyObjectOp(\"replace-image\") -> insertImage() opens #image-dialog with #btn-image-ok disabled; assertion.files closes the former vocab gap — the runner's setInputFiles drive produces a real FileList so onImageFileChange reads the GIF via FileReader and arms the button (editor.js:3122-3164), then dialog-action clicks it: confirmImageDialog inserts the decoded img at the saved caret and closeImageDialog removes .open (editor.js:3172-3179, 3237-3242)"
     },
     "ctx.table-advanced-settings": {
       "effektClass": "dialog",
