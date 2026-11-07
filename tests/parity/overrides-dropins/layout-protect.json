@@ -127,8 +127,7 @@
         "attr": "contenteditable",
         "equals": "false"
       },
-      "xfail": true,
-      "note": "ledger row: protect.protect-document — honest gap: the Protect Document toggle (data-cmd=restrictEditing, editor.js:8360 toggleRestrictEditing) POSTs api('protect'), which 404s 'not found' for the runner's unstored demo.docx (editor_docs.rs document_protect requires store.get_content and lacks the demo_or_stored fallback its GET sibling document_protect_state has), so the handler shows 'protection failed' and editor.contentEditable stays true; verified live against the docserver binary"
+      "note": "ledger row: protect.protect-document — PROMOTED 2026-11-07: the Protect Document toggle (data-cmd=restrictEditing, editor.js:8360 toggleRestrictEditing) POSTs api('protect'); document_protect (editor_docs.rs) now resolves the body through the same demo_or_stored fallback its GET sibling document_protect_state uses, so the unstored demo.docx no longer 404s — the response's restrict_editing:true drives applyProtectionView to editor.contentEditable=false (viewport-flag). The demo doc stays ephemeral (no store write-back), so later page loads boot editable again. Old honest-gap note: POST required store.get_content and showed 'protection failed' for the demo doc"
     },
     "view.zoom-to-100": {
       "effektClass": "view",

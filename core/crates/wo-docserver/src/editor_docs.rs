@@ -691,7 +691,15 @@ pub async fn document_protect(
             "document protection is a DOCX feature; not available for ODT".into(),
         ));
     }
-    let Some(data) = state.store.get_content(&id).await? else {
+    // Same demo.docx fallback the GET sibling document_protect_state uses:
+    // the editor's Protect Document toggle runs against the served demo
+    // document before anything is stored under that id.
+    let stored = state.store.get_content(&id).await?;
+    let had_stored = stored.is_some();
+    let Some(data) = (match stored {
+        Some(d) => Some(d),
+        None => demo_or_stored(&state, &id).await,
+    }) else {
         return Err(AppError::NotFound("not found".into()));
     };
     let Some(obj) = payload.as_object() else {
@@ -774,7 +782,14 @@ pub async fn document_protect(
         final_salt.as_deref(),
         final_hash.as_deref(),
     )?;
-    state.store.put_content(&id, &out).await?;
+    // Persist only real store content. The demo fallback must NOT write the
+    // protected bytes under demo.docx: the demo document is served fresh on
+    // every load, so storing restriction there would flip every later page
+    // load (all sessions sharing this data dir) to read-only. Protection of
+    // the unstored demo stays live-session UI state, driven by the response.
+    if had_stored {
+        state.store.put_content(&id, &out).await?;
+    }
     Ok(Json(serde_json::json!({
         "ok": true,
         "restrict_editing": restrict,
