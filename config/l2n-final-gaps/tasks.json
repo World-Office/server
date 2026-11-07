@@ -1,0 +1,159 @@
+{
+ "_meta": {
+  "name": "l2n-final-gaps",
+  "baseline": {
+   "pass": 446,
+   "knownGap": 7,
+   "fail": 0
+  },
+  "notes": "Final-gap wave on zai/glm-5.3 workers (builtin harness). 5 promotable rows: line-spacing->ParagraphSettings entry + ps spacing/widow fields, ctx.split-cell colspan pre, zoom-topage/towidth order-independent viewport-flag assertions, font-dialog shell + launcher. edit-wrap-boundary + edit-points stay WO-22 loud (permanent)."
+ },
+ "defaults": {
+  "max_attempts": 3,
+  "branch": "tf/{taskid}",
+  "commit_style": "parity: promote <rows> via L2N product work"
+ },
+ "tasks": [
+  {
+   "id": "L2N-01",
+   "title": "Line-spacing options entry -> ParagraphSettings dialog + ps spacing/widow fields",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/overrides-dropins/format-controls.json"
+   ],
+   "bindings": {
+    "formatting.paragraph-line-spacing": {
+     "effektClass": "dialog",
+     "woTab": "home",
+     "selector": "#line-spacing",
+     "setValue": "options",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#paragraph-settings-dialog",
+      "subFeatures": [
+       {
+        "name": "spacing before/after numeric",
+        "selector": "[name=spacing-before]"
+       },
+       {
+        "name": "first-line indent",
+        "selector": "[name=first-line]"
+       },
+       {
+        "name": "widow/orphan control",
+        "selector": "[name=widow-control]"
+       }
+      ]
+     }
+    }
+   },
+   "steps": [
+    "Add `<option value=\"options\">` (label 'Line spacing options\u2026', i18n key e.g. Toolbar.LineSpacingOptions en+de) to #line-spacing (index.html:288).",
+    "In the #line-spacing change handler (editor.js:11012): if value==='options', openParagraphSettingsDialog() + dispatch wo:open-paragraph-settings {source:'line-spacing'} and reset the select to '' (same pattern as the rp-advanced link at editor.js:6841).",
+    "Extend #paragraph-settings-dialog with the OO fields: numeric inputs 'Spacing before' (id ps-spacing-before, name=spacing-before) and 'Spacing after' (id ps-spacing-after, name=spacing-after), and a 'Widow/orphan control' checkbox (id ps-widow, name=widow-control). Add name=first-line to the existing #ps-first-line input. Wire the new fields into the existing confirm handler the same way ps-indent-left is wired. i18n en+de for new labels.",
+    "Promote formatting.paragraph-line-spacing (move the entry from word-parity-overrides.json BASE into format-controls.json with the binding above, drop xfail). NOTE: this row's base entry lives in tests/parity/word-parity-overrides.json (key formatting.paragraph-line-spacing, ~line 55) \u2014 REMOVE it there so the format-controls.json promoted entry wins cleanly, and keep the file's other entries untouched.",
+    "Verify: bash tests/parity/af-gate.sh 447 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)",
+    "Commit ONLY the four listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 447 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs)"
+  },
+  {
+   "id": "L2N-02",
+   "title": "Colspan-cell ctx pre + promote ctx.split-cell",
+   "files": [
+    "tests/parity/contract-runner.cjs",
+    "tests/parity/overrides-dropins/ctx-table.json"
+   ],
+   "bindings": {
+    "ctx.split-cell": {
+     "effektClass": "op",
+     "pre": "ctx-menu-in-table-colspan",
+     "selector": "[data-ctx=\"TableSplitCell\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#editor td br"
+     }
+    }
+   },
+   "steps": [
+    "Add runner pre 'ctx-menu-in-table-colspan' to tests/parity/contract-runner.cjs (next to ctx-menu-in-table, ~line 397 area): seed the same table but give the first-row first cell colspan=\"2\" (e.g. a 3-column table where cell (0,0) has colspan 2), focus it, right-click it, wait for #ctx-menu:not([hidden]). Copy the ctx-menu-in-table block and adjust; keep placeCaret semantics.",
+    "Run /usr/bin/node --check tests/parity/contract-runner.cjs after editing.",
+    "splitTableCell() (editor.js) splits a colspan cell by inserting <br> per added column \u2014 verify the real handler name/behavior first (grep splitTableCell) and adjust the assertion if the real effect differs (e.g. a new td appears: use '#editor tr td' presence-inverted assertion instead).",
+    "Promote ctx.split-cell (ctx-table.json) with the binding above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 447",
+    "Commit ONLY the two listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 447"
+  },
+  {
+   "id": "L2N-03",
+   "title": "Order-independent zoom-fit assertions, promote both rows",
+   "files": [
+    "tests/parity/overrides-dropins/layout-protect.json"
+   ],
+   "bindings": {
+    "statusbar.btn-zoom-topage": {
+     "effektClass": "view",
+     "selector": "#btn-zoom-fit",
+     "assertion": {
+      "kind": "viewport-flag",
+      "rootSelector": "#editor",
+      "prop": "zoom",
+      "equals": "1.812"
+     }
+    },
+    "statusbar.btn-zoom-towidth": {
+     "effektClass": "view",
+     "selector": "#btn-zoom-fit",
+     "assertion": {
+      "kind": "viewport-flag",
+      "rootSelector": "#editor",
+      "prop": "zoom",
+      "equals": "1.812"
+     }
+    }
+   },
+   "steps": [
+    "The old bindings asserted text-mutation #sb-zoom-label contains '181%' \u2014 order-fragile because a prior row may already have applied 181% (no DOM mutation to observe). Switch to viewport-flag (reads state, not mutation): #btn-zoom-fit -> zoomToWidth (editor.js:10419) computes (1600-96)/830 and applyZoom writes editor.style.zoom.",
+    "FIRST probe the exact stored value: boot a scratch page (tests/parity/_boot.cjs openEditor, WO_PORT pick e.g. 19800+), click #btn-zoom-fit, read getComputedStyle(#editor).zoom and editor.style.zoom. If the stored value is e.g. '1.812' or '181.2%' adjust the equals value in BOTH bindings to the EXACT string (viewport-flag compares the computed value string; check the runner viewport-flag case to see whether it reads style or computed style and which prop).",
+    "Both rows map to the same single WO control \u2014 keep both promoted entries (OO has two controls; WO absorbs them into one).",
+    "Verify: bash tests/parity/af-gate.sh 448 (446 + zoom-topage + zoom-towidth).",
+    "Commit ONLY the one listed file."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 448"
+  },
+  {
+   "id": "L2N-04",
+   "title": "Font dialog shell + launcher, promote font-dialog.l4",
+   "files": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/overrides-dropins/format-controls.json",
+    "apps/web/apps/documenteditor-wysiwyg/font-dialog-l4.test.mjs"
+   ],
+   "bindings": {
+    "dialog.font-dialog.l4": {
+     "effektClass": "dialog",
+     "woTab": "home",
+     "selector": "[data-cmd=\"fontDialog\"]",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#font-dialog"
+     }
+    }
+   },
+   "steps": [
+    "Add a #font-dialog .dialog-overlay (mirror #paragraph-settings-dialog structure): Font family select, Font style select (Regular/Bold/Italic/Bold Italic), Size select, Font color input[type=color], Underline style select, Effect checkboxes (Strikethrough, Double strikethrough, Superscript, Subscript, Small caps, All caps, Hidden), a live Preview span, OK + Cancel buttons. data-i18n labels + i18n keys (en+de). Register in DIALOG_IDS + the close map (editor.js:2041/2058).",
+    "Add a dialog launcher in the home font group (index.html, next to the font name/size selects): a small button [data-cmd=\"fontDialog\"] (title/aria-label i18n FontDialog) that opens the dialog for the selection. Handler: rememberFocus, openOverlayDialog('font-dialog'), prefill from getComputedStyle of the caret block. OK applies the chosen font properties through the existing emitCommand path (font/size/color/underline) or direct style application \u2014 keep it honest and minimal; Cancel closes.",
+    "Add apps/web/apps/documenteditor-wysiwyg/font-dialog-l4.test.mjs (node:test, readFileSync editor.js/index.html like label-parity.test.mjs does): assert the dialog markup exists with all listed effect ids, the launcher exists, the i18n keys resolve in both locales. Keep it fast and pure-node.",
+    "Promote dialog.font-dialog.l4 (format-controls.json) with the binding above (drop xfail).",
+    "Verify: bash tests/parity/af-gate.sh 449 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs font-dialog-l4.test.mjs)",
+    "Commit ONLY the five listed files."
+   ],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 449 && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test label-parity.test.mjs consistency-gate.test.mjs font-dialog-l4.test.mjs)"
+  }
+ ]
+}
