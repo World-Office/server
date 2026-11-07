@@ -35,6 +35,28 @@ if (!entries.length) { console.error('no runnable contracts (add overrides with 
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// fillDialogSet: shared dialog field filler for dialog-input/dialog-action.
+// set = [{selector, value}] (input/textarea -> fill, select -> selectOption,
+// checkbox -> check/uncheck) or {selector, pickFirstOption: true} (select
+// option index 1 — for selects populated from /api/documents where the
+// doc id is only known at runtime). Returns an error string or null.
+async function fillDialogSet(page, list, label) {
+  for (const s of (list || [])) {
+    const loc = page.locator(s.selector).first();
+    if (await loc.count() === 0) return `${label}: field missing ${s.selector}`;
+    if (s.pickFirstOption) {
+      try { await loc.selectOption({ index: 1 }); }
+      catch (e) { return `${label}: pickFirstOption failed on ${s.selector} (${String(e.message || e).slice(0, 60)})`; }
+      continue;
+    }
+    const info = await loc.evaluate(el => ({ tag: el.tagName.toLowerCase(), type: el.type || '' }));
+    if (info.tag === 'select') await loc.selectOption(String(s.value));
+    else if (info.type === 'checkbox') { s.value ? await loc.check() : await loc.uncheck(); }
+    else await loc.fill(String(s.value));
+  }
+  return null;
+}
+
 // Materialized fixture files for file-input contracts (assertion.files):
 // real bytes on disk so Playwright setInputFiles produces a genuine FileList
 // (setting input.value on type=file is a no-op). GIF passes IMAGE_TYPES.
@@ -90,16 +112,12 @@ async function checkEffect(page, ov, assertion) {
       // dom-mutation (assertion.expect = {selector, absent?}) OR that the
       // dialog closed (assertion.dialog).
       for (const s of (assertion.set || [])) {
-        const loc = page.locator(s.selector).first();
-        if (await loc.count() === 0) return { ok: false, observed: `dialog-input: field missing ${s.selector}` };
-        const info = await loc.evaluate(el => ({ tag: el.tagName.toLowerCase(), type: el.type || '' }));
-        if (info.tag === 'select') await loc.selectOption(String(s.value));
-        else if (info.type === 'checkbox') { s.value ? await loc.check() : await loc.uncheck(); }
-        else await loc.fill(String(s.value));
+        const err = await fillDialogSet(page, [s], 'dialog-input');
+        if (err) return { ok: false, observed: err };
       }
-      if (assertion.click) {
-        const btn = page.locator(assertion.click).first();
-        if (await btn.count() === 0) return { ok: false, observed: `dialog-input: button missing ${assertion.click}` };
+      for (const c of (Array.isArray(assertion.click) ? assertion.click : (assertion.click ? [assertion.click] : []))) {
+        const btn = page.locator(c).first();
+        if (await btn.count() === 0) return { ok: false, observed: `dialog-input: button missing ${c}` };
         await btn.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
         await btn.click();
         await sleep(300);
@@ -152,6 +170,11 @@ async function checkEffect(page, ov, assertion) {
           await page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('dialog-action: opener missing ' + sel); el.click(); }, assertion.open.selector);
           await sleep(300);
         }
+      }
+      // optional field fill before the button (compare/combine selects)
+      {
+        const err = await fillDialogSet(page, assertion.set, 'dialog-action');
+        if (err) return { ok: false, observed: err };
       }
       for (const f of (assertion.files || [])) {
         // file-input contracts (ctx.replace-image): setInputFiles fires the
@@ -387,6 +410,40 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-on-object') {
+        // edit-object contracts: editSelectedObject() requires a div.object
+        // placeholder (isEditableObject) — seed one, select + right-click it
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before <span id="obj-anchor"></span> after</p>';
+          const o = document.createElement('div');
+          o.className = 'object';
+          o.id = 'fixture-obj';
+          o.setAttribute('data-kind', 'shape');
+          o.style.cssText = 'width:90px;height:70px;background:#dde6f0;display:inline-block';
+          document.querySelector('#obj-anchor').replaceWith(o);
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-obj', { timeout: 3000 });
+        const box = await page.locator('#fixture-obj').boundingBox();
+        if (!box) throw new Error('ctx-menu-on-object: no box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'peer-doc') {
+        // compare/combine selects are populated from /api/documents minus the
+        // current doc — create a second document so the select has an option
+        const created = await page.evaluate(async () => {
+          const res = await fetch('/api/documents/new', { method: 'POST' });
+          if (!res.ok) return null;
+          const data = await res.json();
+          return data.doc_id || null;
+        });
+        if (!created) throw new Error('peer-doc: could not create second document');
+        await sleep(100);
       }
       else if (ov.pre === 'ctx-menu-on-chart') {
         // chart-gated ctx rows: same as on-image but the fixture is a chart
@@ -940,8 +997,20 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:header-field', window.__woCollect);
           window.addEventListener('wo:style-from-format', window.__woCollect);
           window.addEventListener('wo:print-selection', window.__woCollect);
+          window.addEventListener('wo:close-document', window.__woCollect);
         });
       }
+
+      // 3c. clipboard seed for paste contracts — the browser context has
+      // clipboard-read/write permissions (see _boot.cjs); writeText is the
+      // only way to get text into the headless system clipboard
+      if (ov.seedClipboard) await page.evaluate((t) => navigator.clipboard.writeText(t), ov.seedClipboard);
+
+      // 3d. acceptDialogs: window.confirm() is synchronous and Playwright
+      // auto-dismisses (cancel) — register an accept handler around the
+      // trigger so close-document contracts can proceed (shortcut.closefile)
+      const dlgHandler = (d) => d.accept();
+      if (ov.acceptDialogs) page.on('dialog', dlgHandler);
 
       // 4. trigger — hit-test was proven with elementFromPoint above; the
       // synthetic click keeps the live selection intact (a real mouse click
@@ -979,6 +1048,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await trigger();
         effect = await checkEffect(page, ov, ov.assertion || { kind: 'unspecified' });
       }
+      if (ov.acceptDialogs) page.off('dialog', dlgHandler);
 
       // 5. observe effect
       const effect2 = effect;

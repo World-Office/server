@@ -9,11 +9,20 @@
         "dialogSelector": "#photo-editor-dialog"
       },
       "subFeatures": [
-        { "name": "photo canvas", "selector": "#photo-editor-canvas" },
-        { "name": "crop tool", "selector": "#btn-photo-editor-crop" },
-        { "name": "brightness filter", "selector": "#photo-editor-brightness" }
+        {
+          "name": "photo canvas",
+          "selector": "#photo-editor-canvas"
+        },
+        {
+          "name": "crop tool",
+          "selector": "#btn-photo-editor-crop"
+        },
+        {
+          "name": "brightness filter",
+          "selector": "#photo-editor-brightness"
+        }
       ],
-      "note": "ledger row ctx.crop — ctx-menu-on-image pre: Crop loads the picked plain img into the photo editor (photoEditorDialog gains .open) with the T-002 crop tool + filter controls"
+      "note": "ledger row ctx.crop \u2014 ctx-menu-on-image pre: Crop loads the picked plain img into the photo editor (photoEditorDialog gains .open) with the T-002 crop tool + filter controls"
     },
     "ctx.replace-image": {
       "effektClass": "dialog",
@@ -24,10 +33,16 @@
         "dialogSelector": "#image-dialog"
       },
       "subFeatures": [
-        { "name": "file input", "selector": "#image-file" },
-        { "name": "ok action", "selector": "#btn-image-ok" }
+        {
+          "name": "file input",
+          "selector": "#image-file"
+        },
+        {
+          "name": "ok action",
+          "selector": "#btn-image-ok"
+        }
       ],
-      "note": "ledger row ctx.replace-image — ctx-menu-on-image pre: ReplaceImage routes applyObjectOp(\"replace-image\") -> insertImage(), which opens the #image-dialog insert-pop"
+      "note": "ledger row ctx.replace-image \u2014 ctx-menu-on-image pre: ReplaceImage routes applyObjectOp(\"replace-image\") -> insertImage(), which opens the #image-dialog insert-pop"
     },
     "ctx.convert-to-shape": {
       "effektClass": "dialog",
@@ -38,31 +53,40 @@
         "dialogSelector": "#shape-dialog"
       },
       "subFeatures": [
-        { "name": "shape options", "selector": ".shape-option" },
-        { "name": "insert action", "selector": "#btn-shape-ok" }
+        {
+          "name": "shape options",
+          "selector": ".shape-option"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-shape-ok"
+        }
       ],
-      "note": "ledger row ctx.convert-to-shape — ctx-menu-on-image pre: ConvertToShape calls openShapePicker(selectedObject()), which opens #shape-dialog with the shape options (commit via selectShape + #btn-shape-ok is post-dialog interaction)"
+      "note": "ledger row ctx.convert-to-shape \u2014 ctx-menu-on-image pre: ConvertToShape calls openShapePicker(selectedObject()), which opens #shape-dialog with the shape options (commit via selectShape + #btn-shape-ok is post-dialog interaction)"
     },
     "ctx.rotate": {
       "effektClass": "op",
       "xfail": true,
       "pre": "ctx-menu-on-image",
       "selector": "#rp-image-rotate",
-      "note": "KNOWN GAP: ledger row ctx.rotate — WO has no Rotate ctx item at all; the census maps the capability to the right-panel #rp-image-rotate (applyImageRotate90). The ctx-menu-on-image pre DOES satisfy the image pick (lastObjectPick), but the #right-panel aside stays hidden until its View rail toggle is clicked and no contract pre opens it, so the control never reaches a hit-testable state."
+      "note": "KNOWN GAP: ledger row ctx.rotate \u2014 WO has no Rotate ctx item at all; the census maps the capability to the right-panel #rp-image-rotate (applyImageRotate90). The ctx-menu-on-image pre DOES satisfy the image pick (lastObjectPick), but the #right-panel aside stays hidden until its View rail toggle is clicked and no contract pre opens it, so the control never reaches a hit-testable state."
     },
     "ctx.edit-points": {
       "effektClass": "op",
       "xfail": true,
       "pre": "ctx-menu-on-image",
       "selector": "[data-ctx=\"EditPoints\"]",
-      "note": "KNOWN GAP: ledger row ctx.edit-points — LOUD registered divergence (Phase 5/WO-22): no vector contour model in the web editor, so the handler only dispatches the wo:edit-points window marker event and setStatus NotAvailable; no dialog/DOM/style mutation exists for any contract assertion to observe."
+      "note": "KNOWN GAP: ledger row ctx.edit-points \u2014 LOUD registered divergence (Phase 5/WO-22): no vector contour model in the web editor, so the handler only dispatches the wo:edit-points window marker event and setStatus NotAvailable; no dialog/DOM/style mutation exists for any contract assertion to observe."
     },
     "ctx.edit-object": {
       "effektClass": "dialog",
-      "xfail": true,
-      "pre": "ctx-menu-on-image",
+      "pre": "ctx-menu-on-object",
       "selector": "[data-ctx=\"EditObject\"]",
-      "note": "KNOWN GAP: ledger row ctx.edit-object — editSelectedObject() requires a div.object placeholder (isEditableObject); the ctx-menu-on-image fixture is a plain <img>, so the handler is setStatus-only inert and #object-dialog never opens. Would need a div.object placeholder fixture pre."
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "note": "editSelectedObject requires a div.object (isEditableObject) \u2014 ctx-menu-on-object seeds one and right-clicks it; opens #object-dialog"
     },
     "ctx.remove-content-control": {
       "effektClass": "op",
@@ -73,20 +97,23 @@
         "selector": "#editor #fixture-cc",
         "absent": true
       },
-      "note": "ledger row ctx.remove-content-control — ctx-menu-on-cc pre plants span#fixture-cc.content-control[data-cc=rich] and selects its contents; the ungated row unwraps the control at the caret (editor.js:10075-10089, children hoisted into the parent p, span removed) — dom-mutation absent:true observes the unwrap"
+      "note": "ledger row ctx.remove-content-control \u2014 ctx-menu-on-cc pre plants span#fixture-cc.content-control[data-cc=rich] and selects its contents; the ungated row unwraps the control at the caret (editor.js:10075-10089, children hoisted into the parent p, span removed) \u2014 dom-mutation absent:true observes the unwrap"
     },
     "ctx.resize-to-cell": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu-on-image",
+      "pre": "ctx-menu-on-image-in-cell",
       "selector": "[data-ctx=\"ResizeToCell\"]",
-      "note": "KNOWN GAP: ledger row ctx.resize-to-cell — the data-showif=\"object\" item is visible over the fixture image, but resizeSelectedObjectToCell() needs the object to sit inside a table cell (obj.closest(\"td\")); the ctx-menu-on-image fixture is a plain <p><img></p>, so the handler no-ops into Status.ResizeToCellNoTable. Needs an image-in-table pre."
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor td img:not([style*=\"120px\"])"
+      },
+      "note": "resizeSelectedObjectToCell needs the img inside a td (in-cell pre); the fixture img starts at width:120px so any rewritten inline style satisfies the presence-inverted selector"
     }
   },
   "$skipped": [
     {
       "row": "ctx.save-as-picture",
-      "reason": "download-only: applyObjectOp(\"save-as-picture\") builds an <a download> and clicks it — the effect lands in the browser download channel (plus a status line), leaving no editor DOM/style/dialog mutation any contract assertion kind can observe."
+      "reason": "download-only: applyObjectOp(\"save-as-picture\") builds an <a download> and clicks it \u2014 the effect lands in the browser download channel (plus a status line), leaving no editor DOM/style/dialog mutation any contract assertion kind can observe."
     }
   ]
 }

@@ -1,5 +1,7 @@
 {
-  "$supersedes": ["chart-tab.json"],
+  "$supersedes": [
+    "chart-tab.json"
+  ],
   "entries": {
     "charteditdata": {
       "effektClass": "dialog",
@@ -11,11 +13,20 @@
         "dialogSelector": "#chart-dialog"
       },
       "subFeatures": [
-        { "name": "chart type select", "selector": "#chart-type-select" },
-        { "name": "chart title input", "selector": "#chart-title" },
-        { "name": "chart data grid", "selector": "#chart-data input" }
+        {
+          "name": "chart type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "chart title input",
+          "selector": "#chart-title"
+        },
+        {
+          "name": "chart data grid",
+          "selector": "#chart-data input"
+        }
       ],
-      "note": "ledger row: chart.edit-data — FLIPPED via chart-selection pre: clicking the fixture chart sets lastChartPick/selectedChart() and activates the contextual chart-design tab; editSelectedChartData() now reaches openVectorEditor(\"chart\", spec, img) which opens #chart-dialog and fills type select, title input and the #chart-data grid (editor.js:13720)"
+      "note": "ledger row: chart.edit-data \u2014 FLIPPED via chart-selection pre: clicking the fixture chart sets lastChartPick/selectedChart() and activates the contextual chart-design tab; editSelectedChartData() now reaches openVectorEditor(\"chart\", spec, img) which opens #chart-dialog and fills type select, title input and the #chart-data grid (editor.js:13720)"
     },
     "chartupdatedata": {
       "effektClass": "op",
@@ -26,7 +37,7 @@
         "kind": "dom-mutation",
         "selector": "#fixture-chart[data-spec*=\"width\"]"
       },
-      "note": "ledger row: chart.update-data — FLIPPED via chart-selection pre: updateSelectedChartData() rerenderChart()s the selected chart and reloadVectorTarget rewrites img[data-spec] with the normalized spec (adds \"width\":420, absent from the fixture spec — real mutation, not mere presence)"
+      "note": "ledger row: chart.update-data \u2014 FLIPPED via chart-selection pre: updateSelectedChartData() rerenderChart()s the selected chart and reloadVectorTarget rewrites img[data-spec] with the normalized spec (adds \"width\":420, absent from the fixture spec \u2014 real mutation, not mere presence)"
     },
     "chart.advanced-settings": {
       "effektClass": "dialog",
@@ -38,11 +49,20 @@
         "dialogSelector": "#chart-dialog"
       },
       "subFeatures": [
-        { "name": "chart type select", "selector": "#chart-type-select" },
-        { "name": "chart title input", "selector": "#chart-title" },
-        { "name": "chart data grid", "selector": "#chart-data input" }
+        {
+          "name": "chart type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "chart title input",
+          "selector": "#chart-title"
+        },
+        {
+          "name": "chart data grid",
+          "selector": "#chart-data input"
+        }
       ],
-      "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523)"
+      "note": "ledger row: chart.advanced-settings \u2014 FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) \u2192 #chart-dialog (editor.js:1523)"
     },
     "chart.chart-type": {
       "effektClass": "op",
@@ -53,7 +73,7 @@
         "kind": "dom-mutation",
         "selector": ".ribbon-page[data-tab=\"chart-design\"] ul.menu-list:not([hidden])"
       },
-      "note": "ledger row: chart.chart-type — FLIPPED via chart-selection pre: the contextual chart-design page is active, so the 'Chart type ▾' rb-menu trigger is visible and hittable; its click handler (editor.js:10677) unhides ul.menu-list (items data-cmd=chartType bar|line|pie|area verified)"
+      "note": "ledger row: chart.chart-type \u2014 FLIPPED via chart-selection pre: the contextual chart-design page is active, so the 'Chart type \u25be' rb-menu trigger is visible and hittable; its click handler (editor.js:10677) unhides ul.menu-list (items data-cmd=chartType bar|line|pie|area verified)"
     },
     "chart.chart-elements": {
       "effektClass": "op",
@@ -64,65 +84,68 @@
         "kind": "dom-mutation",
         "selector": ".ribbon-page[data-tab=\"chart-design\"] ul.menu-list:not([hidden])"
       },
-      "note": "ledger row: chart.chart-elements — FLIPPED via chart-selection pre: 'Chart elements ▾' rb-menu trigger opens its ul.menu-list on the active contextual tab (items data-cmd=chartElement title|legend|gridlines|dataLabels|axes|axisTitles|trendline|errorBars|upDownBars|dataTable verified in index.html:889-898)"
+      "note": "ledger row: chart.chart-elements \u2014 FLIPPED via chart-selection pre: 'Chart elements \u25be' rb-menu trigger opens its ul.menu-list on the active contextual tab (items data-cmd=chartElement title|legend|gridlines|dataLabels|axes|axisTitles|trendline|errorBars|upDownBars|dataTable verified in index.html:889-898)"
     },
     "chart3d": {
-      "effektClass": "dialog",
-      "woTab": "chart-design",
+      "effektClass": "op",
       "pre": "chart-selection",
+      "woTab": "chart-design",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chart3d\"]",
-      "xfail": true,
-      "note": "chart3d is a status/event stub (3D unsupported) — needs event-observer kind. The chart-selection pre solves the hidden-tab gap (control is visible/hittable), but the handler only setStatus(\"3D charts are not supported\") + dispatches wo:chart-3d (editor.js:1535) — no dialog or DOM effect ever appears, so no current assertion kind can observe it"
+      "assertion": {
+        "kind": "op-emitted",
+        "event": "wo:chart-3d"
+      },
+      "note": "loud registered divergence: chart3d is a stub that setStatus + dispatches wo:chart-3d \u2014 op-emitted event observer now exists, contract asserts the event (loud-stub doctrine); supersedes the dialog-assert xfail in chart-tab.json"
     }
   },
   "$skipped": [
     {
       "row": "chart.width",
-      "reason": "control is #chart-width-input (input[type=number]) — clicking is a no-op and the runner's click-only trigger cannot express fill+change; chart-selection enables it (updateChartDesignState) but the value contract still needs an input-fill kind the runner lacks"
+      "reason": "control is #chart-width-input (input[type=number]) \u2014 clicking is a no-op and the runner's click-only trigger cannot express fill+change; chart-selection enables it (updateChartDesignState) but the value contract still needs an input-fill kind the runner lacks"
     },
     {
       "row": "chart.height",
-      "reason": "control is #chart-height-input (input[type=number]) — same as chart.width: click no-op, change-event contract not expressible by the runner"
+      "reason": "control is #chart-height-input (input[type=number]) \u2014 same as chart.width: click no-op, change-event contract not expressible by the runner"
     },
     {
       "row": "chart.wrapping",
-      "reason": "ledger binds this row to tab:layout; the chart-design copy is an rb-menu whose items share data-cmd=objectOp with layout object ops — the items sit inside the hidden menu-list and the runner's hit-test cannot reach menu items with its single-click trigger vocabulary"
+      "reason": "ledger binds this row to tab:layout; the chart-design copy is an rb-menu whose items share data-cmd=objectOp with layout object ops \u2014 the items sit inside the hidden menu-list and the runner's hit-test cannot reach menu items with its single-click trigger vocabulary"
     },
     {
       "row": "chart.chart-title",
-      "reason": "effektClass dialog (runnable), but the trigger is the 'Chart title' item inside the hidden Chart elements rb-menu (data-cmd=chartElement data-value=title) — boundingBox/hit-test on hidden menu items fails before the runner's single trigger click; would need a two-step open-then-click contract"
+      "reason": "effektClass dialog (runnable), but the trigger is the 'Chart title' item inside the hidden Chart elements rb-menu (data-cmd=chartElement data-value=title) \u2014 boundingBox/hit-test on hidden menu items fails before the runner's single trigger click; would need a two-step open-then-click contract"
     },
     {
       "row": "chart.axes",
-      "reason": "ledger effektClass unclassified — contract-runner only runs format|structure|dialog|op|view; trigger is also a hidden Chart elements rb-menu item (data-cmd=chartElement data-value=axes). toggleChartElement would mutate img[data-spec] (dom-mutation assertable), but neither the class filter nor the hit-test can be satisfied"
+      "reason": "ledger effektClass unclassified \u2014 contract-runner only runs format|structure|dialog|op|view; trigger is also a hidden Chart elements rb-menu item (data-cmd=chartElement data-value=axes). toggleChartElement would mutate img[data-spec] (dom-mutation assertable), but neither the class filter nor the hit-test can be satisfied"
     },
     {
       "row": "chart.legend",
-      "reason": "ledger effektClass unclassified (token 'legend') — runner class filter skips it; trigger is the hidden 'Legend' rb-menu item (data-cmd=chartElement data-value=legend), unreachable by hit-test"
+      "reason": "ledger effektClass unclassified (token 'legend') \u2014 runner class filter skips it; trigger is the hidden 'Legend' rb-menu item (data-cmd=chartElement data-value=legend), unreachable by hit-test"
     },
     {
       "row": "chart.gridlines",
-      "reason": "ledger binds this row to token btn-gridlines where tab:view — that is the document-gridlines view toggle, not the chart-element menu item; overriding btn-gridlines here would hijack the view-tab contract, and the chart Gridlines menu item itself is hidden-rb-menu (hit-test unreachable)"
+      "reason": "ledger binds this row to token btn-gridlines where tab:view \u2014 that is the document-gridlines view toggle, not the chart-element menu item; overriding btn-gridlines here would hijack the view-tab contract, and the chart Gridlines menu item itself is hidden-rb-menu (hit-test unreachable)"
     },
     {
       "row": "chart.data-labels",
-      "reason": "ledger effektClass unclassified — runner class filter skips it; trigger is the hidden 'Data labels' rb-menu item (data-cmd=chartElement data-value=dataLabels), unreachable by hit-test"
+      "reason": "ledger effektClass unclassified \u2014 runner class filter skips it; trigger is the hidden 'Data labels' rb-menu item (data-cmd=chartElement data-value=dataLabels), unreachable by hit-test"
     },
     {
       "row": "chart.axis-titles",
-      "reason": "ledger effektClass unclassified — runner class filter skips it; trigger is the hidden 'Axis Titles' rb-menu item (data-cmd=chartElement data-value=axisTitles), unreachable by hit-test"
+      "reason": "ledger effektClass unclassified \u2014 runner class filter skips it; trigger is the hidden 'Axis Titles' rb-menu item (data-cmd=chartElement data-value=axisTitles), unreachable by hit-test"
     },
     {
       "row": "chart.trendline",
-      "reason": "ledger effektClass unclassified (token 'trendline') — runner class filter skips it; trigger is the hidden 'Trendline' rb-menu item; also CHART_ELEMENT_SUPPORT gates trendline off bar charts (setStatus only on the fixture bar chart)"
+      "reason": "ledger effektClass unclassified (token 'trendline') \u2014 runner class filter skips it; trigger is the hidden 'Trendline' rb-menu item; also CHART_ELEMENT_SUPPORT gates trendline off bar charts (setStatus only on the fixture bar chart)"
     },
     {
       "row": "chart.error-bars",
-      "reason": "ledger effektClass unclassified — runner class filter skips it; trigger is the hidden 'Error Bars' rb-menu item (data-cmd=chartElement data-value=errorBars), unreachable by hit-test (handler would support bar charts)"
+      "reason": "ledger effektClass unclassified \u2014 runner class filter skips it; trigger is the hidden 'Error Bars' rb-menu item (data-cmd=chartElement data-value=errorBars), unreachable by hit-test (handler would support bar charts)"
     },
     {
       "row": "chart.up-down-bars",
-      "reason": "ledger effektClass unclassified — runner class filter skips it; trigger is the hidden 'Up/Down Bars' rb-menu item; also CHART_ELEMENT_SUPPORT limits upDownBars to line charts — the fixture bar chart would only setStatus"
+      "reason": "ledger effektClass unclassified \u2014 runner class filter skips it; trigger is the hidden 'Up/Down Bars' rb-menu item; also CHART_ELEMENT_SUPPORT limits upDownBars to line charts \u2014 the fixture bar chart would only setStatus"
     }
   ]
 }

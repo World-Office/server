@@ -177,15 +177,20 @@
     },
     "image.photo-editor": {
       "effektClass": "dialog",
-      "xfail": true,
-      "selector": "[data-cmd=\"photoEditor\"]",
       "woTab": "plugins",
+      "selector": "[data-cmd=\"photoEditor\"]",
       "assertion": {
         "kind": "dialog-action",
+        "files": [
+          {
+            "selector": "#photo-editor-file",
+            "fixture": "1x1.gif"
+          }
+        ],
         "button": "#btn-photo-editor-apply",
         "dialog": "#photo-editor-dialog"
       },
-      "note": "ledger row: image.photo-editor \u2014 data-cmd=photoEditor (plugins tab, index.html:832) \u2192 openPhotoEditorDialog opens #photo-editor-dialog (editor.js:1591, 12195-12200); #btn-photo-editor-apply \u2192 photoEditorApply closes it (editor.js:12384) \u2014 code-verified, but superseded by plugins.json (loads later, last file wins) which carries the live dialog-visible row; kept xfail"
+      "note": "photoEditorApply needs photoEditorImage loaded \u2014 assertion.files feeds #photo-editor-file, apply crops/filters onto canvas and closes"
     },
     "table.insert-custom-table": {
       "effektClass": "dialog",

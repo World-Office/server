@@ -9,12 +9,21 @@
         "dialogSelector": "#chart-dialog"
       },
       "subFeatures": [
-        { "name": "chart type select", "selector": "#chart-type-select" },
-        { "name": "chart title input", "selector": "#chart-title" },
-        { "name": "chart data grid", "selector": "#chart-data input" }
+        {
+          "name": "chart type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "chart title input",
+          "selector": "#chart-title"
+        },
+        {
+          "name": "chart data grid",
+          "selector": "#chart-data input"
+        }
       ],
       "xfail": true,
-      "note": "ledger row: chart.advanced-settings — KNOWN GAP: contextual tab. .ribbon-tab[data-tab=chart-design] ships hidden and is revealed only by clicking img.vector-object[data-kind=chart] inside #editor (editor.js chart click handler); no pre in the runner vocabulary builds chart selection. Probed: playwright click on the hidden tab times out; even with the tab force-shown, chartSettings without a chart only setStatus(\"No chart selected\") + wo:chart-settings marker — openVectorEditor(#chart-dialog) is gated on selectedChart(). needs chart-selection pre"
+      "note": "ledger row: chart.advanced-settings \u2014 KNOWN GAP: contextual tab. .ribbon-tab[data-tab=chart-design] ships hidden and is revealed only by clicking img.vector-object[data-kind=chart] inside #editor (editor.js chart click handler); no pre in the runner vocabulary builds chart selection. Probed: playwright click on the hidden tab times out; even with the tab force-shown, chartSettings without a chart only setStatus(\"No chart selected\") + wo:chart-settings marker \u2014 openVectorEditor(#chart-dialog) is gated on selectedChart(). needs chart-selection pre"
     },
     "charteditdata": {
       "effektClass": "dialog",
@@ -25,12 +34,21 @@
         "dialogSelector": "#chart-dialog"
       },
       "subFeatures": [
-        { "name": "chart type select", "selector": "#chart-type-select" },
-        { "name": "chart title input", "selector": "#chart-title" },
-        { "name": "chart data grid", "selector": "#chart-data input" }
+        {
+          "name": "chart type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "chart title input",
+          "selector": "#chart-title"
+        },
+        {
+          "name": "chart data grid",
+          "selector": "#chart-data input"
+        }
       ],
       "xfail": true,
-      "note": "ledger row: chart.edit-data — KNOWN GAP: contextual tab + gated handler. editSelectedChartData() returns early with status \"Not available yet: chartEditData\" when no img.vector-object[data-kind=chart] is selected (editor.js:13722); with a chart it opens #chart-dialog. Tab is hidden until a chart is clicked — needs chart-selection pre"
+      "note": "ledger row: chart.edit-data \u2014 KNOWN GAP: contextual tab + gated handler. editSelectedChartData() returns early with status \"Not available yet: chartEditData\" when no img.vector-object[data-kind=chart] is selected (editor.js:13722); with a chart it opens #chart-dialog. Tab is hidden until a chart is clicked \u2014 needs chart-selection pre"
     },
     "chartupdatedata": {
       "effektClass": "op",
@@ -41,14 +59,18 @@
         "selector": "#editor img.vector-object[data-kind='chart']"
       },
       "xfail": true,
-      "note": "ledger row: chart.update-data — KNOWN GAP: contextual tab + gated handler. updateSelectedChartData() re-renders the selected chart in place (rerenderChart, no dialog) but returns early with status when no chart is selected (editor.js:13728). Tab is hidden until a chart is clicked — needs chart-selection pre"
+      "note": "ledger row: chart.update-data \u2014 KNOWN GAP: contextual tab + gated handler. updateSelectedChartData() re-renders the selected chart in place (rerenderChart, no dialog) but returns early with status when no chart is selected (editor.js:13728). Tab is hidden until a chart is clicked \u2014 needs chart-selection pre"
     },
     "chart3d": {
-      "effektClass": "dialog",
+      "effektClass": "op",
+      "pre": "chart-selection",
       "woTab": "chart-design",
-      "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chart3d\"]",
-      "xfail": true,
-      "note": "ledger row: chart.3d-rotation — KNOWN GAP (double): (1) contextual tab hidden until a chart is clicked — needs chart-selection pre; (2) even with the tab force-shown the handler ONLY setStatus(\"3D charts are not supported\") + fires the wo:chart-3d marker event — no 3D-rotation dialog or any visible effect ever appears (probed live). Real parity gap beyond the missing pre"
+      "selector": "[data-cmd=\"chart3d\"]",
+      "assertion": {
+        "kind": "op-emitted",
+        "event": "wo:chart-3d"
+      },
+      "note": "loud registered divergence: chart3d is a stub that setStatus + dispatches wo:chart-3d \u2014 contract asserts the event (loud-stub doctrine)"
     },
     "chart.chart-type": {
       "effektClass": "op",
@@ -59,7 +81,7 @@
         "selector": ".ribbon-page[data-tab=\"chart-design\"] ul.menu-list:not([hidden])"
       },
       "xfail": true,
-      "note": "ledger row: chart.chart-type — KNOWN GAP: contextual tab. 'Chart type ▾' is a generic rb-menu trigger with NO data-cmd (items carry data-cmd=chartType data-value=bar|line|pie|area). Probed: the dropdown does open its ul.menu-list when the page is shown, but the tab itself is unreachable without clicking a chart, and chartType items without a chart only setStatus(\"Not available yet: chartType bar\") — needs chart-selection pre"
+      "note": "ledger row: chart.chart-type \u2014 KNOWN GAP: contextual tab. 'Chart type \u25be' is a generic rb-menu trigger with NO data-cmd (items carry data-cmd=chartType data-value=bar|line|pie|area). Probed: the dropdown does open its ul.menu-list when the page is shown, but the tab itself is unreachable without clicking a chart, and chartType items without a chart only setStatus(\"Not available yet: chartType bar\") \u2014 needs chart-selection pre"
     },
     "chart.chart-elements": {
       "effektClass": "op",
@@ -70,21 +92,21 @@
         "selector": ".ribbon-page[data-tab=\"chart-design\"] ul.menu-list:not([hidden])"
       },
       "xfail": true,
-      "note": "ledger row: chart.chart-elements — KNOWN GAP: contextual tab. 'Chart elements ▾' rb-menu trigger (items data-cmd=chartElement data-value=title|legend|gridlines|…). Dropdown opens when the page is shown (probed), but the tab is hidden until a chart is clicked and chartElement toggles without a chart only setStatus(\"Not available yet: chartElement …\") — needs chart-selection pre"
+      "note": "ledger row: chart.chart-elements \u2014 KNOWN GAP: contextual tab. 'Chart elements \u25be' rb-menu trigger (items data-cmd=chartElement data-value=title|legend|gridlines|\u2026). Dropdown opens when the page is shown (probed), but the tab is hidden until a chart is clicked and chartElement toggles without a chart only setStatus(\"Not available yet: chartElement \u2026\") \u2014 needs chart-selection pre"
     }
   },
   "$skipped": [
     {
       "row": "chart.width",
-      "reason": "control is #chart-width-input (input[type=number]) — clicking is a no-op and the runner's click-only trigger cannot express fill+change; the input is also disabled until a chart is selected (updateChartDesignState) and the tab contextual. Needs chart-selection pre + an input contract the runner cannot express"
+      "reason": "control is #chart-width-input (input[type=number]) \u2014 clicking is a no-op and the runner's click-only trigger cannot express fill+change; the input is also disabled until a chart is selected (updateChartDesignState) and the tab contextual. Needs chart-selection pre + an input contract the runner cannot express"
     },
     {
       "row": "chart.height",
-      "reason": "control is #chart-height-input (input[type=number]) — same as chart.width: click no-op, disabled without chart selection, change-event contract not expressible by the runner"
+      "reason": "control is #chart-height-input (input[type=number]) \u2014 same as chart.width: click no-op, disabled without chart selection, change-event contract not expressible by the runner"
     },
     {
       "row": "chart.wrapping",
-      "reason": "ledger binds this row to tab:layout; the chart-design copy is an rb-menu whose items share data-cmd=objectOp with layout object ops — objectOp requires a selected object/chart (no-op status otherwise) and the contextual tab is unreachable without chart selection. No stable contract without a chart-selection pre"
+      "reason": "ledger binds this row to tab:layout; the chart-design copy is an rb-menu whose items share data-cmd=objectOp with layout object ops \u2014 objectOp requires a selected object/chart (no-op status otherwise) and the contextual tab is unreachable without chart selection. No stable contract without a chart-selection pre"
     }
   ]
 }
