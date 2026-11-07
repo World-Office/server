@@ -14,15 +14,14 @@
     },
     "ctx.content-control-settings": {
       "effektClass": "dialog",
-      "pre": "ctx-menu",
+      "pre": "ctx-menu-on-cc",
       "selector": "[data-ctx=\"ContentControlSettings\"]",
       "assertion": {
         "kind": "dialog-action",
         "button": "#btn-cc-ok",
         "dialog": "#cc-dialog"
       },
-      "xfail": true,
-      "note": "KNOWN GAP: ctx data-ctx=ContentControlSettings (editor.js:10058) requires contentControlAtSelection(); with no content control it sets Status.NoContentControl and returns WITHOUT opening #cc-dialog, and no runner pre builds a content control — #btn-cc-ok is unreachable, dialog-action cannot fire (honest xfail; grep-verified)"
+      "note": "ledger row: ctx.content-control-settings — ctx-menu-on-cc pre plants a span.content-control and selects inside it, so contentControlAtSelection() finds the control: the handler sets ccEditTarget, primes #cc-type/#cc-title from the control and openDlg(\"cc-dialog\") (editor.js:10058-10074); #btn-cc-ok refreshes the control (type + label) then closeDlg removes .open (editor.js:13240-13250), dialog-action observes the clean close"
     },
     "ctx.convert-to-shape": {
       "effektClass": "dialog",

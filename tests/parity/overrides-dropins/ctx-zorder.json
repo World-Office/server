@@ -189,15 +189,15 @@
     },
     "ctx.ungroup": {
       "effektClass": "op",
-      "pre": "ctx-menu-on-image",
+      "pre": "grouped-objects",
       "woTab": "layout",
       "selector": "[data-cmd=\"objectOp\"][data-value=\"ungroup\"]",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": "#editor div.object-group"
+        "selector": "#editor div.object-group",
+        "absent": true
       },
-      "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.ungroup \u2014 Layout tab Ungroup button is reachable, but ungroupSelectedObjects needs a selected .object-group (grouped-object state the runner cannot build: grouping itself already needs multi-select) \u2014 needs a grouped-object/multi-object pre (real runner vocabulary gap)"
+      "note": "ledger row ctx.ungroup — grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) — dom-mutation absent:true observes the group gone"
     },
     "ctx.top": {
       "effektClass": "dialog",
