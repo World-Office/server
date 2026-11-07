@@ -1,0 +1,250 @@
+{
+ "_meta": {
+  "name": "l2k-pres-wiring",
+  "description": "L2K: wire 14 proven xfail rows to the 6 new fixture pres (runner 2dae1a7c2). Each worker edits ONLY its listed drop-in files. Exact entry bindings are PROVEN (hand-probed PASS on this runner); do not invent new mechanics.",
+  "createdAt": "2026-11-06",
+  "baseline": {
+   "pass": 383,
+   "knownGap": 70,
+   "fail": 0
+  }
+ },
+ "defaults": {
+  "provider": "litellm",
+  "model": "litellm/glm-5.3-flash",
+  "api_key_env": "LITELLM_API_KEY",
+  "cli": "pi",
+  "params_b": 8,
+  "max_parallel": 1,
+  "branch": "tf/l2k-{id}",
+  "commit_style": "parity: promote <rows> via <pre> fixtures"
+ },
+ "tasks": [
+  {
+   "id": "L2K-01",
+   "title": "Promote ctx.horizontal + ctx.select-language in ctx-misc.json",
+   "repo": "server",
+   "files": [
+    "tests/parity/overrides-dropins/ctx-misc.json"
+   ],
+   "steps": [
+    "ctx.horizontal: replace xfail binding with exact object below (remove xfail key entirely)",
+    "ctx.select-language: replace xfail binding with exact object below (remove xfail key entirely)",
+    "Update each note to start with 'PROMOTED 2026-11-06: ' + one sentence why it works now"
+   ],
+   "bindings": {
+    "ctx.horizontal": {
+     "effektClass": "dialog",
+     "pre": "ctx-menu-on-vertical",
+     "selector": "[data-ctx=\"TextDirection\"]",
+     "assertion": {
+      "kind": "dialog-input",
+      "click": "[data-ctx=\"TextDirHorizontal\"]",
+      "expect": {
+       "selector": "#editor p[style*=\"writing-mode\"]",
+       "absent": true
+      }
+     }
+    },
+    "ctx.select-language": {
+     "effektClass": "dialog",
+     "pre": "ctx-menu-misspelled",
+     "selector": "[data-ctx=\"SelectLanguage\"]",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#doc-lang"
+     }
+    }
+   },
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 385"
+  },
+  {
+   "id": "L2K-02",
+   "title": "Promote deletecomment + resolvecomment in review-statusbar.json",
+   "repo": "server",
+   "files": [
+    "tests/parity/overrides-dropins/review-statusbar.json"
+   ],
+   "steps": [
+    "deletecomment (token deletecomment, feature review.delete): replace xfail binding with exact object below",
+    "resolvecomment (token resolvecomment, feature review.resolve): replace xfail binding with exact object below",
+    "Update notes to 'PROMOTED 2026-11-06: ...' (comment fixture pre + direct collaboration-tab ribbon buttons; do NOT open the comment dialog, its overlay blocks the ribbon)"
+   ],
+   "bindings": {
+    "deletecomment": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-comment",
+     "woTab": "collaboration",
+     "selector": "[data-cmd=\"deleteComment\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#editor span.comment",
+      "absent": true
+     }
+    },
+    "resolvecomment": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-comment",
+     "woTab": "collaboration",
+     "selector": "[data-cmd=\"resolveComment\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#editor span.comment[data-resolved]"
+     }
+    }
+   },
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 385"
+  },
+  {
+   "id": "L2K-03",
+   "title": "Promote 4 field ctx rows in ctx-fieldlink.json",
+   "repo": "server",
+   "files": [
+    "tests/parity/overrides-dropins/ctx-fieldlink.json"
+   ],
+   "steps": [
+    "Replace the xfail bindings of ctx.update-field, ctx.edit-field, ctx.toggle-field-codes, ctx.clear-field with the exact objects below",
+    "Update notes to 'PROMOTED 2026-11-06: ...' (page-number fixture pre; update/edit/toggle dispatch wo:field-op, observed via op-emitted; clear blanks the field text, observed via text-mutation empty)"
+   ],
+   "bindings": {
+    "ctx.update-field": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-field",
+     "selector": "[data-ctx=\"UpdateField\"]",
+     "assertion": {
+      "kind": "op-emitted",
+      "event": "wo:field-op"
+     }
+    },
+    "ctx.edit-field": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-field",
+     "selector": "[data-ctx=\"EditField\"]",
+     "assertion": {
+      "kind": "op-emitted",
+      "event": "wo:field-op"
+     }
+    },
+    "ctx.toggle-field-codes": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-field",
+     "selector": "[data-ctx=\"ToggleFieldCodes\"]",
+     "assertion": {
+      "kind": "op-emitted",
+      "event": "wo:field-op"
+     }
+    },
+    "ctx.clear-field": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-field",
+     "selector": "[data-ctx=\"ClearField\"]",
+     "assertion": {
+      "kind": "text-mutation",
+      "selector": "#editor .page-number",
+      "empty": true
+     }
+    }
+   },
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 387"
+  },
+  {
+   "id": "L2K-04",
+   "title": "Promote CC rows (ctx-imgops, dlg-ctx) + ctx.ungroup (ctx-zorder)",
+   "repo": "server",
+   "files": [
+    "tests/parity/overrides-dropins/ctx-imgops.json",
+    "tests/parity/overrides-dropins/dlg-ctx.json",
+    "tests/parity/overrides-dropins/ctx-zorder.json"
+   ],
+   "steps": [
+    "ctx.remove-content-control (ctx-imgops.json): replace xfail binding with exact object below",
+    "ctx.content-control-settings (dlg-ctx.json): replace xfail binding with exact object below",
+    "ctx.ungroup (ctx-zorder.json): replace xfail binding with exact object below",
+    "Update notes to 'PROMOTED 2026-11-06: ...' (content-control fixture pre; grouped-objects pre groups two fixture images via the real Layout>Group command)"
+   ],
+   "bindings": {
+    "ctx.remove-content-control": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-cc",
+     "selector": "[data-ctx=\"RemoveContentControl\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#editor span.content-control",
+      "absent": true
+     }
+    },
+    "ctx.content-control-settings": {
+     "effektClass": "op",
+     "pre": "ctx-menu-on-cc",
+     "selector": "[data-ctx=\"ContentControlSettings\"]",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#cc-dialog"
+     }
+    },
+    "ctx.ungroup": {
+     "effektClass": "op",
+     "pre": "grouped-objects",
+     "woTab": "layout",
+     "selector": "[data-cmd=\"objectOp\"][data-value=\"ungroup\"]",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": "#editor .object-group",
+      "absent": true
+     }
+    }
+   },
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 386"
+  },
+  {
+   "id": "L2K-05",
+   "title": "Promote HF rows (layout-protect, insert-struct, di-ref-review)",
+   "repo": "server",
+   "files": [
+    "tests/parity/overrides-dropins/layout-protect.json",
+    "tests/parity/overrides-dropins/insert-struct.json",
+    "tests/parity/overrides-dropins/di-ref-review.json"
+   ],
+   "steps": [
+    "headerfooter.close (layout-protect.json): replace xfail binding with exact object below",
+    "image.image (insert-struct.json): replace xfail binding with exact object below",
+    "dialoginput.headerfooter-field (di-ref-review.json): replace xfail binding with exact object below",
+    "Update notes to 'PROMOTED 2026-11-06: ...' (hf-editing pre seeds header.page-header and dblclicks it; enterHFMode reveals the contextual header-footer tab; btn-hf-field dispatches wo:header-field, observed via dialog-input event)"
+   ],
+   "bindings": {
+    "headerfooter.close": {
+     "effektClass": "op",
+     "pre": "hf-editing",
+     "woTab": "header-footer",
+     "selector": "#btn-hf-close",
+     "assertion": {
+      "kind": "dom-mutation",
+      "selector": ".ribbon-tab[data-tab=\"header-footer\"]:not([hidden])",
+      "absent": true
+     }
+    },
+    "image.image": {
+     "effektClass": "op",
+     "pre": "hf-editing",
+     "woTab": "header-footer",
+     "selector": "#btn-hf-image",
+     "assertion": {
+      "kind": "dialog-visible",
+      "dialogSelector": "#image-dialog"
+     }
+    },
+    "dialoginput.headerfooter-field": {
+     "effektClass": "dialog",
+     "pre": "hf-editing",
+     "woTab": "header-footer",
+     "selector": "#btn-hf-field",
+     "assertion": {
+      "kind": "dialog-input",
+      "event": "wo:header-field"
+     }
+    }
+   },
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 386"
+  }
+ ]
+}
