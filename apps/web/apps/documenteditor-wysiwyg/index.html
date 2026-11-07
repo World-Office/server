@@ -2956,6 +2956,52 @@
     </div>
   </div>
 
+  <div id="caption-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="caption-dialog-title">
+    <div class="dialog">
+      <h3 id="caption-dialog-title" data-i18n="Dialog.Caption.Title">Insert caption</h3>
+      <div class="dialog-field">
+        <label for="caption-text" data-i18n="Dialog.Caption.Caption">Caption</label>
+        <input id="caption-text" type="text">
+      </div>
+      <div class="dialog-field">
+        <label for="caption-label" data-i18n="Dialog.Caption.Label">Label</label>
+        <select id="caption-label">
+          <option value="figure" data-i18n="Dialog.Caption.LabelFigure">Figure</option>
+          <option value="table" data-i18n="Dialog.Caption.LabelTable">Table</option>
+          <option value="equation" data-i18n="Dialog.Caption.LabelEquation">Equation</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="caption-exclude-label" data-i18n="Dialog.Caption.ExcludeLabel">Exclude label from caption</label>
+        <input id="caption-exclude-label" type="checkbox">
+      </div>
+      <div class="dialog-field">
+        <label for="caption-numbering" data-i18n="Dialog.Caption.Numbering">Numbering</label>
+        <input id="caption-numbering" type="checkbox">
+      </div>
+      <div class="dialog-field">
+        <label for="caption-include-chapter" data-i18n="Dialog.Caption.IncludeChapter">Include chapter number</label>
+        <input id="caption-include-chapter" type="checkbox">
+      </div>
+      <div class="dialog-field">
+        <label for="caption-chapter-style" data-i18n="Dialog.Caption.ChapterStyle">Chapter starts with style</label>
+        <select id="caption-chapter-style">
+          <option value="heading-1" data-i18n="Dialog.Caption.ChapterStyle1">Heading 1</option>
+          <option value="heading-2" data-i18n="Dialog.Caption.ChapterStyle2">Heading 2</option>
+          <option value="heading-3" data-i18n="Dialog.Caption.ChapterStyle3">Heading 3</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="caption-use-separator" data-i18n="Dialog.Caption.UseSeparator">Use separator</label>
+        <input id="caption-use-separator" type="checkbox">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-caption-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-caption-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="plugins-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="plugins-dialog-title">
     <div class="dialog plugins-dialog">
       <h3 id="plugins-dialog-title" data-i18n="Plugins.Manage">Plugins</h3>

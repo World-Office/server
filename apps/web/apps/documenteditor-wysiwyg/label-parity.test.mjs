@@ -265,6 +265,34 @@ assert.ok(editorSrc.includes('data-field", "DATE"'),
   "Update automatically must insert a live DATE field")
 console.log("Date & time dialog complete\n")
 
+// ── (f3) Caption dialog (references.dlg-insert-caption)
+console.log("Checking Caption dialog...")
+assert.ok(htmlSrc.includes('id="caption-dialog"'), "caption-dialog overlay must exist")
+const capDialog = sliceBetween(htmlSrc, 'id="caption-dialog"', "</div>\n  </div>")
+assert.ok(capDialog.includes('id="caption-text"'), "caption text input must exist")
+assert.ok(capDialog.includes('id="caption-label"'), "label select must exist")
+assert.ok(capDialog.includes('id="caption-exclude-label"'), "Exclude label checkbox must exist")
+assert.ok(capDialog.includes('id="caption-numbering"'), "Numbering checkbox must exist")
+assert.ok(capDialog.includes('id="caption-include-chapter"'), "Include chapter number checkbox must exist")
+assert.ok(capDialog.includes('id="caption-chapter-style"'), "Chapter starts with style select must exist")
+assert.ok(capDialog.includes('id="caption-use-separator"'), "Use separator checkbox must exist")
+assert.ok(capDialog.includes('id="btn-caption-ok"') && capDialog.includes('id="btn-caption-close"'),
+  "OK/Cancel buttons must exist")
+for (const key of ["Dialog.Caption.Title", "Dialog.Caption.Caption", "Dialog.Caption.Label", "Dialog.Caption.ExcludeLabel",
+  "Dialog.Caption.Numbering", "Dialog.Caption.IncludeChapter", "Dialog.Caption.ChapterStyle", "Dialog.Caption.UseSeparator"]) {
+  assert.ok(i18nSrc.includes(`"${key}": `), `${key} must exist in the catalogs`)
+}
+assert.ok(editorSrc.includes("openCaptionDialog") &&
+  editorSrc.includes('if (cmd === "insertCaption") { openCaptionDialog(); return; }'),
+  "insertCaption must open the dialog, not quick-insert")
+assert.ok(editorSrc.includes('["caption", confirmCaptionDialog]'),
+  "caption OK must route through the ROUND2 confirm wiring")
+assert.ok(editorSrc.includes('"caption-dialog"'),
+  "caption-dialog must be registered in DIALOG_IDS")
+assert.ok(editorSrc.includes('em.className = "wo-caption"'),
+  "inserted caption em must carry the wo-caption marker (sanitizer-proof, unique test hook)")
+console.log("Caption dialog complete\n")
+
 // ── (g) No bare console.log anywhere in editor.js ────────────────────
 console.log("Checking console.log ban...")
 assert.ok(!editorSrc.includes("console.log("),

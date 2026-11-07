@@ -1444,7 +1444,7 @@
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
     if (cmd === "toggleRightPanel") { toggleRightPanel(); return; }
     if (cmd === "toggleChat") { toggleChat(); return; }
-    if (cmd === "insertCaption") { insertCaptionCommand(); return; }
+    if (cmd === "insertCaption") { openCaptionDialog(); return; }
     if (cmd === "insertCitation") { insertCitation(); return; }
     if (cmd === "insertIndexEntry") { insertIndexEntry(); return; }
     if (cmd === "compareVersion") { openCompareView(); return; }
@@ -2038,7 +2038,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "caption-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -7524,11 +7524,60 @@
     setStatus("Display mode: " + next);
   }
 
-  // Caption: inside a table the caption wraps the table in
-  // <figure><figcaption> (maps to w:tblCaption); elsewhere it drops a
-  // centered caption paragraph (honest L1: plain styled paragraph).
-  function insertCaptionCommand() {
-    editor.focus();
+  // Caption (OO references.dlg-insert-caption): the References-tab Caption
+  // button no longer quick-inserts — it opens the Insert caption dialog
+  // (caption text, label select, "Exclude label from caption", numbering
+  // options, separator, OK/Cancel). Inside a table the OK still wraps the
+  // table in <figure><figcaption> (maps to w:tblCaption); elsewhere it
+  // drops a centered caption paragraph (honest L1: plain styled paragraph).
+  function openCaptionDialog() {
+    if (READ_ONLY) return;
+    const dlg = document.getElementById("caption-dialog");
+    if (!dlg) return;
+    const txt = document.getElementById("caption-text");
+    if (txt) txt.value = "";
+    rememberFocus();
+    openOverlayDialog("caption-dialog");
+  }
+  function composeCaptionText() {
+    const text = ((document.getElementById("caption-text") || {}).value || "").trim() || "Caption";
+    const LABELS = { figure: "Figure", table: "Table", equation: "Equation" };
+    const labelTok = (document.getElementById("caption-label") || {}).value || "figure";
+    const label = LABELS[labelTok] || "Figure";
+    const exclude = !!(document.getElementById("caption-exclude-label") || {}).checked;
+    const numbered = !!(document.getElementById("caption-numbering") || {}).checked;
+    const chapter = !!(document.getElementById("caption-include-chapter") || {}).checked;
+    const sep = (document.getElementById("caption-use-separator") || {}).checked ? ": " : ". ";
+    if (!numbered) return exclude ? text : label + sep + text;
+    // Item number: prior captions of the same label family in the document.
+    const prior = editor.querySelectorAll("figcaption").length +
+      Array.from(editor.querySelectorAll('p[style*="center"] em'))
+        .filter((em) => em.textContent.indexOf(label + " ") === 0).length;
+    const num = (chapter ? "1-" : "") + (prior + 1);
+    return (exclude ? "" : label + " ") + num + sep + text;
+  }
+  function confirmCaptionDialog() {
+    if (READ_ONLY) return;
+    const text = composeCaptionText();
+    // execCommand needs editable focus; a dialog-button click leaves focus
+    // on the ribbon — restore the editor (and caret) like the datetime
+    // dialog confirm does.
+    if (document.activeElement !== editor) {
+      editor.focus();
+      const s = window.getSelection();
+      if (s.isCollapsed && (!s.anchorNode || !s.anchorNode.closest || !s.anchorNode.closest("#editor"))) {
+        const w = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        const n = w.nextNode();
+        if (n) {
+          const r = document.createRange();
+          r.setStart(n, 0);
+          r.collapse(true);
+          s.removeAllRanges();
+          s.addRange(r);
+        }
+      }
+    }
+    moveCaretPastStructuralMarkers();
     const sel = document.getSelection();
     let cell = null;
     if (sel && sel.rangeCount) {
@@ -7541,14 +7590,40 @@
       const table = cell.closest("table");
       const fig = document.createElement("figure");
       const cap = document.createElement("figcaption");
-      cap.textContent = "Caption";
+      cap.textContent = text;
       table.parentNode.insertBefore(fig, table);
       fig.appendChild(table);
       fig.appendChild(cap);
       refreshToc();
     } else {
-      document.execCommand("insertHTML", false,
-        '<p style="text-align:center"><em>Caption</em></p>');
+      // Direct DOM insertion (see insertCitation): Chromium's insertHTML
+      // sanitizer strips the class of content-bearing markup, so the
+      // wo-caption marker must be built node-by-node. The paragraph goes
+      // after the caret's block (no mid-block split like insertHTML would
+      // do) — same centered <p><em> shape as before, plus the marker.
+      const sel = document.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      const p = document.createElement("p");
+      p.style.textAlign = "center";
+      const em = document.createElement("em");
+      em.className = "wo-caption";
+      em.textContent = text;
+      p.appendChild(em);
+      const anchor = (range.startContainer.nodeType === 1
+        ? range.startContainer
+        : range.startContainer.parentElement);
+      const block = anchor && anchor.closest("#editor p, #editor h1, #editor h2, #editor h3, #editor h4, #editor li");
+      range.deleteContents();
+      if (block) {
+        block.parentNode.insertBefore(p, block.nextSibling);
+      } else {
+        range.insertNode(p);
+      }
+      range.setStartAfter(p);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
     moveCaretPastStructuralMarkers();
     captureHistory();
@@ -9475,6 +9550,7 @@
     ["addtext", null], ["updatetoc", confirmUpdateTocDialog],
     ["displaymode", confirmDisplayModeDialog],
     ["datetime", confirmDatetimeDialog],
+    ["caption", confirmCaptionDialog],
   ];
   for (const [name, confirm] of ROUND2) {
     const ok = document.getElementById("btn-" + name + "-ok");
