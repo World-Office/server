@@ -108,19 +108,25 @@
     },
     "review.previous": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu-trackchanges",
+      "pre": "tracked-behind",
       "selector": "[data-cmd=\"prevTrackedChange\"]",
       "woTab": "collaboration",
-      "note": "KNOWN GAP: ledger row review.previous — navigateTrackedChange(-1) (editor.js:4293) needs the caret strictly AFTER a change end to flash (.nav-flash) and select it; the ctx-menu-trackchanges pre anchors the caret inside the only fixture change (selectNodeContents on the ins), so the walk takes the Status.NoPrevChange path and the success effect is unobservable with the fixed fixture vocabulary"
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert.nav-flash"
+      },
+      "note": "ledger row: review.previous — navigateTrackedChange(-1) (editor.js:4290) walks to the LAST change whose end is strictly before the caret; the tracked-behind pre collapses the caret after the fixture ins's trailing 'ccc', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable"
     },
     "review.next": {
       "effektClass": "op",
-      "xfail": true,
-      "pre": "ctx-menu-trackchanges",
+      "pre": "tracked-ahead",
       "selector": "[data-cmd=\"nextTrackedChange\"]",
       "woTab": "collaboration",
-      "note": "KNOWN GAP: ledger row review.next — navigateTrackedChange(1) needs the caret strictly BEFORE a change start to flash (.nav-flash) and select it; the ctx-menu-trackchanges pre anchors the caret inside the only fixture change, so the walk takes the Status.NoNextChange path and the success effect is unobservable with the fixed fixture vocabulary"
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor ins.track-insert.nav-flash"
+      },
+      "note": "ledger row: review.next — navigateTrackedChange(1) walks to the FIRST change whose start is strictly after the caret; the tracked-ahead pre collapses the caret inside the fixture ins's leading 'aaa', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable"
     },
     "review.accept": {
       "effektClass": "op",

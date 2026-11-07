@@ -121,27 +121,27 @@
     },
     "formatting.font-color": {
       "effektClass": "format",
-      "xfail": true,
       "selector": "#text-color",
       "woTab": "home",
+      "setValue": "#ff0000",
       "assertion": {
         "kind": "computed-style",
         "prop": "color",
         "equals": "rgb(255, 0, 0)"
       },
-      "note": "ledger row: formatting.font-color — #text-color is <input type=\"color\"> wired to its change event (editor.js:10772 emitCommand(\"foreColor\")); the contract layer has no input-set vocabulary (no fill/setValue/change-dispatch step), so the picker value can never be driven from a contract — real gap, honest xfail"
+      "note": "ledger row: formatting.font-color — #text-color is <input type=\"color\"> wired to its change event (editor.js:10623 emitCommand(\"foreColor\")); the runner's setValue step sets the value and dispatches 'change' instead of clicking (a real click opens the native picker), foreColor runs with styleWithCSS on and wraps the placeCaret 'Will' selection in <span style=\"color:#ff0000\">, which the runner's closest b,i,u,span,p reader reaches"
     },
     "formatting.highlight-color": {
       "effektClass": "format",
-      "xfail": true,
       "selector": "#highlight-color",
       "woTab": "home",
+      "setValue": "#ffe0b2",
       "assertion": {
         "kind": "computed-style",
         "prop": "background-color",
         "equals": "rgb(255, 224, 178)"
       },
-      "note": "ledger row: formatting.highlight-color — #highlight-color is <input type=\"color\"> wired to its change event (emitCommand(\"hiliteColor\")); same missing input-set vocabulary as formatting.font-color — real gap, honest xfail"
+      "note": "ledger row: formatting.highlight-color — #highlight-color is <input type=\"color\"> wired to its change event (emitCommand(\"hiliteColor\")); same setValue change-dispatch as formatting.font-color — hiliteColor runs with styleWithCSS on and the selection's span carrier reads background-color rgb(255, 224, 178)"
     },
     "dialog.font-dialog.l4": {
       "effektClass": "dialog",
