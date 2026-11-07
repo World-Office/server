@@ -142,25 +142,27 @@
     },
     "statusbar.btn-zoom-topage": {
       "effektClass": "view",
+      "pre": "zoom-reset",
       "selector": "#btn-zoom-fit",
+      "cleanup": "#btn-zoom-reset",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#sb-zoom-label",
         "contains": "181%"
       },
-      "xfail": true,
-      "note": "ledger row: statusbar.btn-zoom-topage — OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10419). Verified passing in isolation, but honest xfail at full-run scale: applyZoom persists wo-zoom=1.81 in localStorage and this row runs at manifest 235/236 directly before the order-fragile statusbar.btn-zoom-down/up contracts (view-flags.json, 237/238) that assume a clean 1.0 persisted zoom; the single-pre vocabulary has no zoom-restore step"
+      "note": "ledger row: statusbar.btn-zoom-topage — PROMOTED 2026-11-08 (L2N-03): OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10641). Order-independent on both sides now: the zoom-reset pre (contract-runner.cjs) drops any persisted wo-zoom and reloads, so the row boots at a distinct '100%' label — the 181% hit proves the fit click ran no matter what earlier contracts left in localStorage — and the new cleanup hook clicks #btn-zoom-reset AFTER the effect check, restoring wo-zoom=1 so the downstream relative-zoom contracts (view-flags btn-zoom-out 1->0.9, btn-zoom-in 0.9->1) keep their fresh-zoom premise. Old honest-gap reason: applyZoom persisted 1.81 and broke zoom-down/up, and `post` could not reset it because post runs before the effect check"
     },
     "statusbar.btn-zoom-towidth": {
       "effektClass": "view",
+      "pre": "zoom-reset",
       "selector": "#btn-zoom-fit",
+      "cleanup": "#btn-zoom-reset",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#sb-zoom-label",
         "contains": "181%"
       },
-      "xfail": true,
-      "note": "ledger row: statusbar.btn-zoom-towidth — same single WO control as btn-zoom-topage (#btn-zoom-fit fits the page width into the viewport, editor.js:10419; deterministic 181% at 1600px); same full-run-scale xfail reason: the persisted 1.81 zoom breaks the immediately following zoom-down/up pair (view-flags.json 237/238)" 
+      "note": "ledger row: statusbar.btn-zoom-towidth — PROMOTED 2026-11-08 (L2N-03): same single WO control as btn-zoom-topage (#btn-zoom-fit fits the page width into the viewport, editor.js:10641; deterministic 181% at 1600px); same order-independence fix: zoom-reset pre boots the row at a clean 100% label and the cleanup hook restores wo-zoom=1 after the check, so neither row depends on nor disturbs the neighbouring zoom contracts" 
     },
     "plugins.highlight-code": {
       "effektClass": "format",

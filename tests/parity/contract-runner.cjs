@@ -319,6 +319,18 @@ async function subFeatureAudit(page, ov, dialogSel) {
       await page.goto(`${server.base}/word/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector('#editor', { timeout: 15000 });
       await page.waitForTimeout(1200);
+      // 0. persisted-state reset BEFORE any other pre: zoom contracts must
+      // not inherit a wo-zoom an earlier contract left in localStorage (the
+      // key survives the per-contract page.goto) — drop it and reload so the
+      // editor boots at the default 100% zoom. This makes the row
+      // order-independent on the input side: its assertion observes a real
+      // 100% -> X transition instead of whatever the previous row left.
+      if (ov.pre === 'zoom-reset') {
+        await page.evaluate(() => { try { localStorage.removeItem('wo-zoom'); } catch (e) {} });
+        await page.goto(`${server.base}/word/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForSelector('#editor', { timeout: 15000 });
+        await sleep(1200);
+      }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
       const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
@@ -1067,6 +1079,18 @@ async function subFeatureAudit(page, ov, dialogSel) {
       res.ok = ok;
       res.expected = JSON.stringify(ov.assertion) + (ov.subFeatures ? ` +${ov.subFeatures.length} subFeatures` : '');
       res.observed = observed;
+      // 6b. cleanup: optional selector clicked AFTER the effect check — for
+      // triggers that persist cross-contract state (applyZoom writes wo-zoom
+      // to localStorage, which the next contract's fresh page load re-reads).
+      // Unlike `post`, it runs after the observation so it cannot erase it;
+      // it restores the default state so later contracts keep their premises
+      // regardless of where this row sits in the manifest (order-independent
+      // on the output side).
+      if (ov.cleanup) {
+        await page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('cleanup selector missing: ' + sel); el.click(); }, ov.cleanup);
+        await sleep(200);
+      }
+
       // close whatever we opened for the next case
       if (preMenu || ov.post || (ok && ov.assertion.kind === 'dialog-visible')) {
         await page.keyboard.press('Escape').catch(() => {});
