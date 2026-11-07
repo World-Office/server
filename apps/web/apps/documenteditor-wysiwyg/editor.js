@@ -3574,7 +3574,8 @@
       }
       mutated = true;
     } else if (value === "wrap-inline" || value === "wrap-square" ||
-               value === "wrap-tight" || value === "wrap-behind" || value === "wrap-front" || value === "wrap-through") {
+               value === "wrap-tight" || value === "wrap-behind" || value === "wrap-front" || value === "wrap-through" ||
+               value === "wrap-top-and-bottom") {
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
       // WO-21-ctx-tight: OO "Tight" wraps text closely around the shape
       // contour, but WO placeholder objects are rectangular (no vector
@@ -3590,7 +3591,8 @@
       obj.classList.add(value === "wrap-square" || value === "wrap-tight" ? "obj-square"
         : value === "wrap-behind" ? "obj-behind"
         : value === "wrap-front" ? "obj-front"
-        : value === "wrap-through" ? "obj-through" : "obj-inline");
+        : value === "wrap-through" ? "obj-through"
+        : value === "wrap-top-and-bottom" ? "obj-center" : "obj-inline");
       obj.setAttribute("data-wrap", value.slice(5));
       mutated = true;
     } else if (value === "actual-size" && obj.matches && obj.matches("img")) {
@@ -9931,6 +9933,11 @@
       } else if (action === "ActualSize") {
         closeCtx();
         applyObjectOp("actual-size");
+      } else if (action === "Rotate") {
+        // L2M-03 ctx-rotate: OO's ctx "Rotate" — one 90° step per click on
+        // the picked image (same handler as the right-panel control).
+        closeCtx();
+        applyImageRotate90();
       } else if (action === "SaveAsPicture") {
         closeCtx();
         applyObjectOp("save-as-picture");
@@ -10030,6 +10037,14 @@
       } else if (action === "WrapThrough") {
         closeCtx();
         applyObjectOp("wrap-through");
+        syncRightPanelControls();
+      } else if (action === "TopAndBottom") {
+        // L2M-03 ctx-top-and-bottom: OO's "Top and bottom" wrap — the object
+        // on its own line, text only above/below. WO's honest equivalent is
+        // the own-line block flow (obj-center); the wrap op keeps the
+        // data-wrap channel in sync with the Layout menu / right panel.
+        closeCtx();
+        applyObjectOp("wrap-top-and-bottom");
         syncRightPanelControls();
       } else if (action === "EditWrapBoundary") {
         closeCtx();

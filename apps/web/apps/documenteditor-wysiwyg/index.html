@@ -1627,6 +1627,12 @@
          cannot flow "through" a box; we approximate OO's Through as an
          above-text transparent layer, see editor.js + style.css). -->
     <button type="button" role="menuitem" data-ctx="WrapThrough" data-showif="object" data-i18n="Ctx.WrapThrough">Through</button>
+    <!-- L2M-03 ctx-top-and-bottom: OO's "Top and bottom" wrap — the object
+         sits on its own line with text only above and below. WO placeholders
+         have no float contour model, so the honest equivalent is the
+         own-line block flow (obj-center: display block + auto margins,
+         style.css) while data-wrap records the explicit wrap choice. -->
+    <button type="button" role="menuitem" data-ctx="TopAndBottom" data-showif="object" data-i18n="Ctx.TopAndBottom">Top and bottom</button>
     <!-- WO-22-ctx-edit-wrap-boundary: OO's "Edit wrap boundary" opens the
          vector contour editor for the wrap polygon around a wrapped object.
          PARKED divergence (registered loud, same absence as the planned
@@ -1657,6 +1663,10 @@
          objectOps so they share one handler; image rows show for plain imgs. -->
     <button type="button" role="menuitem" data-ctx="ReplaceImage" data-showif="image" data-i18n="Ctx.ReplaceImage">Replace image…</button>
     <button type="button" role="menuitem" data-ctx="Crop" data-showif="image" data-i18n="Ctx.Crop">Crop…</button>
+    <!-- L2M-03 ctx-rotate: OO's "Rotate" ctx row — one 90° step per click
+         via applyImageRotate90, the same surface as the right-panel
+         #rp-image-rotate control (converged handler, no parallel logic). -->
+    <button type="button" role="menuitem" data-ctx="Rotate" data-showif="image" data-i18n="Ctx.Rotate">Rotate</button>
     <button type="button" role="menuitem" data-ctx="ActualSize" data-showif="image" data-i18n="Ctx.ActualSize">Actual size</button>
     <button type="button" role="menuitem" data-ctx="SaveAsPicture" data-showif="image" data-i18n="Ctx.SaveAsPicture">Save as picture…</button>
     <button type="button" role="menuitem" data-ctx="CopyHyperlinkAddress" data-showif="link" data-i18n="Ctx.CopyHyperlinkAddress">Copy hyperlink address</button>
