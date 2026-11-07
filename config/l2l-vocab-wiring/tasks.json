@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "name": "l2l-vocab-wiring",
+    "baseline": {"pass": 397, "knownGap": 56, "fail": 0},
+    "notes": "Wire 19 hand-probed rows unlocked by runner vocab 5f1e5d9a5 (9 pres, setValue, clipboard). Bindings verified PASS via zz-probe 2026-11-07. Serialized dispatch (af parallel kills opencode)."
+  },
+  "defaults": {
+    "max_attempts": 3,
+    "branch": "tf/{taskid}",
+    "commit_style": "parity: promote <rows> via L2L fixtures"
+  },
+  "tasks": [
+    {
+      "id": "L2L-01",
+      "title": "Promote style-from-format trio + remove-link",
+      "files": ["tests/parity/overrides-dropins/ctx-misc.json", "tests/parity/overrides-dropins/ctx-fieldlink.json"],
+      "bindings": {
+        "ctx.formatting-as-style": {"effektClass": "op", "pre": "ctx-menu", "selector": "[data-ctx=\"FormattingAsStyle\"]", "assertion": {"kind": "op-emitted", "event": "wo:style-from-format"}},
+        "ctx.update-1-style": {"effektClass": "op", "pre": "ctx-menu", "selector": "[data-ctx=\"FormattingAsStyle\"]", "assertion": {"kind": "op-emitted", "event": "wo:style-from-format"}},
+        "ctx.create-new-style": {"effektClass": "op", "pre": "ctx-menu", "selector": "[data-ctx=\"FormattingAsStyle\"]", "assertion": {"kind": "op-emitted", "event": "wo:style-from-format"}},
+        "ctx.remove-link": {"effektClass": "op", "pre": "link-at-caret", "selector": "[data-ctx=\"RemoveLink\"]", "assertion": {"kind": "dom-mutation", "selector": "#editor a", "absent": true}}
+      },
+      "steps": [
+        "In each file replace the listed entries with the binding objects above (keep top-level key 'entries'); delete 'xfail': true and the old KNOWN GAP note; write a note 'PROMOTED 2026-11-07: <handler chain> (<assertion kind>)' as in L2K commits.",
+        "ctx.formatting-as-style/update-1-style/create-new-style share the FormattingAsStyle ctx item (editor.js:10163) which dispatches wo:style-from-format at window level; the runner collector arms it since 5f1e5d9a5.",
+        "ctx.remove-link: link-at-caret pre seeds the anchor; removeLinkAtSelection (editor.js:3015) unwraps it -> #editor a goes absent.",
+        "PROMPT FORMAT: task bindings are EXACT — do not invent selectors or assertion kinds.",
+        "Verify: bash tests/parity/af-gate.sh 400 (397 baseline + your 3 ctx-misc rows + remove-link = 400; ctx.remove-link lives in ctx-fieldlink.json).",
+        "Commit ONLY the two listed files. Do not touch editor.js/index.html/runner."
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 400"
+    },
+    {
+      "id": "L2L-02",
+      "title": "Promote tracked-change nav + format/color rows",
+      "files": ["tests/parity/overrides-dropins/review-statusbar.json", "tests/parity/overrides-dropins/file-fmt.json", "tests/parity/overrides-dropins/format-controls.json"],
+      "bindings": {
+        "review.next": {"effektClass": "op", "pre": "tracked-ahead", "woTab": "collaboration", "selector": "[data-cmd=\"nextTrackedChange\"]", "assertion": {"kind": "dom-mutation", "selector": "ins.track-insert.nav-flash"}},
+        "review.previous": {"effektClass": "op", "pre": "tracked-behind", "woTab": "collaboration", "selector": "[data-cmd=\"prevTrackedChange\"]", "assertion": {"kind": "dom-mutation", "selector": "ins.track-insert.nav-flash"}},
+        "formatting.clear-style": {"effektClass": "format", "pre": "formatted-selection", "woTab": "home", "selector": "[data-cmd=\"removeFormat\"]", "assertion": {"kind": "dom-mutation", "selector": "#editor strong", "absent": true}},
+        "formatting.highlight-color": {"effektClass": "format", "woTab": "home", "selector": "#highlight-color", "setValue": "#ffff00", "assertion": {"kind": "dom-mutation", "selector": "#editor span[style*=\"color\"]"}},
+        "formatting.font-color": {"effektClass": "format", "woTab": "home", "selector": "#text-color", "setValue": "#ff0000", "assertion": {"kind": "dom-mutation", "selector": "#editor span[style*=\"color\"]"}}
+      },
+      "steps": [
+        "Replace the listed entries with the binding objects above (keep 'entries'); drop 'xfail'; note 'PROMOTED 2026-11-07: ...'.",
+        "review.next/previous: pre tracked-ahead/behind seeds ins.track-insert + caret placement; navigateTrackedChange (editor.js:4302) adds nav-flash class.",
+        "formatting.clear-style: formatted-selection pre seeds a strong run; removeFormat unwraps it.",
+        "highlight-color/font-color: #highlight-color/#text-color are input[type=color] wired to change (editor.js:10782); row key setValue='#ffff00'/'#ff0000' makes the runner dispatch change; styleWithCSS yields span[style*=color].",
+        "Verify: bash tests/parity/af-gate.sh 402 (397 + your 5 rows).",
+        "Commit ONLY the three listed files."
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 402"
+    },
+    {
+      "id": "L2L-03",
+      "title": "Promote up-down-bars (line fixture) + replace-image",
+      "files": ["tests/parity/overrides-dropins/chart-ref-other.json", "tests/parity/overrides-dropins/ctx-chart.json", "tests/parity/overrides-dropins/dlg-ctx.json"],
+      "bindings": {
+        "chart.up-down-bars": {"effektClass": "op", "woTab": "chart-design", "pre": "chart-selection-line", "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger", "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"upDownBars\"]", "assertion": {"kind": "dom-mutation", "selector": "#fixture-chart[data-spec*='\"upDownBars\":true']"}},
+        "ctx.up-down-bars": {"effektClass": "op", "woTab": "chart-design", "pre": "chart-selection-line", "selector": ".ribbon-page[data-tab=\"chart-design\"] .rb-group[aria-label=\"Chart elements\"] .menu-trigger", "post": ".ribbon-page[data-tab=\"chart-design\"] button[data-cmd=\"chartElement\"][data-value=\"upDownBars\"]", "assertion": {"kind": "dom-mutation", "selector": "#fixture-chart[data-spec*='\"upDownBars\":true']"}},
+        "ctx.replace-image": {"effektClass": "dialog", "pre": "ctx-menu-on-image", "selector": "[data-ctx=\"ReplaceImage\"]", "assertion": {"kind": "dialog-visible", "dialogSelector": "#image-dialog"}}
+      },
+      "steps": [
+        "Replace the listed entries with the binding objects above (keep 'entries'); drop 'xfail'; note 'PROMOTED 2026-11-07: ...'.",
+        "chart.up-down-bars + ctx.up-down-bars: keep the existing selector/post chaining EXACTLY, only swap pre to chart-selection-line (line-type fixture opens the CHART_ELEMENT_SUPPORT upDownBars gate).",
+        "ctx.replace-image: ReplaceImage -> applyObjectOp -> insertImage() opens #image-dialog; the dialog-visible assert fires on open (file-pick depth is a separate honest gap).",
+        "Verify: bash tests/parity/af-gate.sh 400 (397 + your 3 rows).",
+        "Commit ONLY the three listed files."
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 400"
+    },
+    {
+      "id": "L2L-04",
+      "title": "Promote actual-size + print-selection + equation-settings + copy-hyperlink",
+      "files": ["tests/parity/overrides-dropins/stragglers.json", "tests/parity/overrides-dropins/ctx-parag.json", "tests/parity/overrides-dropins/ctx-residual.json"],
+      "bindings": {
+        "ctx.actual-size": {"effektClass": "op", "pre": "ctx-menu-on-image", "selector": "[data-ctx=\"ActualSize\"]", "assertion": {"kind": "dom-mutation", "selector": "#editor img[style=\"\"]"}},
+        "ctx.print-selection": {"effektClass": "op", "pre": "ctx-menu", "selector": "[data-ctx=\"PrintSelection\"]", "assertion": {"kind": "op-emitted", "event": "wo:print-selection"}},
+        "ctx.equation-settings": {"effektClass": "op", "pre": "ctx-menu-on-equation", "selector": "[data-ctx=\"EquationSettings\"]", "assertion": {"kind": "dialog-visible", "dialogSelector": "#equation-dialog"}},
+        "ctx.copy-hyperlink-address": {"effektClass": "op", "pre": "link-at-caret", "selector": "[data-ctx=\"CopyHyperlinkAddress\"]", "assertion": {"kind": "clipboard", "contains": "http"}}
+      },
+      "steps": [
+        "Replace the listed entries with the binding objects above (keep 'entries'); drop 'xfail'; note 'PROMOTED 2026-11-07: ...'.",
+        "ctx.actual-size: applyObjectOp('actual-size') (editor.js:3596) clears the img inline size -> img[style=\"\"] becomes present.",
+        "ctx.print-selection: the item dispatches wo:print-selection (collector armed since 5f1e5d9a5).",
+        "ctx.equation-settings: pre ctx-menu-on-equation seeds img.vector-object[data-kind=equation] and anchors the DOM selection on it; EquationSettings (editor.js:10209) opens #equation-dialog.",
+        "ctx.copy-hyperlink-address: clipboard assertion reads navigator.clipboard.readText (permissions granted in _boot since 5f1e5d9a5).",
+        "Verify: bash tests/parity/af-gate.sh 401 (397 + your 4 rows).",
+        "Commit ONLY the three listed files."
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 401"
+    },
+    {
+      "id": "L2L-05",
+      "title": "Promote last-custom margins + continue-numbering + crossref dialog",
+      "files": ["tests/parity/overrides-dropins/page-menus.json", "tests/parity/overrides-dropins/ctx-list.json", "tests/parity/overrides-dropins/di-ref-review.json"],
+      "bindings": {
+        "page.last-custom": {"effektClass": "op", "pre": "custom-margins", "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"last-custom\"]", "assertion": {"kind": "dom-mutation", "selector": "#editor .page-setup"}},
+        "ctx.continue-numbering": {"effektClass": "op", "pre": "ctx-menu-in-two-lists", "selector": "[data-ctx=\"ContinueNumbering\"]", "assertion": {"kind": "dom-mutation", "selector": "#editor #ol-b", "absent": true}},
+        "dialoginput.cross-reference": {"effektClass": "dialog", "pre": "bookmark-at-caret", "woTab": "references", "selector": "[data-cmd=\"openCrossref\"]", "assertion": {"kind": "dialog-input", "set": [{"selector": "#crossref-target", "value": "bm1"}], "click": "#btn-crossref-ok", "expect": {"selector": "a[href=\"#bm1\"]"}}}
+      },
+      "steps": [
+        "Replace the listed entries with the binding objects above (keep 'entries'); drop 'xfail'; note 'PROMOTED 2026-11-07: ...'.",
+        "page.last-custom: pre custom-margins seeds localStorage wo-last-custom-margins {top,bottom,left,right} then opens the Layout margins menu; applyPageMargins writes the .page-setup marker.",
+        "ctx.continue-numbering: pre ctx-menu-in-two-lists seeds ol#ol-a + ol#ol-b with the caret in ol-b; continueNumbering merges ol-b into ol-a -> #ol-b absent.",
+        "dialoginput.cross-reference: pre bookmark-at-caret seeds span.bookmark[data-name=bm1]; the dialog-input sets #crossref-target=bm1, clicks #btn-crossref-ok, expects a[href=\"#bm1\"].",
+        "Verify: bash tests/parity/af-gate.sh 400 (397 + your 3 rows).",
+        "Commit ONLY the three listed files."
+      ],
+      "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 400"
+    }
+  ]
+}
