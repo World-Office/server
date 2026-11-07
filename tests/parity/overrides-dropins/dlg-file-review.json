@@ -1,5 +1,5 @@
 {
-  "comment": "L2I-01-FILE-REVIEW: dialog-DEPTH contracts (dialog-action) for the file/review dialog action rows. Deviation note (same situation as L2I-04): every ledger row assigned to this task (file.file, file.view, file.plugins, file.protect, file.download-as, file.suggest-a-feature, review.comment, review.add-comment, review.track-changes, review.display-mode, review.compare, review.combine, review.grammar-spelling) is ALREADY bound to a green override via token-precedence (overrides[token] || overrides[feature]) \u2014 btn-textfile (insert-b.json), plugins-dialog (plugins.json), btn-comment/btn-track-changes (review-statusbar.json), compareversion/combinerevisions (review.json), btn-ai-grammar (ai-tab.json), file.download-as/file.protect/file.suggest-a-feature (stragglers.json), file.view/review.display-mode (base). Because overrides-dropins files are merged sorted by filename (last file wins) and dlg-file-review.json sorts BEFORE all of those, any ledger/token key here would either be shadowed (dead) or replace a green row (+0 pass, breaks the gate arithmetic). Therefore the contracts are keyed as override-only entries (match no ledger token/feature) and deepen the SAME dialogs from dialog-visible to dialog-action (button closes dialog), reusing the proven openers from the green rows. Grep-verified handlers: #btn-textfromfile-cancel closeDlg (editor.js:12918), #btn-displaymode-ok ROUND2 closeOverlayDialog (editor.js:9375-9379), #btn-plugins-close (index.html:2930, proven by L2I-04), #btn-protect-apply confirmProtectDialog closes on 2xx (editor.js:8318-8354, Rust docserver POST /api/documents/{id}/protect exists, editor_docs.rs:674), #btn-suggest-cancel closeDlg (editor.js:12731), #btn-comment-cancel closeCommentDialog (editor.js:8740), #btn-trackchanges-close wired loop (editor.js:8964), [data-export] closeAllMenus -> doExport (editor.js:10743), #btn-ai-propose-cancel (index.html:2767, proven by L2I-04). KNOWN GAPS (xfail honest): #btn-textfromfile-insert stays disabled until a file is chosen (editor.js:12845-12852, click no-ops without file), #btn-compare-apply/#btn-combine-apply keep the dialog open by design when no document is selected (error path editor.js:7678-7684/7755-7761).",
+  "comment": "L2I-01-FILE-REVIEW: dialog-DEPTH contracts (dialog-action) for the file/review dialog action rows. Deviation note (same situation as L2I-04): every ledger row assigned to this task (file.file, file.view, file.plugins, file.protect, file.download-as, file.suggest-a-feature, review.comment, review.add-comment, review.track-changes, review.display-mode, review.compare, review.combine, review.grammar-spelling) is ALREADY bound to a green override via token-precedence (overrides[token] || overrides[feature]) \u2014 btn-textfile (insert-b.json), plugins-dialog (plugins.json), btn-comment/btn-track-changes (review-statusbar.json), compareversion/combinerevisions (review.json), btn-ai-grammar (ai-tab.json), file.download-as/file.protect/file.suggest-a-feature (stragglers.json), file.view/review.display-mode (base). Because overrides-dropins files are merged sorted by filename (last file wins) and dlg-file-review.json sorts BEFORE all of those, any ledger/token key here would either be shadowed (dead) or replace a green row (+0 pass, breaks the gate arithmetic). Therefore the contracts are keyed as override-only entries (match no ledger token/feature) and deepen the SAME dialogs from dialog-visible to dialog-action (button closes dialog), reusing the proven openers from the green rows. Grep-verified handlers: #btn-textfromfile-cancel closeDlg (editor.js:12918), #btn-displaymode-ok ROUND2 closeOverlayDialog (editor.js:9375-9379), #btn-plugins-close (index.html:2930, proven by L2I-04), #btn-protect-apply confirmProtectDialog closes on 2xx (editor.js:8318-8354, Rust docserver POST /api/documents/{id}/protect exists, editor_docs.rs:674), #btn-suggest-cancel closeDlg (editor.js:12731), #btn-comment-cancel closeCommentDialog (editor.js:8740), #btn-trackchanges-close wired loop (editor.js:8964), [data-export] closeAllMenus -> doExport (editor.js:10743), #btn-ai-propose-cancel (index.html:2767, proven by L2I-04). KNOWN GAPS (xfail honest): #btn-textfromfile-insert stays disabled until a file is chosen (editor.js:12845-12852, click no-ops without file). The former #btn-compare-apply/#btn-combine-apply gap was promoted 2026-11-07 (L2M-02): the loaders accept the array shape /api/documents returns, and pre=peer-doc + set.pickFirstOption drive a real peer document.",
   "entries": {
     "dialogdepth-fr.textfromfile-cancel": {
       "effektClass": "dialog",
@@ -130,27 +130,39 @@
     },
     "dialogdepth-fr.compare-apply": {
       "effektClass": "dialog",
-      "xfail": true,
+      "pre": "peer-doc",
       "woTab": "collaboration",
       "selector": "[data-cmd=\"compareVersion\"]",
       "assertion": {
         "kind": "dialog-action",
+        "set": [
+          {
+            "selector": "#compare-document-select",
+            "pickFirstOption": true
+          }
+        ],
         "button": "#btn-compare-apply",
         "dialog": "#compare-dialog"
       },
-      "note": "KNOWN GAP (ledger review.compare apply action): compareDocuments with an empty #compare-document-select (the placeholder option stays selected) takes the error path and RETURNS WITHOUT closing the dialog (editor.js:7678-7684) \u2014 Compare only applies once a real second document is selected"
+      "note": "PROMOTED from xfail 2026-11-07 (L2M-02): loadCompareDocuments now accepts the array shape GET /api/documents actually returns (top-level [{id,name,size}], was data.documents-only so the select stayed empty); pre=peer-doc creates the second document the dialog needs and set.pickFirstOption selects it (doc id is runtime-only) — compareDocuments closes the dialog before the fetch, so dialog-action holds"
     },
     "dialogdepth-fr.combine-apply": {
       "effektClass": "dialog",
-      "xfail": true,
+      "pre": "peer-doc",
       "woTab": "collaboration",
       "selector": "[data-cmd=\"combineRevisions\"]",
       "assertion": {
         "kind": "dialog-action",
+        "set": [
+          {
+            "selector": "#combine-document-select",
+            "pickFirstOption": true
+          }
+        ],
         "button": "#btn-combine-apply",
         "dialog": "#combine-dialog"
       },
-      "note": "KNOWN GAP (ledger review.combine apply action): combineDocuments with no selected documents takes the error path and RETURNS WITHOUT closing the dialog (editor.js:7755-7761) \u2014 Combine only applies once a real second document is multi-selected"
+      "note": "PROMOTED from xfail 2026-11-07 (L2M-02): loadCombineDocuments now accepts the array shape GET /api/documents actually returns (top-level [{id,name,size}], was data.documents-only so the multi-select stayed empty); pre=peer-doc + set.pickFirstOption select the peer document in the <select multiple> — combineDocuments closes the dialog before the fetch, so dialog-action holds"
     },
     "dialogdepth-fr.grammar-ai-propose-cancel": {
       "effektClass": "dialog",

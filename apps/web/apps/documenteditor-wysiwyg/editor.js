@@ -7669,7 +7669,9 @@
       const res = await fetch("/api/documents")
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load documents")
-      const docs = data.documents || []
+      // GET /api/documents answers a top-level array of {id,name,size};
+      // tolerate the wrapped {documents:[…]} shape for older hosts.
+      const docs = Array.isArray(data) ? data : (data.documents || [])
       docs.forEach((doc) => {
         if (doc.id !== DOC_ID) {
           const option = document.createElement("option")
@@ -7746,7 +7748,9 @@
       const res = await fetch("/api/documents")
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to load documents")
-      const docs = data.documents || []
+      // GET /api/documents answers a top-level array of {id,name,size};
+      // tolerate the wrapped {documents:[…]} shape for older hosts.
+      const docs = Array.isArray(data) ? data : (data.documents || [])
       docs.forEach((doc) => {
         if (doc.id !== DOC_ID) {
           const option = document.createElement("option")
