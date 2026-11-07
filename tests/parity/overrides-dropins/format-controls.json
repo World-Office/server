@@ -145,18 +145,25 @@
     },
     "dialog.font-dialog.l4": {
       "effektClass": "dialog",
-      "xfail": true,
-      "selector": "[data-cmd=\"fontSizeInc\"]",
+      "selector": "#btn-font-dialog",
       "woTab": "home",
       "assertion": {
         "kind": "dialog-visible",
         "dialogSelector": "#font-dialog"
       },
       "subFeatures": [
-        { "name": "font family", "selector": "#font-family" },
-        { "name": "font size", "selector": "#font-size" }
+        { "name": "font family", "selector": "#font-dialog-family" },
+        { "name": "font size", "selector": "#font-dialog-size" },
+        { "name": "increment font size", "selector": "#font-dialog-inc" },
+        { "name": "decrement font size", "selector": "#font-dialog-dec" },
+        { "name": "bold", "selector": "#font-dialog-bold" },
+        { "name": "italic", "selector": "#font-dialog-italic" },
+        { "name": "underline", "selector": "#font-dialog-underline" },
+        { "name": "strikethrough", "selector": "#font-dialog-strike" },
+        { "name": "highlight color", "selector": "#font-dialog-highlight" },
+        { "name": "font color", "selector": "#font-dialog-color" }
       ],
-      "note": "ledger row: dialog.font-dialog.l4 — the L4 'font dialog' is the harness font-group field test (font-dialog-l4.test.mjs); the WO editor has NO dedicated font dialog — its font-group fields are the home-tab family/size pickers plus Inc/Dec buttons, each contracted individually by the passing rows in this drop-in — real UI gap, honest xfail"
+      "note": "ledger row: dialog.font-dialog.l4 — PROMOTED 2026-11-07: the home Font group now carries the OO corner launcher (#btn-font-dialog) opening #font-dialog, whose fields are the OO font-group family verbatim (family, size, +/- steps, B/I/U/S, highlight + font color) seeded from the selection and applied on OK through the same wo-command bus the home pickers use"
     }
   }
 }

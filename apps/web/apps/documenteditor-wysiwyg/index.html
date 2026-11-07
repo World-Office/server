@@ -260,6 +260,9 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="title" data-i18n="Home.ChangeCase.Title">Title Case</button></li>
       </ul>
     </span>
+    <!-- OO font-group corner launcher: opens the Font dialog (the whole
+         character-format family in dialog form, cf. dialog.font-dialog.l4). -->
+    <button type="button" id="btn-font-dialog" class="rb group-launch" title="Font dialog" data-i18n-title="Home.FontDialogTitle" aria-label="Font dialog" data-i18n-aria-label="Home.FontDialogTitle" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3.5h9M4 7h6.5M4 10.5h4"/><path d="M13 12.5h-4v4"/></svg></button>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Paragraph">
@@ -2998,6 +3001,71 @@
       <div class="dialog-actions">
         <button id="btn-caption-close" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-caption-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Font dialog (dialog.font-dialog.l4): the OO Home > Font group's whole
+       character-format family in dialog form, opened by the group launcher
+       (#btn-font-dialog). Same family/size option lists as the home-tab
+       pickers, the Inc/Dec size steps, B/I/U/S toggles, highlight + font
+       color, and a live preview of the current selection's settings. -->
+  <div id="font-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="font-dialog-title">
+    <div class="dialog font-dialog">
+      <h3 id="font-dialog-title" data-i18n="Dialog.Font.Title">Font</h3>
+      <div class="dialog-field">
+        <label for="font-dialog-family" data-i18n="Dialog.Font.Family">Font</label>
+        <select id="font-dialog-family">
+          <option value="" selected data-i18n="Toolbar.DefaultFont">Default</option>
+          <option value="Arial">Arial</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="font-dialog-size" data-i18n="Dialog.Font.Size">Font size</label>
+        <select id="font-dialog-size">
+          <option value="1">8</option>
+          <option value="2">10</option>
+          <option value="3">12</option>
+          <option value="4">14</option>
+          <option value="5">18</option>
+          <option value="6">24</option>
+          <option value="7">36</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <span id="font-dialog-style-label" data-i18n="Dialog.Font.Style">Style</span>
+        <span class="font-dialog-checks">
+          <label class="font-dialog-check"><input type="checkbox" id="font-dialog-bold"><span data-i18n="Dialog.Font.Bold">Bold</span></label>
+          <label class="font-dialog-check"><input type="checkbox" id="font-dialog-italic"><span data-i18n="Dialog.Font.Italic">Italic</span></label>
+          <label class="font-dialog-check"><input type="checkbox" id="font-dialog-underline"><span data-i18n="Dialog.Font.Underline">Underline</span></label>
+          <label class="font-dialog-check"><input type="checkbox" id="font-dialog-strike"><span data-i18n="Dialog.Font.Strikethrough">Strikethrough</span></label>
+        </span>
+      </div>
+      <div class="dialog-field">
+        <span id="font-dialog-colors-label" data-i18n="Dialog.Font.Colors">Color</span>
+        <span class="font-dialog-checks">
+          <label class="font-dialog-check"><input type="color" id="font-dialog-color" value="#333333"><span data-i18n="Dialog.Font.FontColor">Font color</span></label>
+          <label class="font-dialog-check"><input type="color" id="font-dialog-highlight" value="#ffe97a"><span data-i18n="Dialog.Font.Highlight">Highlight color</span></label>
+        </span>
+      </div>
+      <div class="dialog-field">
+        <span id="font-dialog-steps-label" data-i18n="Dialog.Font.SizeSteps">Size steps</span>
+        <span class="font-dialog-checks">
+          <button type="button" id="font-dialog-inc" data-i18n="Home.FontInc">Increment font size</button>
+          <button type="button" id="font-dialog-dec" data-i18n="Home.FontDec">Decrement font size</button>
+        </span>
+      </div>
+      <div class="dialog-field font-dialog-preview-row">
+        <label for="font-dialog-preview" data-i18n="Dialog.Font.Preview">Preview</label>
+        <div id="font-dialog-preview" class="font-dialog-preview">AaBbCcYyZz 123</div>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-font-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-font-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>

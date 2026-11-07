@@ -2038,7 +2038,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "caption-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "caption-dialog", "font-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -9017,6 +9017,160 @@
     try { localStorage.setItem(DT_DEFAULT_KEY, JSON.stringify({ format, update })); } catch {}
   });
 
+  // --- Font dialog (dialog.font-dialog.l4 — OO Home > Font group) --------
+  // OO's font group carries a corner launcher that opens a Font dialog with
+  // the whole character-format family. WO keeps the home-tab pickers as the
+  // quick path; this shell is the same controls in dialog form, seeded from
+  // the selection and applied through the very same wo-command bus the
+  // pickers use (fontName/fontSize/bold/…/foreColor/hiliteColor).
+  const FONT_DIALOG_STYLES = [
+    ["font-dialog-bold", "bold"],
+    ["font-dialog-italic", "italic"],
+    ["font-dialog-underline", "underline"],
+    ["font-dialog-strike", "strikeThrough"],
+  ];
+  // HTML size ladder 1..7 -> the pt labels the home picker shows.
+  const FONT_DIALOG_PX = { 1: 8, 2: 10, 3: 12, 4: 14, 5: 18, 6: 24, 7: 36 };
+  // Snapshot of what the dialog was seeded with, so OK only re-applies what
+  // the user actually changed (an untouched color must not repaint text).
+  let fontDialogSeed = { color: null, highlight: null };
+  function cssColorToHex(css) {
+    const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(String(css || ""));
+    if (!m) return null;
+    // Fully transparent reads as "no color", not as black.
+    if (/,\s*0\s*\)$/.test(String(css || ""))) return null;
+    return rgbToHex(parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10));
+  }
+  function selectionCarrier() {
+    const sel = window.getSelection();
+    const node = sel && sel.anchorNode
+      ? (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement)
+      : null;
+    return node && node.closest ? (node.closest("#editor b, #editor i, #editor u, #editor span, #editor p") || node.closest("#editor")) : null;
+  }
+  function updateFontDialogPreview() {
+    const prev = document.getElementById("font-dialog-preview");
+    if (!prev) return;
+    const fam = (document.getElementById("font-dialog-family") || {}).value || "";
+    const size = (document.getElementById("font-dialog-size") || {}).value || "";
+    const carrier = selectionCarrier();
+    let color = "#333333";
+    if (carrier) {
+      const cs = window.getComputedStyle(carrier);
+      color = cssColorToHex(cs.color) || "#333333";
+    }
+    prev.style.fontFamily = fam ? '"' + fam + '", serif' : "";
+    prev.style.fontSize = (FONT_DIALOG_PX[size] || 14) + "px";
+    prev.style.fontWeight = (document.getElementById("font-dialog-bold") || {}).checked ? "700" : "";
+    prev.style.fontStyle = (document.getElementById("font-dialog-italic") || {}).checked ? "italic" : "";
+    prev.style.textDecoration = [
+      (document.getElementById("font-dialog-underline") || {}).checked ? "underline" : "",
+      (document.getElementById("font-dialog-strike") || {}).checked ? "line-through" : "",
+    ].filter(Boolean).join(" ") || "";
+    prev.style.color = color;
+    prev.style.backgroundColor = (document.getElementById("font-dialog-highlight") || {}).value || "";
+  }
+  function openFontDialog() {
+    if (READ_ONLY) return;
+    const dlg = document.getElementById("font-dialog");
+    if (!dlg) return;
+    // Seed family/size exactly like updateActiveStates mirrors the caret
+    // into the home-tab pickers (match by option value, never a stale value).
+    const fam = document.getElementById("font-dialog-family");
+    if (fam) {
+      let cur = "";
+      try { cur = String(document.queryCommandValue("fontName") || ""); } catch (err) { /* best effort */ }
+      cur = cur.replace(/^["']|["']$/g, "");
+      let matched = "";
+      if (cur) {
+        for (let i = 0; i < fam.options.length; i++) {
+          if (fam.options[i].value === cur) { matched = cur; break; }
+        }
+      }
+      fam.value = matched;
+    }
+    const size = document.getElementById("font-dialog-size");
+    if (size) {
+      let cur = "";
+      try { cur = String(document.queryCommandValue("fontSize") || ""); } catch (err) { /* best effort */ }
+      size.value = cur && size.querySelector('option[value="' + cur + '"]') ? cur : "";
+    }
+    for (const [id, cmd] of FONT_DIALOG_STYLES) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      let on = false;
+      try { on = document.queryCommandState(cmd); } catch (err) { on = false; }
+      el.checked = !!on;
+      el.dataset.wasChecked = el.checked ? "1" : "0";
+    }
+    const cEl = document.getElementById("font-dialog-color");
+    const hEl = document.getElementById("font-dialog-highlight");
+    fontDialogSeed = { color: cEl ? cEl.value : null, highlight: hEl ? hEl.value : null };
+    const carrier = selectionCarrier();
+    if (carrier) {
+      const cs = window.getComputedStyle(carrier);
+      const fg = cssColorToHex(cs.color);
+      const bg = cssColorToHex(cs.backgroundColor);
+      if (cEl && fg) cEl.value = fg;
+      if (hEl && bg) hEl.value = bg;
+      fontDialogSeed = { color: cEl ? cEl.value : null, highlight: hEl ? hEl.value : null };
+    }
+    updateFontDialogPreview();
+    rememberFocus();
+    openOverlayDialog("font-dialog");
+  }
+  function confirmFontDialog() {
+    if (READ_ONLY) return;
+    // execCommand needs editable focus + the selection the dialog was opened
+    // on (the dialog buttons pulled focus to the overlay) — restore it like
+    // the date & time confirm does.
+    if (document.activeElement !== editor) {
+      editor.focus();
+      if (window.getSelection().isCollapsed) restoreFocus();
+    }
+    const fam = (document.getElementById("font-dialog-family") || {}).value || "";
+    const size = (document.getElementById("font-dialog-size") || {}).value || "";
+    if (fam) emitCommand("fontName", fam);
+    if (size) emitCommand("fontSize", size);
+    // Style toggles: only flip the ones the user flipped (a checkbox that
+    // still mirrors the selection is already applied).
+    for (const [id, cmd] of FONT_DIALOG_STYLES) {
+      const el = document.getElementById(id);
+      if (el && el.checked !== (el.dataset.wasChecked === "1")) emitCommand(cmd);
+    }
+    const cEl = document.getElementById("font-dialog-color");
+    if (cEl && cEl.value !== fontDialogSeed.color) emitCommand("foreColor", cEl.value);
+    const hEl = document.getElementById("font-dialog-highlight");
+    if (hEl && hEl.value !== fontDialogSeed.highlight) emitCommand("hiliteColor", hEl.value);
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+  const fontDialogBtn = document.getElementById("btn-font-dialog");
+  if (fontDialogBtn) fontDialogBtn.addEventListener("click", openFontDialog);
+  for (const id of ["font-dialog-family", "font-dialog-size",
+                    "font-dialog-bold", "font-dialog-italic",
+                    "font-dialog-underline", "font-dialog-strike",
+                    "font-dialog-color", "font-dialog-highlight"]) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", updateFontDialogPreview);
+  }
+  // The dialog's own Inc/Dec steps walk the same 1..7 ladder as the ribbon
+  // buttons, but only move the picker: OK applies the resulting size.
+  const fontInc = document.getElementById("font-dialog-inc");
+  if (fontInc) fontInc.addEventListener("click", () => {
+    const size = document.getElementById("font-dialog-size");
+    if (!size) return;
+    size.value = String(Math.min(7, (parseInt(size.value, 10) || 3) + 1));
+    updateFontDialogPreview();
+  });
+  const fontDec = document.getElementById("font-dialog-dec");
+  if (fontDec) fontDec.addEventListener("click", () => {
+    const size = document.getElementById("font-dialog-size");
+    if (!size) return;
+    size.value = String(Math.max(1, (parseInt(size.value, 10) || 3) - 1));
+    updateFontDialogPreview();
+  });
+
   // --- OO-parity option modals (p2 divergence fixes) ----------------------
   // Each dialog opens from its ribbon button, offers the options OO offers,
   // and Apply invokes the existing command (then post-processes the inserted
@@ -9551,6 +9705,7 @@
     ["displaymode", confirmDisplayModeDialog],
     ["datetime", confirmDatetimeDialog],
     ["caption", confirmCaptionDialog],
+    ["font", confirmFontDialog],
   ];
   for (const [name, confirm] of ROUND2) {
     const ok = document.getElementById("btn-" + name + "-ok");
