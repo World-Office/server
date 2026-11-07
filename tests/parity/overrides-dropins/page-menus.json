@@ -33,14 +33,13 @@
     "page.last-custom": {
       "effektClass": "op",
       "woTab": "layout",
-      "pre": "menu:[data-i18n=\"Layout.Margins\"]",
+      "pre": "custom-margins",
       "selector": "[data-cmd=\"applyPageMargins\"][data-value=\"last-custom\"]",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": ".page-setup[data-margin-top]"
+        "selector": ".page-setup[data-margin-top=\"120\"][data-margin-bottom=\"120\"][data-margin-left=\"130\"][data-margin-right=\"130\"]"
       },
-      "xfail": true,
-      "note": "ledger row: page.last-custom — honest gap: re-applying the stored custom margins (localStorage wo-last-custom-margins, editor.js readCustomMargins) needs prior dialog state the runner pre vocabulary cannot seed; on a fresh page the item is a documented no-op ('No custom margins yet' status only, no marker write)"
+      "note": "PROMOTED 2026-11-07 (L2L-05): the custom-margins pre seeds localStorage wo-last-custom-margins {top:120,bottom:120,left:130,right:130} and opens the Layout margins dropdown, so applyPageMarginsPreset('last-custom') (editor.js:6320-6338) takes the readCustomMargins() branch and writePageSetupMarker (editor.js:6300-6310) writes the seeded twips onto the .page-setup marker"
     },
     "page.us-letter": {
       "effektClass": "op",

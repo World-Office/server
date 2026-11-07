@@ -60,14 +60,13 @@
     },
     "ctx.continue-numbering": {
       "effektClass": "op",
-      "pre": "ctx-menu-in-list",
+      "pre": "ctx-menu-in-two-lists",
       "selector": "[data-ctx=\"ContinueNumbering\"]",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": "#editor ol:nth-of-type(2)"
+        "selector": "#ol-a li:nth-child(3)"
       },
-      "xfail": true,
-      "note": "L2D-03: continueNumbering() merges the caret <ol> into a PRECEDING <ol> sibling; the ctx-menu-in-list fixture builds a single <ol>, so the op is a no-op (Status.NoPreviousList) — pre cannot build the required two-adjacent-lists state"
+      "note": "PROMOTED 2026-11-07 (L2L-05): continueNumbering() merges the caret <ol> into a PRECEDING <ol> sibling (editor.js:2588-2602) — the ctx-menu-in-two-lists pre seeds two adjacent lists with the caret in the second, so the merge appends 'third' into #ol-a as li:nth-child(3) (and #ol-b is removed)"
     }
   }
 }
