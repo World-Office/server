@@ -1,21 +1,94 @@
 {
-  "_note": "L2Q-01 right-panel parity surface config. floors = minimum count of visible interactive fields (input/select/button) inside the ACTIVE .rp-section after its rail click (measured baseline minus headroom, tab-census convention: paragraph 7, table 9, image 12, chart 7, mailmerge 3 measured 2026-11-08). ooAnchors = OO deep census rightPanel.openedSections group anchors (census-oo-deep.json) that must have a WO counterpart label; each anchor tethers to a census heading and carries substring aliases for morphological tolerance (OO 'Indents' vs WO 'Indent left (pt)', OO 'Rotation' vs WO 'Rotate 90°'). An anchor is matched when any alias is a substring of a WO .rp-title/label/button/option text (or vice versa), case-insensitive, across the 5 sections. Missing mandatory anchors FAIL the surface; optional ones are reported only.",
-  "floors": {
-    "paragraph": 5,
-    "table": 7,
-    "image": 10,
-    "chart": 5,
-    "mailmerge": 1
+ "_note": "L2Q-01 right-panel parity surface config. floors = minimum count of visible interactive fields (input/select/button) inside the ACTIVE .rp-section after its rail click (measured baseline minus headroom, tab-census convention: paragraph 7, table 9, image 12, chart 7, mailmerge 3 measured 2026-11-08). ooAnchors = OO deep census rightPanel.openedSections group anchors (census-oo-deep.json) that must have a WO counterpart label; each anchor tethers to a census heading and carries substring aliases for morphological tolerance (OO 'Indents' vs WO 'Indent left (pt)', OO 'Rotation' vs WO 'Rotate 90\u00b0'). An anchor is matched when any alias is a substring of a WO .rp-title/label/button/option text (or vice versa), case-insensitive, across the 5 sections. Missing mandatory anchors FAIL the surface; optional ones are reported only.",
+ "floors": {
+  "paragraph": 5,
+  "table": 7,
+  "image": 10,
+  "chart": 5,
+  "mailmerge": 1
+ },
+ "ooAnchors": [
+  {
+   "anchor": "Line spacing",
+   "mandatory": true,
+   "aliases": [
+    "line spacing"
+   ]
   },
-  "ooAnchors": [
-    { "anchor": "Line spacing", "mandatory": true, "aliases": ["line spacing"] },
-    { "anchor": "Paragraph spacing", "mandatory": false, "aliases": ["paragraph spacing", "spacing before", "spacing after"] },
-    { "anchor": "Indents", "mandatory": true, "aliases": ["indent"] },
-    { "anchor": "Rows", "mandatory": true, "aliases": ["row"] },
-    { "anchor": "Columns", "mandatory": true, "aliases": ["column"] },
-    { "anchor": "Borders style", "mandatory": false, "aliases": ["border"] },
-    { "anchor": "Size", "mandatory": true, "aliases": ["size", "width", "height"] },
-    { "anchor": "Rotation", "mandatory": true, "aliases": ["rotate", "rotation"] },
-    { "anchor": "Wrapping Style", "mandatory": true, "aliases": ["wrapping"] }
-  ]
+  {
+   "anchor": "Paragraph spacing",
+   "mandatory": false,
+   "aliases": [
+    "paragraph spacing",
+    "spacing before",
+    "spacing after"
+   ]
+  },
+  {
+   "anchor": "Indents",
+   "mandatory": true,
+   "aliases": [
+    "indent"
+   ]
+  },
+  {
+   "anchor": "Rows",
+   "mandatory": true,
+   "aliases": [
+    "row"
+   ]
+  },
+  {
+   "anchor": "Columns",
+   "mandatory": true,
+   "aliases": [
+    "column"
+   ]
+  },
+  {
+   "anchor": "Borders style",
+   "mandatory": false,
+   "aliases": [
+    "border"
+   ]
+  },
+  {
+   "anchor": "Size",
+   "mandatory": true,
+   "aliases": [
+    "size",
+    "width",
+    "height"
+   ]
+  },
+  {
+   "anchor": "Rotation",
+   "mandatory": true,
+   "aliases": [
+    "rotate",
+    "rotation"
+   ]
+  },
+  {
+   "anchor": "Wrapping Style",
+   "mandatory": true,
+   "aliases": [
+    "wrapping"
+   ]
+  }
+ ],
+ "_source": {
+  "source": "wo-test-harness/census/oo-source/oo-reference.json (onlyoffice/documentserver 252.232.451.526, RightMenu.template)",
+  "knownDivergences": {
+   "shape": "OO shape settings live in a right-panel section; WO routes shape formatting to the Format dialog + drawing toolbar (not a rail section). Declared divergence.",
+   "textart": "OO textart section; WO uses the dedicated TextArt dialog. Declared divergence.",
+   "form": "OO form settings section; WO uses the Form Settings dialog. Declared divergence.",
+   "signature": "OO signature section; WO has NO rail section and no equivalent surface found \u2014 candidate KNOWN-GAP (keep loud).",
+   "sendforsigning": "OO send-for-signing section; WO has no equivalent \u2014 candidate KNOWN-GAP (keep loud).",
+   "fillingstatus": "OO filing/status section; WO has no equivalent \u2014 candidate KNOWN-GAP (keep loud)."
+  },
+  "woExtensions": {
+   "chart": "OO renders chart settings inside the image layout section; WO gives charts a dedicated rail section (superset)."
+  }
+ }
 }

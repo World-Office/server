@@ -247,7 +247,52 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       results.anchors[a.anchor] = entry;
     }
 
-    // ── 4. selection gating (contextual sections live, like OO) ───────
+    // ── 5. OO SOURCE section alignment (oo-reference.json, source-dug) ─
+    // The deep census is a runtime capture; this leg is anchored to the
+    // OO SOURCE (RightMenu.template) so section coverage cannot drift from
+    // what OO ships. Every OO source section must be a WO rail section or a
+    // declared known divergence (routed to a dialog); every WO rail section
+    // must be an OO section or a declared WO extension.
+    const ref = (() => {
+      const cands = [];
+      if (process.env.WO_OO_REF) cands.push(process.env.WO_OO_REF);
+      let dir = path.resolve(__dirname, '..');
+      while (path.dirname(dir) !== dir) {
+        cands.push(path.join(dir, 'wo-test-harness', 'census', 'oo-source', 'oo-reference.json'));
+        dir = path.dirname(dir);
+      }
+      cands.push('/home/weiss/git/World-Office/wo-test-harness/census/oo-source/oo-reference.json');
+      for (const c of cands) if (fs.existsSync(c)) return JSON.parse(fs.readFileSync(c, 'utf8'));
+      return null; // missing reference: report and fail (source-anchoring is mandatory)
+    })();
+    results.srcAlign = { ref: null, ooSections: [], none: [], missingFromWO: [], woExtensions: [], divergent: [] };
+    if (!ref) {
+      results.srcAlign.error = 'oo-reference.json not found — set WO_OO_REF';
+      rc = 1;
+    } else {
+      results.srcAlign.ref = `${ref.version}`;
+      const normId = (s) => norm(s).replace(/-/g, '').replace(/\s+/g, '');
+      const woRail = SECTIONS.map(normId);
+      const known = (CFG._source && CFG._source.knownDivergences || {});
+      const ext = (CFG._source && CFG._source.woExtensions || {});
+      for (const s of (ref.rightPanel || [])) {
+        const id = normId(s.replace(/-settings$/, ''));
+        results.srcAlign.ooSections.push(s);
+        if (woRail.includes(id)) continue;
+        if (known[id]) { results.srcAlign.divergent.push({ section: s, note: known[id] }); continue; }
+        results.srcAlign.missingFromWO.push(s);
+        rc = 1; // OO ships a right-panel section WO silently lacks
+      }
+      for (const name of SECTIONS) {
+        const id = normId(name);
+        if ((ref.rightPanel || []).some((r) => normId(r.replace(/-settings$/, '')) === id)) continue;
+        if (ext[id]) { results.srcAlign.woExtensions.push({ section: name, note: ext[id] }); continue; }
+        results.srcAlign.woExtensions.push({ section: name, note: 'UNDECLARED' });
+        rc = 1;
+      }
+    }
+
+    // ── 4b. selection gating (contextual sections live, like OO) ─────
     const enabledState = async (name) => page.evaluate((n) => {
       const sec = document.querySelector(`#right-panel-body .rp-section[data-section="${n}"]`);
       if (!sec) return { error: 'section missing' };
@@ -385,9 +430,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     else if (g.ok) console.log(`ok    gating ${name.padEnd(9)} disabled cold (${g.disabledCold.disabled}/${g.disabledCold.total}), live with selection`);
     else console.log(`FAIL  gating ${name.padEnd(9)} cold=${JSON.stringify(g.disabledCold)} live=${JSON.stringify(g.liveWithSelection)}`);
   }
+  const anchorsAdd = results.srcAlign && results.srcAlign.ref ?
+    `, source-align ${results.srcAlign.ref} (${results.srcAlign.divergent.length} declared divergences, ${results.srcAlign.woExtensions.filter((e) => e.section).length} WO sections)`
+    : ', source-align MISSING REFERENCE';
   const secsOk = SECTIONS.filter((n) => results.sections[n] && results.sections[n].ok).length;
   const gatingOk = Object.values(results.gating).filter((g) => g.ok).length;
   console.log(`right-panel: ${secsOk}/${SECTIONS.length} sections at floor, ${anchorsOk}/${anchorsTotal} OO anchors matched, gating ${gatingOk}/${Object.keys(results.gating).length} ok`
-    + ` (OO census ${results.ooCensus.openedSections} sections / ${results.ooCensus.toggles} toggles)`);
+    + ` (OO census ${results.ooCensus.openedSections} sections / ${results.ooCensus.toggles} toggles)${anchorsAdd}`);
+  if (results.srcAlign) {
+    if (results.srcAlign.error) console.log(`FAIL  source-align — ${results.srcAlign.error}`);
+    else {
+      for (const d of results.srcAlign.divergent) console.log(`ok    source-align OO section "${d.section}" declared divergence: ${d.note}`);
+      for (const w of results.srcAlign.woExtensions.filter((e) => e.section)) console.log(`ok    source-align WO extension "${w.section}": ${w.note}`);
+      for (const m of results.srcAlign.missingFromWO) console.log(`FAIL  source-align OO section "${m}" has NO WO counterpart and is NOT a declared divergence`);
+    }
+  }
   process.exit(rc);
 })().catch((e) => { console.error('right-panel FAIL:', e); process.exit(1); });
