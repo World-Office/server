@@ -1,13 +1,21 @@
 /**
  * WO-21-nonbreaking-hyphen: OnlyOffice parity — Ctrl+Shift+Minus inserts a
- * NON-BREAKING HYPHEN (U+2011), while En dash moves to Ctrl+Minus and Em dash
- * stays on Ctrl+Alt+Minus.
+ * NON-BREAKING HYPHEN (U+2011), the em dash stays on Ctrl+Alt+Minus, and the
+ * en dash lives on Ctrl+NumpadSubtract (canon since L2M-05, 2026-11-07: the
+ * main-row Ctrl+Minus/Hyphen key was returned to browser-parity zoom-out, so
+ * shortcut.zoomout could be promoted; see
+ * tests/parity/overrides-dropins/shortcut-real.json shortcut.endash).
+ *
+ * REALIGNED in L2O-06: this gate previously demanded the en dash on
+ * Ctrl+Minus, which contradicted the L2M-05 re-key. It now asserts the current
+ * key map.
  *
  * Node.js built-in test runner (node:assert, zero dependencies).
  *
  * Asserts that editor.js contains BOTH a \u2011 emit bound under
  * ctrl&&shift&&Minus (non-breaking hyphen) AND a \u2013 emit under
- * ctrl&&!shift&&Minus (en dash) — i.e. the two branches coexist.
+ * ctrl&&!shift&&!alt&&NumpadSubtract (en dash) — i.e. the two branches
+ * coexist, while plain Ctrl+Minus stays free for zoom-out.
  *
  * Run: node apps/web/apps/documenteditor-wysiwyg/nonbreaking-hyphen.test.mjs
  * Success: prints "NONBREAKING-HYPHEN-PASS" and exits 0.
@@ -37,14 +45,29 @@ assert.ok(
   "non-breaking hyphen (\u2011) emit must be present in editor.js",
 )
 
-// 2. En dash: Ctrl+Minus (no Shift) -> \u2013 (OO convention; prevented).
-const enDashNoShift =
-  "(ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {\n" +
-  "      // En dash: Ctrl+Minus (OO convention; takes precedence over browser zoom-out).\n" +
-  '      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\\u2013"); return; }'
+// 2. En dash: Ctrl+NumpadSubtract (no Shift) -> \u2013 (OO convention; prevented).
+// REALIGNED (L2O-06): canon L2M-05 moved the en dash off the main-row
+// Ctrl+Minus (that key is zoom-out again) onto the keypad variant — the same
+// numpad adaptation the census records for the em-dash combo.
+const plainCtrlGuard = "(ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {"
+const plainIdx = block.indexOf(plainCtrlGuard)
+assert.notStrictEqual(plainIdx, -1, "plain ctrl (no shift, no alt) dedicated block must exist")
+assert.ok(plainIdx < shiftIdx, "the plain-ctrl block must precede the ctrl+shift block")
+const plainBlock = block.slice(plainIdx, shiftIdx)
 assert.ok(
-  src.includes(enDashNoShift),
-  "Ctrl+Minus (no Shift) must emit an en dash (\\u2013) with preventDefault",
+  plainBlock.includes(
+    'if (ev.code === "NumpadSubtract") { ev.preventDefault(); emitCommand("insertSymbol", "\\u2013"); return; }',
+  ),
+  "Ctrl+NumpadSubtract (no Shift) must emit an en dash (\\u2013) with preventDefault",
+)
+// ...and the freed main-row key must NOT re-bind the dash insert (zoom-out canon)
+assert.ok(
+  !plainBlock.includes('ev.code === "Minus"'),
+  "the plain-ctrl block must not bind the main-row Minus key (Ctrl+Minus is zoom-out, L2M-05)",
+)
+assert.ok(
+  src.includes('ev.code === "Minus" || ev.code === "NumpadSubtract" || k === "-"'),
+  "the guarded arm must still resolve main-row Ctrl+Minus to zoom-out",
 )
 
 // 3. The dedicated shift block must bind Minus to \u2011 (non-breaking hyphen),

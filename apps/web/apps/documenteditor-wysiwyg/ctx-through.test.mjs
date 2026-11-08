@@ -64,14 +64,23 @@ assert.ok(
   'editor.js: OBJ_LAYOUT_CLASSES must include "obj-through"',
 )
 
-// The applyObjectOp wrap branch must accept the wrap-through value
+// The applyObjectOp wrap branch must accept the wrap-through value.
+// REALIGNED (L2O-06): the old gate matched the branch tail verbatim
+// (`… "wrap-front" || value === "wrap-through")`); L2M-03 appended the
+// wrap-top-and-bottom entry after wrap-through, so the literal went stale while
+// the accepted-value set only grew. Assert the value inside the real wrap
+// branch (head of branch → its closing `} else if`) instead.
+const throughBranchStart = editorSrc.indexOf('value === "wrap-inline" || value === "wrap-square"')
+assert.notEqual(throughBranchStart, -1, "editor.js: the applyObjectOp wrap branch must exist")
+const throughBranch = editorSrc.slice(throughBranchStart, editorSrc.indexOf("} else if", throughBranchStart))
+assert.ok(throughBranch.length > 0, "editor.js: the applyObjectOp wrap branch must be closed")
 assert.ok(
-  editorSrc.includes('value === "wrap-front" || value === "wrap-through")'),
+  /value === "wrap-through"/.test(throughBranch),
   'editor.js: applyObjectOp wrap branch must accept "wrap-through"',
 )
 // ...and map it onto the obj-through class (via the same classList.add chain)
 assert.ok(
-  editorSrc.includes('value === "wrap-through" ? "obj-through" : "obj-inline")'),
+  /value === "wrap-through" \? "obj-through"/.test(throughBranch),
   'editor.js: wrap-through must add the "obj-through" layout class',
 )
 // sibling layout classes are still stripped first
