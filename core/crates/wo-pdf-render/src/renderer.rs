@@ -131,11 +131,13 @@ impl Rect {
 /// # Usage
 ///
 /// ```no_run
-/// use wo_pdf_render::renderer::{PdfRenderer, PdfiumBackend};
+/// use wo_pdf_render::{PdfRenderer, PdfiumBackend};
 ///
 /// let backend = PdfiumBackend::new().expect("Failed to initialize Pdfium");
+/// let pdf_bytes = std::fs::read("doc.pdf").expect("Failed to read PDF file");
 /// let page_count = backend.page_count(&pdf_bytes).expect("Failed to get page count");
 /// let rgba_bytes = backend.render_page(&pdf_bytes, 0, 96.0).expect("Failed to render page");
+/// println!("{page_count} page(s), {} rendered bytes", rgba_bytes.len());
 /// ```
 pub struct PdfiumBackend {
     /// The initialized Pdfium library.
