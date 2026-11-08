@@ -108,28 +108,29 @@ OCIS proxy and point the editor directly at the docserver for testing.
 
 ---
 
-## 4. rustfmt / clippy debt (cheap fix, but source-edit scope)
+## 4. rustfmt / clippy debt  ✅ resolved 2026-11-08
 
-**Affected:** `ci.yml` → job `lint-rust` (step `Check formatting` =
-`cargo fmt --all -- --check`, red; `Clippy -D warnings` would also be red).
+**Was:** `ci.yml` → job `lint-rust` (step `Check formatting` =
+`cargo fmt --all -- --check` red; `Clippy -D warnings` would also be red)
+on rustfmt debt in:
+`core/crates/wo-docserver/src/wopi.rs`,
+`core/crates/wo-renderer/src/fonts.rs`,
+`core/crates/wo-renderer-wasm/src/lib.rs` (+ unit tests) and
+`services/coauthoring-service/src/main.rs`.
 
-**Symptom:** `Diff in ...` for:
-`core/crates/wo-docserver/src/wopi.rs` (lines 199, 526, 563, 619, 639, 674),
-`core/crates/wo-renderer/src/fonts.rs` (191),
-`core/crates/wo-renderer-wasm/src/lib.rs` (2348, 2702, 2719, 2732),
-`core/crates/wo-renderer-wasm/src/selection_undo_tests.rs`,
-`core/crates/wo-renderer-wasm/src/serialize_merge_tests.rs`,
-`services/coauthoring-service/src/main.rs` (801).
+**Resolution:** the owning source changes landed and the gate is green again
+— `cargo fmt --all -- --check` and
+`cargo clippy --workspace --all-targets -- -D warnings` both exit 0 on the
+repo root (verified on nightly, rustfmt 1.12.0-nightly / rustc
+1.101.0-nightly). `lint-rust` no longer sets `continue-on-error`, so the job
+is a required gate once more.
 
-**Blocker:** none code-wise — this is the *cheapest* fix of the lot, but the
-source files are outside the CI-triage file scope
-(`.github/workflows/*`, `docs/KNOWN-ISSUES.md`).
-
-**Workaround (in effect):** `lint-rust` has `continue-on-error: true`. To
-close it, run `cargo fmt --all` on `main`, review the diff (it is purely
-rustfmt), then `cargo clippy --workspace --all-targets -- -D warnings` and
-fix whatever clippy flags — two commits in the owning crate's change. Remove
-the `continue-on-error` afterwards.
+Note for future triage: `wo-docserver`, `wo-renderer` and
+`wo-renderer-wasm` pin `edition = "2021"` in their manifests, so `cargo fmt`
+formats them with the 2021 *style* edition. Running
+`rustfmt --edition 2024 --check` on those files still shows a diff
+(import ordering, `assert!` wrapping) — that is style-edition drift, not gate
+debt; it only goes away if those crates migrate to edition 2024.
 
 ---
 
@@ -200,6 +201,6 @@ served by `deploy.yml`, which is green.
 | `Build wo-x2t-wasm` (wasm.yml) | #1 uuid wasm RNG | `core/crates/wo-x2t-wasm/Cargo.toml` | n/a (other workflow) |
 | `coverage-rust` (ci.yml) | #2 pdfium guard | `core/crates/wo-pdf-render` | yes |
 | E2E/live (not a gate) | #3 ocis SSE TypeError | `opencloud-docserver` + editor client | n/a |
-| `lint-rust` (ci.yml) | #4 fmt/clippy debt | `cargo fmt --all` on main | yes |
+| `lint-rust` (ci.yml) | #4 fmt/clippy debt | ✅ resolved 2026-11-08 | no |
 | `lint-ts` (ci.yml) | #5 wopi-client Biome | ✅ resolved 2026-10-05 | no |
 | `build-frontend`/`build-services` (docker.yml) | #7 wasm-pack + GHCR PAT | `docker.yml` + repo secrets | no |

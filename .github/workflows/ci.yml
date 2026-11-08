@@ -14,13 +14,6 @@ jobs:
   lint-rust:
     name: Rust Lint
     runs-on: ubuntu-latest
-    # KNOWN-ISSUES: `cargo fmt --all -- --check` is red on rustfmt debt in
-    # wo-docserver/src/wopi.rs, wo-renderer/src/fonts.rs,
-    # wo-renderer-wasm/src/lib.rs (+ unit tests) and
-    # services/coauthoring-service/src/main.rs. Fixing needs source edits
-    # (tracked separately), so keep the workflow green in the meantime.
-    # See docs/KNOWN-ISSUES.md §rustfmt-clippy-debt.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
