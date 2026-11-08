@@ -29,3 +29,12 @@ wasm-bindgen-test = { workspace = true }
 
 [features]
 default = ["console_error_panic_hook"]
+
+# CI runners get throttled downloading wasm-pack's binaryen from GitHub
+# releases (transient 'failed to download binaryen' failures); the size
+# tradeoff is acceptable for CI stability.
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
