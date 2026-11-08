@@ -44,8 +44,20 @@ jobs:
       # wo-renderer-wasm's build script runs `wasm-pack build`; the runner
       # image no longer ships wasm-pack preinstalled, so turbo's dependency
       # build dies with "wasm-pack: not found" (same as ci.yml typecheck-ts)
-      - uses: taiki-e/install-action@wasm-pack
-        timeout-minutes: 5
+      - name: Install wasm-pack (throttle-proof)
+        timeout-minutes: 15
+        run: |
+          if command -v wasm-pack >/dev/null 2>&1; then echo "wasm-pack present"; exit 0; fi
+          for i in 1 2 3; do
+            if curl -L -f -s --retry 3 --retry-delay 5 https://github.com/rustwasm/wasm-pack/releases/latest/download/wasm-pack-v0.14.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/wp.tgz \
+               && tar -xzf /tmp/wp.tgz -C /tmp \
+               && sudo mv /tmp/wasm-pack-v0.14.0-x86_64-unknown-linux-musl/wasm-pack /usr/local/bin/; then
+              wasm-pack --version; exit 0
+            fi
+            echo "taiki-e/rustwasm download failed (attempt $i/3) — falling back to cargo install"
+            cargo install wasm-pack --locked && exit 0
+          done
+          exit 1
 
       - name: Run build
         run: pnpm build --filter='!@world-office/tauri-poc'

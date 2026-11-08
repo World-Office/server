@@ -1,13 +1,46 @@
 name: Setup pdfium vendored cache
 description: >
-  Cache wo-pdf-render's auto-downloaded libpdfium ($CARGO_HOME/pdfium-vendored).
-  GitHub-release downloads get throttled from runner IPs; once cached, build.rs
-  skips the download entirely. Cache key is the build.rs hash so a pdfium
-  version bump invalidates it.
+  Ensure wo-pdf-render's auto-downloaded libpdfium is present in
+  $CARGO_HOME/pdfium-vendored so build.rs never needs to download it.
+  GitHub-release downloads get throttled from runner IPs; the stubborn
+  pre-download below (10 attempts x 20s backoff) breaks through, and
+  actions/cache makes it a one-time cost per build.rs revision.
 runs:
   using: composite
   steps:
+    - name: Resolve pdfium version
+      id: ver
+      shell: bash
+      run: |
+        version=$(grep -oE 'PDFIUM_VERSION: &str = "[0-9]+"' core/crates/wo-pdf-render/build.rs | grep -oE '[0-9]+')
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
     - uses: actions/cache@v4
+      id: cache
       with:
         path: ~/.cargo/pdfium-vendored
-        key: pdfium-vendored-${{ runner.os }}-${{ hashFiles('core/crates/wo-pdf-render/build.rs') }}
+        key: pdfium-vendored-${{ runner.os }}-${{ steps.ver.outputs.version }}-${{ hashFiles('core/crates/wo-pdf-render/build.rs') }}
+
+    - name: Pre-download pdfium (cache miss)
+      if: steps.cache.outputs['cache-hit'] != 'true'
+      shell: bash
+      run: |
+        version="${{ steps.ver.outputs.version }}"
+        dest="$HOME/.cargo/pdfium-vendored/$version/linux-x86_64"
+        lib="$dest/libpdfium.so"
+        [ -f "$lib" ] && { echo "pdfium already vendored"; exit 0; }
+        mkdir -p "$dest" /tmp/pdfium-dl
+        url="https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F$version/pdfium-linux-x64.tgz"
+        ok=0
+        for i in $(seq 1 10); do
+          echo "pdfium download attempt $i/10"
+          if curl -L -f -s --retry 3 --retry-delay 5 -o /tmp/pdfium-dl/pdfium.tgz "$url"; then
+            if tar -xzf /tmp/pdfium-dl/pdfium.tgz -C /tmp/pdfium-dl lib/libpdfium.so 2>/dev/null; then
+              mv /tmp/pdfium-dl/lib/libpdfium.so "$lib"
+              ok=1
+              break
+            fi
+          fi
+          sleep 20
+        done
+        [ "$ok" = "1" ] || { echo "::warning::pdfium pre-download failed; build.rs will retry"; }
