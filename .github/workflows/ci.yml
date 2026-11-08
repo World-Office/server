@@ -102,7 +102,6 @@ jobs:
           cargo nextest report --workspace --lib \
             --junit test-results/nextest/junit.xml 2>&1 || true
         timeout-minutes: 5
-        continue-on-error: true
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -112,7 +111,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
         timeout-minutes: 5
-        continue-on-error: true
 
       - name: Run doc tests
         run: cargo test --workspace --doc
@@ -151,7 +149,6 @@ jobs:
       - name: Run integration tests
         run: cargo test --workspace --tests
         timeout-minutes: 60
-        continue-on-error: true
 
   coverage-rust:
     name: Rust Coverage

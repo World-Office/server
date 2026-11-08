@@ -5,9 +5,11 @@ narrowly-scoped change (they need source edits in crates/apps/packages that
 are owned by other work items). Each entry lists the **blocker** and the
 **workaround** currently in effect.
 
-Status snapshot: 2026-09-14, main @ `7a777d89` — CI (`ci.yml`), WASM Build
-(`wasm.yml`) and Docker Build (`docker.yml`) were red. `deploy.yml` was green
-and is unaffected.
+Status snapshot: swept 2026-11-08 (L2O-05) over the 2026-09-14 baseline
+(main @ `7a777d89`, where `ci.yml`, `wasm.yml` and `docker.yml` were red).
+Every entry below is now verified **resolved** or **historical**; no job or
+step in `ci.yml` carries `continue-on-error` anymore. `deploy.yml` was green
+throughout and is unaffected.
 
 The general policy for workflow gates: jobs that fail only because of an
 issue listed here carry `continue-on-error: true` plus a `KNOWN-ISSUES`
@@ -17,12 +19,11 @@ dedicated change. When the root cause is fixed, remove the
 
 ---
 
-## 1. wo-x2t-wasm cross-compiles `uuid` without a wasm RNG feature
+## 1. wo-x2t-wasm cross-compiles `uuid` without a wasm RNG feature ✅ resolved 2026-11-08
 
-**Affected:** `wasm.yml` → job `Build wo-x2t-wasm` (exit 101). This is the
-only red job in the WASM Build workflow; `Build wo-renderer-wasm` passes.
+**Was affected:** `wasm.yml` → job `Build wo-x2t-wasm` (exit 101).
 
-**Symptom (CI log):**
+**Symptom (CI log, at the time):**
 ```
 error: to use `uuid` on `wasm32-unknown-unknown`, specify a source of
 randomness using one of the `js`, `rng-getrandom`, or `rng-rand` features
@@ -30,19 +31,30 @@ randomness using one of the `js`, `rng-getrandom`, or `rng-rand` features
 error: could not compile `uuid` (lib) due to 1 previous error
 ```
 
-**Blocker:** the `uuid` dependency of `core/crates/wo-x2t-wasm` (or one of
-its transitive deps resolved through the wasm32 target) activates the
-`v4`/random feature without selecting a wasm source of randomness, so the
-`wasm32-unknown-unknown` build fails. Fixing requires editing
-`core/crates/wo-x2t-wasm/Cargo.toml` (add
-`uuid = { version = "1", features = ["js"] }`, or `rng-getrandom`) and
-re-verifying with `wasm-pack build --target nodejs` — a source change outside
-the CI work-item scope.
+**Resolution (verified 2026-11-08):** the fix landed in three layers and
+both workspace resolutions are green now.
 
-**Workaround (in effect):** the job stays red but is non-blocking — no other
-workflow depends on `wo-x2t-wasm` being published, and the editor bridge that
-ships to production is `wo-renderer-wasm` (green). To un-red it, apply the
-Cargo.toml feature fix above in the crate-owning change.
+- Root workspace: `Cargo.toml` pins `uuid = { version = "1", features =
+  ["v4", "js"] }` and `.cargo/config.toml` selects the getrandom 0.4
+  `wasm_js` backend for `wasm32-unknown-unknown` (getrandom 0.4 arrives via
+  msoffice-crypto → rand 0.10); `wo-x2t-wasm` additionally declares the
+  wasm32-target `getrandom` dep itself.
+- Nested workspace: `wasm-pack` (used by the pnpm build scripts) resolves
+  from `core/`, whose `uuid` spec (`v4, serde`, no `js`) still reproduced
+  the exact compile_error above with uuid 1.23.4 (verified red before this
+  change). `core/Cargo.toml` is now synced to
+  `uuid = { version = "1", features = ["v4", "serde", "js"] }` per its own
+  keep-in-sync mandate (wo-docserver is a member of both workspaces).
+- Verified: `cargo build --target wasm32-unknown-unknown -p wo-x2t-wasm`
+  exits 0 from **both** the repo root and `core/`.
+
+While re-verifying, the job's test step turned out to be a no-op:
+`wasm-pack test --node -p wo-x2t-wasm` was invoked at the workspace root,
+where wasm-pack dies with `failed to parse manifest … missing field
+'package'` before running a single test — masked by `continue-on-error`.
+The step now runs `wasm-pack test --node` with
+`working-directory: core/crates/wo-x2t-wasm` (verified exit 0) and is
+required again, so the job cannot silently regress.
 
 ---
 
@@ -81,32 +93,29 @@ required again.
 
 ---
 
-## 3. ocis SSE TypeError in the collaboration stream (HISTORICAL — python docserver removed 2026-10-14; kept as history)
+## 3. ocis SSE TypeError in the collaboration stream (HISTORICAL — python docserver removed 2026-10-14; verified gone 2026-11-08)
 
-**Affected:** E2E / live integration with OpenCloud (OCIS). Not a pinned CI
-gate — this is a long-term integration defect to fix in the owning change.
+**Was affected:** E2E / live integration with OpenCloud (OCIS). Never a
+pinned CI gate.
 
-**Symptom:** the editor's real-time collaboration push channel is
-Server-Sent Events served by the docserver at
+**Symptom (at the time):** the editor's real-time collaboration push channel
+was Server-Sent Events served by the Python docserver at
 `GET /api/documents/{doc_id}/collab/stream`
 (`opencloud-docserver/src/editor/router.py`, `media_type="text/event-stream"`,
-seed `state` event then `ops`/`presence`/`resync` events with a `: keepalive`
-heartbeat). Consumed **through the OCIS reverse proxy**, browsers report a
-`TypeError` (EventSource `event.data` handling / proxy-buffered or
-re-chunked frames, or the `data:` frames arriving without the expected
-shape), so live coauth presence silently dies while the document itself
-keeps working through the HTTP sync endpoints.
+seed `state` event then `ops`/`presence`/`resync` events with a
+`: keepalive` heartbeat). Consumed **through the OCIS reverse proxy**,
+browsers reported a `TypeError` (EventSource `event.data` handling /
+proxy-buffered or re-chunked frames), so live coauth presence silently died
+while the document itself kept working through the HTTP sync endpoints.
 
-**Blocker:** the stream contract is not robust to the OCIS proxy path (frame
-buffering, missing `event:`/`data:` pairing when proxied) and the frontend
-consumer does not fall back gracefully on `TypeError`. Fixing requires a
-shared change across `opencloud-docserver` (stream framing/keepalive) and
-the editor client (defensive parsing + poll fallback).
-
-**Workaround (in effect):** rely on the synchronous endpoints
-(`/api/documents/{id}/collab/text`, `sync`, `resync`) — collaboration
-converges on save/load; live presence is degraded. Optionally bypass the
-OCIS proxy and point the editor directly at the docserver for testing.
+**Status (verified 2026-11-08):** the affected code no longer exists in this
+tree — `opencloud-docserver` was removed on 2026-10-14 and the collab SSE
+stream now lives in the Rust docserver
+(`core/crates/wo-docserver/src/api_ext.rs::collab_stream`, routed at
+`/api/documents/{id}/collab/stream` in `lib.rs`). The historical workaround
+(sync endpoints `/api/documents/{id}/collab/text`, `sync`, `resync`) is
+still the convergence path. Any proxy-framing defect against the Rust
+endpoint would be a **new** issue, not this one; kept for history only.
 
 ---
 
@@ -136,32 +145,30 @@ debt; it only goes away if those crates migrate to edition 2024.
 
 ---
 
-## 5. wo-ooxml: test_roundtrip_with_formatting fails on missing underline XML
+## 5. wo-ooxml: test_roundtrip_with_formatting fails on missing underline XML ✅ resolved (verified 2026-11-08)
 
-**Affected:** `ci.yml` → job `test-rust-unit` (`cargo test -p wo-ooxml --lib`, exit 101).
+**Was affected:** `ci.yml` → job `test-rust-unit`
+(`cargo test -p wo-ooxml --lib`, exit 101).
 
-**Symptom (CI log):**  
+**Symptom (CI log, at the time):**  
 `assertion failed: doc_content.contains("<w:u w:val=\"single\"/>")` in  
 `roundtrip::tests::test_roundtrip_with_formatting` (file  
-`core/crates/wo-ooxml/src/roundtrip.rs:240`).
+`core/crates/wo-ooxml/src/roundtrip.rs`).
 
-The round-trip test creates a docx with underlined text and expects the  
-`w:u` element to survive parse → serialize. With the current  
-serializer, formatting like underline is not serialized, so the assertion  
-fails.
+The round-trip test created a docx with underlined text and expected the
+`w:u` element to survive parse → serialize; the serializer dropped it.
 
-**Blocker:** Underline formatting handling in the serializer needs to be  
-added (`DocxRun.underline` user property and `w:u` element emission). This is  
-outside the OOXML congruence raw-pass scope (CG-1..6) and needs its own  
-fix in `wo-ooxml` or the typing engine that sets underlines.
-
-**Workaround (in effect):** mark `test_roundtrip_with_formatting` as `#[ignore]`
-  in `roundtrip.rs` so the unit-test gate passes, OR add `continue-on-error: true`
-  to the `test-rust-unit` job. Final fix is to implement underline emit.
+**Resolution (verified 2026-11-08):** underline emission landed in
+`wo-ooxml`. The test runs un-`#[ignore]`d and passes —
+`cargo test -p wo-ooxml --lib` → 66 passed / 0 failed / 0 ignored
+(the `roundtrip` filter alone: 11 passed, including
+`test_roundtrip_with_formatting`). Neither workaround from the original
+entry was ever needed on the current tree: the test is not ignored and
+`test-rust-unit` carries no `continue-on-error`.
 
 ---
 
-## 6. Biome format debt — packages/wopi-client  ✅ resolved 2026-10-05
+## 6. Biome format debt — packages/wopi-client  ✅ resolved 2026-10-05, re-verified 2026-11-08
 
 **Was:** `ci.yml` → job `lint-ts` (`pnpm lint`, red) from a Biome format diff
 in `packages/wopi-client`.
@@ -169,40 +176,41 @@ in `packages/wopi-client`.
 **Resolution:** ran `biome check --write` across the six red workspaces
 (`wopi-client`, `editor-common`, `pdfeditor`, `presentationeditor`,
 `spreadsheeteditor`, `visioeditor`) — safe format/organizeImports fixes only.
-`pnpm lint` is green (turbo 27/27) and `lint-ts` no longer sets
-`continue-on-error`. Per-package `typecheck` + `test` verified green
-(editor-common 335, wopi-client 18, pdfeditor 36, presentationeditor 114,
-spreadsheeteditor 38, visioeditor 70).
+`lint-ts` no longer sets `continue-on-error`. Re-verified during the
+2026-11-08 sweep: fresh `pnpm install --frozen-lockfile` +
+`pnpm lint` → turbo **27/27 successful, exit 0**, zero Biome diffs.
 ---
 
-## 7. docker.yml: wasm-pack missing + GHCR org-package permission (out of ci.yml scope)
+## 7. docker.yml: wasm-pack missing + GHCR org-package permission ✅ resolved (fixes landed 2026-10-13; verified 2026-11-08)
 
-**Affected:** `.github/workflows/docker.yml` (not in the CI-triage scope —
-noted here for completeness).
+**Was affected:** `.github/workflows/docker.yml` — `build-frontend` red with
+`sh: 1: wasm-pack: not found` (the job never installed wasm-pack, unlike
+`deploy.yml`), and `build-services` red with
+`#26 ERROR: denied: installation not allowed to Create organization
+package` (`secrets.GITHUB_TOKEN` lacked `write:packages` for the
+`world-office` org namespace).
 
-- `build-frontend` is red: `@world-office/wo-renderer-wasm#build` fails with
-  `sh: 1: wasm-pack: not found`. Unlike `deploy.yml`, this job never installs
-  wasm-pack. Fix: add `taiki-e/install-action@wasm-pack` before the build
-  step (mirror `deploy.yml`'s `build-frontend`, which is green).
-- `build-services` is red:
-  `#26 ERROR: denied: installation not allowed to Create organization
-  package` — it logs in with `secrets.GITHUB_TOKEN`, which lacks
-  `write:packages` for the `world-office` org namespace; `deploy.yml`
-  uses `GHCR_PAT` and is green. Fix: use `GHCR_PAT` (or a PAT with
-  `write:packages`) in `docker.yml`.
-
-**Workaround (in effect):** none in-workflow (out of scope); deployment is
-served by `deploy.yml`, which is green.
+**Resolution (verified in-tree 2026-11-08):** both documented fixes are in
+`docker.yml` — `taiki-e/install-action@wasm-pack` before the frontend build
+(same as `ci.yml`/`deploy.yml`), and a workflow-level
+`permissions: { contents: read, packages: write }` so the default
+`GITHUB_TOKEN` login can create org packages. Deployment continues to be
+served by `deploy.yml` (green).
 
 ---
 
 ## How to clear these (cheat sheet)
 
-| Job (workflow) | Issue | Fix lands in | Marked continue-on-error |
+Sweep state 2026-11-08 (L2O-05): every row below is resolved or historical;
+no `continue-on-error` remains anywhere in `ci.yml` (the two `wasm.yml`
+flags are gone as well).
+
+| Job (workflow) | Issue | Status | Fix landed in |
 |---|---|---|---|
-| `Build wo-x2t-wasm` (wasm.yml) | #1 uuid wasm RNG | `core/crates/wo-x2t-wasm/Cargo.toml` | n/a (other workflow) |
-| `coverage-rust` (ci.yml) | #2 pdfium guard | ✅ resolved 2026-11-08 | no |
-| E2E/live (not a gate) | #3 ocis SSE TypeError | `opencloud-docserver` + editor client | n/a |
-| `lint-rust` (ci.yml) | #4 fmt/clippy debt | ✅ resolved 2026-11-08 | no |
-| `lint-ts` (ci.yml) | #5 wopi-client Biome | ✅ resolved 2026-10-05 | no |
-| `build-frontend`/`build-services` (docker.yml) | #7 wasm-pack + GHCR PAT | `docker.yml` + repo secrets | no |
+| `Build wo-x2t-wasm` (wasm.yml) | #1 uuid wasm RNG | ✅ resolved 2026-11-08 | `Cargo.toml` + `core/Cargo.toml` (uuid `js`) + wasm.yml test-step cwd |
+| `coverage-rust` (ci.yml) | #2 pdfium guard | ✅ resolved 2026-11-08 (L2O-04) | `wo-pdf-render` vendored-lib binding + skip guard |
+| E2E/live (not a gate) | #3 ocis SSE TypeError | historical — python docserver removed 2026-10-14 | n/a (Rust `wo-docserver` owns the stream now) |
+| `lint-rust` (ci.yml) | #4 fmt/clippy debt | ✅ resolved 2026-11-08 | source fmt/clippy fixes (owning changes) |
+| `test-rust-unit` (ci.yml) | #5 wo-ooxml underline roundtrip | ✅ resolved (test passes un-ignored) | `wo-ooxml` underline emission |
+| `lint-ts` (ci.yml) | #6 wopi-client Biome | ✅ resolved 2026-10-05, re-verified 2026-11-08 | `biome check --write` across six workspaces |
+| `build-frontend`/`build-services` (docker.yml) | #7 wasm-pack + GHCR permission | ✅ resolved 2026-10-13 | `docker.yml`: wasm-pack install + `packages: write` |

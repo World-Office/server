@@ -52,7 +52,7 @@ hyper = "1"
 quick-xml = { version = "0.37", features = ["serialize"] }
 urlencoding = "2"
 chrono = "0.4"
-uuid = { version = "1", features = ["v4", "serde"] }
+uuid = { version = "1", features = ["v4", "serde", "js"] }
 base64 = "0.22"
 sha2 = "0.10"
 # keep in sync with the outer workspace root (../Cargo.toml): wo-docserver is
