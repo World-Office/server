@@ -91,7 +91,12 @@ console.log('ok 2 dispatcher routes "WrapTight" to applyObjectOp("wrap-tight")')
 
 const wrapBranchStart = editorSrc.indexOf('value === "wrap-inline" || value === "wrap-square"')
 assert.notEqual(wrapBranchStart, -1, "editor.js: the applyObjectOp wrap branch must exist")
-const wrapBranch = editorSrc.slice(wrapBranchStart, wrapBranchStart + 1400)
+// REALIGNED (L2O-06): the old gate read a fixed 1400-char window from the
+// branch head; the L2M-03 wrap-top-and-bottom entry plus the WO-21-ctx-through
+// comment grew the branch past that, so the tail (data-wrap marker) fell out of
+// the window while the code stayed correct. Slice to the branch end instead.
+const wrapBranch = editorSrc.slice(wrapBranchStart, editorSrc.indexOf("} else if", wrapBranchStart))
+assert.ok(wrapBranch.length > 0, "editor.js: the applyObjectOp wrap branch must be closed")
 assert.ok(
   wrapBranch.includes('value === "wrap-tight"'),
   'editor.js: the wrap branch must accept the "wrap-tight" value',

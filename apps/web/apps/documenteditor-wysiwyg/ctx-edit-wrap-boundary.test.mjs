@@ -74,11 +74,28 @@ assert.ok(
   />Edit wrap boundary…<\/button>/.test(wrapRow[0]),
   'the EditWrapBoundary row must be labeled "Edit wrap boundary…" (OO wording, ellipsis)',
 )
-// It belongs to the wrap block: after the wrap entries, before Edit object.
-assert.ok(
-  /data-ctx="WrapThrough"[\s\S]{0,900}?data-ctx="EditWrapBoundary"/.test(htmlSrc),
-  "index.html: EditWrapBoundary row must sit inside the ctx wrap block",
-)
+// It belongs to the wrap block: after every wrap entry, before Edit object.
+// REALIGNED (L2O-06): the old check measured a fixed 900-char window after
+// WrapThrough; L2M-03 inserted the TopAndBottom wrap row between them, so the
+// window went stale while the row never left the block. The block is now
+// derived from the row geometry itself (first wrap row → EditObject), so new
+// wrap rows cannot silently re-stale this gate.
+const wrapBlockStart = htmlSrc.indexOf('data-ctx="WrapInline"')
+const wrapBlockEnd = htmlSrc.indexOf('data-ctx="EditObject"')
+assert.ok(wrapBlockStart !== -1 && wrapBlockEnd !== -1,
+  "index.html: the ctx wrap block (WrapInline … EditObject) must exist")
+const wrapBlock = htmlSrc.slice(wrapBlockStart, wrapBlockEnd)
+const boundaryAt = wrapBlock.indexOf('data-ctx="EditWrapBoundary"')
+assert.ok(boundaryAt !== -1,
+  "index.html: EditWrapBoundary row must sit inside the ctx wrap block")
+for (const wrapRow of [
+  "WrapInline", "WrapSquare", "WrapTight", "WrapBehind",
+  "WrapFront", "WrapThrough", "TopAndBottom",
+]) {
+  const wrapAt = wrapBlock.indexOf(`data-ctx="${wrapRow}"`)
+  assert.ok(wrapAt !== -1 && wrapAt < boundaryAt,
+    `index.html: EditWrapBoundary row must sit after the ${wrapRow} wrap row`)
+}
 assert.ok(
   /data-ctx="EditWrapBoundary"[\s\S]{0,900}?data-ctx="EditObject"/.test(htmlSrc),
   "index.html: EditWrapBoundary row must sit before the Edit object row",
