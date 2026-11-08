@@ -100,6 +100,8 @@ coverage/
 .nyc_output/
 test-results/
 *.lcov
+# per-run tab-census output (tests/parity/surfaces/tab-census.cjs)
+tests/parity/tab-census-results.json
 
 # =====================
 # Environment
