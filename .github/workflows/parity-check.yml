@@ -104,18 +104,15 @@ jobs:
         run: |
           cd apps/web/apps/documenteditor-wysiwyg
           fails=0
+          # Every gate is a plain ESM node script. shift-enter-behavior.test.mjs
+          # also drives a live editor via WO_EDITOR_URL/playwright — its live
+          # layer self-skips (exit 0) when that stack is unavailable, so its
+          # static chain pins still run here.
           for f in *.test.mjs; do
-            # shift-enter-behavior.test.mjs is jest+CommonJS on purpose (see
-            # its header: Node 22's jest cannot require ESM) and drives a live
-            # editor via WO_EDITOR_URL — it belongs to the live-stack runs.
-            if [ "$f" = "shift-enter-behavior.test.mjs" ]; then
-              echo "SKIP $f (jest/live-stack)"
-              continue
-            fi
             echo "-- $f"
             node "$f" || fails=$((fails+1))
           done
-          echo "editor gates: $(( $(ls *.test.mjs | wc -l ) - 1 - fails )) pass, $fails fail"
+          echo "editor gates: $(( $(ls *.test.mjs | wc -l ) - fails )) pass, $fails fail"
           exit $fails
 
   visual-diff:
