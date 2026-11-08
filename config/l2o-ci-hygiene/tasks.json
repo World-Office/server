@@ -1,102 +1,32 @@
 {
  "_meta": {
   "name": "l2o-ci-hygiene",
-  "baseline": {
-   "pass": 451,
-   "knownGap": 2,
-   "fail": 0
-  },
-  "notes": "CI-hygiene wave on zai/glm-5.3 workers. KNOWN-ISSUES.md has 7 sections; local verification shows most are already FIXED but the CI gates masking them (continue-on-error) are still in place. Each task retires one mask + its section. Parallel builtin workers; ci.yml hunks are textually distinct per task."
+  "note": "hotfix addendum"
  },
  "defaults": {
   "max_attempts": 3,
   "branch": "tf/{taskid}",
-  "commit_style": "ci: retire <gate> \u2014 KNOWN-ISSUES <section>"
+  "commit_style": "test: realign static gates to current editor canon"
  },
  "tasks": [
   {
-   "id": "L2O-01",
-   "title": "Flip lint-rust to required: verify clippy clean, retire rustfmt debt",
+   "id": "L2O-06",
+   "title": "Realign 4 stale editor static gates to current canon (hotfix for CI Parity Check)",
    "files": [
-    ".github/workflows/ci.yml",
-    "docs/KNOWN-ISSUES.md"
+    "apps/web/apps/documenteditor-wysiwyg/ctx-edit-wrap-boundary.test.mjs",
+    "apps/web/apps/documenteditor-wysiwyg/ctx-through.test.mjs",
+    "apps/web/apps/documenteditor-wysiwyg/ctx-tight.test.mjs",
+    "apps/web/apps/documenteditor-wysiwyg/nonbreaking-hyphen.test.mjs"
    ],
    "steps": [
-    "VERIFY FIRST: (a) cargo fmt --all -- --check (already rc=0 locally), (b) cargo clippy --workspace --all-targets -- -D warnings from server/ \u2014 if clippy flags anything, FIX the flagged code in the owning crate (minimal fixes, no refactors) before proceeding.",
-    "Remove `continue-on-error: true` from the lint-rust job (ci.yml ~line 23) and delete the KNOWN-ISSUES comment block above it.",
-    "docs/KNOWN-ISSUES.md \u00a74 (rustfmt/clippy debt): replace the section body with a one-line resolution note: 'RESOLVED <date>: rustfmt debt fixed; lint-rust now required (no continue-on-error). Commit <sha>.'",
-    "Verify: cargo fmt --all -- --check; cargo clippy --workspace --all-targets -- -D warnings; /usr/bin/python3 -c \"import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml')); print('yaml ok')\" (if pyyaml missing: /usr/bin/python3 -c \"import json\" fails \u2014 instead check with ruby or just visual diff; the step is a sanity check, skip if no yaml lib).",
-    "Commit ONLY .github/workflows/ci.yml and docs/KNOWN-ISSUES.md."
+    "These 4 gates run in CI via plain `node <file>` and FAIL after the L2M/L2N waves changed the editor. Update the ASSERTIONS (not the editor) \u2014 the editor is canonical now:",
+    "(a) nonbreaking-hyphen.test.mjs asserts 'Ctrl+Minus (no Shift) must emit an en dash with preventDefault' \u2014 OBSOLETE canon. Current canon (L2M-05): en-dash is Control+Hyphen (ev.code 'Hyphen'), plain Control+Minus calls zoomOut(), Control+Shift+Minus inserts nonbreaking hyphen if that was the old secondary. READ editor.js keydown handler (grep Hyphen / Minus / zoomOut / en dash) and rewrite the gate's assertions to the real current bindings. Rename assertions/messages to match.",
+    "(b) ctx-edit-wrap-boundary.test.mjs: 'index.html: EditWrapBoundary row must sit inside the ctx wrap block' \u2014 inspect the current ctx menu wrap block in index.html (grep EditWrapBoundary, TopAndBottom, data-ctx=\"Rotate90\") and realign the structural assertion to where the row actually sits now (L2M-03 added Rotate90/TopAndBottom rows).",
+    "(c) ctx-through.test.mjs + ctx-tight.test.mjs: 'editor.js: applyObjectOp wrap branch must accept wrap-through / wrap-tight' \u2014 check the actual applyObjectOp branch (grep wrap-through / wrap-top-and-bottom) and update the assertion text/values to the current accepted set (wrap-top-and-bottom was ADDED).",
+    "Verify each gate exits 0: for f in ctx-edit-wrap-boundary ctx-through ctx-tight nonbreaking-hyphen; do /usr/bin/node apps/.../$f.test.mjs || exit 1; done (run from apps/web/apps/documenteditor-wysiwyg). Also confirm the WHOLE suite: for f in *.test.mjs; do /usr/bin/node \"$f\" >/dev/null || echo FAIL: $f; done \u2014 expect no output (this exact loop is the CI gate).",
+    "Commit ONLY the four listed files."
    ],
-   "accept": "cd \"$(git rev-parse --show-toplevel)\" && cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings"
-  },
-  {
-   "id": "L2O-02",
-   "title": "Fix acroform doctest, make workspace doc tests required",
-   "files": [
-    "core/crates/wo-pdf-render/src/acroform.rs",
-    ".github/workflows/ci.yml",
-    "docs/KNOWN-ISSUES.md"
-   ],
-   "steps": [
-    "The acroform.rs doc example (line ~9) fails to compile: `pdf_bytes` is not defined. Fix the example honestly: mark it ```no_run AND define `let pdf_bytes: Vec<u8> = Vec::new();` (or a minimal valid setup that compiles). Do NOT delete the example. If PdfiumBackend::new() would panic at doc-test runtime locally, no_run is REQUIRED.",
-    "Verify: cargo test -p wo-pdf-render --doc (must be fully green, 0 failed).",
-    "Then run cargo test --workspace --doc from server/ \u2014 if EVERY crate's doc tests pass (this is the CI 'Run doc tests' step), remove `continue-on-error: true` from that step (ci.yml ~line 127). If some OTHER crate's doctests also fail, fix those too (same standard: make compile/pass, minimal edits) \u2014 then flip.",
-    "docs/KNOWN-ISSUES.md: if \u00a75 (wo-ooxml roundtrip) \u2014 VERIFY cargo test -p wo-ooxml --lib passes locally (it does as of 2026-11-07) and mark \u00a75 RESOLVED with date.",
-    "Verify: cargo test --workspace --doc",
-    "Commit ONLY the listed files."
-   ],
-   "accept": "cd \"$(git rev-parse --show-toplevel)\" && cargo test --workspace --doc"
-  },
-  {
-   "id": "L2O-03",
-   "title": "Fix shift-enter-behavior.test.mjs ES-module import",
-   "files": [
-    "apps/web/apps/documenteditor-wysiwyg/shift-enter-behavior.test.mjs"
-   ],
-   "steps": [
-    "The test fails: 'ReferenceError: require is not defined in ES module scope'. Convert any require() calls to ESM import statements (readFileSync from node:fs, etc. \u2014 mirror how label-parity.test.mjs does it). Keep the test's assertions intact.",
-    "Verify: /usr/bin/node --test shift-enter-behavior.test.mjs passes AND the neighbors stay green: /usr/bin/node --test label-parity.test.mjs ctx-menu.test.mjs shift-enter-behavior.test.mjs",
-    "Commit ONLY the one listed file."
-   ],
-   "accept": "cd \"$(git rev-parse --show-toplevel)\" && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test shift-enter-behavior.test.mjs)"
-  },
-  {
-   "id": "L2O-04",
-   "title": "Pdfium runtime guard in wo-pdf-render tests, make coverage-rust required",
-   "files": [
-    "core/crates/wo-pdf-render/src/renderer.rs",
-    "core/crates/wo-pdf-render/src/*.rs",
-    ".github/workflows/ci.yml",
-    "docs/KNOWN-ISSUES.md"
-   ],
-   "steps": [
-    "ROOT CAUSE: build.rs downloads pdfium but it never lands on the CI runtime loader path; tests that call PdfiumBackend::new().expect(...) PANIC instead of skipping. Add a small guard helper (e.g. pub(crate) fn pdfium_available() -> bool in renderer.rs using catch_unwind or a backend init probe) and convert the panicking .expect() test setups to: `if !pdfium_available() { eprintln!(\"skipping: pdfium unavailable\"); return; }` across wo-pdf-render tests. Do NOT weaken real assertions \u2014 only the availability precondition.",
-    "Verify locally: cargo test -p wo-pdf-render --lib (must stay green; pdfium IS available locally so the skip path just compiles). Also cargo test -p wo-pdf-render --doc stays green.",
-    "Remove `continue-on-error: true` from the coverage-rust job (ci.yml ~line 172) and the KNOWN-ISSUES comment above it.",
-    "docs/KNOWN-ISSUES.md \u00a72 (pdfium guard): mark RESOLVED with date.",
-    "Verify: cargo test -p wo-pdf-render --lib && cargo test -p wo-pdf-render --doc",
-    "Commit ONLY the listed files."
-   ],
-   "accept": "cd \"$(git rev-parse --show-toplevel)\" && cargo test -p wo-pdf-render --lib && cargo test -p wo-pdf-render --doc"
-  },
-  {
-   "id": "L2O-05",
-   "title": "KNOWN-ISSUES sweep: verify + mark sections 1, 3, 6 statuses",
-   "files": [
-    "docs/KNOWN-ISSUES.md",
-    ".github/workflows/wasm.yml"
-   ],
-   "steps": [
-    "\u00a71 wo-x2t-wasm uuid wasm build: the WASM Build workflow has been GREEN on recent pushes (e.g. 38dfe0d9d). Verify via: gh run list --workflow=wasm.yml --limit 3 (or gh run list --limit 6 and filter). If all recent wasm runs are success, mark \u00a71 RESOLVED (the uuid feature issue no longer reproduces). If actually red, FIX it instead: add uuid features = ['js'] to core/crates/wo-x2t-wasm/Cargo.toml and keep \u00a71 open with the fix noted.",
-    "\u00a73 ocis SSE: already marked HISTORICAL \u2014 no change needed beyond confirming.",
-    "\u00a76 Biome: already marked resolved \u2014 confirm.",
-    "\u00a77 docker.yml wasm-pack: check .github/workflows/docker.yml + recent runs of that workflow; if green, mark resolved; if the file doesn't exist, mark OBSOLETE (workflow removed).",
-    "Update the 'How to clear these' cheat sheet at the bottom to reflect the new state (after L2O-01/02/04 also land, most sections are resolved \u2014 write it as of the actual current state).",
-    "Verify: docs parse as clean markdown; any gh checks you ran are pasted in the commit message.",
-    "Commit ONLY docs/KNOWN-ISSUES.md (and Cargo.toml/Cargo.lock IF \u00a71 needed a fix)."
-   ],
-   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f docs/KNOWN-ISSUES.md && ! grep -c 'continue-on-error' .github/workflows/ci.yml >/dev/null"
+   "accept": "cd \"$(git rev-parse --show-toplevel)/apps/web/apps/documenteditor-wysiwyg\" && fails=0; for f in *.test.mjs; do /usr/bin/node \"$f\" >/dev/null 2>&1 || fails=$((fails+1)); done; test \"$fails\" -eq 0"
   }
  ]
 }
