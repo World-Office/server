@@ -49,5 +49,13 @@ LIV=$(/usr/bin/node parity/surfaces/command-liveness.cjs 2>&1) || {
 }
 echo "$LIV" | tail -1
 
+# Right-panel parity: WO settings panel sections at floor + OO anchor coverage.
+RP=$(/usr/bin/node parity/surfaces/right-panel.cjs 2>&1) || {
+  echo "$RP" | tail -11
+  echo "gate: right-panel surface FAILED"
+  exit 1
+}
+echo "$RP" | tail -1
+
 echo "gate: pass=$PASS fail=$FAIL min=$MIN_PASS rc=$RC"
 [ "$RC" -eq 0 ] && [ "${FAIL:-1}" -eq 0 ] && [ "${PASS:-0}" -ge "$MIN_PASS" ]
