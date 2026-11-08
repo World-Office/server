@@ -470,28 +470,52 @@ mod tests {
     /// Helper to get the path to the test PDF file.
     fn test_pdf_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../../../tests/corpus/pdf/01-hello-world.pdf")
+            .join("../../../tests/corpus/pdf/01-hello-world.pdf")
+    }
+
+    /// Runtime guard for corpus-backed tests: shared pdfium backend plus the
+    /// committed test PDF, skipping when either is unavailable.
+    fn backend_and_pdf() -> Option<(crate::PdfiumTestGuard, Vec<u8>)> {
+        let backend = crate::test_backend_or_skip()?;
+        let bytes = std::fs::read(test_pdf_path()).ok()?;
+        Some((backend, bytes))
+    }
+
+    /// Minimal single-page PDF without an AcroForm, built with a valid xref
+    /// table so pdfium loads it without repair heuristics.
+    fn minimal_pdf_without_form() -> Vec<u8> {
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>".to_string(),
+        ];
+        let mut offsets = Vec::with_capacity(objects.len());
+        let mut pdf = String::from("%PDF-1.4\n");
+        for (idx, obj) in objects.iter().enumerate() {
+            offsets.push(pdf.len());
+            pdf.push_str(&format!("{} 0 obj\n{obj}\nendobj\n", idx + 1));
+        }
+        let startxref = pdf.len();
+        pdf.push_str(&format!("xref\n0 {}\n", objects.len() + 1));
+        pdf.push_str("0000000000 65535 f \n");
+        for off in offsets {
+            pdf.push_str(&format!("{off:010} 00000 n \n"));
+        }
+        pdf.push_str(&format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{startxref}\n%%EOF\n",
+            objects.len() + 1
+        ));
+        pdf.into_bytes()
     }
 
     /// Test that reading fields from a PDF without a form returns NoForm error.
     #[test]
     fn test_read_fields_no_form() {
-        // Skip if PDFIUM_BINDINGS_LIBRARY_PATH is not set
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
-        // Hello world PDF should not have a form
+        let pdf_bytes = minimal_pdf_without_form();
         let result = read_fields(&pdf_bytes, &backend);
         assert!(matches!(result, Err(FormError::NoForm)));
     }
@@ -499,20 +523,11 @@ mod tests {
     /// Test that field_count returns 0 for a PDF without forms.
     #[test]
     fn test_field_count_no_form() {
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
+        let pdf_bytes = minimal_pdf_without_form();
         let result = has_form(&pdf_bytes, &backend);
         assert!(matches!(result, Ok(false)));
     }
@@ -520,20 +535,11 @@ mod tests {
     /// Test that has_form returns false for a PDF without forms.
     #[test]
     fn test_has_form_no_form() {
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
+        let pdf_bytes = minimal_pdf_without_form();
         let result = has_form(&pdf_bytes, &backend);
         assert!(matches!(result, Ok(false)));
     }
@@ -541,22 +547,29 @@ mod tests {
     /// Test that field_names returns empty list for a PDF without forms.
     #[test]
     fn test_field_names_no_form() {
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
+        let pdf_bytes = minimal_pdf_without_form();
         let result = field_names(&pdf_bytes, &backend);
         assert!(matches!(result, Err(FormError::NoForm)));
+    }
+
+    /// Sanity-check the synthetic fixture independently of pdfium: it must
+    /// look like a PDF and carry no AcroForm.
+    #[test]
+    fn test_minimal_pdf_fixture_shape() {
+        let bytes = minimal_pdf_without_form();
+        assert!(
+            bytes.starts_with(b"%PDF-1.4"),
+            "fixture must be a PDF header"
+        );
+        assert!(bytes.ends_with(b"%%EOF\n"), "fixture must be terminated");
+        assert!(
+            !bytes.windows(8).any(|w| w == b"/AcroForm"),
+            "fixture must not contain an AcroForm"
+        );
     }
 
     /// Test AcroFormFieldType display and conversion.
@@ -653,84 +666,48 @@ mod tests {
     /// Test that set_field_value returns appropriate error for no-form documents.
     #[test]
     fn test_set_field_value_no_form() {
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
+        let pdf_bytes = minimal_pdf_without_form();
         let result = set_field_value(&pdf_bytes, &backend, "TestField", "value");
         assert!(matches!(result, Err(FormError::NoForm)));
     }
 
-    /// Test round-trip: create PDF, fill a field, re-save, verify persists.
+    /// Test round-trip: fill a field, re-save, verify the value persists.
     ///
-    /// This is the acceptance test for PDF-4: "fill a field, re-save, persists".
+    /// This is the acceptance test for PDF-4: "fill a field, re-save,
+    /// persists". The test corpus PDF carries an AcroForm with a `Text1`
+    /// text field, so the write path runs end-to-end through pdfium.
     #[test]
-    #[ignore = "Requires a PDF with form fields and pdfium library"]
     fn test_fill_field_persists() {
-        // This test requires:
-        // 1. A PDF file with at least one AcroForm text field
-        // 2. PDFIUM_BINDINGS_LIBRARY_PATH to be set
-        // In a real test environment, a form-enabled test PDF would be used.
-
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        // We need a PDF with a form field. Since we don't have one in the test
-        // corpus, we verify the function signature and error handling.
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
+        // Fill the Text1 field and re-save the document.
+        let modified = set_field_value(&pdf_bytes, &backend, "Text1", "World Office")
+            .expect("filling Text1 should succeed");
+        assert!(!modified.is_empty(), "re-saved PDF should have content");
 
-        // Should fail with NoForm since hello-world PDF has no form
-        let result = set_field_value(&pdf_bytes, &backend, "AnyField", "test");
-        assert!(
-            matches!(result, Err(FormError::NoForm)),
-            "Expected NoForm error for PDF without AcroForm"
-        );
-
-        // Verify bytes are unchanged
-        let original_len = pdf_bytes.len();
-        assert!(original_len > 0, "PDF should have content");
+        // Re-read the modified bytes: the value must persist.
+        let fields = read_fields(&modified, &backend).expect("re-reading modified PDF");
+        let text1 = fields
+            .iter()
+            .find(|f| f.name.as_deref() == Some("Text1"))
+            .expect("Text1 field must survive the re-save");
+        assert_eq!(text1.value.as_deref(), Some("World Office"));
     }
 
     /// Test the contract: set_field_value returns FieldNotFound for non-existent field.
     #[test]
-    #[ignore = "Requires a PDF with form fields and pdfium library"]
     fn test_set_field_value_nonexistent_field() {
-        // Would test that setting a value on a non-existent field returns FieldNotFound
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
             return;
-        }
-
-        let backend = match PdfiumBackend::new() {
-            Ok(b) => b,
-            Err(_) => return,
         };
 
-        let pdf_bytes = match std::fs::read(test_pdf_path()) {
-            Ok(bytes) => bytes,
-            Err(_) => return,
-        };
-
-        // Without a form-enabled PDF, this will fail with NoForm
         let result = set_field_value(&pdf_bytes, &backend, "NonExistentField", "value");
-        assert!(result.is_err());
+        assert!(matches!(result, Err(FormError::FieldNotFound(_))));
     }
 }

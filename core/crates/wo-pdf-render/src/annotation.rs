@@ -153,13 +153,12 @@ mod tests {
     /// This is test 1 of 3 required for PDF-3 acceptance.
     #[test]
     fn test_parse_annotations_none() {
-        let Ok(backend) = crate::test_backend() else {
-            eprintln!("skipping: pdfium not available for tests");
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
         };
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
 
-        let annotations = AnnotationParser::parse_annotations(backend, &pdf_bytes, 0)
+        let annotations = AnnotationParser::parse_annotations(&*backend, &pdf_bytes, 0)
             .expect("Failed to get annotations");
 
         // The hello-world PDF likely has no annotations
@@ -171,8 +170,7 @@ mod tests {
     /// This is test 2 of 3 for PDF-3 acceptance.
     #[test]
     fn test_parse_annotations_out_of_range() {
-        let Ok(backend) = crate::test_backend() else {
-            eprintln!("skipping: pdfium not available for tests");
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
         };
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
@@ -183,7 +181,7 @@ mod tests {
             .expect("Failed to get page count");
 
         // Try to get annotations from a page that doesn't exist
-        let result = AnnotationParser::parse_annotations(backend, &pdf_bytes, total_pages);
+        let result = AnnotationParser::parse_annotations(&*backend, &pdf_bytes, total_pages);
         assert!(matches!(result, Err(PdfError::PageOutOfRange { .. })));
     }
 

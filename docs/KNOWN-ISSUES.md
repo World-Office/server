@@ -46,12 +46,12 @@ Cargo.toml feature fix above in the crate-owning change.
 
 ---
 
-## 2. pdfium guard: wo-pdf-render tests panic at runtime — libpdfium.so not on loader path
+## 2. pdfium guard in wo-pdf-render tests (HISTORICAL — resolved 2026-11-08 in L2O-04)
 
-**Affected:** `ci.yml` → job `coverage-rust` (`cargo llvm-cov --workspace
---lib`, exit 101 → job red).
+**Was affected:** `ci.yml` → job `coverage-rust` (`cargo llvm-cov --workspace
+--lib`, exit 101 → job red, kept green via `continue-on-error`).
 
-**Symptom (CI log):**
+**Symptom (CI log, at the time):**
 ```
 thread 'annotation::tests::test_parse_annotations_none' panicked at
   core/crates/wo-pdf-render/src/annotation.rs:156:45:
@@ -62,22 +62,22 @@ file: No such file or directory\" ..."
 test result: FAILED. 19 passed; 5 failed; 7 ignored
 ```
 
-**Blocker:** `wo-pdf-render/build.rs` auto-downloads and caches
+**Root cause (fixed):** `wo-pdf-render/build.rs` auto-downloads and caches
 `libpdfium.so` under `$CARGO_HOME/pdfium-vendored/<ver>/linux-x86_64/` and
-emits `cargo:rustc-env=WO_PDF_RENDER_LIB_PATH`, but nothing adds that
-directory to the runtime library path (`LD_LIBRARY_PATH`), so tests that
-actually initialize the Pdfium backend (`crate::test_backend()` in
-`annotation.rs` / `text.rs`) fail to `dlopen` the library. Fixing needs a
-source change in `wo-pdf-render` (e.g. set `LD_LIBRARY_PATH` from
-`WO_PDF_RENDER_LIB_PATH` in the test helper, or skip these tests when the
-lib is absent).
+emits `cargo:rustc-env=WO_PDF_RENDER_LIB_PATH`, but nothing added that
+directory to the runtime library path (`LD_LIBRARY_PATH`), so initializing
+the Pdfium backend failed to `dlopen` the library.
 
-**Workaround (in effect):** `coverage-rust` has `continue-on-error: true` in
-`ci.yml` (with a comment). The unit-test job (`test-rust-unit`) already
-swallows its runner exit code (`|| true`), so it does not surface this.
-`test-rust-integration` remains `continue-on-error`; doc tests are now
-required (the failing `wo-pdf-render` acroform/renderer doctests were fixed
-in L2O-02 and the `continue-on-error` removed from `ci.yml`).
+**Fix (in effect):** `PdfiumBackend::new()` now binds to the build-time
+vendored library path (absolute path, no `LD_LIBRARY_PATH` needed) with the
+platform loader path as fallback, and every pdfium-backed test goes through
+the `crate::test_backend_or_skip()` runtime guard, which shares one
+process-global backend (pdfium allows only one binding per process and is
+not thread-safe — the guard serializes pdfium-backed tests) and skips its
+assertions, with a logged reason, when the pdfium runtime is unavailable.
+The previously `#[ignore]`d renderer/acroform tests were un-ignored behind
+the same guard. `coverage-rust` had its `continue-on-error` removed and is
+required again.
 
 ---
 
@@ -201,7 +201,7 @@ served by `deploy.yml`, which is green.
 | Job (workflow) | Issue | Fix lands in | Marked continue-on-error |
 |---|---|---|---|
 | `Build wo-x2t-wasm` (wasm.yml) | #1 uuid wasm RNG | `core/crates/wo-x2t-wasm/Cargo.toml` | n/a (other workflow) |
-| `coverage-rust` (ci.yml) | #2 pdfium guard | `core/crates/wo-pdf-render` | yes |
+| `coverage-rust` (ci.yml) | #2 pdfium guard | ✅ resolved 2026-11-08 | no |
 | E2E/live (not a gate) | #3 ocis SSE TypeError | `opencloud-docserver` + editor client | n/a |
 | `lint-rust` (ci.yml) | #4 fmt/clippy debt | ✅ resolved 2026-11-08 | no |
 | `lint-ts` (ci.yml) | #5 wopi-client Biome | ✅ resolved 2026-10-05 | no |

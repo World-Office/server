@@ -6,7 +6,7 @@
 
 use pdfium_render::prelude::*;
 use std::ffi::c_int;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// The `PdfRenderer` trait defines the contract for PDF rendering operations.
 ///
@@ -145,27 +145,50 @@ pub struct PdfiumBackend {
 }
 
 impl PdfiumBackend {
+    /// Path of the pdfium library that `build.rs` resolved or vendored at
+    /// compile time, if any.
+    ///
+    /// `build.rs` downloads (or locates) the pdfium shared library and emits
+    /// `cargo:rustc-env=WO_PDF_RENDER_LIB_PATH=<absolute path>`. Binding to
+    /// that absolute path works without any `LD_LIBRARY_PATH` setup, which is
+    /// what lets the test suite run against real pdfium in CI.
+    fn vendored_library_path() -> Option<&'static Path> {
+        option_env!("WO_PDF_RENDER_LIB_PATH")
+            .filter(|p| !p.is_empty())
+            .map(Path::new)
+            // A static archive (PDFIUM_STATIC_LIB_PATH) cannot be dlopen'd;
+            // leave those to the platform loader path / static linking.
+            .filter(|p| p.extension().is_none_or(|ext| ext != "a"))
+    }
+
     /// Creates a new `PdfiumBackend` by initializing the Pdfium library.
     ///
-    /// This function requires that the Pdfium library is available either:
-    /// - Dynamically via `PDFIUM_BINDINGS_LIBRARY_PATH` environment variable
-    /// - Statically linked when the `static` feature is enabled
+    /// The Pdfium library is resolved in the following order (first match
+    /// wins):
+    /// - Dynamically from `PDFIUM_BINDINGS_LIBRARY_PATH` (explicit override)
+    /// - Dynamically from the library vendored by `build.rs` (absolute path)
+    /// - Dynamically from the platform loader path
+    ///   (`bind_to_system_library`)
     ///
     /// # Returns
     /// A new backend instance, or an error if Pdfium cannot be initialized.
     pub fn new() -> Result<Self, crate::PdfError> {
-        // Try dynamic binding first
-        let lib_path = std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH")
-            .ok()
-            .map(PathBuf::from);
+        let init_failed = |e: PdfiumError| crate::PdfError::InitFailed(e.to_string());
 
-        let bindings = if let Some(path) = lib_path {
-            Pdfium::bind_to_library(&path)
-                .map_err(|e| crate::PdfError::InitFailed(e.to_string()))?
+        let bindings = if let Some(path) = std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH")
+            .ok()
+            .filter(|p| !p.is_empty())
+        {
+            Pdfium::bind_to_library(PathBuf::from(path)).map_err(init_failed)?
+        } else if let Some(vendored) = Self::vendored_library_path() {
+            match Pdfium::bind_to_library(vendored) {
+                Ok(bindings) => bindings,
+                // Fall back to the platform loader path (e.g. a system-wide
+                // pdfium should be preferred over a stale vendored copy).
+                Err(_) => Pdfium::bind_to_system_library().map_err(init_failed)?,
+            }
         } else {
-            // Try to bind to system library
-            Pdfium::bind_to_system_library()
-                .map_err(|e| crate::PdfError::InitFailed(e.to_string()))?
+            Pdfium::bind_to_system_library().map_err(init_failed)?
         };
 
         // Initialize Pdfium
@@ -366,20 +389,15 @@ mod render_page {
     /// Test that render_page works with a minimal 1-page PDF
     /// This is the acceptance test for PDF-2
     #[test]
-    #[ignore = "Requires test PDF file and pdfium library"]
     fn test_render_page_contract() {
-        // Skip if PDFIUM_BINDINGS_LIBRARY_PATH is not set
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        // Runtime guard: skip when the pdfium runtime is unavailable here.
+        let Some(_backend) = crate::test_backend_or_skip() else {
             return;
-        }
+        };
 
-        // Try to create a minimal PDF for testing
-        // For now, we just test that the backend can be created
-        // In a real CI environment, a test PDF would be available
-        let _backend = PdfiumBackend::new().expect("Failed to initialize Pdfium");
-
-        // The actual test would use a real PDF file
-        // For the acceptance gate, reaching here means the backend exists
+        // The actual test would use a real PDF file; see the integration
+        // test below. For the acceptance gate, a shared backend that
+        // initialized successfully satisfies the contract.
     }
 
     /// Test that the PdfRenderer trait has the required methods
@@ -400,7 +418,15 @@ mod tests {
     // Helper to get test PDF path
     fn test_pdf_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../../../tests/corpus/pdf/01-hello-world.pdf")
+            .join("../../../tests/corpus/pdf/01-hello-world.pdf")
+    }
+
+    /// Runtime guard for corpus-backed tests: shared pdfium backend plus the
+    /// committed test PDF, skipping when either is unavailable.
+    fn backend_and_pdf() -> Option<(crate::PdfiumTestGuard, Vec<u8>)> {
+        let backend = crate::test_backend_or_skip()?;
+        let bytes = std::fs::read(test_pdf_path()).ok()?;
+        Some((backend, bytes))
     }
 
     /// Test that Rect struct works correctly.
@@ -426,32 +452,31 @@ mod tests {
         assert_eq!(annotation.content, Some("Test annotation".to_string()));
     }
 
-    /// Test that PdfiumBackend can be initialized (if pdfium is available).
+    /// Test that PdfiumBackend can be initialized whenever the pdfium
+    /// runtime is available, and that the shared backend is usable.
     #[test]
     fn test_backend_creation() {
-        // Skip if PDFIUM_BINDINGS_LIBRARY_PATH is not set
-        if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
+        // Runtime guard: skip when the pdfium runtime is unavailable here.
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
             return;
-        }
+        };
 
-        let result = PdfiumBackend::new();
-        // This may still fail if the library can't be loaded, but at least it doesn't panic
-        assert!(result.is_ok() || result.is_err());
+        let page_count = backend
+            .page_count(&pdf_bytes)
+            .expect("page_count on the test corpus PDF");
+        assert!(page_count >= 1, "Expected at least 1 page");
     }
 
     /// Integration test: render a page from a test PDF.
     ///
-    /// This test is ignored by default as it requires:
-    /// 1. A test PDF file at tests/corpus/pdf/01-hello-world.pdf
-    /// 2. PDFIUM_BINDINGS_LIBRARY_PATH to be set
-    ///
-    /// To run: RUST_BACKTRACE=1 PDFIUM_BINDINGS_LIBRARY_PATH=/path/to/libpdfium.so cargo test -- --ignored
+    /// Requires the pdfium runtime (vendored by `build.rs` or provided via
+    /// `PDFIUM_BINDINGS_LIBRARY_PATH`) and the committed test corpus PDF;
+    /// both are guarded at runtime.
     #[test]
-    #[ignore = "Requires test PDF file and pdfium library"]
     fn test_render_page_integration() {
-        let backend = PdfiumBackend::new().expect("Failed to initialize backend");
-
-        let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
+            return;
+        };
 
         // Get page count
         let page_count = backend
@@ -478,11 +503,10 @@ mod tests {
 
     /// Test that out-of-range page returns the correct error.
     #[test]
-    #[ignore = "Requires test PDF file and pdfium library"]
     fn test_render_page_out_of_range() {
-        let backend = PdfiumBackend::new().expect("Failed to initialize backend");
-
-        let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
+            return;
+        };
 
         let total_pages = backend
             .page_count(&pdf_bytes)
@@ -498,11 +522,10 @@ mod tests {
 
     /// Test text extraction.
     #[test]
-    #[ignore = "Requires test PDF file and pdfium library"]
     fn test_extract_text() {
-        let backend = PdfiumBackend::new().expect("Failed to initialize backend");
-
-        let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
+            return;
+        };
 
         let text = backend
             .extract_text(&pdf_bytes, 0)
@@ -513,11 +536,10 @@ mod tests {
 
     /// Test annotations extraction.
     #[test]
-    #[ignore = "Requires test PDF file with annotations"]
     fn test_annotations() {
-        let backend = PdfiumBackend::new().expect("Failed to initialize backend");
-
-        let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
+        let Some((backend, pdf_bytes)) = backend_and_pdf() else {
+            return;
+        };
 
         // This should not panic even if there are no annotations
         let annotations = backend
