@@ -156,12 +156,6 @@ jobs:
   coverage-rust:
     name: Rust Coverage
     runs-on: ubuntu-latest
-    # KNOWN-ISSUES: `cargo llvm-cov --workspace --lib` fails in wo-pdf-render
-    # — tests panic "Pdfium not available for tests" because libpdfium.so is
-    # downloaded by build.rs but never lands on the runtime loader path.
-    # Continue-on-error keeps the workflow green while the pdfium guard is
-    # fixed. See docs/KNOWN-ISSUES.md §pdfium-guard.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5

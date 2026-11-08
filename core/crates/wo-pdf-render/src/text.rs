@@ -150,14 +150,13 @@ mod tests {
     /// This is test 1 of 3 required for PDF-3 acceptance.
     #[test]
     fn test_extract_text_basic() {
-        let Ok(backend) = crate::test_backend() else {
-            eprintln!("skipping: pdfium not available for tests");
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
         };
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
 
         let text =
-            TextExtractor::extract_text(backend, &pdf_bytes, 0).expect("Failed to extract text");
+            TextExtractor::extract_text(&*backend, &pdf_bytes, 0).expect("Failed to extract text");
 
         // Verify we got some text
         assert!(!text.is_empty(), "Extracted text should not be empty");
@@ -173,8 +172,7 @@ mod tests {
     /// This is test 2 of 3 for PDF-3 acceptance.
     #[test]
     fn test_extract_text_out_of_range() {
-        let Ok(backend) = crate::test_backend() else {
-            eprintln!("skipping: pdfium not available for tests");
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
         };
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
@@ -185,7 +183,7 @@ mod tests {
             .expect("Failed to get page count");
 
         // Try to extract text from a page that doesn't exist
-        let result = TextExtractor::extract_text(backend, &pdf_bytes, total_pages);
+        let result = TextExtractor::extract_text(&*backend, &pdf_bytes, total_pages);
         assert!(matches!(result, Err(PdfError::PageOutOfRange { .. })));
     }
 
@@ -194,14 +192,13 @@ mod tests {
     /// Verifies that we can extract and verify specific text content from the PDF.
     #[test]
     fn test_extract_text_content_verification() {
-        let Ok(backend) = crate::test_backend() else {
-            eprintln!("skipping: pdfium not available for tests");
+        let Some(backend) = crate::test_backend_or_skip() else {
             return;
         };
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
 
         let text =
-            TextExtractor::extract_text(backend, &pdf_bytes, 0).expect("Failed to extract text");
+            TextExtractor::extract_text(&*backend, &pdf_bytes, 0).expect("Failed to extract text");
 
         // Verify the text meets our criteria
         assert!(
