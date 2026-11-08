@@ -69,8 +69,22 @@ jobs:
       - run: pnpm build --filter='!@world-office/tauri-poc'
         timeout-minutes: 20
 
-      - run: node scripts/collect-frontend-dist.mjs
+      # Bake the build-info.json canary into the artifact itself: the
+      # freshness probe (tests/parity/surfaces/deploy-freshness.cjs) gates
+      # prod on <editor>/build-info.json {sha,builtAt}. The vanilla word/
+      # dir gets it from tests/parity/make-editor-ui.sh, but the react
+      # editors ship only what this artifact carries — so write it here for
+      # all five dirs. (word/ in this artifact is the react build; prod's
+      # word/ is the vanilla wysiwyg app staged by make-editor-ui.sh.)
+      - name: Restructure dist directories (bake build-info.json canary)
         timeout-minutes: 5
+        run: |
+          node scripts/collect-frontend-dist.mjs
+          mkdir -p frontend-dist/{word,sheet,slide,diagram,pdf}
+          for d in word sheet slide diagram pdf; do
+            printf '{"sha":"%s","builtAt":"%s","source":"deploy.yml"}\n' \
+              "${{ github.sha }}" "$(date -u +%F)" > "frontend-dist/$d/build-info.json"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
