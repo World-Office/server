@@ -8,17 +8,20 @@
 //!
 //! ```no_run
 //! use wo_pdf_render::acroform::{read_fields, set_field_value};
-//! use wo_pdf_render::renderer::{PdfRenderer, PdfiumBackend};
+//! use wo_pdf_render::PdfiumBackend;
 //!
 //! let backend = PdfiumBackend::new().expect("Failed to initialize Pdfium");
+//! let pdf_bytes = std::fs::read("form.pdf").expect("Failed to read PDF file");
 //!
 //! // Read all form fields
 //! let fields = read_fields(&pdf_bytes, &backend)
 //!     .expect("Failed to read AcroForm fields");
+//! println!("found {} field(s)", fields.len());
 //!
 //! // Set a field value and get modified PDF bytes
 //! let modified_pdf = set_field_value(&pdf_bytes, &backend, "Name_Field", "John Doe")
 //!     .expect("Failed to set field value");
+//! std::fs::write("form-filled.pdf", &modified_pdf).expect("Failed to write PDF file");
 //! ```
 
 use crate::renderer::{PdfiumBackend, Rect};

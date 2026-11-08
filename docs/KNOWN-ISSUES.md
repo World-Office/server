@@ -75,7 +75,9 @@ lib is absent).
 **Workaround (in effect):** `coverage-rust` has `continue-on-error: true` in
 `ci.yml` (with a comment). The unit-test job (`test-rust-unit`) already
 swallows its runner exit code (`|| true`), so it does not surface this.
-`test-rust-integration` and doc tests are already `continue-on-error`.
+`test-rust-integration` remains `continue-on-error`; doc tests are now
+required (the failing `wo-pdf-render` acroform/renderer doctests were fixed
+in L2O-02 and the `continue-on-error` removed from `ci.yml`).
 
 ---
 

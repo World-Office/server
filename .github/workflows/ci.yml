@@ -117,7 +117,6 @@ jobs:
       - name: Run doc tests
         run: cargo test --workspace --doc
         timeout-minutes: 30
-        continue-on-error: true
 
   test-rust-integration:
     name: Rust Integration Tests

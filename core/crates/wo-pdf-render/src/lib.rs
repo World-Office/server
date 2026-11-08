@@ -20,7 +20,7 @@ pub use pdfium_render as pdfium;
 mod renderer;
 pub use renderer::{Annotation, PdfRenderer, PdfiumBackend, Rect};
 
-mod acroform;
+pub mod acroform;
 mod annotation;
 mod text;
 
