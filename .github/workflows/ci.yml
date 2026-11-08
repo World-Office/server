@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         timeout-minutes: 5
 
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
+
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt, clippy
@@ -60,6 +64,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
+
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
 
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10
@@ -124,6 +132,10 @@ jobs:
       - uses: actions/checkout@v4
         timeout-minutes: 5
 
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
+
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10
 
@@ -156,6 +168,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
+
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
@@ -333,6 +349,10 @@ jobs:
           path: wo-test-harness
         timeout-minutes: 5
 
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
+
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10
 
@@ -387,6 +407,10 @@ jobs:
           repository: World-Office/wo-test-harness
           path: wo-test-harness
         timeout-minutes: 5
+
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
 
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10
@@ -460,6 +484,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
+
+      - name: Restore pdfium vendored cache
+        uses: ./.github/actions/setup-pdfium-cache
+        timeout-minutes: 2
 
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10

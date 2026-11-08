@@ -1,0 +1,13 @@
+name: Setup pdfium vendored cache
+description: >
+  Cache wo-pdf-render's auto-downloaded libpdfium ($CARGO_HOME/pdfium-vendored).
+  GitHub-release downloads get throttled from runner IPs; once cached, build.rs
+  skips the download entirely. Cache key is the build.rs hash so a pdfium
+  version bump invalidates it.
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cargo/pdfium-vendored
+        key: pdfium-vendored-${{ runner.os }}-${{ hashFiles('core/crates/wo-pdf-render/build.rs') }}

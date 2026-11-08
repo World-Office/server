@@ -200,6 +200,15 @@ export function isFeatureAvailable(feature: string): boolean {
 }
 
 /**
+ * Checks if the host desktop reports system theme support.
+ * @returns True when the host declares theme support (web/non-desktop: true)
+ */
+export function systemThemeSupported(): boolean {
+  if (!nativeDesktop) return true
+  return "theme" in (nativeDesktop as unknown as Record<string, unknown>)
+}
+
+/**
  * Gets the system theme type.
  * @returns "dark", "light", or system default
  */

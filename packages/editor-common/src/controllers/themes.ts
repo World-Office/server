@@ -792,10 +792,7 @@ export function setAvailable(value: boolean): void {
  */
 export function map(): Record<string, ThemeRecord> {
   // Desktop without system theme support should hide the system option
-  if (
-    desktop.isActive() &&
-    !(desktop as unknown as { systemThemeSupported?: () => boolean }).systemThemeSupported?.()
-  ) {
+  if (desktop.isActive() && !desktop.systemThemeSupported()) {
     const { "theme-system": _, ...rest } = themesMap
     return rest
   }
