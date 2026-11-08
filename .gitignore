@@ -102,6 +102,10 @@ test-results/
 *.lcov
 # per-run tab-census output (tests/parity/surfaces/tab-census.cjs)
 tests/parity/tab-census-results.json
+tests/parity/command-liveness-results.json
+tests/parity/right-panel-results.json
+tests/parity/contract-results.json
+tests/parity/backstage-*.json
 
 # =====================
 # Environment

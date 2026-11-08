@@ -1,0 +1,393 @@
+{
+  "comment": "L2Q-02: backstage option-level rows from the census-oo-deep backstage reference (wo-test-harness/census/census/census-oo-deep.json key 'backstage' = the 9 OO File-screen options fm-btn-return/save/download/print/protect/info/settings/help/suggest). The OO census holds the option list only (id/label/enabled) — no per-option sub-titles — so 'option level' here means: one contract row per OO option as WO visibly implements it (cross-checked against the WO backstage markup in apps/web/apps/documenteditor-wysiwyg/index.html #backstage-overlay and the editor.js wiring at 10871-11131 / 13044-13131), plus the pane-content options inside each pane (rail groups, hydrated Recent/Info lists, shortcut table, per-pane primary actions). All rows are override-only entries (no ledger token/feature matches 'backstage.*') reusing the existing assertion vocabulary only: dialog-visible (pane view / overlay / dialog + subFeatures presence audit), dialog-action (opener proven, close-button closes), text-mutation (hydrated pane content / blank-after-New), viewport-flag (active rail option aria-current). pre is the existing 'file-menu' / 'backstage:<pane>' vocabulary; woTab 'backstage' is explicitly skipped by the runner's ribbon-tab guard. No new runner mechanics were added. DEVIATION (honesty note): a 26th row (backstage.new-blank, clicking #btn-new with acceptDialogs) passed in isolation but was REMOVED — doNewDocument persists the blank doc (saveDocument), and the runner's shared docserver would serve that empty document to every later contract, cascading 71 placeCaret FAILs across the existing set. Rows that mutate persisted document state are not contract-safe under the current per-run server reuse.",
+  "entries": {
+    "backstage.overlay": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "selector": "#btn-file",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#backstage-overlay.open"
+      },
+      "subFeatures": [
+        { "name": "Back row (fm-btn-return)", "selector": ".backstage-back" },
+        { "name": "New option", "selector": ".backstage-row[data-pane=\"new\"]" },
+        { "name": "Open option", "selector": ".backstage-row[data-pane=\"open\"]" },
+        { "name": "Save option (fm-btn-save)", "selector": ".backstage-row[data-pane=\"save\"]" },
+        { "name": "Download As option (fm-btn-download)", "selector": ".backstage-row[data-pane=\"export\"]" },
+        { "name": "Info option (fm-btn-info)", "selector": ".backstage-row[data-pane=\"info\"]" },
+        { "name": "History option", "selector": ".backstage-row[data-pane=\"history\"]" },
+        { "name": "AI changes option", "selector": ".backstage-row[data-pane=\"ai\"]" },
+        { "name": "Print option (fm-btn-print)", "selector": ".backstage-row[data-pane=\"print\"]" },
+        { "name": "Settings option (fm-btn-settings)", "selector": ".backstage-row[data-pane=\"settings\"]" },
+        { "name": "Protect option (fm-btn-protect)", "selector": ".backstage-row[data-pane=\"protect\"]" },
+        { "name": "Help option (fm-btn-help)", "selector": ".backstage-row[data-pane=\"help\"]" },
+        { "name": "Suggest-a-feature option (fm-btn-suggest)", "selector": ".backstage-row[data-pane=\"suggest\"]" }
+      ],
+      "note": "option row (OO backstage census, all 9 fm-btn-* options): the File tab opens the full-screen backstage (#btn-file -> openBackstage, editor.js:10919) and the rail carries one row per OO option plus WO's New/History/AI panes"
+    },
+    "backstage.rail-groups": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"new\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#backstage-overlay.open"
+      },
+      "subFeatures": [
+        { "name": "Document group label", "selector": "[data-i18n=\"FileScreen.GroupDoc\"]" },
+        { "name": "Info group label", "selector": "[data-i18n=\"FileScreen.GroupInfo\"]" },
+        { "name": "Print group label", "selector": "[data-i18n=\"FileScreen.GroupPrint\"]" },
+        { "name": "Help & about group label", "selector": "[data-i18n=\"FileScreen.GroupHelp\"]" }
+      ],
+      "note": "option row: OO groups its File-screen options (Document / Info / Print / Help); WO mirrors the grouping with the four .backstage-group labels in the rail (index.html:1341-1352)"
+    },
+    "backstage.pane-new": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"new\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"new\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "pane description", "selector": ".backstage-desc" },
+        { "name": "New document action", "selector": "#btn-new" }
+      ],
+      "note": "option row: rail New swaps the pane (showBackstagePane -> [data-pane-view=new] unhidden, editor.js:10907); pane offers the #btn-new blank-document action. The #btn-new CLICK itself is deliberately NOT contracted: doNewDocument (editor.js:705) persists the blank document via saveDocument(), and the runner reuses one docserver per run — the saved empty doc would poison every later caret-dependent contract (observed: 71 cascading placeCaret FAILs). Pane-surface row only."
+    },
+    "backstage.pane-open": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"open\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"open\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "recent documents host", "selector": "#backstage-recent" },
+        { "name": "Open action", "selector": "#btn-open" }
+      ],
+      "note": "option row: Open/Recent is WO's default landing pane (openBackstage -> showBackstagePane('open'), editor.js:10925) — the OO Open Recent surface"
+    },
+    "backstage.pane-save": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"save\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"save\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Save action", "selector": "[data-cmd=\"saveDocument\"]" }
+      ],
+      "note": "option row (OO fm-btn-save 'Save'): the Save pane carries the saveDocument primary action (same flush path as the titlebar save, editor.js:1428)"
+    },
+    "backstage.pane-export": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"export\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"export\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Download As trigger", "selector": "#btn-export" },
+        { "name": "export PDF option", "selector": "[data-export=\"pdf\"]" },
+        { "name": "export ODT option", "selector": "[data-export=\"odt\"]" },
+        { "name": "export HTML option", "selector": "[data-export=\"html\"]" },
+        { "name": "export DOCX option", "selector": "[data-export=\"docx\"]" }
+      ],
+      "note": "option row (OO fm-btn-download 'Download As'): the export pane lists the four format options (stragglers file.download-as covers the #btn-export disclose of #export-sub; this row pins the pane + per-format options)"
+    },
+    "backstage.pane-info": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"info\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"info\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "live metadata grid", "selector": "#backstage-info-meta" },
+        { "name": "word counter", "selector": "#bs-info-words" },
+        { "name": "character counter", "selector": "#bs-info-chars" },
+        { "name": "Info dialog action", "selector": "#btn-fileinfo" }
+      ],
+      "note": "option row (OO fm-btn-info 'Info'): the Info pane shows the hydrated metadata grid + live word/char counters (bsHydratePanes -> bsLoadInfoMeta, editor.js:11029) and the #btn-fileinfo stats dialog opener"
+    },
+    "backstage.pane-history": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"history\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"history\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "History action", "selector": "#btn-history" }
+      ],
+      "note": "option row (OO Versions surface): the History pane's #btn-history opens the version-history dialog (openVersionHistory, editor.js:5495)"
+    },
+    "backstage.pane-ai": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"ai\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"ai\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "AI changes action", "selector": "#btn-ai-review" }
+      ],
+      "note": "option row (ledger file.ai 'AI changes' backstage row): the AI pane's #btn-ai-review opens the AI review dialog (openAIReview, editor.js:5608)"
+    },
+    "backstage.pane-print": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"print\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"print\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Print action", "selector": "#btn-print" }
+      ],
+      "note": "option row (OO fm-btn-print 'Print'): the Print pane carries the #btn-print primary action (doPrint -> window.print, editor.js:11134 — a native pipeline with no DOM-observable effect, so the contract pins the option surface, not the print call)"
+    },
+    "backstage.pane-settings": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"settings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"settings\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Settings action", "selector": "#btn-filesettings" }
+      ],
+      "note": "option row (OO fm-btn-settings 'Advanced Settings'): WO's Settings pane — the ledger's file.advanced-settings row binds chartSettings (a mismatched fuzzy hit); this row pins the real WO surface, the #btn-filesettings settings-dialog opener"
+    },
+    "backstage.pane-protect": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"protect\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"protect\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Protect action", "selector": "#btn-fileprotect" }
+      ],
+      "note": "option row (OO fm-btn-protect 'Protect'): the Protect pane carries the #btn-fileprotect opener (protectDialog, editor.js:13055 — dialog itself already contracted by stragglers file.protect)"
+    },
+    "backstage.pane-help": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"help\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"help\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "shortcut row: save", "selector": ".bs-shortcut-row[data-key=\"s\"]" },
+        { "name": "shortcut row: comment", "selector": ".bs-shortcut-row[data-key=\"a\"]" },
+        { "name": "shortcut row: undo/redo", "selector": ".bs-shortcut-row[data-key=\"z\"]" },
+        { "name": "shortcut row: format", "selector": ".bs-shortcut-row[data-key=\"b\"]" },
+        { "name": "shortcut row: find", "selector": ".bs-shortcut-row[data-key=\"f\"]" },
+        { "name": "shortcut row: replace", "selector": ".bs-shortcut-row[data-key=\"h\"]" },
+        { "name": "shortcut row: zoom", "selector": ".bs-shortcut-row[data-key=\"wheel\"]" },
+        { "name": "about line", "selector": "#backstage-about" },
+        { "name": "Help dialog action", "selector": "#btn-filehelp" }
+      ],
+      "note": "option row (OO fm-btn-help 'Help'): the Help pane renders the shortcut table (pinned by backstage-deep-gate.test.mjs), the about line and the #btn-filehelp dialog opener"
+    },
+    "backstage.pane-suggest": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"suggest\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "[data-pane-view=\"suggest\"]"
+      },
+      "subFeatures": [
+        { "name": "pane title", "selector": "h2" },
+        { "name": "Suggest action", "selector": "#btn-filesuggest" }
+      ],
+      "note": "option row (OO fm-btn-suggest 'Suggest a Feature'): the Suggest pane carries the #btn-filesuggest opener (openDlg suggest-dialog — dialog already contracted by stragglers file.suggest-a-feature)"
+    },
+    "backstage.recent-list": {
+      "effektClass": "view",
+      "woTab": "backstage",
+      "pre": "backstage:open",
+      "selector": ".backstage-row[data-pane=\"open\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#backstage-recent"
+      },
+      "note": "option row: the Open/Recent list is hydrated from GET /api/documents (bsLoadRecent -> bsRenderRecent, editor.js:10981) — nonempty means real rows or the friendly standalone empty state rendered, never a blank pane"
+    },
+    "backstage.info-meta": {
+      "effektClass": "view",
+      "woTab": "backstage",
+      "pre": "backstage:info",
+      "selector": ".backstage-row[data-pane=\"info\"]",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#backstage-info-meta"
+      },
+      "note": "option row: the Info pane metadata grid is hydrated (bsLoadInfoMeta -> bsRenderInfoMeta renders Name/Format/Size/Updated label+value pairs, editor.js:11029) — OO's Document Info option with live data instead of a stub"
+    },
+    "backstage.settings-open": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:settings",
+      "selector": "#btn-filesettings",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#settings-dialog"
+      },
+      "subFeatures": [
+        { "name": "interface theme select", "selector": "#settings-theme" },
+        { "name": "language select", "selector": "#settings-lang" },
+        { "name": "spellcheck toggle", "selector": "#settings-spellcheck" },
+        { "name": "zoom input", "selector": "#settings-zoom" },
+        { "name": "autocorrect options action", "selector": "#btn-settings-autocorrect" },
+        { "name": "apply action", "selector": "#btn-settings-ok" },
+        { "name": "cancel action", "selector": "#btn-settings-cancel" }
+      ],
+      "note": "option row (OO fm-btn-settings 'Advanced Settings'): #btn-filesettings syncs live state and opens #settings-dialog with the theme/language/spellcheck/zoom options (editor.js:13089)"
+    },
+    "backstage.settings-cancel": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:settings",
+      "selector": "#btn-filesettings",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-settings-cancel",
+        "dialog": "#settings-dialog"
+      },
+      "note": "option row: settings cancel path — #btn-settings-cancel closes the dialog without applying (closeDlg, editor.js:13110)"
+    },
+    "backstage.help-open": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:help",
+      "selector": "#btn-filehelp",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#help-dialog"
+      },
+      "subFeatures": [
+        { "name": "help title", "selector": "#help-dialog-title" },
+        { "name": "close action", "selector": "#btn-help-close" }
+      ],
+      "note": "option row (OO fm-btn-help 'Help'): #btn-filehelp opens the help-and-about dialog (openDlg, editor.js:13119)"
+    },
+    "backstage.help-close": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:help",
+      "selector": "#btn-filehelp",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-help-close",
+        "dialog": "#help-dialog"
+      },
+      "note": "option row: help close path — #btn-help-close closes the dialog (closeDlg, editor.js:13120)"
+    },
+    "backstage.history-open": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:history",
+      "selector": "#btn-history",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#version-history-dialog"
+      },
+      "subFeatures": [
+        { "name": "version list", "selector": "#version-list" },
+        { "name": "close action", "selector": "#btn-version-close" }
+      ],
+      "note": "option row (OO Versions): the History pane's #btn-history opens the version-history dialog and fetches GET /versions (openVersionHistory, editor.js:5495)"
+    },
+    "backstage.history-close": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:history",
+      "selector": "#btn-history",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-version-close",
+        "dialog": "#version-history-dialog"
+      },
+      "note": "option row: version-history close path — #btn-version-close closes the dialog (closeVersionHistory, editor.js:5502)"
+    },
+    "backstage.ai-review-open": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:ai",
+      "selector": "#btn-ai-review",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#ai-review-dialog"
+      },
+      "subFeatures": [
+        { "name": "AI changes list", "selector": "#ai-review-list" },
+        { "name": "reject-all action", "selector": "#btn-ai-reject-all" },
+        { "name": "close action", "selector": "#btn-ai-review-close" }
+      ],
+      "note": "option row (ledger file.ai): the AI pane's #btn-ai-review opens the AI-changes review dialog and fetches GET ai/review (openAIReview, editor.js:5589)"
+    },
+    "backstage.ai-review-close": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:ai",
+      "selector": "#btn-ai-review",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ai-review-close",
+        "dialog": "#ai-review-dialog"
+      },
+      "note": "option row: AI-changes close path — #btn-ai-review-close closes the dialog (editor.js:8708)"
+    },
+    "backstage.active-settings": {
+      "effektClass": "view",
+      "woTab": "backstage",
+      "pre": "file-menu",
+      "selector": ".backstage-row[data-pane=\"settings\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".backstage-row[data-pane=\"settings\"]",
+        "attr": "aria-current",
+        "equals": "true"
+      },
+      "note": "option row: OO marks the active File-screen option; showBackstagePane sets aria-current=\"true\" + .active on the selected rail row and clears it on the others (editor.js:10907)"
+    }
+  }
+}
