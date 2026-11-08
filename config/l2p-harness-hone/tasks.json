@@ -1,0 +1,25 @@
+{
+ "defaults": {
+  "worktree": "state/worktrees",
+  "prompts": [
+   "prompts/worker.md"
+  ],
+  "max_attempts": 2
+ },
+ "tasks": [
+  {
+   "id": "L2P-01",
+   "title": "tab-census: cover contextual tabs chart-design + header-footer with setup flows and floors",
+   "description": "tests/parity/surfaces/tab-census.cjs currently skips chart-design and header-footer because their ribbon pages only render with a chart selection / header-footer edit mode. Extend the census to cover them: (1) chart-design \u2014 reuse the proven flow from tests/parity/contract-runner.cjs (~line 522): insert a chart (the runner's existing chart-selection flow in the 'chart' rows: insertObject/toolbar chart insert), wait for `.ribbon-tab[data-tab=\"chart-design\"]:not([hidden])`, click it, then count visible interactive controls inside `.ribbon-page[data-tab=\"chart-design\"]` with the same metric as the plain tabs. Add floor chart-design to tests/parity/surfaces/tab-census-floors.json at (measured - 3, min 5). (2) header-footer \u2014 reuse the runner's proven flow (~line 781): trigger header/footer edit mode (the runner does this to reveal the hidden header-footer tab), wait for `.ribbon-tab[data-tab=\"header-footer\"]:not([hidden])`, click, count, add floor header-footer (measured - 3, min 5). Both setups must run AFTER the plain-tab census loop so plain tabs are unaffected; close the header/footer mode and deselect before finishing. IMPORTANT constraints: /usr/bin/node only; census must exit non-zero listing tabs below floor exactly like the plain tabs do; keep the current 10/10 plain tabs green; do not touch the editor source or contract-runner vocabulary. Verify: WO_PORT=19820 /usr/bin/node tests/parity/surfaces/tab-census.cjs \u2192 12/12 tabs at or above floor.",
+   "acceptance": "cd <worktree>/server && WO_PORT=19821 bash tests/parity/af-gate.sh 451 \u2014 gate green means contracts 451/0 AND tab-census 12/12 (the gate runs the census). Also WO_PORT=19822 /usr/bin/node tests/parity/surfaces/tab-census.cjs must print chart-design and header-footer rows with ok status. Diff must only touch tests/parity/surfaces/tab-census.cjs and tests/parity/surfaces/tab-census-floors.json.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && WO_PORT=$((19000 + RANDOM % 800)) bash tests/parity/af-gate.sh 451 && WO_PORT=$((19000 + RANDOM % 800)) /usr/bin/node tests/parity/surfaces/tab-census.cjs 2>&1 | grep -E \"chart-design|header-footer\" | grep -c \"^ok\" | grep -q 2"
+  },
+  {
+   "id": "L2P-02",
+   "title": "deploy.yml: bake build-info.json canary into frontend-dist during restructure",
+   "description": "tests/parity/surfaces/deploy-freshness.cjs gates prod freshness on <editor>/build-info.json {sha}. Today the vanilla word dir gets it from the manual staging script, but the react editors (sheet/slide/diagram/pdf) only got it because the 2026-11-08 deploy copied a hand-made file. Bake it into the artifact itself: in .github/workflows/deploy.yml, job build-frontend, step 'Restructure dist directories', after the mv lines add a step (or extend that step) that writes frontend-dist/<each of word,sheet,slide,diagram,pdf>/build-info.json with JSON {\"sha\":\"${{ github.sha }}\",\"builtAt\":\"<utc date>\",\"source\":\"deploy.yml\"} (printf is fine). Keep the file tiny and stable. Do not touch any other workflow. Note the artifact for word/ in this job is the REACT editor build (documenteditor-react); prod's word dir is the vanilla wysiwyg app deployed via make-editor-ui.sh \u2014 that is expected, do not change which app is built.",
+   "acceptance": "cd <worktree>/server && /usr/bin/python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/deploy.yml')); print('yaml ok')\" must pass. grep -A 6 'Restructure dist directories' .github/workflows/deploy.yml must show build-info.json written for all five dirs. git diff --stat must show ONLY .github/workflows/deploy.yml.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && /usr/bin/python3 -c \"import yaml; yaml.safe_load(open('.github/workflows/deploy.yml')); print('yaml ok')\" && grep -q \"build-info.json\" .github/workflows/deploy.yml && test \"$(git diff --name-only | wc -l)\" -eq 1 && test \"$(git diff --name-only)\" = \".github/workflows/deploy.yml\""
+  }
+ ]
+}
