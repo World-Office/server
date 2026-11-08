@@ -80,8 +80,9 @@ out.push('');
 // 4. census walk gaps
 out.push('## Census walk gaps (surfaces the manifest cannot see)');
 out.push('');
-out.push('- **Right-click context menu** — census-oo.cjs walks ribbon tabs + file menu only; OO context-menu controls (cut/copy/paste/font options at cursor) are invisible to the manifest. Extend census-oo.cjs with a contextmenu capture before contracting this surface.');
-out.push('- **OO right panel** — the OO properties panel (paragraph/shape/chart advanced settings) is not part of the ribbon walk; its entry points (e.g. line-spacing options) appear as single ribbon controls.');
+out.push('- **OO right panel** — the OO properties panel reference is captured (census-oo-deep.json .rightPanel: section titles + toggles) but NOT yet contracted as a WO surface; WO\'s right settings panel (btn-right-panel-toggle / Ctrl+Shift+P) has no section-coverage contract yet.');
+out.push('- **Backstage deep walk** — census-oo-deep.json .backstage holds the OO backstage reference; WO backstage has 6+6 contract rows, per-option sub-features not contracted.');
+out.push('(Context menu: covered — census-ctx.json + 115 contract rows.)');
 out.push('');
 
 // dest: the parent-workspace plan/ dir when present (dev box), else

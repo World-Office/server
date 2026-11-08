@@ -40,5 +40,14 @@ CEN=$(/usr/bin/node parity/surfaces/tab-census.cjs 2>&1) || {
 }
 echo "$CEN" | tail -2
 
+# Command liveness: every data-cmd control must be wired (runCommand branch,
+# dedicated handler) or a supported native execCommand — no silent no-ops.
+LIV=$(/usr/bin/node parity/surfaces/command-liveness.cjs 2>&1) || {
+  echo "$LIV" | tail -12
+  echo "gate: command-liveness FAILED"
+  exit 1
+}
+echo "$LIV" | tail -1
+
 echo "gate: pass=$PASS fail=$FAIL min=$MIN_PASS rc=$RC"
 [ "$RC" -eq 0 ] && [ "${FAIL:-1}" -eq 0 ] && [ "${PASS:-0}" -ge "$MIN_PASS" ]
