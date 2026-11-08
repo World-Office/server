@@ -1,0 +1,13 @@
+{
+  "_note": "Per-tab minimum count of visible interactive controls in the active .ribbon-page. Floors = current verified baseline minus ~10% headroom; contextual tabs (chart-design, header-footer) excluded — they need chart selection / header edit mode and carry their own contract rows. When you ADD controls to a tab, consider raising its floor.",
+  "home": 44,
+  "insert": 27,
+  "layout": 18,
+  "references": 14,
+  "collaboration": 15,
+  "protection": 2,
+  "view": 13,
+  "draw": 9,
+  "plugins": 13,
+  "ai": 5
+}

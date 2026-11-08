@@ -30,5 +30,15 @@ LINE=$(echo "$OUT" | grep -oE 'contract-results: [0-9]+ pass, [0-9]+ known-gap, 
 PASS=$(echo "$LINE" | grep -oE '[0-9]+ pass' | grep -oE '[0-9]+')
 FAIL=$(echo "$LINE" | grep -oE '[0-9]+ FAIL' | grep -oE '[0-9]+')
 
+# Per-tab completeness: every non-contextual ribbon page must show its floor
+# of visible interactive controls (catches empty/leaked tab panels the
+# contract layer cannot see).
+CEN=$(/usr/bin/node parity/surfaces/tab-census.cjs 2>&1) || {
+  echo "$CEN" | tail -15
+  echo "gate: tab-census FAILED"
+  exit 1
+}
+echo "$CEN" | tail -2
+
 echo "gate: pass=$PASS fail=$FAIL min=$MIN_PASS rc=$RC"
 [ "$RC" -eq 0 ] && [ "${FAIL:-1}" -eq 0 ] && [ "${PASS:-0}" -ge "$MIN_PASS" ]
