@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/web/apps/documenteditor-wysiwyg/**'
       - 'core/crates/wo-**'
+      - 'tests/parity/**'
       - '.github/workflows/parity-check.yml'
   workflow_dispatch:
     inputs:
