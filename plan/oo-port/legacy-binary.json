@@ -1,0 +1,373 @@
+[
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/File.cpp",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "OO .doc bootstrap: open CFB, read FIB, select WordDocument/table streams. WO: ole.rs OleCompoundDoc::parse opens the container and detector.rs flags Word by OLE class string; the FIB itself is never parsed (no fWhichTblStm table-stream selection, no fEncrypted check)."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Structures.h (FibBase/FibRgLw97/FibRgFcLcb97)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "FIB bit fields (fComplex, fEncrypted, fcClx, fcStshfOrig, ...). Nothing in wo-msbinary models these; detector.rs reads only magic bytes and version heuristics."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Document.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "OO assembles the .doc document model (text items, sections, stories) here. WO has no .doc reader beyond container+detect; wo-x2t has no source_format()==\"doc\" converter."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/PieceTable.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "fcClx piece table: cp->fc mapping, compressed vs unicode pieces (fCompressed flag), last-piece bookkeeping. Hard prerequisite for any correct .doc text extraction; absent in wo-msbinary."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/StyleSheet.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "STSH style sheet (std records, built-in style ids, UPD chpx/papx deltas). WO styles live in wo-ooxml/wo-docx-renderer terms only; no STSH decoding."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/FontTable.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Font table (ffb entries, panose, charset). Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/ListTable.cpp + ListFormatOverride.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Numbering: LSTF/LVL definitions plus LFO overrides. Not ported; wo-x2t docx->odt/epub paths only emit list info from OOXML input."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Section.cpp / SectionProperties.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "SEPX/sepx sprm parsing (page size, columns, headers refs). Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Paragraph.cpp / ParagraphProperties.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "PAPX sprm decoding (indents, spacing, tabs, keepNext). Not ported; wo-msbinary has no sprm engine at all."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Run.cpp / RunProperty.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "CHPX sprm decoding (bold/italic/size/color, fSpec, field chars). Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/HeaderFooter.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "grpfIhdt header/footer bitmask + story extraction. Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Table.cpp / Row.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "TAP/TC cell descriptors, table depth (itapMac), nested tables. Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Field.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Field char run (begin/separate/end) + field code/result split. Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Bookmark.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "BKF/bkl bookmarks and ranges. Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/AnnotationInfo.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Comments (ATRD/annotation reference + text). Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/ReaderNote.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Footnotes/endnotes stories. Not ported."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/EmbeddedObject.cpp / Esp.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Escher drawing containers, embedded pictures (Data stream), OLE embedded objects. Not ported; the .doc Data/ObjectPool streams are never opened."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/RevisionInfo.cpp",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Tracked changes (RPR, frd). OO reads .doc revisions; WO has nothing."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/Converter/*",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "OO's .doc -> internal docx-model glue (the bridge into ASCOfficeDocxFormat). WO equivalent would be doc->wo-document; no such converter exists in wo-x2t."
+  },
+  {
+    "oo_module": "DocFile",
+    "oo_path": "MsBinaryFile/DocFile/../ASCOfficeDoc.cpp (.doc WRITER)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Save-as Word 97 binary writer. Recommend never porting: WO export matrix targets OOXML/PDF/ODF; legacy write is a no-demand liability."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/Workbook globals (BOUNDSHEET, SST, bounds)",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "biff8.rs pass 1: SST (REC_SST 0x00FC) + BOUNDSHEET (0x0085) name/offset table; unknown records skipped by length. No fonts/styles/globals beyond that."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/Sheet cell records",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "biff8.rs pass 2: LABELSST/NUMBER/RK/MULRK/MULBLANK/BOOLERR/BLANK/FORMULA(cached)/ROW/DIMENSIONS. Wired end-to-end via wo-x2t XlsToWoSpreadsheetConverter (F-208)."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/formula ptg parser",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "ptg token stream -> AST -> A1 strings. biff8.rs returns cached values only (stated scope note); no formula reconstruction."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/styles (XF/FONT/fill/borders)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Style/xf record chain -> formatting. Deliberately out of scope for the minimal reader."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/shared/array formulas + defined names",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "SHRFMLA/ARRAY/NAME records not parsed; shared-formula cells degrade to cached values."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/charts",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Chart streams (BIFF chart substreams / ChartEx). Not ported."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/pivot tables",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "PivotCache/pivotTable records and the _xl5/_xl9 storage streams. Not ported."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/CFB stream resolution (Workbook vs Book)",
+    "wo_coverage": "full",
+    "wo_map": "msbinary",
+    "notes": "ole.rs reads the workbook stream through FAT/mini-FAT chains; wo-x2t converter picks \"Workbook\" (BIFF8) with \"Book\" (BIFF5/7) fallback."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Converter/oox_package.h",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "OO assembles an OOXML package (xlsx) from parsed .xls here. WO deliberately targets wo-spreadsheet JSON instead; this is the reference if xlsx output from legacy .xls is ever required."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Converter/XlsConverter.cpp",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "OO orchestrates full xls->xlsx conversion. WO equivalent is wo-x2t::XlsToWoSpreadsheetConverter — same orchestration role, different target model, value-level fidelity."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Writer (BIFF8 write)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "OO writes real .xls files. Recommend never porting: legacy binary write is not in the WO export matrix."
+  },
+  {
+    "oo_module": "XlsFile",
+    "oo_path": "MsBinaryFile/XlsFile/Reader/encryption (XOR/RC4 workbook protection)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Legacy .xls FilePass XOR obfuscation and RC4 encryption. crypt.rs covers OOXML (MS-OFFCRYPTO agile/standard) only; an encrypted legacy .xls fails loudly at record parse."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/PPTFile.cpp (record-tree walker)",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "ppt.rs scan() walks the record tree of the PowerPoint Document stream (recVer==0xF containers recursed, unknown records skipped). No persisted-stream offset repair."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/CurrentUserAtom / UserEditAtom",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "WO reads only the \"PowerPoint Document\" stream; the \"Current User\" stream (needed for correct latest-version offset on files written incrementally) is ignored."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/SlideContainer / MainMasterContainer text path",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "ppt.rs emits one slide per SlideContainer (0x03F8)/MainMasterContainer (0x03EE) with real text; placeholder boilerplate (\"Click to edit...\", lone \"*\") is filtered."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/text atoms (TextCharsAtom 0x0FA0 / TextBytesAtom 0x0FA8 / TextHeaderAtom)",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "Both atom encodings are decoded to plain paragraphs; no rich runs, no paragraph levels/bullets, no styleTextProp."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/PPDrawing + Escher shape geometry",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "No escher parsing: wo-x2t PptToWoPresentationConverter (F-305, fidelity L4) emits zero-size textboxes for extracted text; shapes/images/positioning are lost by design."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/Master / Layout / Theme resolution",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Slide headers' master/layout/inheritance chain unmodelled; wo-slide's inheritance.rs covers OOXML themes only. ppt.rs actively filters master containers instead of resolving them."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/Notes slides",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "NotesContainer text not read; WoSlide.notes stays None."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/Animation / timing tree",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Slide timing/build containers not parsed; WoSlide.animations always empty."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/FontCollection / embedded fonts",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Font entity atoms / embedded font data ignored."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/Media (ExMedia / Movie / Sound)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Embedded audio/video not read; media OLE streams never opened."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/Writer (.ppt write)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Legacy binary ppt write; recommend never porting."
+  },
+  {
+    "oo_module": "PptFile",
+    "oo_path": "MsBinaryFile/PptFile/encryption (RC4 protected .ppt)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Legacy ppt RC4 not supported; crypt.rs is OOXML-only by documented design."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/CFB compound-file container (header/DIFAT/FAT/directory/mini-FAT)",
+    "wo_coverage": "full",
+    "wo_map": "msbinary",
+    "notes": "ole.rs (1,302 LOC) implements MS-CFB read: 512/4096-byte sectors, 109-entry header DIFAT + DIFAT chain, FAT, directory red-black tree walk, mini-FAT + mini-stream reassembly. Unit tests at ole.rs:734."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/stream chain reading (ENDOFCHAIN/mini-stream cutoff)",
+    "wo_coverage": "full",
+    "wo_map": "msbinary",
+    "notes": "ole.rs read_stream_by_name + read_entry_stream handle regular chains, mini streams below the cutoff, and disabled-cutoff variants (mini_stream_cutoff==0)."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "Common/OfficeFileFormats.h (117-format taxonomy)",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "model.rs BinaryFormat is Word|Excel|PowerPoint|Unknown only. F-402 requires naming every unsupported taxonomy member loudly; the enum covers just the 3 legacy OLE apps (plus WO-only xlsb handled in xlsb.rs)."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/format detection (magic + CLSID + stream inventory)",
+    "wo_coverage": "partial",
+    "wo_map": "msbinary",
+    "notes": "detector.rs detects via OLE class-string scan of the first 4 KiB (Word.Document/Excel.Sheet/PowerPoint.Show). OO keys off CLSID + named streams (WordDocument/Workbook/PowerPoint Document); WO's heuristic is cheaper but can misfire on crafted binaries and BinaryMetadata is never filled (always Default)."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/OfficeCrypto (RC4/XOR crypto for binary formats)",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "Legacy binary decryption (Word/XLS/PPT FilePass, RC4 EncryptionHeader) absent. crypt.rs deliberately scopes to OOXML agile/standard via msoffice-crypto (native only; wasm returns Unsupported)."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/SummaryInformation / DocumentSummaryInformation property sets",
+    "wo_coverage": "stub",
+    "wo_map": "msbinary",
+    "notes": "model.rs BinaryMetadata has title/author/subject/creation fields but detector.rs never decodes the \\x05SummaryInformation streams — metadata is always Default; only ole_class + coarse version strings are produced."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/Escher shared record reader",
+    "wo_coverage": "missing",
+    "wo_map": "NONE",
+    "notes": "The escher record layer OO shares across DocFile/PptFile/XlsFile drawings is unported; wo-ooxml has its own OOXML-level drawing model, which does not read binary escher."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "Common/Base/Unit.cpp ratios consumed by MsBinaryFile writers",
+    "wo_coverage": "full",
+    "wo_map": "NONE",
+    "notes": "Twips/EMU/Pt conversions live in the shared WO units module (spec F-500), not in wo-msbinary — correct placement, no legacy-specific deltas needed."
+  },
+  {
+    "oo_module": "Common",
+    "oo_path": "MsBinaryFile/Common/test roundtrip harness equivalent",
+    "wo_coverage": "full",
+    "wo_map": "msbinary",
+    "notes": "WO-only addition: roundtrip.rs implements wo_common::test_harness::FormatRoundtrip for parse/serialize smoke cycles (OO has no direct counterpart)."
+  }
+]
