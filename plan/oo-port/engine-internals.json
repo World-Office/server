@@ -1,0 +1,1505 @@
+[
+ {
+  "oo_area": "agg-2.4/examples",
+  "oo_class_estimate": 109,
+  "oo_fn_estimate": 847,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Agg sample/demo programs; not linked into the OO engine — out of port scope. (source: DesktopEditor/agg-2.4/examples)"
+ },
+ {
+  "oo_area": "agg-2.4/font_freetype",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 43,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 1,
+  "notes": "Agg FreeType font-engine adapter + font_cache_manager (glyph raster cache keyed by glyph/size/transform). wo-fonts caches faces and metrics but has no glyph-raster cache. (source: DesktopEditor/agg-2.4/font_freetype)"
+ },
+ {
+  "oo_area": "agg-2.4/font_win32_tt",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 51,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Win32 GDI font adapter; irrelevant on WO targets (web/server Linux). (source: DesktopEditor/agg-2.4/font_win32_tt)"
+ },
+ {
+  "oo_area": "agg-2.4/gpc",
+  "oo_class_estimate": 21,
+  "oo_fn_estimate": 29,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "gpc.c general polygon clipper (union/intersect/difference/xor) behind Agg conv_gpc. WO has zero boolean path ops — shape merge/subtract editing cannot be reproduced. (source: DesktopEditor/agg-2.4/gpc)"
+ },
+ {
+  "oo_area": "agg-2.4/include",
+  "oo_class_estimate": 340,
+  "oo_fn_estimate": 2675,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 3,
+  "notes": "Agg core API: rasterizer_cells_aa + scanline AA, conv_stroke/conv_curve/vcgen_dash, span gradients, image resampling filters, pixfmt variants, blur. WO Canvas implements only a basic scanline filler/stroker with fixed 1-pass AA — no stroke join/dash generators, no image filters, no compound rasterizer. (source: DesktopEditor/agg-2.4/include)"
+ },
+ {
+  "oo_area": "agg-2.4/src",
+  "oo_class_estimate": 10,
+  "oo_fn_estimate": 521,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Agg platform sources (pixel-format impls, font engine glue); mostly compiled-in implementation detail. (source: DesktopEditor/agg-2.4/src)"
+ },
+ {
+  "oo_area": "agg-2.4/svg",
+  "oo_class_estimate": 61,
+  "oo_fn_estimate": 745,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Agg SVG parser + renderer (agg_svg parser, path/adapters, gradients). WO has NO SVG rendering anywhere in the crates — SVG images and drawn shapes render blank. (source: DesktopEditor/agg-2.4/svg)"
+ },
+ {
+  "oo_area": "AllFontsGen/main.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 3,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Font-list generator tool; WO ships a fixed Liberation set (canvas_bridge::LIBERATION_FONTS) instead. (source: DesktopEditor/AllFontsGen/main.cpp)"
+ },
+ {
+  "oo_area": "allthemesgen/main.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 8,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Theme-thumbnail generator tool; replicate as a build-time task if theme previews are needed. (source: DesktopEditor/allthemesgen/main.cpp)"
+ },
+ {
+  "oo_area": "common/ASCVariant.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Variant type; serde_json::Value replaces. (source: DesktopEditor/common/ASCVariant.h)"
+ },
+ {
+  "oo_area": "common/Base64.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 18,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Base64 codec; absent from wo-common encoding.rs — small module to add. (source: DesktopEditor/common/Base64.cpp)"
+ },
+ {
+  "oo_area": "common/BigInteger.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 14,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Arbitrary-precision integer math (14 fns); none in WO crates. (source: DesktopEditor/common/BigInteger.h)"
+ },
+ {
+  "oo_area": "common/ByteBuilder.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 18,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Byte writer impl; see ByteBuilder.h note. (source: DesktopEditor/common/ByteBuilder.cpp)"
+ },
+ {
+  "oo_area": "common/ByteBuilder.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "LE/BE byte writer; per-crate Vec<u8> writers in WO. (source: DesktopEditor/common/ByteBuilder.h)"
+ },
+ {
+  "oo_area": "common/CalculatorCRC32.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 3,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "CRC32 table calculator; needed by metafile/zip paths — unported. (source: DesktopEditor/common/CalculatorCRC32.h)"
+ },
+ {
+  "oo_area": "common/Directory.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 16,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Directory walking; std::fs::read_dir covers. (source: DesktopEditor/common/Directory.cpp)"
+ },
+ {
+  "oo_area": "common/File.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 78,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "File IO impl; std::fs covers. (source: DesktopEditor/common/File.cpp)"
+ },
+ {
+  "oo_area": "common/File.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Cross-platform file IO; std::fs covers. (source: DesktopEditor/common/File.h)"
+ },
+ {
+  "oo_area": "common/IGrObject.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 5,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Intrusive refcount interface; Arc/Rc replaces. (source: DesktopEditor/common/IGrObject.h)"
+ },
+ {
+  "oo_area": "common/Mac",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 1,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Mac-only shim; out of WO target scope. (source: DesktopEditor/common/Mac)"
+ },
+ {
+  "oo_area": "common/MathUtils.h",
+  "oo_class_estimate": 7,
+  "oo_fn_estimate": 53,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/units.rs",
+  "gap_severity": 1,
+  "notes": "Fast trig/rounding/matrix utils (53 fns); WO units.rs covers unit conversion, transform.rs affine math — the fixed-point/deltize helpers are unported. (source: DesktopEditor/common/MathUtils.h)"
+ },
+ {
+  "oo_area": "common/Path.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 7,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/path.rs",
+  "gap_severity": 1,
+  "notes": "FS path joins; std::path covers. (wo-common path.rs is doc-tree addressing, not FS.) (source: DesktopEditor/common/Path.cpp)"
+ },
+ {
+  "oo_area": "common/ProcessEnv.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 21,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Process/env helpers; std::env covers. (source: DesktopEditor/common/ProcessEnv.cpp)"
+ },
+ {
+  "oo_area": "common/ShapeAspects.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 2,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Shape-aspect geometry helpers; unported. (source: DesktopEditor/common/ShapeAspects.h)"
+ },
+ {
+  "oo_area": "common/StreamWriter.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 4,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Stream writer impl; std::io covers. (source: DesktopEditor/common/StreamWriter.cpp)"
+ },
+ {
+  "oo_area": "common/StreamWriter.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Stream writer; std::io::Write trait replaces. (source: DesktopEditor/common/StreamWriter.h)"
+ },
+ {
+  "oo_area": "common/StringBuilder.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 97,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Builder impl; covered by Rust idioms. (source: DesktopEditor/common/StringBuilder.cpp)"
+ },
+ {
+  "oo_area": "common/StringBuilder.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Byte/String builder; Rust String + format! + Vec<u8> replace. (source: DesktopEditor/common/StringBuilder.h)"
+ },
+ {
+  "oo_area": "common/StringExt.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 14,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "See StringExt.h note. (source: DesktopEditor/common/StringExt.cpp)"
+ },
+ {
+  "oo_area": "common/StringExt.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 14,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "CStringExt helpers (split/join/format); std covers most, OO sprintf-style helpers spread across WO crates. (source: DesktopEditor/common/StringExt.h)"
+ },
+ {
+  "oo_area": "common/StringUTF32.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 14,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "UTF-32 impl; replaced by Rust strings. (source: DesktopEditor/common/StringUTF32.cpp)"
+ },
+ {
+  "oo_area": "common/StringUTF32.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "UTF-32 string class; Rust String (UTF-8) + char iteration replaces. (source: DesktopEditor/common/StringUTF32.h)"
+ },
+ {
+  "oo_area": "common/SystemUtils.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 6,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "System utilities; std + crates cover. (source: DesktopEditor/common/SystemUtils.cpp)"
+ },
+ {
+  "oo_area": "cximage/CxImage",
+  "oo_class_estimate": 35,
+  "oo_fn_estimate": 692,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/model.rs",
+  "gap_severity": 2,
+  "notes": "CxImage core (35 classes/692 fns): crop/rotate/alpha-channel/selection ops; wo-raster has pixel access + decode + encode only. (source: DesktopEditor/cximage/CxImage)"
+ },
+ {
+  "oo_area": "cximage/jasper",
+  "oo_class_estimate": 15,
+  "oo_fn_estimate": 608,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Jasper JPEG2000 codec (608 fns) — OO's second JP2 path; same blocker as raster/Jp2. (source: DesktopEditor/cximage/jasper)"
+ },
+ {
+  "oo_area": "cximage/jbig",
+  "oo_class_estimate": 64,
+  "oo_fn_estimate": 43,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "JBIG decoding; no WO support. (source: DesktopEditor/cximage/jbig)"
+ },
+ {
+  "oo_area": "cximage/jpeg",
+  "oo_class_estimate": 114,
+  "oo_fn_estimate": 658,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/decoder.rs",
+  "gap_severity": 0,
+  "notes": "Baseline JPEG decode/encode covered by the `image` crate jpeg feature. (source: DesktopEditor/cximage/jpeg)"
+ },
+ {
+  "oo_area": "cximage/libpsd",
+  "oo_class_estimate": 30,
+  "oo_fn_estimate": 383,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Photoshop PSD reader (383 fns); no WO support. (source: DesktopEditor/cximage/libpsd)"
+ },
+ {
+  "oo_area": "cximage/mng",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 866,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "MNG/JNG formats (866 fns); no WO support. (source: DesktopEditor/cximage/mng)"
+ },
+ {
+  "oo_area": "cximage/png",
+  "oo_class_estimate": 103,
+  "oo_fn_estimate": 985,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/decoder.rs",
+  "gap_severity": 0,
+  "notes": "PNG decode/encode covered by the `image` crate png feature. (source: DesktopEditor/cximage/png)"
+ },
+ {
+  "oo_area": "cximage/raw",
+  "oo_class_estimate": 73,
+  "oo_fn_estimate": 329,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Camera-RAW formats (73 classes); no WO support. (source: DesktopEditor/cximage/raw)"
+ },
+ {
+  "oo_area": "cximage/tiff",
+  "oo_class_estimate": 37,
+  "oo_fn_estimate": 666,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/decoder.rs",
+  "gap_severity": 1,
+  "notes": "TIFF via `image` covers a subset — no multi-page, no CCITT G3/G4 fax decode. (source: DesktopEditor/cximage/tiff)"
+ },
+ {
+  "oo_area": "cximage/zlib",
+  "oo_class_estimate": 56,
+  "oo_fn_estimate": 152,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Inflate/deflate provided transitively by image/flate2 crates. (source: DesktopEditor/cximage/zlib)"
+ },
+ {
+  "oo_area": "doctrenderer/addon",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 3,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Node addon wrapper; superseded by wasm exports in wo-renderer-wasm. (source: DesktopEditor/doctrenderer/addon)"
+ },
+ {
+  "oo_area": "doctrenderer/app_builder",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 3,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Builder app entry; unported. (source: DesktopEditor/doctrenderer/app_builder)"
+ },
+ {
+  "oo_area": "doctrenderer/app_builder_lib",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 5,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Builder app lib; unported. (source: DesktopEditor/doctrenderer/app_builder_lib)"
+ },
+ {
+  "oo_area": "doctrenderer/config.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 8,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/format.rs",
+  "gap_severity": 1,
+  "notes": "Builder config flags; partial analog in format registry. (source: DesktopEditor/doctrenderer/config.h)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder_p.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 101,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "DocBuilder internals; see docbuilder.h note. (source: DesktopEditor/doctrenderer/docbuilder_p.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder_p.h",
+  "oo_class_estimate": 10,
+  "oo_fn_estimate": 45,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "DocBuilder internals; see docbuilder.h note. (source: DesktopEditor/doctrenderer/docbuilder_p.h)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.com",
+  "oo_class_estimate": 9,
+  "oo_fn_estimate": 7,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "COM builder bindings; external-language glue, out of scope. (source: DesktopEditor/doctrenderer/docbuilder.com)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 6,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "DocBuilder entry; see docbuilder.h note. (source: DesktopEditor/doctrenderer/docbuilder.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.h",
+  "oo_class_estimate": 10,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "DocBuilder API (open/create/execute/close); WO's conversion pipeline is a fixed route without a scriptable builder. (source: DesktopEditor/doctrenderer/docbuilder.h)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.java",
+  "oo_class_estimate": 12,
+  "oo_fn_estimate": 247,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Java builder bindings; external-language glue, out of renderer scope. (source: DesktopEditor/doctrenderer/docbuilder.java)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.net",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 49,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": ".NET builder bindings; external-language glue, out of scope. (source: DesktopEditor/doctrenderer/docbuilder.net)"
+ },
+ {
+  "oo_area": "doctrenderer/docbuilder.python",
+  "oo_class_estimate": 9,
+  "oo_fn_estimate": 112,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Python builder bindings; external-language glue, out of scope. (source: DesktopEditor/doctrenderer/docbuilder.python)"
+ },
+ {
+  "oo_area": "doctrenderer/doctrenderer.cpp",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 21,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Document renderer core impl; unported. (source: DesktopEditor/doctrenderer/doctrenderer.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/doctrenderer.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "JS-in-C++ document renderer core; unported. (source: DesktopEditor/doctrenderer/doctrenderer.h)"
+ },
+ {
+  "oo_area": "doctrenderer/drawingfile.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 28,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Drawing-file abstraction for builder; unported. (source: DesktopEditor/doctrenderer/drawingfile.h)"
+ },
+ {
+  "oo_area": "doctrenderer/editors.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 9,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Editor-class registrations for builder; unported. (source: DesktopEditor/doctrenderer/editors.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/embed",
+  "oo_class_estimate": 27,
+  "oo_fn_estimate": 300,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "C++ classes exposed into the JS builder scope; WO's browser JS host could consume wasm exports instead — design pending. (source: DesktopEditor/doctrenderer/embed)"
+ },
+ {
+  "oo_area": "doctrenderer/graphics.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 82,
+  "wo_crate": "wo-renderer-wasm",
+  "wo_file": "core/crates/wo-renderer-wasm/src/lib.rs",
+  "gap_severity": 2,
+  "notes": "Builder drawing bridge impl; see graphics.h note. (source: DesktopEditor/doctrenderer/graphics.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/graphics.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 17,
+  "wo_crate": "wo-renderer-wasm",
+  "wo_file": "core/crates/wo-renderer-wasm/src/lib.rs",
+  "gap_severity": 2,
+  "notes": "Builder drawing bridge over IRenderer; wasm crate renders through canvas handles, not this API. (source: DesktopEditor/doctrenderer/graphics.h)"
+ },
+ {
+  "oo_area": "doctrenderer/hash.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 5,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "JS-builder/preview engine; no server-side JS host exists in WO. (source: DesktopEditor/doctrenderer/hash.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/hash.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "String hash helpers; std hash covers. (source: DesktopEditor/doctrenderer/hash.h)"
+ },
+ {
+  "oo_area": "doctrenderer/js_internal",
+  "oo_class_estimate": 51,
+  "oo_fn_estimate": 226,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "V8/JavaScriptCore embedding layer (CJSContext, CJSObjectV8/JSC, CV8Worker, inspector, WebSocketServer). WO has NO server-side JS host — docbuilder formulas and macro scripts cannot execute inside wo-x2t; in-browser WO leans on the JS runtime, server-side conversion does not. (source: DesktopEditor/doctrenderer/js_internal)"
+ },
+ {
+  "oo_area": "doctrenderer/json",
+  "oo_class_estimate": 16,
+  "oo_fn_estimate": 122,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "OO JSON wrappers; serde_json covers the shapes. (source: DesktopEditor/doctrenderer/json)"
+ },
+ {
+  "oo_area": "doctrenderer/nativecontrol.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 3,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Native control impl; unported. (source: DesktopEditor/doctrenderer/nativecontrol.cpp)"
+ },
+ {
+  "oo_area": "doctrenderer/nativecontrol.h",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 47,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Native control host for builder rendering; unported. (source: DesktopEditor/doctrenderer/nativecontrol.h)"
+ },
+ {
+  "oo_area": "doctrenderer/server.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 6,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Builder server harness; unported. (source: DesktopEditor/doctrenderer/server.h)"
+ },
+ {
+  "oo_area": "doctrenderer/test",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 208,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "doctrenderer test scaffolding; out of renderer scope. (source: DesktopEditor/doctrenderer/test)"
+ },
+ {
+  "oo_area": "fontengine/ApplicationFonts.cpp",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 63,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 1,
+  "notes": "See ApplicationFonts.h note. (source: DesktopEditor/fontengine/ApplicationFonts.cpp)"
+ },
+ {
+  "oo_area": "fontengine/ApplicationFonts.h",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 6,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 1,
+  "notes": "CApplicationFonts/CFontList/CFontSelectFormat — family enumeration and best-match selection; FontCache+FontMatcher covers family/weight matching, lacks the fallback/symbol-coverage chain. (source: DesktopEditor/fontengine/ApplicationFonts.h)"
+ },
+ {
+  "oo_area": "fontengine/ApplicationFontsWorker.cpp",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 33,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "See ApplicationFontsWorker.h note. (source: DesktopEditor/fontengine/ApplicationFontsWorker.cpp)"
+ },
+ {
+  "oo_area": "fontengine/ApplicationFontsWorker.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "Font-dir scanning, priorities (CFontPriority), thumbnails (CFontThumbnail), symbol coverage checkers; wo-fonts loads explicit byte blobs only — no system scan or cache warming. (source: DesktopEditor/fontengine/ApplicationFontsWorker.h)"
+ },
+ {
+  "oo_area": "fontengine/fontconverter",
+  "oo_class_estimate": 12,
+  "oo_fn_estimate": 216,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Font conversion utilities (woff/eot, AllFontsGen machinery, 216 fns); not ported. (source: DesktopEditor/fontengine/fontconverter)"
+ },
+ {
+  "oo_area": "fontengine/FontConverter.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "Font engine area; wo-fonts is a face/metrics loader without the glyph cache/hinting pipeline. (source: DesktopEditor/fontengine/FontConverter.h)"
+ },
+ {
+  "oo_area": "fontengine/fontdictionaryworker.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 1,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Font dictionary worker; unported. (source: DesktopEditor/fontengine/fontdictionaryworker.h)"
+ },
+ {
+  "oo_area": "fontengine/FontFile.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 60,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "See FontFile.h note. (source: DesktopEditor/fontengine/FontFile.cpp)"
+ },
+ {
+  "oo_area": "fontengine/FontFile.h",
+  "oo_class_estimate": 7,
+  "oo_fn_estimate": 3,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "CFontFile wraps a FreeType face: glyph metrics/raster/hinting via CVectorWorker + CCacheGlyphs. wo-fonts exposes ttf-parser metrics only — no glyph bitmap cache, no hinting. (source: DesktopEditor/fontengine/FontFile.h)"
+ },
+ {
+  "oo_area": "fontengine/FontManager.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 52,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 2,
+  "notes": "See FontManager.h note. (source: DesktopEditor/fontengine/FontManager.cpp)"
+ },
+ {
+  "oo_area": "fontengine/FontManager.h",
+  "oo_class_estimate": 5,
+  "oo_fn_estimate": 8,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 2,
+  "notes": "CFontManager + CFontsCache + CApplicationFontStreams — cross-document LRU glyph cache and font-stream registry; WO caches faces but no glyphs. (source: DesktopEditor/fontengine/FontManager.h)"
+ },
+ {
+  "oo_area": "fontengine/FontPath.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 15,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Outline-path cache impl; missing on WO. (source: DesktopEditor/fontengine/FontPath.cpp)"
+ },
+ {
+  "oo_area": "fontengine/FontPath.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 5,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "CFontPath: glyph-outline→bezier-path cache; WO has no outline extraction to PathBuilder. (source: DesktopEditor/fontengine/FontPath.h)"
+ },
+ {
+  "oo_area": "fontengine/FontsAssistant.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 6,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 2,
+  "notes": "Font engine area; wo-fonts is a face/metrics loader without the glyph cache/hinting pipeline. (source: DesktopEditor/fontengine/FontsAssistant.cpp)"
+ },
+ {
+  "oo_area": "fontengine/FontsAssistant.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Font assistant dialog engine; unported. (source: DesktopEditor/fontengine/FontsAssistant.h)"
+ },
+ {
+  "oo_area": "fontengine/GlyphString.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 23,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/text.rs",
+  "gap_severity": 3,
+  "notes": "See GlyphString.h note. (source: DesktopEditor/fontengine/GlyphString.cpp)"
+ },
+ {
+  "oo_area": "fontengine/GlyphString.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/text.rs",
+  "gap_severity": 3,
+  "notes": "CGlyphString: shaped, measured string (kerned/ligated glyph array, tab runs, Y positions). WO TextLayoutEngine measures with char_advance — no kerning, ligatures, or bidi — so line breaks and glyph positions diverge on complex text. (source: DesktopEditor/fontengine/GlyphString.h)"
+ },
+ {
+  "oo_area": "fontengine/js",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 138,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "allfonts JS bridge (CFontBinary, font-list JSON); WO ships a fixed Liberation set via canvas_bridge::LIBERATION_FONTS. (source: DesktopEditor/fontengine/js)"
+ },
+ {
+  "oo_area": "fontengine/MemoryStream.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 22,
+  "wo_crate": "wo-common",
+  "wo_file": "core/crates/wo-common/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "CMemoryStream; Vec<u8>/std::io::Cursor idioms replace it. (source: DesktopEditor/fontengine/MemoryStream.h)"
+ },
+ {
+  "oo_area": "fontengine/TextHyphen.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 12,
+  "wo_crate": "wo-spell",
+  "wo_file": "core/crates/wo-spell/src/hyphenate.rs",
+  "gap_severity": 0,
+  "notes": "Hyphenation impl; covered by wo-spell. (source: DesktopEditor/fontengine/TextHyphen.cpp)"
+ },
+ {
+  "oo_area": "fontengine/TextHyphen.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-spell",
+  "wo_file": "core/crates/wo-spell/src/hyphenate.rs",
+  "gap_severity": 0,
+  "notes": "Hyphenation engine; wo-spell hyphenate.rs (Liang's algorithm) + spell_hyphenate wasm export cover it. (source: DesktopEditor/fontengine/TextHyphen.h)"
+ },
+ {
+  "oo_area": "fontengine/TextShaper_p.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 2,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 1,
+  "notes": "Shaper internals; see TextShaper.h note. (source: DesktopEditor/fontengine/TextShaper_p.h)"
+ },
+ {
+  "oo_area": "fontengine/TextShaper.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 36,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 1,
+  "notes": "See TextShaper.h note. (source: DesktopEditor/fontengine/TextShaper.cpp)"
+ },
+ {
+  "oo_area": "fontengine/TextShaper.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 1,
+  "notes": "HarfBuzz shaping interface. WO uses rustybuzz (an HB port) + swash inside Canvas::draw_text — but shaping is NOT wired into TextLayoutEngine or the wasm layout path. (source: DesktopEditor/fontengine/TextShaper.h)"
+ },
+ {
+  "oo_area": "freetype_names/FontMaps",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 3,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/cache.rs",
+  "gap_severity": 1,
+  "notes": "Generated family-name maps (ASC*FontMaps); WO relies on fontdb matching without the curated name tables. (source: DesktopEditor/freetype_names/FontMaps)"
+ },
+ {
+  "oo_area": "freetype_names/freetype-2.5.3",
+  "oo_class_estimate": 133,
+  "oo_fn_estimate": 2343,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Second FT copy used at build time to mine font names; not linked into the runtime engine. (source: DesktopEditor/freetype_names/freetype-2.5.3)"
+ },
+ {
+  "oo_area": "freetype-2.10.4/builds",
+  "oo_class_estimate": 19,
+  "oo_fn_estimate": 106,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "Build scaffolding for FT; irrelevant to a Rust port. (source: DesktopEditor/freetype-2.10.4/builds)"
+ },
+ {
+  "oo_area": "freetype-2.10.4/docs",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 613,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "FT documentation and sample modules; not runtime code for parity. (source: DesktopEditor/freetype-2.10.4/docs)"
+ },
+ {
+  "oo_area": "freetype-2.10.4/include",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 26,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/model.rs",
+  "gap_severity": 0,
+  "notes": "Public FT headers; API replaced by ttf-parser/swash types. (source: DesktopEditor/freetype-2.10.4/include)"
+ },
+ {
+  "oo_area": "freetype-2.10.4/src",
+  "oo_class_estimate": 105,
+  "oo_fn_estimate": 2262,
+  "wo_crate": "wo-fonts",
+  "wo_file": "core/crates/wo-fonts/src/loader.rs",
+  "gap_severity": 1,
+  "notes": "FreeType engines (truetype/cff/type1/pcf/bdf + bytecode hinting interpreter). ttf-parser parses and measures but executes NO bytecode hinting; subtle rasterization differences vs OO remain. (source: DesktopEditor/freetype-2.10.4/src)"
+ },
+ {
+  "oo_area": "graphics/aggplustypes.h",
+  "oo_class_estimate": 5,
+  "oo_fn_estimate": 47,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/model.rs",
+  "gap_severity": 1,
+  "notes": "AggPlus enums (DashStyle, LineJoin, WrapMode, PenAlignment...); scattered across WO structs without full parity. (source: DesktopEditor/graphics/aggplustypes.h)"
+ },
+ {
+  "oo_area": "graphics/AlphaMask_p.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 12,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Alpha-mask internals; missing with the mask-layer feature. (source: DesktopEditor/graphics/AlphaMask_p.h)"
+ },
+ {
+  "oo_area": "graphics/AlphaMask.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 13,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Alpha-mask implementation; missing on WO. (source: DesktopEditor/graphics/AlphaMask.cpp)"
+ },
+ {
+  "oo_area": "graphics/AlphaMask.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "8-bit alpha-mask layers composited over the rendering buffer; WO has global alpha + BlendMode only. (source: DesktopEditor/graphics/AlphaMask.h)"
+ },
+ {
+  "oo_area": "graphics/ArrowHead.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 14,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Arrow-cap geometry for line ends; missing on WO strokes. (source: DesktopEditor/graphics/ArrowHead.cpp)"
+ },
+ {
+  "oo_area": "graphics/ArrowHead.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Arrow-head types; missing on WO. (source: DesktopEditor/graphics/ArrowHead.h)"
+ },
+ {
+  "oo_area": "graphics/BaseThread.cpp",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 22,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Render worker thread + job monitor; WO render path is single-threaded. (source: DesktopEditor/graphics/BaseThread.cpp)"
+ },
+ {
+  "oo_area": "graphics/BaseThread.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Render thread class; see BaseThread.cpp note. (source: DesktopEditor/graphics/BaseThread.h)"
+ },
+ {
+  "oo_area": "graphics/BaseThreadMonitor.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 8,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "AggPlus graphics area; WO Canvas covers fills/strokes/transforms/text/clip, diverging on the specifics noted per-row. (source: DesktopEditor/graphics/BaseThreadMonitor.cpp)"
+ },
+ {
+  "oo_area": "graphics/BaseThreadMonitor.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Thread job monitor; see BaseThread.cpp note. (source: DesktopEditor/graphics/BaseThreadMonitor.h)"
+ },
+ {
+  "oo_area": "graphics/boolean_operations_math.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 23,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Math kernel for graphics/BooleanOperations (segment intersection/point classification). Missing with the engine above. (source: DesktopEditor/graphics/boolean_operations_math.h)"
+ },
+ {
+  "oo_area": "graphics/BooleanOperations.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 88,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Shape boolean engine (union/subtract/intersect over paths used by OO drawing tools). WO has none; boolean shape editing cannot be reproduced. (source: DesktopEditor/graphics/BooleanOperations.cpp)"
+ },
+ {
+  "oo_area": "graphics/BooleanOperations.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "AggPlus graphics area; WO Canvas covers fills/strokes/transforms/text/clip, diverging on the specifics noted per-row. (source: DesktopEditor/graphics/BooleanOperations.h)"
+ },
+ {
+  "oo_area": "graphics/Brush.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 49,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/gradient.rs",
+  "gap_severity": 1,
+  "notes": "Brush family: solid, hatch, texture, linear/radial gradient. WO Paint covers solid + linear/radial gradient; hatch and texture fills absent. (source: DesktopEditor/graphics/Brush.cpp)"
+ },
+ {
+  "oo_area": "graphics/Brush.h",
+  "oo_class_estimate": 5,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/gradient.rs",
+  "gap_severity": 1,
+  "notes": "Brush classes; see Brush.cpp note. (source: DesktopEditor/graphics/Brush.h)"
+ },
+ {
+  "oo_area": "graphics/Clip.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 27,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 1,
+  "notes": "Nested clip stack with intersect; WO Canvas::clip() keeps a single current clip path (save/restore snapshot only). (source: DesktopEditor/graphics/Clip.cpp)"
+ },
+ {
+  "oo_area": "graphics/Clip.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 1,
+  "notes": "Clip-stack classes; see Clip.cpp note. (source: DesktopEditor/graphics/Clip.h)"
+ },
+ {
+  "oo_area": "graphics/Color.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 21,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/color.rs",
+  "gap_severity": 0,
+  "notes": "RGBA color model; Color/Paint covers. (source: DesktopEditor/graphics/Color.h)"
+ },
+ {
+  "oo_area": "graphics/commands",
+  "oo_class_estimate": 39,
+  "oo_fn_estimate": 272,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "IMetafileToRenderter + command records replaying metafiles into IRenderer. Depends on the missing raster/Metafile parsers; no WO counterpart. (source: DesktopEditor/graphics/commands)"
+ },
+ {
+  "oo_area": "graphics/Graphics.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 88,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "AggPlus Graphics methods; WO Canvas overlaps partially (fills/strokes/text/clip). (source: DesktopEditor/graphics/Graphics.cpp)"
+ },
+ {
+  "oo_area": "graphics/Graphics.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 10,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Graphics class surface; see Graphics.cpp note. (source: DesktopEditor/graphics/Graphics.h)"
+ },
+ {
+  "oo_area": "graphics/GraphicsLayer.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 8,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Offscreen layer surfaces with blend groups; WO has a BlendMode enum but no layer surfaces. (source: DesktopEditor/graphics/GraphicsLayer.cpp)"
+ },
+ {
+  "oo_area": "graphics/GraphicsLayer.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Layer class surface; see GraphicsLayer.cpp note. (source: DesktopEditor/graphics/GraphicsLayer.h)"
+ },
+ {
+  "oo_area": "graphics/GraphicsLayerBlend.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 3,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "Layer blend modes; partial via BlendMode. (source: DesktopEditor/graphics/GraphicsLayerBlend.h)"
+ },
+ {
+  "oo_area": "graphics/GraphicsPath_private.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 2,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/path.rs",
+  "gap_severity": 1,
+  "notes": "Path internals; see GraphicsPath.cpp note. (source: DesktopEditor/graphics/GraphicsPath_private.h)"
+ },
+ {
+  "oo_area": "graphics/GraphicsPath.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 92,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/path.rs",
+  "gap_severity": 1,
+  "notes": "Path storage + flattening + winding ops; PathBuilder has curves/rect/ellipse/fill-rule but no flatten/dash/offset transforms. (source: DesktopEditor/graphics/GraphicsPath.cpp)"
+ },
+ {
+  "oo_area": "graphics/GraphicsPath.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/path.rs",
+  "gap_severity": 1,
+  "notes": "GraphicsPath surface; see GraphicsPath.cpp note. (source: DesktopEditor/graphics/GraphicsPath.h)"
+ },
+ {
+  "oo_area": "graphics/GraphicsRenderer.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 134,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "AggPlus Graphics state machine: pen/brush servers, clip save/restore, DrawString via string formatter. WO Canvas covers solid/gradient paint, clip path, transformed text — no pen dashboards, hatch/texture brushes, or image blitting. (source: DesktopEditor/graphics/GraphicsRenderer.cpp)"
+ },
+ {
+  "oo_area": "graphics/GraphicsRenderer.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 23,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 2,
+  "notes": "GraphicsRenderer class surface; see GraphicsRenderer.cpp note. (source: DesktopEditor/graphics/GraphicsRenderer.h)"
+ },
+ {
+  "oo_area": "graphics/Image.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 17,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 3,
+  "notes": "Image drawing implementation (DrawImage/stretch/alpha); missing on WO Canvas as above. (source: DesktopEditor/graphics/Image.cpp)"
+ },
+ {
+  "oo_area": "graphics/Image.h",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/canvas.rs",
+  "gap_severity": 3,
+  "notes": "Canvas image blitting under transforms with alpha. WO Canvas has NO draw_image — wo-renderer-wasm/src/layout.rs literally skips DocxBlock::Image with a 'placeholder for DM-7' comment. Every picture in a document is unrendered. (source: DesktopEditor/graphics/Image.h)"
+ },
+ {
+  "oo_area": "graphics/ImageFilesCache.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 7,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/decoder.rs",
+  "gap_severity": 2,
+  "notes": "id→decoded-frame cache for renderer reuse; WO re-decodes per paint (no cache). (source: DesktopEditor/graphics/ImageFilesCache.h)"
+ },
+ {
+  "oo_area": "graphics/IRenderer.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 20,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/lib.rs",
+  "gap_severity": 1,
+  "notes": "Vector renderer interface (pages, commands); WO renders through the concrete Canvas with no trait split. (source: DesktopEditor/graphics/IRenderer.h)"
+ },
+ {
+  "oo_area": "graphics/Matrix_private.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/transform.rs",
+  "gap_severity": 0,
+  "notes": "Matrix internals; covered. (source: DesktopEditor/graphics/Matrix_private.h)"
+ },
+ {
+  "oo_area": "graphics/Matrix.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 34,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/transform.rs",
+  "gap_severity": 0,
+  "notes": "Affine matrix ops; AffineTransform covers multiply/invert/rotate/transform-point. (source: DesktopEditor/graphics/Matrix.cpp)"
+ },
+ {
+  "oo_area": "graphics/Matrix.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/transform.rs",
+  "gap_severity": 0,
+  "notes": "Affine matrix API; covered by transform.rs. (source: DesktopEditor/graphics/Matrix.h)"
+ },
+ {
+  "oo_area": "graphics/MetafileToGraphicsRenderer.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 18,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Replays EMF/WMF records into AggPlus Graphics calls; blocked by missing metafile parsers. (source: DesktopEditor/graphics/MetafileToGraphicsRenderer.cpp)"
+ },
+ {
+  "oo_area": "graphics/MetafileToGraphicsRenderer.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Metafile→Graphics replay interface; no WO counterpart. (source: DesktopEditor/graphics/MetafileToGraphicsRenderer.h)"
+ },
+ {
+  "oo_area": "graphics/MetafileToRenderer.cpp",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 23,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Replays metafiles into IRenderer vector commands; no WO counterpart. (source: DesktopEditor/graphics/MetafileToRenderer.cpp)"
+ },
+ {
+  "oo_area": "graphics/MetafileToRenderer.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Metafile replay driver; no WO counterpart. (source: DesktopEditor/graphics/MetafileToRenderer.h)"
+ },
+ {
+  "oo_area": "graphics/MetafileToRendererCheck.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 1,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Metafile-replay sanity checks; depends on the missing metafile stack. (source: DesktopEditor/graphics/MetafileToRendererCheck.h)"
+ },
+ {
+  "oo_area": "graphics/MetafileToRendererReader.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 18,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "Metafile reader interface (EMF/WMF/SVG readers); no WO counterpart. (source: DesktopEditor/graphics/MetafileToRendererReader.h)"
+ },
+ {
+  "oo_area": "graphics/pro",
+  "oo_class_estimate": 42,
+  "oo_fn_estimate": 537,
+  "wo_crate": "wo-renderer-wasm",
+  "wo_file": "core/crates/wo-renderer-wasm/src/canvas_bridge.rs",
+  "gap_severity": 2,
+  "notes": "Pro-build internals: CMetaFile, CDIB, CApplicationFontsSymbols, CFontManagerWrapper, HTML-renderer text, JBIG2 contexts; canvas_bridge's bundled Liberation fonts cover only the font-symbol slice. (source: DesktopEditor/graphics/pro)"
+ },
+ {
+  "oo_area": "graphics/shading_info.h",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 47,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/gradient.rs",
+  "gap_severity": 2,
+  "notes": "Gradient shading descriptors incl. Coons/tensor patches and focal/conical variants; WO gradient.rs is Linear+Radial only. (source: DesktopEditor/graphics/shading_info.h)"
+ },
+ {
+  "oo_area": "graphics/structures.h",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 35,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/model.rs",
+  "gap_severity": 1,
+  "notes": "AggPlus basic structs; partially mirrored in model.rs. (source: DesktopEditor/graphics/structures.h)"
+ },
+ {
+  "oo_area": "graphics/TemporaryCS.cpp",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 23,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "Critical-section RAII helper; Rust ownership/Mutex makes it moot. (source: DesktopEditor/graphics/TemporaryCS.cpp)"
+ },
+ {
+  "oo_area": "graphics/TemporaryCS.h",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/src/lib.rs",
+  "gap_severity": 0,
+  "notes": "CS helper; moot in Rust. (source: DesktopEditor/graphics/TemporaryCS.h)"
+ },
+ {
+  "oo_area": "graphics/tests",
+  "oo_class_estimate": 5,
+  "oo_fn_estimate": 52,
+  "wo_crate": "wo-renderer",
+  "wo_file": "core/crates/wo-renderer/tests",
+  "gap_severity": 0,
+  "notes": "OO graphics unit tests; WO keeps equivalent tests in wo-renderer/tests and crate test modules. (source: DesktopEditor/graphics/tests)"
+ },
+ {
+  "oo_area": "graphics/Timer.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 6,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "UI animation timer; not part of the server render path. (source: DesktopEditor/graphics/Timer.cpp)"
+ },
+ {
+  "oo_area": "graphics/Timer.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 1,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "UI timer; out of server-render scope. (source: DesktopEditor/graphics/Timer.h)"
+ },
+ {
+  "oo_area": "pluginsmanager/help.h",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 2,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Plugin manager helpers; unported. (source: DesktopEditor/pluginsmanager/help.h)"
+ },
+ {
+  "oo_area": "pluginsmanager/main.cpp",
+  "oo_class_estimate": 3,
+  "oo_fn_estimate": 47,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Plugin install/manifest handling (49 fns); WO NONE — plugin ecosystem unported. (source: DesktopEditor/pluginsmanager/main.cpp)"
+ },
+ {
+  "oo_area": "raster/BgraFrame.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 27,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/model.rs",
+  "gap_severity": 0,
+  "notes": "BGRA frame implementation; covered by RasterImage pixel model. (source: DesktopEditor/raster/BgraFrame.cpp)"
+ },
+ {
+  "oo_area": "raster/BgraFrame.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/model.rs",
+  "gap_severity": 0,
+  "notes": "BGRA frame buffer (w*h*4, flip, blit); RasterImage::from_rgba_bytes/as_rgba_bytes is the same shape. (source: DesktopEditor/raster/BgraFrame.h)"
+ },
+ {
+  "oo_area": "raster/heif",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 8,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "HEIF/AVIF container probe; no WO support. (source: DesktopEditor/raster/heif)"
+ },
+ {
+  "oo_area": "raster/ImageFileFormatChecker.cpp",
+  "oo_class_estimate": 0,
+  "oo_fn_estimate": 39,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/model.rs",
+  "gap_severity": 1,
+  "notes": "Format-checker dispatch; WO from_magic + image-crate guessing is a subset. (source: DesktopEditor/raster/ImageFileFormatChecker.cpp)"
+ },
+ {
+  "oo_area": "raster/ImageFileFormatChecker.h",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 0,
+  "wo_crate": "wo-raster",
+  "wo_file": "core/crates/wo-raster/src/model.rs",
+  "gap_severity": 1,
+  "notes": "Format-checker chain over many signatures; ImageFormat::from_magic covers common magics only. (source: DesktopEditor/raster/ImageFileFormatChecker.h)"
+ },
+ {
+  "oo_area": "raster/JBig2",
+  "oo_class_estimate": 5,
+  "oo_fn_estimate": 1466,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "JBIG2 arithmetic decoder + symbol/text-region decode (1466 fns). No WO counterpart; scanned imagery using JBIG2 fails to decode. (source: DesktopEditor/raster/JBig2)"
+ },
+ {
+  "oo_area": "raster/Jp2",
+  "oo_class_estimate": 762,
+  "oo_fn_estimate": 5074,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "OpenJPEG-based JPEG2000 codec (762 classes: tiles, MCT, wavelets, JP2 boxes). The `image` crate features (png/jpeg/tiff/gif/bmp) have no JP2 — embedded JP2 imagery renders as placeholders. (source: DesktopEditor/raster/Jp2)"
+ },
+ {
+  "oo_area": "raster/Metafile",
+  "oo_class_estimate": 246,
+  "oo_fn_estimate": 3083,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 3,
+  "notes": "EMF/WMF/EMF+ parsers + CEmfInterpretator{Render,Svg,Xml} players + EMF+ object model (pens/brushes/paths/images). WO has no metafile support at all — vector clip-art and pasted Office drawings disappear. (source: DesktopEditor/raster/Metafile)"
+ },
+ {
+  "oo_area": "raster/PICT",
+  "oo_class_estimate": 1,
+  "oo_fn_estimate": 29,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "Mac PICT metafile reader; no WO support. (source: DesktopEditor/raster/PICT)"
+ },
+ {
+  "oo_area": "vboxtester/main.cpp",
+  "oo_class_estimate": 2,
+  "oo_fn_estimate": 44,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "VirtualBox test-automation tool; not part of the editor engine — out of port scope. (source: DesktopEditor/vboxtester/main.cpp)"
+ },
+ {
+  "oo_area": "xml/include",
+  "oo_class_estimate": 7,
+  "oo_fn_estimate": 1,
+  "wo_crate": "wo-ooxml",
+  "wo_file": "core/crates/wo-ooxml/src/parser.rs",
+  "gap_severity": 1,
+  "notes": "OO XML util headers; see xml/src note. (source: DesktopEditor/xml/include)"
+ },
+ {
+  "oo_area": "xml/libxml2",
+  "oo_class_estimate": 401,
+  "oo_fn_estimate": 5747,
+  "wo_crate": "wo-ooxml",
+  "wo_file": "core/crates/wo-ooxml/src/parser.rs",
+  "gap_severity": 2,
+  "notes": "Full libxml2 (401 classes: SAX/DOM, XPath, XInclude, HTML parser, xmlIO, catalogs/DTD). WO uses roxmltree read-only DOM — no XPath, no streaming writer, no catalog/DTD resolution; conversion fidelity depends on hand-rolled traversal. (source: DesktopEditor/xml/libxml2)"
+ },
+ {
+  "oo_area": "xml/src",
+  "oo_class_estimate": 4,
+  "oo_fn_estimate": 186,
+  "wo_crate": "wo-ooxml",
+  "wo_file": "core/crates/wo-ooxml/src/parser.rs",
+  "gap_severity": 1,
+  "notes": "OO XML utility wrappers over libxml2 (186 fns); wo-ooxml hand-rolls equivalent traversal. (source: DesktopEditor/xml/src)"
+ },
+ {
+  "oo_area": "xmlsec/src",
+  "oo_class_estimate": 39,
+  "oo_fn_estimate": 2227,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 2,
+  "notes": "xmlsec1: XML digital signatures (c14n, RSA/ECDSA, XAdES fragments, 2227 fns). WO NONE — signed documents lose signatures on round-trip. (source: DesktopEditor/xmlsec/src)"
+ },
+ {
+  "oo_area": "xmlsec/test",
+  "oo_class_estimate": 6,
+  "oo_fn_estimate": 24,
+  "wo_crate": "NONE",
+  "wo_file": "NONE",
+  "gap_severity": 0,
+  "notes": "xmlsec test suites; out of renderer scope. (source: DesktopEditor/xmlsec/test)"
+ }
+]
