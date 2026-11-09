@@ -9,6 +9,7 @@
 
 pub mod canvas_bridge;
 pub mod layout;
+pub mod props;
 pub mod stub_model;
 
 use std::collections::BTreeMap;
@@ -33,6 +34,7 @@ use wo_spell::suggest::Suggester;
 
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
+pub use props::{get_property, set_property};
 pub use layout::{
     compute_selection_rects, flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage,
     LaidOutParagraph, LayoutEngine, PageLayout, SelectionRect,
@@ -1512,6 +1514,8 @@ pub fn release_document(doc_handle: u32) -> Result<(), String> {
         .lock()
         .unwrap()
         .remove(&doc_handle);
+
+    props::cleanup(doc_handle);
 
     Ok(())
 }
@@ -4075,6 +4079,8 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 #[cfg(test)]
 mod navigation_tests;
 #[cfg(test)]
+mod props_tests;
+#[cfg(test)]
 mod selection_rects_tests;
 #[cfg(test)]
 mod selection_undo_tests;
@@ -4495,8 +4501,19 @@ SFX N e ness e
         "5\nhello\nworld\nfine/N\nrun\nproject"
     }
 
+    // The spell tests share the "test" dictionary in the global
+    // SPELL_DICT_STORE / SPELL_USER_DICT_STORE and run on parallel threads;
+    // spell_check_word fails open when a concurrent test releases the dict
+    // mid-check. Serialize them.
+    static SPELL_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn spell_lock() -> std::sync::MutexGuard<'static, ()> {
+        SPELL_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     #[test]
     fn spell_test_load_dictionary() {
+        let _lock = spell_lock();
         let aff = mini_aff();
         let dic = mini_dic();
         let result = spell_load_dictionary(aff.as_bytes(), dic.as_bytes(), "test");
@@ -4507,6 +4524,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_load_empty_aff_fails() {
+        let _lock = spell_lock();
         let result = spell_load_dictionary(&[], b"hello", "test");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("aff_bytes are empty"));
@@ -4514,6 +4532,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_load_empty_dic_fails() {
+        let _lock = spell_lock();
         let result = spell_load_dictionary(b"SET UTF-8", &[], "test");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("dic_bytes are empty"));
@@ -4521,6 +4540,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_check_word_correct() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         assert!(spell_check_word("hello", "test"));
         assert!(spell_check_word("Hello", "test")); // case-insensitive
@@ -4530,6 +4550,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_check_word_misspelled() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         assert!(!spell_check_word("helo", "test"));
         assert!(!spell_check_word("xyzzy", "test"));
@@ -4538,12 +4559,14 @@ SFX N e ness e
 
     #[test]
     fn spell_test_check_word_no_dict_loaded() {
+        let _lock = spell_lock();
         // Fail-open: returns true when no dictionary is loaded.
         assert!(spell_check_word("anything", "nonexistent-lang"));
     }
 
     #[test]
     fn spell_test_suggest() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         let suggestions_json = spell_suggest("helo", "test");
         let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
@@ -4556,6 +4579,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_suggest_correct_word_empty() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         let suggestions_json = spell_suggest("hello", "test");
         let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
@@ -4565,6 +4589,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_suggest_no_dict_loaded() {
+        let _lock = spell_lock();
         let suggestions_json = spell_suggest("helo", "nonexistent-lang");
         let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
         assert!(suggestions.is_empty());
@@ -4572,6 +4597,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_check_text() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         let results_json = spell_check_text("hello wrld foo", "test");
         let results: Vec<serde_json::Value> =
@@ -4586,6 +4612,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_user_dict_override() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         // "xyzzy" is not in the dictionary.
         assert!(!spell_check_word("xyzzy", "test"));
@@ -4598,6 +4625,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_user_dict_case_insensitive() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         spell_add_to_user_dict("CustomWord", "test");
         assert!(spell_check_word("customword", "test"));
@@ -4607,6 +4635,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_release_frees_resources() {
+        let _lock = spell_lock();
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         assert!(spell_check_word("hello", "test"));
         spell_release("test").unwrap();
@@ -4616,6 +4645,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_load_hyphenation() {
+        let _lock = spell_lock();
         let patterns = "LEFTHYPHENMIN 2\nRIGHTHYPHENMIN 3\n.pr4o1j4e4c4t\n";
         let result = spell_load_hyphenation(patterns.as_bytes(), "test");
         assert!(result.is_ok());
@@ -4627,6 +4657,7 @@ SFX N e ness e
 
     #[test]
     fn spell_test_hyphenate_no_dict() {
+        let _lock = spell_lock();
         let points_json = spell_hyphenate("project", "nonexistent");
         let points: Vec<usize> = serde_json::from_str(&points_json).expect("valid JSON");
         assert!(points.is_empty());
