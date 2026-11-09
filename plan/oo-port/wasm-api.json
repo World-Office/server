@@ -1463,8 +1463,8 @@
    "Main"
   ],
   "sdk_ref_count": 2,
-  "wo_export_name": "",
-  "wo_missing": true
+  "wo_export_name": "WasmUserInfo blob (getUserInfo/setUserInfo)",
+  "wo_missing": false
  },
  {
   "name": "asc_getUserName",
@@ -1476,8 +1476,8 @@
    "Main"
   ],
   "sdk_ref_count": 9,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getUserName",
+  "wo_missing": false,
   "member_of": [
    "CRoleSettings"
   ],
@@ -1492,8 +1492,8 @@
    "LeftMenu"
   ],
   "sdk_ref_count": 5,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getUserId",
+  "wo_missing": false,
   "member_of": [
    "CRoleSettings"
   ],
@@ -1516,8 +1516,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 7,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_putUserId",
+  "wo_missing": false,
   "member_of": [
    "CRoleSettings"
   ],
@@ -1530,8 +1530,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 7,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_putUserName",
+  "wo_missing": false,
   "member_of": [
    "CRoleSettings"
   ],
@@ -1544,8 +1544,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_setDocId",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1572,8 +1572,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_setServerVersion",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1586,8 +1586,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_setToken",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1600,8 +1600,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_setUrlChanges",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1614,8 +1614,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_SetUserColor",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1628,8 +1628,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_SetUserId",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -1642,8 +1642,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 3,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_SetUserName",
+  "wo_missing": false,
   "member_of": [
    "asc_CVersionHistory"
   ],
@@ -2371,8 +2371,8 @@
    "Main"
   ],
   "sdk_ref_count": 6,
-  "wo_export_name": "",
-  "wo_missing": true
+  "wo_export_name": "asc_isSupportFeature",
+  "wo_missing": false
  },
  {
   "name": "asc_onConfirmAction",
@@ -2478,8 +2478,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 4,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getCategory",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2568,8 +2568,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 5,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getCreated",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2582,8 +2582,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 7,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getCreator",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2596,8 +2596,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 11,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getDescription",
+  "wo_missing": false,
   "member_of": [
    "CCore",
    "CCustomFunctionInfo",
@@ -2712,8 +2712,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 7,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getKeywords",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2726,8 +2726,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 5,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getLastModifiedBy",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2796,8 +2796,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 5,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getModified",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2890,8 +2890,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 7,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getSubject",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
@@ -2918,8 +2918,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 13,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getTitle",
+  "wo_missing": false,
   "member_of": [
    "CCore",
    "asc_CChartSeria",
@@ -8974,8 +8974,8 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 4,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "asc_getLanguage",
+  "wo_missing": false,
   "member_of": [
    "CCore"
   ],
