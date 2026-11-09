@@ -21,6 +21,7 @@
   --tab-file-tint: rgba(74, 108, 247, 0.14);
   --ctx-tab-tint: rgba(74, 108, 247, 0.16);
   --ruler-tick: #4a4a5e;
+  --app-bg: #1e1e28;   /* dark editor canvas (page stack backdrop) */
 }
 
 /* Light theme: toggled from the toolbar; keeps the same variable names so the
@@ -47,6 +48,7 @@ html.light {
   --tab-file-tint: rgba(55, 96, 143, 0.08);
   --ctx-tab-tint: rgba(55, 96, 143, 0.10);
   --ruler-tick: #b9b9b9;
+  --app-bg: #ececed;   /* light editor canvas (page stack backdrop) */
 }
 
 * { box-sizing: border-box; }
