@@ -220,6 +220,15 @@ over `undo` (the coauth rollback the OO UI actually calls).
 **R2 — session & document lifecycle exports** (covers `collab` 15 + `document` 72 core rows):
 `asc_setDocId`/`asc_setToken`/`asc_setServerVersion`/`asc_setUrlChanges` equivalents, doc info
 getters (core/app props), `asc_coAuthoringDisconnect`, `asc_getUserName/UserId`, `asc_isSupportFeature`.
+Landed (P1-03, `wo-renderer-wasm::session`): the four connection-field setters (+`getDocId`/… pull
+getters), identity (`asc_Set|putUserId`, `asc_Set|putUserName`, `asc_SetUserColor`,
+`asc_getUserId`, `asc_getUserName`), the `asc_CUserInfo` blob as `WasmUserInfo`
+(`getUserInfo`/`setUserInfo`), core-prop doc info as `WasmDocInfo` (`asc_getDocInfo` +
+`asc_getTitle`/`asc_getCreator`/…/`asc_getCategory` per-field getters),
+`asc_isSupportFeature` over a static capability table, and `asc_coAuthoringDisconnect`
+(state flip + `WsEvent::CoAuthoringDisconnect` push). Still open in R2: app-props
+(`asc_getAppProps`/`asc_getApplication`/`asc_getAppVersion`), statistics counters
+(`asc_getCharacters`/`asc_getWords`/…), `asc_setDocumentSha256`, `asc_CVersionHistory`.
 
 **R3 — property-blob formatting exports** (the word UI's real formatting path): one
 `set_property(kind, json)` + `get_property(kind)` pair consuming the ORM-03 serde structs

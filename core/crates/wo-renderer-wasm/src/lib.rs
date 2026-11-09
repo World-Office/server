@@ -11,6 +11,7 @@ pub mod canvas_bridge;
 pub mod events;
 pub mod layout;
 pub mod props;
+pub mod session;
 pub mod stub_model;
 
 use std::collections::BTreeMap;
@@ -35,11 +36,17 @@ use wo_spell::suggest::Suggester;
 
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
-pub use props::{get_property, set_property};
 pub use events::{emit_event, push, set_event_sink, WsEvent};
 pub use layout::{
     compute_selection_rects, flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage,
     LaidOutParagraph, LayoutEngine, PageLayout, SelectionRect,
+};
+pub use props::{get_property, set_property};
+pub use session::{
+    get_doc_id, get_doc_info, get_server_version, get_token, get_url_changes, get_user_id,
+    get_user_info, get_user_name, is_support_feature, reset_session, set_doc_id,
+    set_server_version, set_token, set_url_changes, set_user_id, set_user_info, set_user_name,
+    WasmDocInfo, WasmUserInfo,
 };
 
 /// Global store of document instances (handle → parsed OoxmlDocument).
@@ -4090,6 +4097,8 @@ mod selection_rects_tests;
 mod selection_undo_tests;
 #[cfg(test)]
 mod serialize_merge_tests;
+#[cfg(test)]
+mod session_tests;
 #[cfg(test)]
 mod table_interaction_tests;
 
