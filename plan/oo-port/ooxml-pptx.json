@@ -1,0 +1,940 @@
+[
+ {
+  "oo_class": "Presentation",
+  "oo_path": "Presentation.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Core package maps to wo-slide::model::Presentation{slides,masters,theme,slide_size} and wo-ooxml PptxPresentation; presentation.xml extras (props, embeddedFontLst, custShowLst, sectionLst, photoAlbum, kinsoku) are dropped."
+ },
+ {
+  "oo_class": "SldSz",
+  "oo_path": "Presentation.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "SlideSize{cx,cy EMU} round-trips via serializer build_presentation_xml; standard()/widescreen() presets in wo-slide model.rs; x2t maps to a slide_size name."
+ },
+ {
+  "oo_class": "NotesSz",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Notes page size unmodeled; there is no notes render path to consume it."
+ },
+ {
+  "oo_class": "Kinsoku",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "CJK line-break rule table dropped; wo text layout has no hook that could honor it yet."
+ },
+ {
+  "oo_class": "PhotoAlbum",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "photoAlbum part (bulk image insertion settings) unmodeled."
+ },
+ {
+  "oo_class": "SectionLst",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Slide sections (grouping + zoom targets) absent; deck outline cannot group slides."
+ },
+ {
+  "oo_class": "CustShow/CustShowLst",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Custom shows (subset slide runs) unmodeled; ShowPr customShowId link also absent."
+ },
+ {
+  "oo_class": "EmbeddedFont/EmbeddedFontDataId",
+  "oo_path": "Presentation/PresentationChildElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Embedded fonts not extracted or registered; bytes only survive via wo-x2t PptxExtraPart pass-through."
+ },
+ {
+  "oo_class": "Slide",
+  "oo_path": "Slide.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "p:sld -> wo-slide::model::Slide and wo-ooxml Slide{id,name,layout_id,master_id,shapes,notes,transition,animations,timing_raw,background}."
+ },
+ {
+  "oo_class": "CSld",
+  "oo_path": "Slide.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Common slide data: spTree + bg mapped; clrMapOvr group and slide-level text defaults not carried."
+ },
+ {
+  "oo_class": "ClrMapOvr",
+  "oo_path": "Slide.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Color-map override unread anywhere; inheritance.rs therefore resolves theme colors without override maps (approximation)."
+ },
+ {
+  "oo_class": "Transition (slide-level)",
+  "oo_path": "Slide.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "SlideTransition{effect: TransitionEffect (39 kinds), duration, advance_mode, advance_timing}; parser maps 36 element names; per-effect params (dir/orient/spokes) and sound are dropped."
+ },
+ {
+  "oo_class": "Timing (slide-level)",
+  "oo_path": "Slide.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Preserved verbatim as Slide.timing_raw XML string (parser.rs parse_pptx_timing_raw) for round-trip; no typed DAG — see Logic/Timing rows."
+ },
+ {
+  "oo_class": "SlideLayout",
+  "oo_path": "SlideLayout.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "wo-slide SlideLayout{id,name,layout_type,shapes,placeholder_types}; layout lookup by id/name in inheritance.rs get_layout()."
+ },
+ {
+  "oo_class": "SlideMaster",
+  "oo_path": "SlideMaster.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "wo-slide SlideMaster{id,name,slide_layouts}; master resolution in inheritance.rs get_master() with slide.master_id -> layout's master fallback."
+ },
+ {
+  "oo_class": "TxStyles",
+  "oo_path": "SlideMaster.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Master title/body/other text style lists unmodeled; text on master-styled decks falls back to DocxParagraph defaults."
+ },
+ {
+  "oo_class": "HF",
+  "oo_path": "SlideMaster.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Header/footer visibility flags (dt/ftr/sldNum) unmodeled on slides, layouts and masters."
+ },
+ {
+  "oo_class": "NotesSlide",
+  "oo_path": "NotesSlide.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Notes captured as Slide.notes plain string (parse_pptx_notes); notes shapes, notes-master inheritance and notes background lost; part bytes kept by x2t extra-parts."
+ },
+ {
+  "oo_class": "NotesMaster",
+  "oo_path": "NotesMaster.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Notes master part unmodeled; notes text cannot inherit styling."
+ },
+ {
+  "oo_class": "HandoutMaster",
+  "oo_path": "HandoutMaster.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Handout master unmodeled; handout print layout absent."
+ },
+ {
+  "oo_class": "Comment",
+  "oo_path": "Comments.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Modern threaded comments unmodeled; bytes pass through wo-x2t PptxExtraPart only."
+ },
+ {
+  "oo_class": "CommentReply/CommentReplyList",
+  "oo_path": "Comments.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Reply chains absent on the Rust side."
+ },
+ {
+  "oo_class": "SlideMoniker/DrawingMoniker/TextCharRangeMoniker/AnyMonikerList",
+  "oo_path": "Comments.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Moniker addressing (part+shape+text-range pointers) has no Rust counterpart; also needed by animation targets and review."
+ },
+ {
+  "oo_class": "CommentAuthor/Authors",
+  "oo_path": "CommentAuthors.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Author identities (name/initials/id) lost on the model path."
+ },
+ {
+  "oo_class": "TableStyles",
+  "oo_path": "TableStyles.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "tableStyles.xml unmodeled; WO TableShape cells carry explicit fill_color only."
+ },
+ {
+  "oo_class": "PresProps",
+  "oo_path": "PresProps.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Presentation-wide defaults (rtl, firstSlideNum, htmlPublishPr) dropped."
+ },
+ {
+  "oo_class": "ShowPr",
+  "oo_path": "ShowPr/PresentationPr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Slideshow settings: present/browse/kiosk mode, sldAll/sldRg ranges, penClr — absent."
+ },
+ {
+  "oo_class": "PrintPr",
+  "oo_path": "ShowPr/PresentationPr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Print defaults (what/how to print slides, handouts, notes) absent; WO print path renders slides only."
+ },
+ {
+  "oo_class": "ViewProps",
+  "oo_path": "ViewProps.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Normal/Sorter/Outline/Notes/Slide view state (scale, origin, guides, restored panes) unmodeled; WO keeps no persisted slide view state."
+ },
+ {
+  "oo_class": "Theme",
+  "oo_path": "Theme.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "wo-slide Theme{ColorScheme, FontScheme} covers clr+font; FmtScheme (fill/ln/effect style tables), clrMap and extraClrSchemeLst absent — shape styleRef lookup is therefore impossible."
+ },
+ {
+  "oo_class": "ClrScheme",
+  "oo_path": "Theme/ClrScheme.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "ColorScheme with ThemeColor entries in wo-slide model.rs."
+ },
+ {
+  "oo_class": "FontScheme",
+  "oo_path": "Theme/FontScheme.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Major/minor latin fonts carried as ThemeFont; per-script supplemental font list (FontCollection/SupplementalFont) absent."
+ },
+ {
+  "oo_class": "FmtScheme",
+  "oo_path": "Theme/FmtScheme.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Theme fill/line/effect style tables — the basis of every styleRef idx lookup — absent; themed shapes must be flattened to explicit fills."
+ },
+ {
+  "oo_class": "ThemeElements",
+  "oo_path": "Theme/ThemeElements.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "clrScheme+fontScheme mapped; fmtScheme slot missing (see row above)."
+ },
+ {
+  "oo_class": "ExtraClrScheme/ClrMap (theme)",
+  "oo_path": "Theme/ExtraClrScheme.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Extra color schemes and theme color maps dropped (byte pass-through only)."
+ },
+ {
+  "oo_class": "Visio theme elements (Scheme/LineStyles/FillStyles/FontStyles/VariationStyleScheme...)",
+  "oo_path": "Theme/VisioThemeElements.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Visio-theme compatibility layer; no WO counterpart planned for slides."
+ },
+ {
+  "oo_class": "SpTree",
+  "oo_path": "Logic/SpTree.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "parse_pptx_shapes iterates DIRECT children of p:spTree only (sp/pic/tbl/cxnSp); nested p:grpSp groups and their shapes are silently dropped on parse."
+ },
+ {
+  "oo_class": "SpTreeElem",
+  "oo_path": "Logic/SpTreeElem.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "4 of ~8 element families parsed; graphicFrame(chart/ole), grpSp, contentPart unhandled."
+ },
+ {
+  "oo_class": "GrpSpPr",
+  "oo_path": "Logic/GrpSpPr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Group transform / child-offset scaling unmodeled; grouped decks lose grouped shapes entirely."
+ },
+ {
+  "oo_class": "Xfrm",
+  "oo_path": "Logic/Xfrm.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "Bounds{x,y,cx,cy} EMU + rotation; x2t WoShapeData carries x/y/width/height/rotation/zIndex."
+ },
+ {
+  "oo_class": "SpPr",
+  "oo_path": "Logic/SpPr.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "xfrm/prstGeom/fill/line subset carried; scene3d/sp3d/effectDag and style refs dropped."
+ },
+ {
+  "oo_class": "Shape",
+  "oo_path": "Logic/Shape.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "p:sp -> AutoShape{preset_type} or PlaceholderShape; custGeom and styleRef unpopulated (see those rows)."
+ },
+ {
+  "oo_class": "PrstGeom",
+  "oo_path": "Logic/PrstGeom.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "wo-slide geometry.rs PresetShapeType catalog (~187 presets, categories, adjust counts, guide formulas) — the port of CPPTShape's preset table."
+ },
+ {
+  "oo_class": "CustGeom",
+  "oo_path": "Logic/CustGeom.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "geometry.rs Path/GuideFormula/PathCommand model the custGeom DSL, but wo-ooxml's parser never populates it from XML — custom geometry degrades to a rect."
+ },
+ {
+  "oo_class": "CxnSp",
+  "oo_path": "Logic/CxnSp.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "ConnectorShape + ConnectorShapeType (straightConnector1, bentConnector2-5, curvedConnector2-4) with start/end arrowheads."
+ },
+ {
+  "oo_class": "Pic",
+  "oo_path": "Logic/Pic.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "PictureShape{image_data,image_extension}; x2t WoImageData wraps a data: URL."
+ },
+ {
+  "oo_class": "NvPicPr/CNvPicPr",
+  "oo_path": "Logic/NvPicPr.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Ids preserved; crop-preference flags (preferTrueSize etc.) dropped."
+ },
+ {
+  "oo_class": "BlipFill",
+  "oo_path": "Logic/Fills/BlipFill.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Embedded image bytes round-trip; srcRect crop and tile/stretch fill modes lost."
+ },
+ {
+  "oo_class": "Blip",
+  "oo_path": "Logic/Fills/Blip.h",
+  "wo_coverage": "partial",
+  "wo_map": "x2t",
+  "notes": "Media parts byte-preserved via PptxExtraPart; blip color effects (alphaModFix, duotone) dropped."
+ },
+ {
+  "oo_class": "GraphicFrame",
+  "oo_path": "Logic/GraphicFrame.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Table frames parsed into TableShape; chart frames skipped at parse even though wo-slide ChartRef and x2t WoShapeData.chart exist as target models; oleObject absent."
+ },
+ {
+  "oo_class": "Hyperlink",
+  "oo_path": "Logic/Hyperlink.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Slide run hyperlinks not parsed (hyperlink_rid handling is DOCX-only in wo-ooxml parser.rs)."
+ },
+ {
+  "oo_class": "Controls",
+  "oo_path": "Logic/Controls.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "ActiveX / form controls dropped."
+ },
+ {
+  "oo_class": "NvPr/CNvPr",
+  "oo_path": "Logic/NvPr.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "Ids/names preserved; inheritance.rs shape_id() and WoShapeData.id key on them."
+ },
+ {
+  "oo_class": "Ph",
+  "oo_path": "Logic/Ph.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "placeholder_type string mapped; idx-based matching of multiple same-type placeholders not honored — inheritance.rs only matches inherited shapes by id."
+ },
+ {
+  "oo_class": "TxBody",
+  "oo_path": "Logic/TxBody.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "TextBody{paragraphs: Vec<DocxParagraph>} reused from the word model for text boxes, auto shapes, placeholders and table cells."
+ },
+ {
+  "oo_class": "BodyPr",
+  "oo_path": "Logic/BodyPr.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Anchor/insets/wrap/autofit unmodeled — slide text layout cannot reproduce normAutofit fontScale shrink or vertical anchoring."
+ },
+ {
+  "oo_class": "Paragraph",
+  "oo_path": "Logic/Paragraph.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "DocxParagraph (alignment/spacing/indent/level) reused; pPr defRPr inheritance chain from layout/master absent."
+ },
+ {
+  "oo_class": "Run",
+  "oo_path": "Logic/Runs/Run.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "DocxRun (bold/italic/underline/size/color/font) reused; slide-specific run attrs (kern, caps, spc) partial."
+ },
+ {
+  "oo_class": "RunProperties",
+  "oo_path": "Logic/RunProperties.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "latin/ea/cs font splits collapsed to one font; highlight and run-direction flags partial."
+ },
+ {
+  "oo_class": "Fld",
+  "oo_path": "Logic/Runs/Fld.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Text fields (slidenum, datetime, footer) dropped — dynamic slide numbering impossible."
+ },
+ {
+  "oo_class": "Br",
+  "oo_path": "Logic/Runs/Br.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Soft line breaks inside slide text bodies not preserved."
+ },
+ {
+  "oo_class": "COMath/COMathPara",
+  "oo_path": "Logic/Runs/COMath.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "OMML math in slides unsupported (same gap as the word side)."
+ },
+ {
+  "oo_class": "Bullets (BuChar/BuAutoNum/BuNone/BuClr/BuSzPct/BuSzPts/BuFontTx/BuBlip)",
+  "oo_path": "Logic/Bullets",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "No buChar/buAutoNum read anywhere in the pptx text path (verified: 0 matches for buChar|buAutoNum in wo-ooxml parser.rs); parsed deck bullets collapse to plain paragraphs."
+ },
+ {
+  "oo_class": "TextListStyle",
+  "oo_path": "Logic/TextListStyle.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Per-part default list styles absent."
+ },
+ {
+  "oo_class": "TextParagraphPr",
+  "oo_path": "Logic/TextParagraphPr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Paragraph default-properties chain (defRPr / lvl overrides) absent."
+ },
+ {
+  "oo_class": "Tab",
+  "oo_path": "Logic/Tab.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Tab stops in slide text dropped."
+ },
+ {
+  "oo_class": "TextSpacing",
+  "oo_path": "Logic/TextSpacing.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "spcPct/spcPts ride DocxParagraph spacing where present."
+ },
+ {
+  "oo_class": "TextFit",
+  "oo_path": "Logic/TextFit.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "normAutofit/spAutoFit/noAutofit modeling absent — text overflow rendering diverges on dense decks."
+ },
+ {
+  "oo_class": "UniFill",
+  "oo_path": "Logic/UniFill.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Fill enum = Solid|Gradient only; noFill is expressed as None Option; pattFill/blipFill/grpFill variants absent."
+ },
+ {
+  "oo_class": "SolidFill",
+  "oo_path": "Logic/Fills/SolidFill.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "Fill::Solid(hex)."
+ },
+ {
+  "oo_class": "GradFill",
+  "oo_path": "Logic/Fills/GradFill.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "GradientFill{kind Linear/Radial, stops, angle} with GradientStop{position,color}."
+ },
+ {
+  "oo_class": "PattFill",
+  "oo_path": "Logic/Fills/PattFill.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Pattern fills lost — common on template master backgrounds."
+ },
+ {
+  "oo_class": "GrpFill",
+  "oo_path": "Logic/Fills/GrpFill.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Group-inherited fills absent (groups themselves are dropped)."
+ },
+ {
+  "oo_class": "Tile/Stretch",
+  "oo_path": "Logic/Fills/Tile.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Picture fill modes absent."
+ },
+ {
+  "oo_class": "UniColor/ColorBase",
+  "oo_path": "Logic/UniColor.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Colors carried as plain hex strings; the color-context pipeline (per-color modifiers) absent."
+ },
+ {
+  "oo_class": "SrgbClr",
+  "oo_path": "Logic/Colors/SrgbClr.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "Direct hex colors preserved everywhere."
+ },
+ {
+  "oo_class": "SchemeClr",
+  "oo_path": "Logic/Colors/SchemeClr.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "ThemeColor/ColorScheme exist in the model, but nothing resolves schemeClr references through the theme: inheritance.rs returns background None and shape fills are stored explicit."
+ },
+ {
+  "oo_class": "SysClr/PrstClr/StyleClr",
+  "oo_path": "Logic/Colors/SysClr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "System/preset/style-referenced colors unsupported."
+ },
+ {
+  "oo_class": "ColorModifier",
+  "oo_path": "Logic/Colors/ColorModifier.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "alpha/tint/shade/lumMod/lumOff transforms absent — themed color variants render at base color."
+ },
+ {
+  "oo_class": "EffectLst/UniEffect",
+  "oo_path": "Logic/EffectLst.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "EffectList{shadow,glow,reflection} is a fixed 3-slot struct, not a composable effect list."
+ },
+ {
+  "oo_class": "OuterShdw/PrstShdw",
+  "oo_path": "Logic/Effects/OuterShdw.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "ShadowEffect{dx,dy,blur_radius,color,opacity}."
+ },
+ {
+  "oo_class": "Glow",
+  "oo_path": "Logic/Effects/Glow.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "GlowEffect{radius,color,opacity}."
+ },
+ {
+  "oo_class": "Reflection",
+  "oo_path": "Logic/Effects/Reflection.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "ReflectionEffect + ReflectionDirection."
+ },
+ {
+  "oo_class": "InnerShdw",
+  "oo_path": "Logic/Effects/InnerShdw.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "ShadowEffect has no inner/outer discriminator — inner shadows render as outer."
+ },
+ {
+  "oo_class": "Blur/SoftEdge",
+  "oo_path": "Logic/Effects/Blur.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Shape blur/soft-edge absent."
+ },
+ {
+  "oo_class": "Color effects (Duotone/ClrChange/ClrRepl/AlphaRepl/AlphaMod/AlphaBiLevel/AlphaCeiling/AlphaFloor/AlphaInv/AlphaOutset/AlphaModFix/BiLevel/Grayscl/TintEffect/LumEffect/HslEffect/Blend/FillOverlay/RelOff/XfrmEffect/FillEffect)",
+  "oo_path": "Logic/Effects",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Raster color-effect pipeline absent; wo-raster has no such operations yet."
+ },
+ {
+  "oo_class": "Scene3d/Sp3d/Bevel/Camera/LightRig/Cell3D",
+  "oo_path": "Logic/Scene3d.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "3-D scene stack absent — 3-D styled shapes flatten to flat fills."
+ },
+ {
+  "oo_class": "TransitionBase/Transition/TransitionSerialize/EmptyTransition",
+  "oo_path": "Logic/Transitions",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "OO's class-per-effect hierarchy collapses into one TransitionEffect enum (39 kinds) + SlideTransition params; serialize path re-emits element names."
+ },
+ {
+  "oo_class": "SideDirectionTransition/EightDirectionTransition/CornerDirectionTransition",
+  "oo_path": "Logic/Transitions",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "dir (u/d/l/r) attributes dropped — push/wipe/cover/uncover always animate the default direction."
+ },
+ {
+  "oo_class": "SplitTransition",
+  "oo_path": "Logic/Transitions/SplitTransition.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "orient (horz/vert) attribute dropped."
+ },
+ {
+  "oo_class": "ZoomTransition",
+  "oo_path": "Logic/Transitions/ZoomTransition.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "In/out direction attribute dropped."
+ },
+ {
+  "oo_class": "WheelTransition",
+  "oo_path": "Logic/Transitions/WheelTransition.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "spokes attribute dropped."
+ },
+ {
+  "oo_class": "SndAc/StSnd",
+  "oo_path": "Logic/Transitions/SndAc.h",
+  "wo_coverage": "missing",
+  "wo_map": "presentation_model",
+  "notes": "Transition sounds dropped; WoSlide.transition_sound_enabled exists in the x2t JSON bridge but carries no media and is not wired to the wo-slide SlideTransition."
+ },
+ {
+  "oo_class": "OptionalBlackTransition",
+  "oo_path": "Logic/Transitions/OptionalBlackTransition.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "showBlackOnEnd flag dropped."
+ },
+ {
+  "oo_class": "CTn",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Typed time-node DAG unmodeled; only the timing_raw XML string survives round-trip."
+ },
+ {
+  "oo_class": "Seq",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "animation.rs TimelineBuilder re-models the main sequence with onClick/withPrevious/afterPrevious triggers (AnimationTrigger) and a player."
+ },
+ {
+  "oo_class": "Par",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Parallel time nodes unmodeled — simultaneous effects serialize sequentially."
+ },
+ {
+  "oo_class": "TnLst/ChildTnLst",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Nested timelines unmodeled; AnimationData is a flat per-slide list."
+ },
+ {
+  "oo_class": "Tav/TavLst",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "TimelineEntry computes concrete start/end times and progress (is_active_at/compute_progress)."
+ },
+ {
+  "oo_class": "Cond/CondLst",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Interactive triggers (start on click of specific shape, on media end) reduced to 3 start modes."
+ },
+ {
+  "oo_class": "Set",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Property-set animations (visibility/style flip) absent."
+ },
+ {
+  "oo_class": "AnimEffect/AnimMotion/AnimScale/AnimClr/AnimRot",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "slide",
+  "notes": "Flattened into AnimationData.effect name strings; per-frame parameter animation absent (animation.rs phases approximate)."
+ },
+ {
+  "oo_class": "SpTgt/GraphicEl/TxEl",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "AnimationData.target carries the shape id; text-range (TxEl) and diagram targets lost."
+ },
+ {
+  "oo_class": "BldP/BldSub/BldLst/BldGraphic/BldDgm/BldOleChart",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Build steps (progressive paragraph/diagram/chart reveal) absent."
+ },
+ {
+  "oo_class": "Iterate/Tmpl/TmplLst/Excl",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Iterated/tamplated/exclusive timing nodes absent."
+ },
+ {
+  "oo_class": "Audio/Video/CMediaNode",
+  "oo_path": "Logic/Timing",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Media time nodes absent; media shapes themselves unsupported (see Media row)."
+ },
+ {
+  "oo_class": "Table",
+  "oo_path": "Logic/Table/Table.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "TableShape{columns,rows} parsed from graphicFrame/graphic > tbl."
+ },
+ {
+  "oo_class": "TableRow/TableCol",
+  "oo_path": "Logic/Table/TableRow.h",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "TableColumn.width / TableRow.height EMU."
+ },
+ {
+  "oo_class": "TableCell",
+  "oo_path": "Logic/Table/TableCell.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "text_body + row_span/col_span + fill_color; margins, vertical anchor and borders absent."
+ },
+ {
+  "oo_class": "TableCellProperties",
+  "oo_path": "Logic/Table/TableCellProperties.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Cell marL/marR/anchor/vert/fill structure unmodeled."
+ },
+ {
+  "oo_class": "TcBdr",
+  "oo_path": "Logic/TcBdr.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Cell borders dropped — tables render without rules (the most common visual complaint for parsed decks)."
+ },
+ {
+  "oo_class": "TableProperties",
+  "oo_path": "Logic/Table/TableProperties.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "firstRow/bandRow/bandCol flags and tableStyleId dropped."
+ },
+ {
+  "oo_class": "TableStyle/TablePartStyle/TableBgStyle",
+  "oo_path": "Logic/TableStyle.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "The whole tableStyles.xml styling pipeline (style id -> band/first-row/part styles) is absent."
+ },
+ {
+  "oo_class": "MediaFile/AudioCD/WavAudioFile",
+  "oo_path": "Logic/Media",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Audio/video shapes unsupported; bytes pass through PptxExtraPart but nothing renders or plays them."
+ },
+ {
+  "oo_class": "SmartArt (data/layout/quickStyle/colors)",
+  "oo_path": "Logic/SmartArt.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "SmartArtShape{diagram_type,data_layout} labels only; dgm data/layout/colors parts unmodeled — SmartArt renders as a labeled stub, not the diagram."
+ },
+ {
+  "oo_class": "Path2D family (PathBase/MoveTo/LineTo/ArcTo/QuadBezTo/CubicBezTo/Close)",
+  "oo_path": "Logic/Path2D",
+  "wo_coverage": "full",
+  "wo_map": "slide",
+  "notes": "geometry.rs PathCommand + Path model the path DSL; XML wiring pending (same gap as CustGeom)."
+ },
+ {
+  "oo_class": "HeadingVariant (7 classes)",
+  "oo_path": "Logic/HeadingVariant.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Localized heading-text variants for outline/app.xml exports absent."
+ },
+ {
+  "oo_class": "CDrawingConverter",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "OO's flowchart/vector -> DrawingML conversion pipeline (SpTreeElem + CXmlWriter + CImageManager) has no Rust counterpart; belongs in a new wo-drawing crate (or wo-slide::drawing) reusing geometry.rs/ops.rs."
+ },
+ {
+  "oo_class": "CShape/CPPTShape",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "The preset shape catalog is ported as geometry.rs PresetShapeType incl. adjust guides; converter-specific per-shape render code is not needed by WO."
+ },
+ {
+  "oo_class": "CDocxSerializer",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Drawing -> DOCX embed path absent (no flowchart-to-word insertion in WO)."
+ },
+ {
+  "oo_class": "CBinaryFileReader/CBinaryFileWriter",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Legacy binary .ppt (OO .bin) reader absent — hard gap for .ppt import; x2t-class work."
+ },
+ {
+  "oo_class": "CImageManager2",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "partial",
+  "wo_map": "x2t",
+  "notes": "WO keeps images byte-exact via PptxExtraPart; no dedup/resize/format conversion, so heavily-reused media is stored redundantly."
+ },
+ {
+  "oo_class": "CCSS/CStylesCSS",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "HTML/CSS drawing export surface absent in WO."
+ },
+ {
+  "oo_class": "COfficeFontPicker",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Font substitution/availability probing for conversions absent (wo-fonts covers render-side only)."
+ },
+ {
+  "oo_class": "CPPTXFile/Document",
+  "oo_path": "DrawingConverter/ASCOfficePPTXFile.h",
+  "wo_coverage": "partial",
+  "wo_map": "x2t",
+  "notes": "Package open/parse/write ~= router.rs pptx<->wo-presentation pair + wo-ooxml parse_pptx/serialize_pptx + PptxExtraPart re-zip; legacy .ppt bridge and EditorBin export missing."
+ },
+ {
+  "oo_class": "IRenderer/CXmlNode/CXmlWriter/CContentTypes/CCommonRels/CBinData",
+  "oo_path": "DrawingConverter/ASCOfficeDrawingConverter.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "Infra classes intentionally not ported 1:1 — the zip crate plus String/XML template builders in wo-ooxml serializer.rs (build_pptx_content_types, build_pptx_*_rels) cover the same duties."
+ },
+ {
+  "oo_class": "FileContainer/FileMap",
+  "oo_path": "FileContainer.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "ZIP container traversal replaced by the zip crate in wo-x2t converters.rs; no 1:1 class needed."
+ },
+ {
+  "oo_class": "FileFactory/CRelationShip",
+  "oo_path": "FileFactory.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "Part dispatch replaced by router.rs format registration + content-type sniffing."
+ },
+ {
+  "oo_class": "WrapperFile/WrapperWritingElement/WritingVector",
+  "oo_path": "WrapperFile.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "Template-based serialization in wo-ooxml serializer.rs replaces the writer-element framework."
+ },
+ {
+  "oo_class": "Namespaces/Namespace",
+  "oo_path": "Namespaces.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "Hardcoded xmlns in serializer templates; roxmltree namespace checks (P_NS/A_NS) in the parser."
+ },
+ {
+  "oo_class": "App",
+  "oo_path": "App.h",
+  "wo_coverage": "partial",
+  "wo_map": "x2t",
+  "notes": "docProps/app.xml (slide-title list, heading pairs) not regenerated on export; docProps/core.xml is covered by wo-ooxml CoreProperties."
+ },
+ {
+  "oo_class": "Folder/Document",
+  "oo_path": "Folder.h",
+  "wo_coverage": "full",
+  "wo_map": "x2t",
+  "notes": "Deck open/edit/save cycle = PptxToWoPresentationConverter + WoPresentationToPptxConverter (router.rs pair, incl. odp round-trip)."
+ },
+ {
+  "oo_class": "LegacyDiagramText",
+  "oo_path": "LegacyDiagramText.h",
+  "wo_coverage": "missing",
+  "wo_map": "NONE",
+  "notes": "Legacy diagram text recovery absent."
+ },
+ {
+  "oo_class": "Limit classes (TLRestart/TLNodeFillType/TextWrap/BaseLimit)",
+  "oo_path": "Limit",
+  "wo_coverage": "partial",
+  "wo_map": "slide",
+  "notes": "Value-limit tables play out as plain enums per feature (AnimationTrigger, ConnectorShapeType, ...); bodyPr TextWrap specifically is unmodeled (see BodyPr row)."
+ }
+]
