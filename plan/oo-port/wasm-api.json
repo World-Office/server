@@ -1451,8 +1451,8 @@
    "Main"
   ],
   "sdk_ref_count": 1,
-  "wo_export_name": "",
-  "wo_missing": true
+  "wo_export_name": "coAuthoringDisconnect",
+  "wo_missing": false
  },
  {
   "name": "asc_CUserInfo",
