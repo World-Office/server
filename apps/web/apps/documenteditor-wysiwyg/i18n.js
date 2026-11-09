@@ -2212,7 +2212,18 @@
     if (!root || typeof root.querySelectorAll !== "function") return false;
     root.querySelectorAll("[data-i18n]").forEach(function (el) {
       const key = el.getAttribute("data-i18n");
-      if (key) el.textContent = t(key);
+      if (key) {
+        const text = t(key);
+        // Preserve child elements (SVG pictograms): only replace text nodes,
+        // keep element children intact. Re-append translated text after SVGs.
+        if (el.childElementCount > 0) {
+          const hadCaret = el.textContent.includes("▾");
+          el.childNodes.forEach(function (n) { if (n.nodeType === 3) n.remove(); });
+          el.appendChild(document.createTextNode(" " + text + (hadCaret ? " ▾" : "")));
+        } else {
+          el.textContent = text;
+        }
+      }
     });
     I18N_ATTRS.forEach(function (attr) {
       const marker = "data-i18n-" + attr;

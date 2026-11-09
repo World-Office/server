@@ -10109,6 +10109,16 @@
     const b = document.getElementById(id);
     if (b) b.addEventListener("click", () => document.execCommand(id === "btn-cut" ? "cut" : "copy"));
   }
+  // OO parity: suppress the native browser context menu everywhere in the
+  // app shell (toolbar, ribbon, statusbar, main backdrop, right-panel). The
+  // custom #ctx-menu handles right-click inside #editor (next block). This
+  // mirrors OnlyOffice, which shows its own context menu on the document
+  // and suppresses the native menu on all chrome.
+  document.addEventListener("contextmenu", (e) => {
+    if (e.target.closest("#editor")) return; // #editor has its own handler
+    if (e.target.closest("input, textarea, select")) return; // allow native in form fields
+    e.preventDefault();
+  });
   const ctxMenu = document.getElementById("ctx-menu");
   if (ctxMenu) {
     const editorEl = document.getElementById("editor");

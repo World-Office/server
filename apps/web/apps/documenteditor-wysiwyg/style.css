@@ -801,6 +801,13 @@ select option { background: var(--bg); color: var(--text); }
 .rb-grid #line-spacing.bare { width: 46px; height: 24px; }
 .rb-grid .menu-trigger.caret-btn { height: 24px; line-height: 24px; min-width: 16px; }
 .rb-grid .menu-trigger.caret-btn::before { top: 3px; bottom: 3px; }
+/* Pictogram + label carets (Layout/Insert/View dropdowns): icon 14px,
+   4px gap, then the text label. Matches OO's icon+text dropdown triggers. */
+.menu-trigger.caret-btn svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.menu-trigger.caret-btn:has(svg) { display: inline-flex; align-items: center; gap: 4px; min-width: auto; padding: 0 6px; font-size: 11px; line-height: 1; height: 46px; }
+/* Text-only ribbon buttons (Layout row 2): icon + label inline. */
+.ribbon-page button:not(.rb):not(.caret-btn):not(.menu-trigger):not(.ribbon-tab):not(.titlebar-fs) svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.ribbon-page button:not(.rb):not(.caret-btn):not(.menu-trigger):not(.ribbon-tab):not(.titlebar-fs):has(svg) { display: inline-flex; align-items: center; gap: 4px; }
 /* Right-edge cluster: two 24px elset cols side by side (rb-grid would stack
    them — OO's replace/select-all pattern is a horizontal pair of pairs). */
 .ribbon-row .rb-edge.rb-grid { flex-direction: row; align-items: center; gap: 8px; }
@@ -1408,10 +1415,11 @@ main {
   position: relative;
   flex: 0 0 auto;
   left: 2px; /* OO page sits at x325-1119 */
-  /* ponytail: overflow visible (not hidden) so typing past a page bottom in
-     the live view is never clipped. A mutation-driven reflow (re-paginate on
-     input) is the upgrade that clips properly. */
-  overflow: visible;
+  /* Content clipped to the page boundary — paginateView() re-paginates on
+     input via MutationObserver (600ms debounce), so overflow is temporary
+     and never leaves the page edge. overflow: visible left content spilling
+     below the border, which looked broken at the last page. */
+  overflow: hidden;
 }
 
 .wo-page > .wo-cont {
