@@ -1,0 +1,2704 @@
+[
+ {
+  "name": "asc_onCoAuthoringDisconnect",
+  "domain": "coauth",
+  "ui_register_sites": 27,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "top-registered event (27 sites) — session-loss UX"
+ },
+ {
+  "name": "asc_onFocusObject",
+  "domain": "focus",
+  "ui_register_sites": 18,
+  "wo_equivalent": "dom: addEventListener('blur'|'focus') exists in editor.js shell, not wired to editor state",
+  "notes": "object/chart/control focus — drives toolbar context in web-apps"
+ },
+ {
+  "name": "asc_onDownloadUrl",
+  "domain": "document",
+  "ui_register_sites": 8,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "export/download URL handoff"
+ },
+ {
+  "name": "asc_onTextLanguage",
+  "domain": "proofing",
+  "ui_register_sites": 8,
+  "wo_equivalent": "wasm pull: spell_suggest/spell_check_word/spell_check_text exports exist; no variants push",
+  "notes": "proofing language of selection (8 sites)"
+ },
+ {
+  "name": "asc_onHideContentControlsActions",
+  "domain": "focus",
+  "ui_register_sites": 7,
+  "wo_equivalent": "missing: add WsEvent::HideContentControlsActions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:4+cell:4+slide:4; ui-register sites: 7"
+ },
+ {
+  "name": "asc_onImgWrapStyleChanged",
+  "domain": "selection",
+  "ui_register_sites": 7,
+  "wo_equivalent": "missing: add WsEvent::ImgWrapStyleChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 7"
+ },
+ {
+  "name": "asc_onShowContentControlsActions",
+  "domain": "focus",
+  "ui_register_sites": 7,
+  "wo_equivalent": "missing: add WsEvent::ShowContentControlsActions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:3+cell:3+slide:3; ui-register sites: 7"
+ },
+ {
+  "name": "asc_onUpdateOFormRoles",
+  "domain": "other",
+  "ui_register_sites": 6,
+  "wo_equivalent": "missing: add WsEvent::UpdateOFormRoles frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 6"
+ },
+ {
+  "name": "asc_onUpdateSignatures",
+  "domain": "other",
+  "ui_register_sites": 6,
+  "wo_equivalent": "missing: add WsEvent::UpdateSignatures frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 6"
+ },
+ {
+  "name": "asc_onZoomChange",
+  "domain": "zoom",
+  "ui_register_sites": 6,
+  "wo_equivalent": "missing: add WsEvent::ZoomChange frame (no consumer in editor.js today)",
+  "notes": "older zoom name alongside asc_onZoomChanged — keep both in enum"
+ },
+ {
+  "name": "asc_onContextMenu",
+  "domain": "selection",
+  "ui_register_sites": 5,
+  "wo_equivalent": "dom: addEventListener('contextmenu') + CustomEvent 'ctx-menu' (21 sites in editor.js)",
+  "notes": "sdk fire sites word:1+cell:3+slide:1; ui-register sites: 5"
+ },
+ {
+  "name": "asc_onError",
+  "domain": "document",
+  "ui_register_sites": 5,
+  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "notes": "error funnel — 41 fire sites in word bundle alone"
+ },
+ {
+  "name": "asc_onLockDocumentProps",
+  "domain": "coauth",
+  "ui_register_sites": 5,
+  "wo_equivalent": "missing: add WsEvent::LockDocumentProps frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 5"
+ },
+ {
+  "name": "asc_onUnLockDocumentProps",
+  "domain": "coauth",
+  "ui_register_sites": 5,
+  "wo_equivalent": "missing: add WsEvent::UnLockDocumentProps frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 5"
+ },
+ {
+  "name": "asc_onAuthParticipantsChanged",
+  "domain": "coauth",
+  "ui_register_sites": 4,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
+ },
+ {
+  "name": "asc_onCanCopyCut",
+  "domain": "selection",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::CanCopyCut frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; ui-register sites: 4"
+ },
+ {
+  "name": "asc_onCanRedo",
+  "domain": "document",
+  "ui_register_sites": 4,
+  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "notes": "history can-redo state"
+ },
+ {
+  "name": "asc_onCanUndo",
+  "domain": "document",
+  "ui_register_sites": 4,
+  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "notes": "history can-undo state"
+ },
+ {
+  "name": "asc_onChangeViewerTargetType",
+  "domain": "view",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::ChangeViewerTargetType frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
+ },
+ {
+  "name": "asc_onCountPages",
+  "domain": "view",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::CountPages frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
+ },
+ {
+  "name": "asc_onCurrentPage",
+  "domain": "view",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::CurrentPage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 4"
+ },
+ {
+  "name": "asc_onDocumentName",
+  "domain": "document",
+  "ui_register_sites": 4,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
+ },
+ {
+  "name": "asc_onEndAction",
+  "domain": "document",
+  "ui_register_sites": 4,
+  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
+ },
+ {
+  "name": "asc_onParaSpacingLine",
+  "domain": "selection",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::ParaSpacingLine frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 4"
+ },
+ {
+  "name": "asc_onParaStyleName",
+  "domain": "selection",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::ParaStyleName frame (no consumer in editor.js today)",
+  "notes": "current paragraph style name under selection"
+ },
+ {
+  "name": "asc_onStartUpdateExternalReference",
+  "domain": "table",
+  "ui_register_sites": 4,
+  "wo_equivalent": "missing: add WsEvent::StartUpdateExternalReference frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; ui-register sites: 4"
+ },
+ {
+  "name": "asc_onAddChartStylesPreview",
+  "domain": "chart",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::AddChartStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onAddComment",
+  "domain": "comment",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::AddComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onAddComments",
+  "domain": "comment",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::AddComments frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onCoAuthoringChatReceiveMessage",
+  "domain": "coauth",
+  "ui_register_sites": 3,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onDialogAddHyperlink",
+  "domain": "document",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::DialogAddHyperlink frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onDocInfo",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::DocInfo frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onDocSize",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "dom: addEventListener('resize') in editor.js (2 sites); no doc-size frame",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onDocumentModifiedChanged",
+  "domain": "document",
+  "ui_register_sites": 3,
+  "wo_equivalent": "partial: notifyHost('editing') in editor.js carries only a dirty flag (74 call sites)",
+  "notes": "modified flag (modern name; supersedes legacy onDocumentModifiedChange)"
+ },
+ {
+  "name": "asc_onGetDocInfoEnd",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::GetDocInfoEnd frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onGetDocInfoStart",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::GetDocInfoStart frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onGetDocInfoStop",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::GetDocInfoStop frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onHideEyedropper",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::HideEyedropper frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onHideForeignCursorLabel",
+  "domain": "coauth",
+  "ui_register_sites": 3,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onHideMathTrack",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::HideMathTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:2+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onHideSpecialPasteOptions",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::HideSpecialPasteOptions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onHyperlinkClick",
+  "domain": "document",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::HyperlinkClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:2+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onMouseMove",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites cell:5; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onMouseMoveEnd",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onMouseMoveStart",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onOnTrackRevisionsChange",
+  "domain": "track-changes",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::OnTrackRevisionsChange frame (no consumer in editor.js today)",
+  "notes": "track-revisions toggle state (double-On typo is upstream)"
+ },
+ {
+  "name": "asc_onPageOrient",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::PageOrient frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onParticipantsChanged",
+  "domain": "coauth",
+  "ui_register_sites": 3,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onRulerDblClick",
+  "domain": "view",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::RulerDblClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+slide:2; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onSectionProps",
+  "domain": "selection",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::SectionProps frame (no consumer in editor.js today)",
+  "notes": "section props state broadcast (margins/orientation)"
+ },
+ {
+  "name": "asc_onShowForeignCursorLabel",
+  "domain": "coauth",
+  "ui_register_sites": 3,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onShowMathTrack",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::ShowMathTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onShowSpecialPasteOptions",
+  "domain": "other",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::ShowSpecialPasteOptions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onSingleChartSelectionChanged",
+  "domain": "chart",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::SingleChartSelectionChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:6+cell:3+slide:3; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onSpellCheckVariantsFound",
+  "domain": "proofing",
+  "ui_register_sites": 3,
+  "wo_equivalent": "wasm pull: spell_suggest/spell_check_word/spell_check_text exports exist; no variants push",
+  "notes": "spell suggestion list for misspelled range"
+ },
+ {
+  "name": "asc_onStartAction",
+  "domain": "document",
+  "ui_register_sites": 3,
+  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
+ },
+ {
+  "name": "asc_onStartMailMerge",
+  "domain": "print",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::StartMailMerge frame (no consumer in editor.js today)",
+  "notes": "mail-merge pipeline start"
+ },
+ {
+  "name": "asc_onUpdateChartStyles",
+  "domain": "chart",
+  "ui_register_sites": 3,
+  "wo_equivalent": "missing: add WsEvent::UpdateChartStyles frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+slide:1; ui-register sites: 3"
+ },
+ {
+  "name": "asc_onAddSmartArtPreview",
+  "domain": "track-changes",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::AddSmartArtPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onAscReplaceCurrentTOF",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::AscReplaceCurrentTOF frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onAscTOFUpdate",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::AscTOFUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onBeginSmartArtPreview",
+  "domain": "track-changes",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::BeginSmartArtPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onBold",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::Bold frame (no consumer in editor.js today)",
+  "notes": "toolbar run-state broadcast fired on every selection change"
+ },
+ {
+  "name": "asc_onBookmarksUpdate",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::BookmarksUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onCanAddHyperlink",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::CanAddHyperlink frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onChangeDocumentProtection",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ChangeDocumentProtection frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onChangeSdtGlobalSettings",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ChangeSdtGlobalSettings frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onChangeSpecialFormsGlobalSettings",
+  "domain": "other",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ChangeSpecialFormsGlobalSettings frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onCollaborativeChanges",
+  "domain": "collaboration",
+  "ui_register_sites": 2,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onColumnsProps",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ColumnsProps frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onConnectionStateChanged",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "dom: addEventListener('online'|'offline') in editor.js covers conn state only",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onDocumentOutlineCurrentPosition",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::DocumentOutlineCurrentPosition frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onDocumentOutlineUpdate",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::DocumentOutlineUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onDocumentOutlineUpdateAdd",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::DocumentOutlineUpdateAdd frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onDocumentOutlineUpdateChange",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::DocumentOutlineUpdateChange frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onDocumentOutlineUpdateRemove",
+  "domain": "document",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::DocumentOutlineUpdateRemove frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onEndAddShape",
+  "domain": "other",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::EndAddShape frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onEndCalculate",
+  "domain": "table",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::EndCalculate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onEndSmartArtPreview",
+  "domain": "track-changes",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::EndSmartArtPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onEndTextAroundSearch",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::EndTextAroundSearch frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onFontSize",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::FontSize frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onGetTextAroundSearchPack",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::GetTextAroundSearchPack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onInitEditorStyles",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::InitEditorStyles frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onItalic",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::Italic frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onLineNumbersProps",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::LineNumbersProps frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onLockCore",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::LockCore frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onLockDocumentProtection",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::LockDocumentProtection frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onLockDocumentSchema",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::LockDocumentSchema frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onLockHeaderFooters",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::LockHeaderFooters frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onMacroRecordingPause",
+  "domain": "macro",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MacroRecordingPause frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onMacroRecordingResume",
+  "domain": "macro",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MacroRecordingResume frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onMacroRecordingStart",
+  "domain": "macro",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MacroRecordingStart frame (no consumer in editor.js today)",
+  "notes": "macro recorder state"
+ },
+ {
+  "name": "asc_onMacroRecordingStop",
+  "domain": "macro",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MacroRecordingStop frame (no consumer in editor.js today)",
+  "notes": "macro recorder state"
+ },
+ {
+  "name": "asc_onMarkerFormatChanged",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MarkerFormatChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:4; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onMathTypes",
+  "domain": "other",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::MathTypes frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onOFormChangeFinal",
+  "domain": "other",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::OFormChangeFinal frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onPaintFormatChanged",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::PaintFormatChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onPrAlign",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::PrAlign frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onPreviewLevelChange",
+  "domain": "view",
+  "ui_register_sites": 2,
+  "wo_equivalent": "dom: addEventListener('scroll'|'wheel') in editor.js; no scroll-state frame",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onRemoveTextAroundSearch",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::RemoveTextAroundSearch frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onReplaceAll",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ReplaceAll frame (no consumer in editor.js today)",
+  "notes": "replace-all completed with count"
+ },
+ {
+  "name": "asc_onSearchEnd",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::SearchEnd frame (no consumer in editor.js today)",
+  "notes": "search pass finished with result count"
+ },
+ {
+  "name": "asc_onSetSearchCurrent",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::SetSearchCurrent frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onShowParaMarks",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ShowParaMarks frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onSignatureImageLoaded",
+  "domain": "other",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::SignatureImageLoaded frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onStartTextAroundSearch",
+  "domain": "search",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::StartTextAroundSearch frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onStrikeout",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::Strikeout frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onTableDrawModeChanged",
+  "domain": "table",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::TableDrawModeChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onTableEraseModeChanged",
+  "domain": "table",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::TableEraseModeChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onTextColor",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::TextColor frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onTextDirection",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::TextDirection frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onTextHighLight",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::TextHighLight frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onUnderline",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::Underline frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onUnLockDocumentSchema",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::UnLockDocumentSchema frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onUnLockHeaderFooters",
+  "domain": "coauth",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::UnLockHeaderFooters frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onUpdateExternalReferenceList",
+  "domain": "table",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::UpdateExternalReferenceList frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:3+cell:5+slide:3; ui-register sites: 2"
+ },
+ {
+  "name": "asc_onVerticalAlign",
+  "domain": "selection",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::VerticalAlign frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onViewerBookmarksUpdate",
+  "domain": "view",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ViewerBookmarksUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onViewerThumbnailsZoomUpdate",
+  "domain": "view",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::ViewerThumbnailsZoomUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onWatermarkImageLoaded",
+  "domain": "view",
+  "ui_register_sites": 2,
+  "wo_equivalent": "missing: add WsEvent::WatermarkImageLoaded frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 2"
+ },
+ {
+  "name": "asc_onAcceptChangesBeforeCompare",
+  "domain": "track-changes",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::AcceptChangesBeforeCompare frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onAddTableStylesPreview",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::AddTableStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onAdvancedOptions",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::AdvancedOptions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onBeginTableStylesPreview",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::BeginTableStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onBulletImageLoaded",
+  "domain": "view",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::BulletImageLoaded frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onChangeCommentData",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ChangeCommentData frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onChangeCommentLogicalPosition",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ChangeCommentLogicalPosition frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onChangeComments",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ChangeComments frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onChangeDisplayModeInReview",
+  "domain": "track-changes",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ChangeDisplayModeInReview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onCloseChartEditor",
+  "domain": "chart",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::CloseChartEditor frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onCloseMergeEditor",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::CloseMergeEditor frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onCloseOleEditor",
+  "domain": "other",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::CloseOleEditor frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onCompletePreparingOForm",
+  "domain": "other",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::CompletePreparingOForm frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onConfirmAction",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ConfirmAction frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:10+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onConvertEquationToMath",
+  "domain": "other",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ConvertEquationToMath frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1+slide:2; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDeleteComment",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::DeleteComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDisconnectEveryone",
+  "domain": "coauth",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDocumentCanSaveChanged",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "partial: notifyHost('editing') in editor.js carries only a dirty flag (74 call sites)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDocumentContentReady",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "partial: notifyHost('saved') fires on save; no content-ready frame",
+  "notes": "editor ready gate; every controller waits for it"
+ },
+ {
+  "name": "asc_onDocumentPassword",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::DocumentPassword frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDocumentPlaceChanged",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::DocumentPlaceChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onDocumentUpdateVersion",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::DocumentUpdateVersion frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onEndPreviewMailMergeResult",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::EndPreviewMailMergeResult frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onEndTableStylesPreview",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::EndTableStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onErrorUpdateExternalReference",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ErrorUpdateExternalReference frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onExpiredToken",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onFontFamily",
+  "domain": "selection",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::FontFamily frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onGetEditorPermissions",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onHideComment",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::HideComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:12; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onInitEditorFonts",
+  "domain": "selection",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::InitEditorFonts frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onInitStandartTextures",
+  "domain": "view",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::InitStandartTextures frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onInitTableTemplates",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::InitTableTemplates frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onInkDrawerStop",
+  "domain": "other",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::InkDrawerStop frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onLicenseChanged",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onLockComment",
+  "domain": "coauth",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::LockComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onMacrosPermissionRequest",
+  "domain": "macro",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::MacrosPermissionRequest frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onMeta",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onNeedUpdateExternalReference",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::NeedUpdateExternalReference frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onNeedUpdateExternalReferenceOnOpen",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::NeedUpdateExternalReferenceOnOpen frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onOpenDocumentProgress",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::OpenDocumentProgress frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginClose",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: CustomEvent 'wo-command' bubbles host->editor (inverse direction)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginHideButton",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginHideButton frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginResize",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginResize frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginShow",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: CustomEvent 'wo-command' bubbles host->editor (inverse direction)",
+  "notes": "sdk fire sites word:3+cell:3+slide:3; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginShowButton",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginShowButton frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginsInit",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: CustomEvent 'wo-command' bubbles host->editor (inverse direction)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginsReset",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: CustomEvent 'wo-command' bubbles host->editor (inverse direction)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginWindowActivate",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginWindowActivate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginWindowClose",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginWindowClose frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginWindowResize",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginWindowResize frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPluginWindowShow",
+  "domain": "plugin",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PluginWindowShow frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPreviewMailMergeResult",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::PreviewMailMergeResult frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPrint",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "dom: addEventListener('beforeprint'|'afterprint') in editor.js; no print pipeline",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onPrintUrl",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "dom: addEventListener('beforeprint'|'afterprint') in editor.js; no print pipeline",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onRemoveComment",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::RemoveComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onRemoveComments",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::RemoveComments frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onRequestRefreshFile",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::RequestRefreshFile frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onRunAutostartMacroses",
+  "domain": "macro",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::RunAutostartMacroses frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSaveDocument",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "partial: notifyHost('saved') fires on save; no content-ready frame",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSaveMailMerge",
+  "domain": "print",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::SaveMailMerge frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSendThemeColors",
+  "domain": "view",
+  "ui_register_sites": 1,
+  "wo_equivalent": "dom: theme switched by editor.js + CSS vars; no engine notification needed",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSendThemeColorSchemes",
+  "domain": "view",
+  "ui_register_sites": 1,
+  "wo_equivalent": "dom: theme switched by editor.js + CSS vars; no engine notification needed",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onServerVersion",
+  "domain": "document",
+  "ui_register_sites": 1,
+  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onShowComment",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ShowComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onShowRevisionsChange",
+  "domain": "track-changes",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::ShowRevisionsChange frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSignatureClick",
+  "domain": "other",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::SignatureClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onSpellCheckInit",
+  "domain": "proofing",
+  "ui_register_sites": 1,
+  "wo_equivalent": "wasm pull: spell_suggest/spell_check_word/spell_check_text exports exist; no variants push",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onUnLockComment",
+  "domain": "coauth",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::UnLockComment frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onUpdateCommentPosition",
+  "domain": "comment",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::UpdateCommentPosition frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onUpdateExternalReference",
+  "domain": "table",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::UpdateExternalReference frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; ui-register sites: 1"
+ },
+ {
+  "name": "asc_onUpdateRevisionsChangesPosition",
+  "domain": "track-changes",
+  "ui_register_sites": 1,
+  "wo_equivalent": "missing: add WsEvent::UpdateRevisionsChangesPosition frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 1"
+ },
+ {
+  "name": "asc_onActiveSheetChanged",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ActiveSheetChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:3+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onAddCustomFunction",
+  "domain": "macro",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::AddCustomFunction frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onAddSignature",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::AddSignature frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:6+cell:8+slide:7; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onAnimPreviewFinished",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::AnimPreviewFinished frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onApplyChanges",
+  "domain": "collaboration",
+  "ui_register_sites": 0,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onBeforeApplyChanges",
+  "domain": "collaboration",
+  "ui_register_sites": 0,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onBeforeKeyDown",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites word:3+cell:4+slide:4; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onBeforeUndoRedo",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "notes": "sdk fire sites word:4+cell:8+slide:6; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onBeforeUndoRedoInCollaboration",
+  "domain": "coauth",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::BeforeUndoRedoInCollaboration frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onBeginChartStylesPreview",
+  "domain": "chart",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::BeginChartStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanDeleteLayout",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanDeleteLayout frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanDeleteMaster",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanDeleteMaster frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanEditPage",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanEditPage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanGroup",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanGroup frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanPastePage",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanPastePage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanRedoChanged",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanRedoChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanUndoChanged",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanUndoChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCanUnGroup",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CanUnGroup frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onChangeActiveNamedSheetView",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeActiveNamedSheetView frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onChangeProtectWorkbook",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeProtectWorkbook frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onChangeProtectWorksheet",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeProtectWorksheet frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onChangeRestrictions",
+  "domain": "collaboration",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeRestrictions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCloseAnimPane",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CloseAnimPane frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCloseFile",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CloseFile frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCurrentVisiblePage",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CurrentVisiblePage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onCursorMove",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites word:4+cell:4+slide:5; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onDefName",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DefName frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onDelDefName",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DelDefName frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onDemonstrationFirstRun",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DemonstrationFirstRun frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onDemonstrationSlideChanged",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DemonstrationSlideChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onDocumentChanged",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "partial: notifyHost('editing') in editor.js carries only a dirty flag (74 call sites)",
+  "notes": "sdk fire sites word:1+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEditCell",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EditCell frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:5+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEditDefName",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EditDefName frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEditorSelectionChanged",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites word:1+cell:2+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEndChartStylesPreview",
+  "domain": "chart",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndChartStylesPreview frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEndDemonstration",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndDemonstration frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEndDemoWithAnnotations",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndDemoWithAnnotations frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEndPaintSlideNum",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndPaintSlideNum frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onEntriesListMenu",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EntriesListMenu frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFileOpenClick",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FileOpenClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFilterInfo",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FilterInfo frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:2+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFormatErrorPdfForm",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FormatErrorPdfForm frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFormulaCompleteMenu",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FormulaCompleteMenu frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFormulaInfo",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FormulaInfo frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onFrameEditorReady",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FrameEditorReady frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onGoalSeekStop",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::GoalSeekStop frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onGoalSeekUpdate",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::GoalSeekUpdate frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHideAnnotSelectTrack",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HideAnnotSelectTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHideAnnotTextPrTrack",
+  "domain": "track-changes",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HideAnnotTextPrTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHidePdfFormsActions",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HidePdfFormsActions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHidePlaceholderActions",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HidePlaceholderActions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHidePopMenu",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('contextmenu') + CustomEvent 'ctx-menu' (21 sites in editor.js)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onHideTextSelectTrack",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HideTextSelectTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onInputKeyDown",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onInputMessage",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::InputMessage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onKeyDown",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites word:3+cell:4+slide:4; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onLayoutFooter",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LayoutFooter frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onLayoutTitle",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LayoutTitle frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onLockDefNameManager",
+  "domain": "coauth",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LockDefNameManager frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:6; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onModifiedDocument",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "partial: notifyHost('editing') in editor.js carries only a dirty flag (74 call sites)",
+  "notes": "dirty flag; WO partial via notifyHost('editing')"
+ },
+ {
+  "name": "asc_onOFormRoleFilled",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::OFormRoleFilled frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onOpenLinkPdfForm",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::OpenLinkPdfForm frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPaintSlideNum",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PaintSlideNum frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPaintTimer",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PaintTimer frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPluginMouseMove",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginMouseMove frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPluginMouseUp",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginMouseUp frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPresentationSize",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('resize') in editor.js (2 sites); no doc-size frame",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onPrintPreviewSheetDataChanged",
+  "domain": "print",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('beforeprint'|'afterprint') in editor.js; no print pipeline",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRefreshDefNameList",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RefreshDefNameList frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:7; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRefreshNamedSheetViewList",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RefreshNamedSheetViewList frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRefreshUserProtectedRangesList",
+  "domain": "collaboration",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RefreshUserProtectedRangesList frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRemoveCustomFunction",
+  "domain": "macro",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RemoveCustomFunction frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRemoveSignature",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RemoveSignature frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:3+cell:3+slide:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRemoveUnpreserveMasters",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RemoveUnpreserveMasters frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onRenameCellTextEnd",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RenameCellTextEnd frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSelectionCancel",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSelectionChanged",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "primary selection broadcast; WO recomputes rects via get_selection_rects"
+ },
+ {
+  "name": "asc_onSelectionEnd",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites word:10+cell:9+slide:13; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSelectionMathChanged",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('selectionchange'|'input'|'beforeinput') in editor.js",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSelectionNameChanged",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSelectionRangeChanged",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSendFunctionWizardInfo",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SendFunctionWizardInfo frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSetAFDialog",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SetAFDialog frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSheetDeleted",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SheetDeleted frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSheetsChanged",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SheetsChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowAnnotSelectTrack",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowAnnotSelectTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowAnnotTextPrTrack",
+  "domain": "track-changes",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowAnnotTextPrTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowChartDialog",
+  "domain": "chart",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowChartDialog frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowPDFFormsActions",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowPDFFormsActions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowPivotGroupDialog",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowPivotGroupDialog frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowPivotHeaderDetailsDialog",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowPivotHeaderDetailsDialog frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowPopMenu",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('contextmenu') + CustomEvent 'ctx-menu' (21 sites in editor.js)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onShowTextSelectTrack",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowTextSelectTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSignatureDblClick",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SignatureDblClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:3+cell:2+slide:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSolverResultDlgOpen",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SolverResultDlgOpen frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSolverTrialDlgOpen",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SolverTrialDlgOpen frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onSolverTrialSolutionOpen",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::SolverTrialSolutionOpen frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onStartDemonstration",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::StartDemonstration frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onStopFormatPainter",
+  "domain": "proofing",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::StopFormatPainter frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onTableTotalMenu",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::TableTotalMenu frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onTapEvent",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('selectionchange'|'input'|'beforeinput') in editor.js",
+  "notes": "sdk fire sites word:3+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onToggleAutoCorrectOptions",
+  "domain": "proofing",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: spell_suggest/spell_check_word/spell_check_text exports exist; no variants push",
+  "notes": "sdk fire sites cell:5; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onTrackGuide",
+  "domain": "track-changes",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::TrackGuide frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:3+slide:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUndoRedo",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "notes": "sdk fire sites word:4+cell:8+slide:6; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUndoRedoInCollaboration",
+  "domain": "coauth",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UndoRedoInCollaboration frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:2+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateCellWatches",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateCellWatches frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:6+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateFormulasViewSettings",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateFormulasViewSettings frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1+cell:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateLayout",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateLayout frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateRedactState",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateRedactState frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateScrolls",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('scroll'|'wheel') in editor.js; no scroll-state frame",
+  "notes": "sdk fire sites word:1+slide:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateSheetViewSettings",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateSheetViewSettings frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:4+cell:6+slide:4; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateTabColor",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateTabColor frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:2+cell:3+slide:2; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUpdateThemeIndex",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: theme switched by editor.js + CSS vars; no engine notification needed",
+  "notes": "sdk fire sites slide:3; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUserActionEnd",
+  "domain": "coauth",
+  "ui_register_sites": 0,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites word:8+cell:11+slide:9; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onUserActionStart",
+  "domain": "coauth",
+  "ui_register_sites": 0,
+  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "notes": "sdk fire sites word:8+cell:11+slide:9; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onValidateErrorPdfForm",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ValidateErrorPdfForm frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onValidationListMenu",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ValidationListMenu frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites cell:1; not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "asc_onZoomChanged",
+  "domain": "zoom",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ZoomChanged frame (no consumer in editor.js today)",
+  "notes": "zoom state; WO viewport scale lives in JS only"
+ },
+ {
+  "name": "onAfterPaintCallback",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::AfterPaintCallback frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 5 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onAIPluginSettings",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::AIPluginSettings frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onAttention",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Attention frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onBadParams",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::BadParams frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onCDATA",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CDATA frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onChangeDrawingsSelection",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeDrawingsSelection frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onChangedSelectionData",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangedSelectionData frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onChangePageSetupProps",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangePageSetupProps frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 16 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onChangeRestrictions",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ChangeRestrictions frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onClick",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onCommandCallback",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CommandCallback frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onComment",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Comment frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onContentControlButtonClick",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ContentControlButtonClick frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onContextMenu",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ContextMenu frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onCurrentPageChanged",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::CurrentPageChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onDockedChanged",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DockedChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onDocumentContentReady",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DocumentContentReady frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onDocumentReady",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::DocumentReady frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onEachImageLoadCallback",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EachImageLoadCallback frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 5 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onEnableMouseEvents",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EnableMouseEvents frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onEndNode",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndNode frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onEndRecalculateDocument",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndRecalculateDocument frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onEndScript",
+  "domain": "macro",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::EndScript frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onError",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Error frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 5 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onErrorResult",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ErrorResult frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onEvent",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Event frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onExternalMouseUp",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ExternalMouseUp frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onExternalPluginMessage",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ExternalPluginMessage frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onExternalPluginMessageCallback",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ExternalPluginMessageCallback frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onFileOpened",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FileOpened frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onFilterInfo",
+  "domain": "table",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FilterInfo frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onFocus",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('blur'|'focus') exists in editor.js shell, not wired to editor state",
+  "notes": "sdk fire sites word bundle 14 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onFormulaEvent",
+  "domain": "chart",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::FormulaEvent frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onHideContentControlTrack",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::HideContentControlTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onInfo",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Info frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onInput",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onInputHelperClear",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::InputHelperClear frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onInputHelperInput",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::InputHelperInput frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onInsertOleObjects",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::InsertOleObjects frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onKeyDown",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "canvas input handler — WO already routes via wasm handle_key_event"
+ },
+ {
+  "name": "onLoadFonts",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LoadFonts frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onLoadImages",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LoadImages frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onLogPickFont",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::LogPickFont frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onMessage",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Message frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 7 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onMethodReturn",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::MethodReturn frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onMobileScrollDelta",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('scroll'|'wheel') in editor.js; no scroll-state frame",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onMouseDown",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "canvas input handler — WO already routes via wasm handle_mouse_event"
+ },
+ {
+  "name": "onMouseMove",
+  "domain": "selection",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::MouseMove frame (no consumer in editor.js today)",
+  "notes": "canvas input handler — WO already routes via wasm handle_mouse_event"
+ },
+ {
+  "name": "onMouseUp",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "canvas input handler — WO already routes via wasm handle_mouse_event"
+ },
+ {
+  "name": "onMouseWheel",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: addEventListener('scroll'|'wheel') in editor.js; no scroll-state frame",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onNeedPassword",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::NeedPassword frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPagesCount",
+  "domain": "document",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PagesCount frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPluginEvent",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginEvent frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPluginEvent2",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginEvent2 frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPluginEventWindow",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginEventWindow frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPluginMethodReturn",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginMethodReturn frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onPluginWindowDockChanged",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::PluginWindowDockChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onQuestion",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Question frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 4 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onRepaintAnnotations",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RepaintAnnotations frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onRepaintCallback",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RepaintCallback frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 5 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onRepaintForms",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RepaintForms frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onRepaintPages",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RepaintPages frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onRequestReferenceData",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::RequestReferenceData frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onSeries",
+  "domain": "chart",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Series frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onShowContentControlTrack",
+  "domain": "focus",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ShowContentControlTrack frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onStartNode",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::StartNode frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onStructure",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Structure frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onTextNode",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::TextNode frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onTheme",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: theme switched by editor.js + CSS vars; no engine notification needed",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onThemeChanged",
+  "domain": "view",
+  "ui_register_sites": 0,
+  "wo_equivalent": "dom: theme switched by editor.js + CSS vars; no engine notification needed",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onTouchStart",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "wasm pull: handle_mouse_event/handle_mouse_drag/handle_key_event exports (no state broadcast back)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onUnknownNS",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UnknownNS frame (no consumer in editor.js today)",
+  "notes": "XML parser callback (engine-internal), NOT a UI event"
+ },
+ {
+  "name": "onUpdateStatistics",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::UpdateStatistics frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onWindowButton",
+  "domain": "plugin",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::WindowButton frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onWindowEvent",
+  "domain": "other",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::WindowEvent frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 3 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onZoom",
+  "domain": "zoom",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::Zoom frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 2 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ },
+ {
+  "name": "onZoomChanged",
+  "domain": "zoom",
+  "ui_register_sites": 0,
+  "wo_equivalent": "missing: add WsEvent::ZoomChanged frame (no consumer in editor.js today)",
+  "notes": "sdk fire sites word bundle 1 hits (legacy bare on* iface); not registered in sampled documenteditor controllers"
+ }
+]
