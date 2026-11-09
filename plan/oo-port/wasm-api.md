@@ -277,3 +277,19 @@ desc, then `name`:
 
 Consumers: ORM-02 (event half), ORM-03 (the 79 `data-class-ctor` rows + 510 `member_of` rows),
 ORM-04 (engine internals behind the query surface), ORM-10 (aggregate PORT-PLAN.md).
+
+## 8. Re-baseline addendum (P1-04, Phase-1)
+
+Everything above is the original ORM-01 measurement; the sections' verdicts are
+preserved as history. The ledger of record (`wasm-api.json`) has since been
+re-baselined: every row now carries a `resolution` classification
+(`landed-export|landed-blob|landed-push-frame|push-frame-other|planned-op|planned-blob|planned-export|divergence|deferred-leakage|compat-optional`)
+plus `resolution_target`, and the **74 UI-caller rows** carry a verified
+`call_kind` (api-call / event-register / payload-accessor / payload-ctor).
+Headline correction the re-baseline adds: of those 74 rows, only 12 are true
+`api.asc_*` engine calls — the other ~62 are engine→UI event registrations or
+payload-object accessors (ORM-02/ORM-03 domain). `wo_missing=false` stands for
+30 rows; §2's "967 of 970 missing" reads against the pre-Phase-1 baseline.
+See **`P1-MAPPING-rust.md`** (method, full classification, deferred-leakage
+census, divergences) and the idempotent regenerator
+`p104-rebaseline.cjs`.
