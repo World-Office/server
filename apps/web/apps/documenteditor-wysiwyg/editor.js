@@ -4559,6 +4559,67 @@
     runCommand(detail.command, detail.value == null ? null : String(detail.value));
   });
 
+  // ------------------------------------------------------------------
+  // WsEvent frame dispatcher (engine → UI; ORM-02 §4, PORT-PLAN D1)
+  // ------------------------------------------------------------------
+  // The wasm engine pushes editor state to the UI as one JSON frame per
+  // event: { "event": "<snake_case_variant>", "payload": {...} } — the
+  // serde tag="event"/content="payload" wire shape of WsEvent in
+  // core/crates/wo-renderer-wasm/src/events.rs (spec: plan/oo-port/
+  // wasm-events.md §4). This dispatcher is its single consumer and the
+  // mirror image of the wo-command bus above (engine → UI here, UI →
+  // engine there): every frame fans out as a window "wo-event"
+  // CustomEvent (detail {event, payload, at}); the 15 Phase-1 priority
+  // frames additionally fire a named "wo-event:<snake_name>" event for
+  // editor.js's own internal listeners; unknown frames (WsEvent::Other
+  // and the long tail) survive 1:1 on the plain "wo-event" fallback.
+  const WO_WS_EVENT_FRAMES = {
+    // OO asc_registerCallback name → WsEvent snake_case frame name.
+    // The 15 Phase-1 priority frames (ORM-02 §5 — ~85% of UI value):
+    asc_onSelectionEnd: "selection_end",
+    asc_onBold: "toolbar_state", // collapsed asc_onBold/Italic/FontSize/… family
+    asc_onFocusObject: "focus_object",
+    asc_onDocumentModifiedChanged: "document_modified_changed",
+    asc_onDocumentContentReady: "document_content_ready",
+    asc_onCanUndo: "can_undo_redo", // asc_onCanRedo rides the same frame
+    asc_onZoomChanged: "zoom_changed",
+    asc_onCurrentPage: "current_page",
+    asc_onError: "error",
+    asc_onStartAction: "long_action", // asc_onEndAction rides the same frame
+    asc_onContextMenu: "context_menu",
+    asc_onCoAuthoringDisconnect: "co_authoring_disconnect",
+    asc_onAuthParticipantsChanged: "auth_participants_changed",
+    asc_onLockDocumentProps: "lock_document_props",
+    asc_onDownloadUrl: "download_url",
+  };
+  const WO_WS_EVENT_PRIORITY = Object.keys(WO_WS_EVENT_FRAMES).map((k) => WO_WS_EVENT_FRAMES[k]);
+
+  function wsEventDispatcher(frame) {
+    if (!frame || typeof frame.event !== "string" || !frame.event) return false;
+    const event = frame.event;
+    const payload = frame.payload === undefined ? null : frame.payload;
+    const detail = { event: event, payload: payload, at: Date.now() };
+    window.dispatchEvent(new CustomEvent("wo-event", { detail: detail }));
+    if (WO_WS_EVENT_PRIORITY.indexOf(event) !== -1) {
+      window.dispatchEvent(new CustomEvent("wo-event:" + event, { detail: detail }));
+    }
+    return true;
+  }
+
+  // Engine→UI seam: the wasm module's set_event_sink export
+  // (core/crates/wo-renderer-wasm) attaches exactly here — every frame
+  // the engine pushes crosses this one function, so the frame contract
+  // stays in one place. No-op stub today because this page does not load
+  // the wasm module yet; once wired, the whole body is
+  // `return wsEventDispatcher(frame);`
+  function engineEventsSink(frame) {
+    // no-op stub — wasm set_event_sink seam (plan/oo-port/wasm-events.md §4)
+  }
+  // Host-visible handles so the wasm glue can attach/emit from outside
+  // this IIFE: wasm.set_event_sink((frame) => window.engineEventsSink(frame)).
+  window.wsEventDispatcher = wsEventDispatcher;
+  window.engineEventsSink = engineEventsSink;
+
   // --- agent command recorder (opt-in: ?record=1) -------------------
   // Every command ON THE BUS is logged as one replayable JSON line — the
   // listener records, so externally dispatched agent commands are captured

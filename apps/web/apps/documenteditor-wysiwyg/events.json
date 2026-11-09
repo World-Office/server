@@ -1,0 +1,34 @@
+{
+  "$comment": "P1-05 — editor.js WsEvent frame registry (UI consumer side of the ORM-02 event channel; spec plan/oo-port/wasm-events.md §4/§5, engine side core/crates/wo-renderer-wasm events.rs). One frame is one JSON object: {\"event\": \"<snake_case WsEvent variant>\", \"payload\": {...}|null} (serde tag=event/content=payload). editor.js dispatch contract: wsEventDispatcher(frame) fires a window 'wo-event' CustomEvent with detail {event, payload, at} for EVERY frame, plus a named 'wo-event:<event>' CustomEvent for the priority frames below; unknown frames (WsEvent::Other and the long tail) ride 'wo-event' only and survive 1:1. engineEventsSink(frame) is the no-op stub seam where the wasm set_event_sink callback attaches.",
+  "bus": {
+    "fan_out_event": "wo-event",
+    "named_event_prefix": "wo-event:",
+    "detail": {
+      "event": "string — snake_case WsEvent variant name",
+      "payload": "object|null — variant payload as specified by the engine enum",
+      "at": "number — Date.now() at dispatch"
+    },
+    "unknown_frames": "wo-event only (no named event)",
+    "malformed_frames": "rejected (no dispatch): frame falsy or event not a non-empty string",
+    "dispatcher": "wsEventDispatcher(frame)",
+    "engine_seam": "engineEventsSink(frame) — no-op stub until wired; the wasm glue calls wasm.set_event_sink((frame) => window.engineEventsSink(frame))",
+    "guardrail": "does not touch existing buses: wo-command, ctx-menu, wo:chart-settings, wo:print-selection, wo:keep-lines, odt-persisted, lists-persisted, images-persisted, wo-open-file"
+  },
+  "priority_frames": [
+    { "oo_callback": "asc_onSelectionEnd", "frame": "selection_end", "payload": null, "note": "unit variant; caret/selection refresh hook" },
+    { "oo_callback": "asc_onBold", "frame": "toolbar_state", "payload": { "bold": "bool|null", "italic": "bool|null", "underline": "bool|null", "strikeout": "bool|null", "font_size": "number|null", "font_family": "string|null", "para_style": "string|null", "align": "string|null", "vertical_align": "string|null", "text_color": "string|null" }, "note": "collapsed asc_onBold/Italic/FontSize/… family" },
+    { "oo_callback": "asc_onFocusObject", "frame": "focus_object", "payload": { "kind": "string — text|image|chart|table|control" }, "note": "toolbar context switching" },
+    { "oo_callback": "asc_onDocumentModifiedChanged", "frame": "document_modified_changed", "payload": { "modified": "bool" }, "note": "drives notifyHost('editing'|'saved')" },
+    { "oo_callback": "asc_onDocumentContentReady", "frame": "document_content_ready", "payload": { "pages": "number" }, "note": "document lifecycle" },
+    { "oo_callback": "asc_onCanUndo", "frame": "can_undo_redo", "payload": { "undo": "bool", "redo": "bool" }, "note": "asc_onCanRedo rides the same frame" },
+    { "oo_callback": "asc_onZoomChanged", "frame": "zoom_changed", "payload": { "scale": "number" }, "note": "legacy zoom_change stays a distinct WsEvent variant engine-side" },
+    { "oo_callback": "asc_onCurrentPage", "frame": "current_page", "payload": { "page": "number", "visible_pages": "number[]", "count_pages": "number" }, "note": "page indicator" },
+    { "oo_callback": "asc_onError", "frame": "error", "payload": { "code": "number", "message": "string" }, "note": "richest OO funnel (41 fire sites in the word bundle)" },
+    { "oo_callback": "asc_onStartAction", "frame": "long_action", "payload": { "begin": "bool", "id": "string", "text": "string" }, "note": "asc_onEndAction rides the same frame (begin=false)" },
+    { "oo_callback": "asc_onContextMenu", "frame": "context_menu", "payload": { "screen": { "x": "number", "y": "number" }, "on_object": "bool" }, "note": "mirrors the existing ctx-menu CustomEvent path" },
+    { "oo_callback": "asc_onCoAuthoringDisconnect", "frame": "co_authoring_disconnect", "payload": { "reason": "string" }, "note": "disconnect banner; engine export asc_coAuthoringDisconnect emits it via events::push" },
+    { "oo_callback": "asc_onAuthParticipantsChanged", "frame": "auth_participants_changed", "payload": { "users": "Collaborator[] — {id,name,color}" }, "note": "presence chips / foreign carets" },
+    { "oo_callback": "asc_onLockDocumentProps", "frame": "lock_document_props", "payload": { "locked": "bool", "user_id": "string|null" }, "note": "asc_onUnLockDocumentProps rides locked=false" },
+    { "oo_callback": "asc_onDownloadUrl", "frame": "download_url", "payload": { "url": "string" }, "note": "candidate carrier: notifyHost(action, extra) channel" }
+  ]
+}
