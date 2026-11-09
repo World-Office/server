@@ -42,17 +42,32 @@ grep -rhoE "asc_registerCallback\(['\"]asc_on[A-Za-z0-9_]+" /tmp/oo-src --includ
 # → 191 unique names, 459 register sites total
 ```
 
+**3b. App-level UI notifications** — the task brief mentioned controller
+`events: {` maps; in the sampled app those exist on Backbone *views* (DOM events
+only), while controllers communicate through `Common.NotificationCenter`:
+89 unique app-event names across **279** `NotificationCenter.on(...)` sites, led
+by `app:ready` (29), `api:disconnect` (25), `uitheme:changed` (22),
+`protect:doclock` (19), `storage:image-insert` (12), `document:ready` (10).
+These are UI-internal (controller↔controller) rather than SDK callbacks, so they
+are **not** rows in `wasm-events.json`; the WsEvent dispatcher in §4 can absorb
+the engine-mirroring ones (`api:disconnect`, `document:ready`) in phase 3 by
+emitting them as `Other { name }` frames.
+
 **4. WO-side ground truth** (this worktree, read-only):
 
 - `core/crates/wo-renderer-wasm/src/lib.rs` (4,862 lines, 35 `#[wasm_bindgen]`
-  exports) — **no event enum exists**; `grep on_ | grep event` over the crate
-  returns nothing. All engine→JS information is currently *pull-based*
-  (`get_selection_rects`, `get_cursor_position`, `get_selected_text`, …).
+  exports — the whole crate has 43, 8 of them in `canvas_bridge.rs`) — **no event
+  enum exists**: `grep -rn "enum.*Event|send_event|emit(" core/crates/wo-renderer-wasm/src/`
+  is empty, and the only "event" tokens in lib.rs are the `handle_mouse_event` /
+  `handle_key_event` export names. All engine→JS information is currently
+  *pull-based* (`get_selection_rects`, `get_cursor_position`, `get_selected_text`, …).
 - `apps/web/apps/documenteditor-wysiwyg/editor.js` (14,516 lines) — DOM events
   (`click`, `keydown`, `input`, `selectionchange`, `resize`, `contextmenu`, …),
   host notifications via `notifyHost("editing"|"saved"|"closed"|"close")`
   (74 `editing` sites), and two custom events: `wo-command` (host→editor,
   inverse direction) and `ctx-menu`.
+- UI registration pattern cross-check: `grep -rn "api.on(\|api.asc_on[A-Za-z]* *=" /tmp/oo-src`
+  returns **nothing** — `asc_registerCallback` is the only api-event channel.
 
 **Provenance caveat (honest finding):** 112 of the 191 UI-registered names are
 *not* literal tokens in the three sampled bundles. They are fired from the shared
@@ -215,8 +230,7 @@ Wire shape (serde externally the frame editor.js receives):
 ### Sink + dispatcher integration
 
 `wasm-bindgen` cannot "return" events; the engine calls one JS closure. Add to
-`wo-renderer-wasm/src/lib.rs` (the crate today has 35 exports and **no** event
-mechanism — grep `event` over the crate is empty):
+`wo-renderer-wasm/src/lib.rs` (verified above: 35 exports, zero push mechanism):
 
 ```rust
 #[wasm_bindgen]
