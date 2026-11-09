@@ -1,0 +1,95 @@
+{
+ "defaults": {
+  "max_attempts": 2,
+  "accept_timeout_s": 7200,
+  "agent_timeout_s": 9000,
+  "retry_delay_s": 60
+ },
+ "tasks": [
+  {
+   "id": "P1-01",
+   "title": "Rust: WsEvent enum + set_event_sink/emit push channel in wo-renderer-wasm",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-renderer-wasm/src/lib.rs",
+    "core/crates/wo-renderer-wasm/src/events.rs",
+    "core/crates/wo-renderer-wasm/src/props.rs",
+    "core/crates/wo-renderer-wasm/src/session.rs",
+    "core/crates/wo-renderer-wasm/src/events_tests.rs",
+    "core/crates/wo-renderer-wasm/src/props_tests.rs",
+    "core/crates/wo-renderer-wasm/src/session_tests.rs",
+    "core/crates/wo-renderer-wasm/tests/",
+    "plan/oo-port/"
+   ],
+   "description": "The WsEvent enum lives in a NEW module core/crates/wo-renderer-wasm/src/events.rs (create it; the crate uses `mod events;` in lib.rs). The ORM-02 map (plan/oo-port/wasm-events.md \u00a74) already specifies the full enum \u2014 reuse it verbatim (money): `#[derive(Debug, Clone, Serialize, Deserialize)] #[serde(tag = \"event\", content = \"payload\", rename_all = \"snake_case\")] pub enum WsEvent { SelectionEnd, SelectionChanged { rects: Vec<Rect>, cursor: Option<Pos> }, FocusObject { kind: String }, ToolbarState { bold: Option<bool>, italic: Option<bool>, underline: Option<bool>, strikeout: Option<bool>, font_size: Option<f64>, font_family: Option<String>, para_style: Option<String>, align: Option<String>, vertical_align: Option<String>, text_color: Option<String> }, ZoomChanged { scale: f64 }, CurrentPage { page: u32, visible_pages: Vec<u32>, count_pages: u32 }, DocumentContentReady { pages: u32 }, DocumentModifiedChanged { modified: bool }, CanUndoRedo { undo: bool, redo: bool }, Error { code: i32, message: String }, LongAction { begin: bool, id: String, text: String }, DownloadUrl { url: String }, CoAuthoringDisconnect { reason: String }, AuthParticipantsChanged { users: Vec<Collaborator> }, ForeignCursor { show: bool, user_id: String, label: String, pos: Option<Pos> }, LockDocumentProps { locked: bool, user_id: Option<String> }, TrackRevisionsChange { on: bool }, AddComment { id: String, data: Value }, RemoveComment { id: String }, UpdateCommentPosition { id: String, rects: Vec<Rect> }, SpellCheckVariants { word: String, variants: Vec<String>, lang: String }, TextLanguage { lang: String }, UpdateScrolls { h: ScrollState, v: ScrollState }, ContextMenu { screen: Pos, on_object: bool }, PluginEvent { guid: String, data: Value }, Other { name: String, data: Value } }` plus the structs Pos/Rect/ScrollState/Collaborator. Wire shape per the map: externally tagged; the frame object editor.js receives is `{ \"event\": \"<snake_case_variant>\", \"payload\": {...} }`. ADD the binding plumbing in events.rs: `pub type JsEventSink = js_sys::Function; thread_local! { static SINK: RefCell<Option<JsEventSink>> }`; `#[wasm_bindgen] pub fn set_event_sink(cb: Option<js_sys::Function>)` (with an initial `notifyHost` back-compat fallback if cb is None), `#[wasm_bindgen] pub fn emit_event(evt: JsValue)` (deserialize JSON into WsEvent and invoke the sink), and a Rust-side `pub fn push(evt: &WsEvent)` used by the rest of the engine to enqueue. Unit tests (in events_tests.rs, plain #[test] with serde only \u2014 no wasm needed): serialization of each priority variant matches the expected `{\"event\":...}` JSON shape; `Other { name, data }` round-trips arbitrary payloads. After implementation run `cargo test -p wo-renderer-wasm --lib` \u2014 must stay green (current baseline 153 passing).",
+   "acceptance": "cargo test -p wo-renderer-wasm --lib passes (baseline 153 tests stay green + new events tests pass); events.rs defines WsEvent with all variants from the ORM-02 \u00a74 spec; set_event_sink + emit_event wasm exports exist; a plain #[test] proves at least 3 priority frames serialize to the expected externally-tagged JSON shape.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f core/crates/wo-renderer-wasm/src/events.rs && grep -qE 'pub enum WsEvent' core/crates/wo-renderer-wasm/src/events.rs && grep -qE 'set_event_sink|emit_event' core/crates/wo-renderer-wasm/src/events.rs && grep -q 'mod events' core/crates/wo-renderer-wasm/src/lib.rs && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | tail -1 | grep -q 'test result: ok' && wc -l core/crates/wo-renderer-wasm/src/events.rs"
+  },
+  {
+   "id": "P1-02",
+   "title": "Rust: props module \u2014 Wasm* serde property-blob structs + set_property/get_property",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-renderer-wasm/src/props.rs",
+    "core/crates/wo-renderer-wasm/src/lib.rs",
+    "core/crates/wo-renderer-wasm/src/props_tests.rs",
+    "core/crates/wo-renderer-wasm/tests/",
+    "plan/oo-port/"
+   ],
+   "description": "Create NEW module core/crates/wo-renderer-wasm/src/props.rs (`mod props;` in lib.rs). This is ORM-03 \u00a76 + PORT-PLAN Phase 1 item 2 \u2014 the ~25 Wasm* serde structs that reproduce OO's asc_C* wire schema with camelCase keys so the OO UI can bind without a translation layer. Scope the work to the WORD-relevant families only (the maps mark spreadsheet/form-field/chart/pdf-annotation as later phases): paragraph (asc_CParagraphProperty, asc_CParagraphShd, asc_CParagraphSpacing, asc_CParagraphFrame), border (asc_CBorder, asc_CBorders, asc_CTextBorder), run-format (asc_CTextFontFamily), page-setup (asc_CPageMargins, asc_CPageOptions, asc_CPageSetup), list-bullet (asc_CBullet, asc_CCustomListType, asc_CListType), color (asc_CColor), style (asc_CStyle), comment (asc_CCommentData, asc_CCommentDataWord), collab (asc_CUserInfo, asc_CVersionHistory). For each: `#[derive(Debug, Clone, Serialize, Deserialize)] #[serde(rename_all = \"camelCase\")] pub struct WasmX { ... }` with field names/semantics taken from the `properties` arrays in plan/oo-port/wasm-data-classes.json (read them \u2014 verted facts, do not invent). Where wo-ooxml model types already carry the same fields (e.g. DocxBorder from wo-ooxml/src/model.rs), provide a From conversion rather than a parallel struct (ORT: reuse `wo_ooxml::model` types). Add two #[wasm_bindgen] exports in props.rs: `pub fn set_property(kind: &str, json: &str) -> Result<(), JsError>` and `pub fn get_property(kind: &str, json: &str) -> Result<String, JsError>` \u2014 kind is the case-insensitive class name minus prefix (e.g. \"paragraph_property\", \"ctext_border\", \"ccolor\"), splitting at the first non-alnum; round-trips through serde_json; unknown kinds return Err with the supported list. Unit tests (props_tests.rs, plain #[test], serde only): each struct serializes to camelCase keys; round-trip of a representative sample per family; set_property/get_property round-trip through the JSON boundary; From<WasmBorder> for DocxBorder compiles and maps every field. Run `cargo test -p wo-renderer-wasm --lib` \u2014 must stay green (baseline 153).",
+   "acceptance": "cargo test -p wo-renderer-wasm --lib passes; props.rs defines the word-family Wasm* structs (paragraph/border/run-format/page-setup/list/color/style/comment/collab), camelCase serde, set_property/get_property exports round-trip through JSON; plain #[test]s cover each family.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f core/crates/wo-renderer-wasm/src/props.rs && grep -qE 'pub struct Wasm[A-Z]' core/crates/wo-renderer-wasm/src/props.rs && grep -qE 'pub fn set_property|pub fn get_property' core/crates/wo-renderer-wasm/src/props.rs && grep -qE 'rename_all = \"camelCase\"' core/crates/wo-renderer-wasm/src/props.rs && grep -q 'mod props' core/crates/wo-renderer-wasm/src/lib.rs && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | tail -1 | grep -q 'test result: ok' && wc -l core/crates/wo-renderer-wasm/src/props.rs"
+  },
+  {
+   "id": "P1-03",
+   "title": "Rust: session/lifecycle exports \u2014 identity, doc-info, coAuthoringDisconnect event",
+   "deps": [
+    "P1-01"
+   ],
+   "scope": [
+    "core/crates/wo-renderer-wasm/src/lib.rs",
+    "core/crates/wo-renderer-wasm/src/events.rs",
+    "core/crates/wo-renderer-wasm/src/props.rs",
+    "core/crates/wo-renderer-wasm/src/session.rs",
+    "core/crates/wo-renderer-wasm/src/events_tests.rs",
+    "core/crates/wo-renderer-wasm/src/props_tests.rs",
+    "core/crates/wo-renderer-wasm/src/session_tests.rs",
+    "core/crates/wo-renderer-wasm/tests/",
+    "plan/oo-port/"
+   ],
+   "description": "Add to a NEW module core/crates/wo-renderer-wasm/src/session.rs (`mod session;` in lib.rs) \u2014 PORT-PLAN Phase 1 item 3 (ORM-01 R2). This is the document-session block: identity and document-info metadata. Implement as a thread_local! Session struct (not global statics): fields doc_id: String, token: String, server_version: String, url_changes: String, user_name: String, user_id: String, support_flags: Vec<String>, plus a started_at timestamp. #[wasm_bindgen] exports (pub fn, snake_case; add #[wasm_bindgen(js_name = \"asc_...\")] aliases exactly matching OO's names where the map lists a word-UI caller): setters for each field (asc_setDocId -> doc_id, asc_setToken -> token, asc_setServerVersion -> server_version, asc_setUrlChanges -> url_changes, asc_setUserName -> user_name, asc_setUserId -> user_id); getters asc_getUserName/asc_getUserId that return the current values; `asc_isSupportFeature(feature: &str) -> bool` (checks support_flags contains feature, case-insensitive); `asc_coAuthoringDisconnect` \u2014 a fn that emits the WsEvent::CoAuthoringDisconnect { reason } frame through the events::push channel (requires P1-01, which is a dependency \u2014 call events::push). Every export must be exercised by a plain #[test] in session_tests.rs (no wasm runtime needed). Run `cargo test -p wo-renderer-wasm --lib` \u2014 must stay green (baseline 153).",
+   "acceptance": "cargo test -p wo-renderer-wasm --lib passes; session.rs thread_local Session with all fields/setters/getters; asc_isSupportFeature and asc_coAuthoringDisconnect (emits WsEvent::CoAuthoringDisconnect via events::push) exist; js_name aliases match the map; plain #[test]s cover each export.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f core/crates/wo-renderer-wasm/src/session.rs && grep -qE 'pub fn asc_getUserName|pub fn asc_getUserId|asc_isSupportFeature|asc_coAuthoringDisconnect' core/crates/wo-renderer-wasm/src/session.rs && grep -q 'mod session' core/crates/wo-renderer-wasm/src/lib.rs && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | tail -1 | grep -q 'test result: ok' && wc -l core/crates/wo-renderer-wasm/src/session.rs"
+  },
+  {
+   "id": "P1-04",
+   "title": "Mapping: re-baseline wasm-api.json resolutions for all 970 asc_* rows (74 UI-caller rows classified)",
+   "deps": [
+    "P1-01",
+    "P1-02",
+    "P1-03"
+   ],
+   "scope": [
+    "plan/oo-port/"
+   ],
+   "description": "Add a NEW file plan/oo-port/P1-MAPPING-rust.md (scope includes plan/oo-port/) that re-baselines the campaign: for each of the 74 ORM-01 rows that have a word-UI caller (from plan/oo-port/wasm-api.json, `ui_caller_count > 0`), give its resolution verdict: `aliased` (P1-01 js_name alias and its export fn name), `prop-blob` (kind string for the P1-02 set_property/get_property), `event-frame` (WsEvent variant from P1-01/events.rs), `op` (existing apply_structure_op/apply_op path), `session` (P1-03 export), `divergence` (declared per PORT-PLAN D5) or `deferred` (with why). For 970 vs 74: the other 896 rows are either `deferred` (no word-UI caller) or `deferred-leakage` (the ~301 shared-bundle rows \u2014 spreadsheet/PDF/plugin plumbing). The file MUST be grounded: actually run `/usr/bin/node -e` filters against plan/oo-port/wasm-api.json to enumerate the 74 caller rows (filter ui_caller_count>0), and grep editor.js for any equivalent. Do not hand-wave counts. Minimum 120 lines, table format. The three Rust tasks (P1-01..03) update plan/oo-port/wasm-api.json: as exports land, set the matching row's `wo_export_name` to the export fn and `wo_missing` to false if it was true. Do NOT edit other artifacts: P1-01..03 each only touch their own Rust module files + wasm-api.json + this md; they must NOT modify each other's modules (P1-02 never touches events.rs, P1-03 never touches props.rs).",
+   "acceptance": "plan/oo-port/P1-MAPPING-rust.md exists (>= 120 lines) with a resolution verdict per 74 UI-caller row; wasm-api.json updated so rows now served by exports have wo_export_name set + wo_missing=false (delta over the baseline of 3 covered must be >= 5 new); the file names which rows are deferred-leakage.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f plan/oo-port/P1-MAPPING-rust.md && test \"$(wc -l < plan/oo-port/P1-MAPPING-rust.md)\" -ge 120 && /usr/bin/node -e \"const w=JSON.parse(require('fs').readFileSync('plan/oo-port/wasm-api.json','utf8')); const covered=w.filter(o=>!o.wo_missing).length; if(covered<8)process.exit(1); console.log('covered',covered);\" && grep -ciE 'deferred-leakage' plan/oo-port/P1-MAPPING-rust.md | grep -qE '^[1-9]' && grep -qiE 'divergence' plan/oo-port/P1-MAPPING-rust.md"
+  },
+  {
+   "id": "P1-05",
+   "title": "JS: WsEvent frame dispatcher + engineEventsSink seam in editor.js",
+   "deps": [],
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wasm-events.test.mjs",
+    "apps/web/apps/documenteditor-wysiwyg/events.json",
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 1 item 1 (D1, second half): the editor.js consumer of the WsEvent frames. In apps/web/apps/documenteditor-wysiwyg/editor.js there are 79 `notifyHost` call sites and a `wo-command` CustomEvent bus (window.dispatchEvent(new CustomEvent(\"wo-command\", {detail:{command,...}})) around line 4540) \u2014 this is the established plumbing. Add a small `wsEventDispatcher` that consumes an incoming frame object `{event, payload}` and: (1) for known events fires a specific CustomEvent on window: `wo-event` with detail {event, payload, at: Date.now()} always, plus named events `wo-event:<snake_name>` for editor.js's own internal listeners (e.g. selection-end, document-modified-changed, zoom-changed \u2014 name them as snake_case of the event field); (2) fans out unknown frames as `wo-event` with the raw detail (WsEvent::Other survives 1:1). Wire a stub `engineEventsSink(frame)` function that is a no-op today but is the exact seam where the wasm `set_event_sink` callback will attach (place it next to the dispatcher with a clear comment). Also add the two new event bus constants for the priority frames (asc_onCoAuthoringDisconnect -> co_authoring_disconnect, asc_onDocumentModifiedChanged -> document_modified_changed) to whatever registry maps on* names (search editor.js for any asc_ naming map; if none exists, add a small const map). CRITICAL GUARDRAIL: do NOT refactor or reformat editor.js beyond adding the dispatcher block and constants; do not touch event names used by existing tests (wo-command, ctx-menu, wo:chart-settings, wo:print-selection, wo:keep-lines, odt-persisted, lists-persisted, images-persisted, wo-open-file). Deliver a NEW test file apps/web/apps/documenteditor-wysiwyg/wasm-events.test.mjs using node:test + node:assert (plain Node, zero deps \u2014 match the style of ctx-menu.test.mjs in the same dir): (a) extract the dispatcher source from editor.js and assert it builds the `wo-event` CustomEvent with {event, payload}; (b) assert the 15 priority frame names map correctly (asc_onX -> snake field); (c) assert unknown frames route to the wo-event fallback. Run: `cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test wasm-events.test.mjs` \u2014 must pass. Also add the stub `engineEventsSink` must be findable via a test-side regex. Do not modify any existing test file.",
+   "acceptance": "apps/web/apps/documenteditor-wysiwyg/wasm-events.test.mjs passes via `node --test`; editor.js has wsEventDispatcher handling wo-event dispatch + named wo-event:<snake> events + engineEventsSink seam; 15 priority frame name map present; existing editor.js CustomEvent names untouched.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f apps/web/apps/documenteditor-wysiwyg/wasm-events.test.mjs && cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test wasm-events.test.mjs 2>&1 | tail -3 | grep -q 'pass 1\\|tests 1\\|# pass' && grep -qE 'wsEventDispatcher|engineEventsSink' editor.js && grep -qE 'co_authoring_disconnect|document_modified_changed' editor.js"
+  }
+ ]
+}
