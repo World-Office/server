@@ -8,6 +8,7 @@
 //! and retrieve pixel data.
 
 pub mod canvas_bridge;
+pub mod events;
 pub mod layout;
 pub mod props;
 pub mod stub_model;
@@ -35,6 +36,7 @@ use wo_spell::suggest::Suggester;
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
 pub use props::{get_property, set_property};
+pub use events::{emit_event, push, set_event_sink, WsEvent};
 pub use layout::{
     compute_selection_rects, flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage,
     LaidOutParagraph, LayoutEngine, PageLayout, SelectionRect,
@@ -4076,6 +4078,8 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 
 // ── Tests ────────────────────────────────────────────────────────────
 
+#[cfg(test)]
+mod events_tests;
 #[cfg(test)]
 mod navigation_tests;
 #[cfg(test)]

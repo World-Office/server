@@ -3,21 +3,21 @@
   "name": "asc_onCoAuthoringDisconnect",
   "domain": "coauth",
   "ui_register_sites": 27,
-  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "wo_equivalent": "existing: coAuthoringDisconnect() export pushes WsEvent::CoAuthoringDisconnect frame (wo-renderer-wasm::events); collab path remains scheduleCollabSync() + WS frames",
   "notes": "top-registered event (27 sites) — session-loss UX"
  },
  {
   "name": "asc_onFocusObject",
   "domain": "focus",
   "ui_register_sites": 18,
-  "wo_equivalent": "dom: addEventListener('blur'|'focus') exists in editor.js shell, not wired to editor state",
+  "wo_equivalent": "existing: WsEvent::FocusObject push frame (wo-renderer-wasm::events); DOM blur/focus shell hooks remain",
   "notes": "object/chart/control focus — drives toolbar context in web-apps"
  },
  {
   "name": "asc_onDownloadUrl",
   "domain": "document",
   "ui_register_sites": 8,
-  "wo_equivalent": "existing: editor.js posts host messages via notifyHost(action, extra) — same channel reused",
+  "wo_equivalent": "existing: WsEvent::DownloadUrl push frame (wo-renderer-wasm::events); notifyHost(action, extra) remains as host channel",
   "notes": "export/download URL handoff"
  },
  {
@@ -66,42 +66,42 @@
   "name": "asc_onZoomChange",
   "domain": "zoom",
   "ui_register_sites": 6,
-  "wo_equivalent": "missing: add WsEvent::ZoomChange frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::ZoomChange push frame (legacy twin variant; wo-renderer-wasm::events)",
   "notes": "older zoom name alongside asc_onZoomChanged — keep both in enum"
  },
  {
   "name": "asc_onContextMenu",
   "domain": "selection",
   "ui_register_sites": 5,
-  "wo_equivalent": "dom: addEventListener('contextmenu') + CustomEvent 'ctx-menu' (21 sites in editor.js)",
+  "wo_equivalent": "existing: WsEvent::ContextMenu push frame (wo-renderer-wasm::events) + existing ctx-menu CustomEvent",
   "notes": "sdk fire sites word:1+cell:3+slide:1; ui-register sites: 5"
  },
  {
   "name": "asc_onError",
   "domain": "document",
   "ui_register_sites": 5,
-  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "wo_equivalent": "existing: WsEvent::Error push frame (wo-renderer-wasm::events); progress bar shell hook remains",
   "notes": "error funnel — 41 fire sites in word bundle alone"
  },
  {
   "name": "asc_onLockDocumentProps",
   "domain": "coauth",
   "ui_register_sites": 5,
-  "wo_equivalent": "missing: add WsEvent::LockDocumentProps frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::LockDocumentProps push frame (locked=true; wo-renderer-wasm::events)",
   "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 5"
  },
  {
   "name": "asc_onUnLockDocumentProps",
   "domain": "coauth",
   "ui_register_sites": 5,
-  "wo_equivalent": "missing: add WsEvent::UnLockDocumentProps frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::LockDocumentProps push frame (locked=false rides the same frame; wo-renderer-wasm::events)",
   "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 5"
  },
  {
   "name": "asc_onAuthParticipantsChanged",
   "domain": "coauth",
   "ui_register_sites": 4,
-  "wo_equivalent": "existing: collab path is scheduleCollabSync() + WS frames in editor.js (presence/ops)",
+  "wo_equivalent": "existing: WsEvent::AuthParticipantsChanged push frame (wo-renderer-wasm::events); collab path remains scheduleCollabSync() + WS frames",
   "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
  },
  {
@@ -115,14 +115,14 @@
   "name": "asc_onCanRedo",
   "domain": "document",
   "ui_register_sites": 4,
-  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "wo_equivalent": "existing: WsEvent::CanUndoRedo push frame (asc_onCanRedo rides the same frame; wo-renderer-wasm::events)",
   "notes": "history can-redo state"
  },
  {
   "name": "asc_onCanUndo",
   "domain": "document",
   "ui_register_sites": 4,
-  "wo_equivalent": "wasm pull: undo/redo exports exist; can-undo state recomputed in JS (no frame)",
+  "wo_equivalent": "existing: WsEvent::CanUndoRedo push frame (wo-renderer-wasm::events); undo/redo pull exports remain",
   "notes": "history can-undo state"
  },
  {
@@ -143,7 +143,7 @@
   "name": "asc_onCurrentPage",
   "domain": "view",
   "ui_register_sites": 4,
-  "wo_equivalent": "missing: add WsEvent::CurrentPage frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::CurrentPage push frame (wo-renderer-wasm::events)",
   "notes": "sdk fire sites word:1; ui-register sites: 4"
  },
  {
@@ -157,7 +157,7 @@
   "name": "asc_onEndAction",
   "domain": "document",
   "ui_register_sites": 4,
-  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "wo_equivalent": "existing: WsEvent::LongAction push frame (begin=false; wo-renderer-wasm::events); progress bar shell hook remains",
   "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 4"
  },
  {
@@ -234,7 +234,7 @@
   "name": "asc_onDocumentModifiedChanged",
   "domain": "document",
   "ui_register_sites": 3,
-  "wo_equivalent": "partial: notifyHost('editing') in editor.js carries only a dirty flag (74 call sites)",
+  "wo_equivalent": "existing: WsEvent::DocumentModifiedChanged push frame (wo-renderer-wasm::events); notifyHost('editing'|'saved') remains as host flag",
   "notes": "modified flag (modern name; supersedes legacy onDocumentModifiedChange)"
  },
  {
@@ -388,7 +388,7 @@
   "name": "asc_onStartAction",
   "domain": "document",
   "ui_register_sites": 3,
-  "wo_equivalent": "partial: editor.js shows a progress bar shell hook; no wasm long-action frame",
+  "wo_equivalent": "existing: WsEvent::LongAction push frame (begin=true; wo-renderer-wasm::events); progress bar shell hook remains",
   "notes": "sdk fire sites fired from shared api base (not a literal token in word/cell/slide bundles); ui-register sites: 3"
  },
  {
@@ -437,7 +437,7 @@
   "name": "asc_onBold",
   "domain": "selection",
   "ui_register_sites": 2,
-  "wo_equivalent": "missing: add WsEvent::Bold frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::ToolbarState push frame (collapsed bold/italic/underline/strikeout/font/para family; wo-renderer-wasm::events)",
   "notes": "toolbar run-state broadcast fired on every selection change"
  },
  {
@@ -969,7 +969,7 @@
   "name": "asc_onDocumentContentReady",
   "domain": "document",
   "ui_register_sites": 1,
-  "wo_equivalent": "partial: notifyHost('saved') fires on save; no content-ready frame",
+  "wo_equivalent": "existing: WsEvent::DocumentContentReady push frame (wo-renderer-wasm::events); notifyHost('saved') on save remains",
   "notes": "editor ready gate; every controller waits for it"
  },
  {
@@ -1879,7 +1879,7 @@
   "name": "asc_onSelectionEnd",
   "domain": "selection",
   "ui_register_sites": 0,
-  "wo_equivalent": "wasm pull: get_selection_rects()/get_cursor_position() exports exist; needs push frame",
+  "wo_equivalent": "existing: WsEvent::SelectionEnd push frame in wo-renderer-wasm::events (set_event_sink/emit_event); get_selection_rects()/get_cursor_position() pull remains",
   "notes": "sdk fire sites word:10+cell:9+slide:13; not registered in sampled documenteditor controllers"
  },
  {
@@ -2159,7 +2159,7 @@
   "name": "asc_onZoomChanged",
   "domain": "zoom",
   "ui_register_sites": 0,
-  "wo_equivalent": "missing: add WsEvent::ZoomChanged frame (no consumer in editor.js today)",
+  "wo_equivalent": "existing: WsEvent::ZoomChanged push frame (wo-renderer-wasm::events)",
   "notes": "zoom state; WO viewport scale lives in JS only"
  },
  {
