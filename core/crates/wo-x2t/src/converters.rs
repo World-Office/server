@@ -4310,6 +4310,22 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
         });
         if let Some(instr) = field_instr {
             inlines.insert(0, InlineElement::Field { instr });
+            // P2-03 fields engine: a non-complex (w:fldSimple) field's cached
+            // result has no sibling runs in the model (the verbatim subtree
+            // is re-emitted by the serializer instead), so render the cached
+            // text right after the marker — same shape as complex fields,
+            // whose result runs follow the span as plain text.
+            if let Some(cached) = para
+                .fields
+                .iter()
+                .find(|f| !f.complex)
+                .and_then(|f| f.cached_result.clone())
+            {
+                inlines.insert(1, InlineElement::Text {
+                    text: cached,
+                    style: None,
+                });
+            }
         }
 
         // F-040: map paragraph shading and borders to HTML

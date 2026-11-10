@@ -434,9 +434,11 @@ fn gap_fields_roundtrip() {
     let html = DocxToHtmlConverter.convert(&docx).unwrap();
     let html = String::from_utf8(html).unwrap();
     assert!(html.contains("Page "), "body text lost: {html}");
-    assert!(html.contains(">4<"), "fldSimple cached result lost: {html}");
-    assert!(html.contains(">12<"), "complex cached result lost: {html}");
-    assert!(html.contains(">7<"), "nested PAGEREF result lost: {html}");
+    // Editor dialect: a field renders as an empty page-number span with the
+    // cached result as plain text right after it.
+    assert!(html.contains("</span>4"), "fldSimple cached result lost: {html}");
+    assert!(html.contains("</span>12"), "complex cached result lost: {html}");
+    assert!(html.contains("</span>7"), "nested PAGEREF result lost: {html}");
     assert!(
         html.contains("data-field=\" NUMPAGES \"") || html.contains("data-field=\"NUMPAGES\""),
         "complex field marker lost: {html}"
