@@ -111,7 +111,7 @@ so columns are per-row-of-that-map, not cross-comparable):
 | ORM-06 ooxml-xlsx | 118 XlsxFormat families (829 classes / 5,340 fns) | 2 full / 42 partial / 74 missing | 9 core parts regenerated; charts/pivot/tables/comments ride `extra_parts` passthrough |
 | ORM-07 ooxml-pptx | 134 concepts (447 classes / 3,379 fns) | 26 full / 39 partial / 69 missing | inheritance/theme/group shapes/text-body/tables/transitions unmodeled; `PptxExtraPart` preserves bytes |
 | ORM-08 legacy-binary | MsBinaryFile (2,954 files; DocFile alone 287 files / 330 classes) | 5 full / 9 partial / 1 stub / 38 missing | **`.doc` is unreadable today**; CFB container is spec-complete and kept |
-| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 91 partial / 17 hosted / 20 merged-into-editor.js / 29 blocked / 0 missing (P3-U05 closure) | data-driven dialog engine landed (P3-U01..U04, 19 specs); ledger closed to 0 `missing` — forms/signing/thumbnails/`External*` blocked on named prerequisites (ORM-01 roles exports, ORM-05 sdt engine, ORM-04 sev-3 rasterizer, Phase-4 plugin/iframe runtime) |
+| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 91 partial / 20 hosted / 20 merged-into-editor.js / 26 blocked / 0 missing (P3-U05 closure) | data-driven dialog engine landed (P3-U01..U04, 19 specs); ledger closed to 0 `missing` — forms/signing/`External*` blocked on named prerequisites (ORM-01 roles exports, ORM-05 sdt engine, Phase-4 plugin/iframe runtime); oo-pts PTS-T2 hosted `PageThumbnails`+`Pages` over the docserver page-render API (PTS-T1) |
 
 Target end-state (what "done" means for this plan):
 
@@ -232,8 +232,9 @@ gap tests pass; xlsx round trips keep charts/tables/hyperlinks without
    `ShapeSettings` (needs `asc_CShapeFill`/gradient payloads + widget),
    `ReviewPopover` (pure UI on the existing comment list), then the
    blocked families: forms/signing (needs docxf format layer + roles
-   exports) and `PageThumbnails`/Print preview (needs paginated raster
-   output from Phase 2).
+   exports) and Print preview (needs paginated raster
+   output from Phase 2; `PageThumbnails` itself is hosted since oo-pts
+   PTS-T2 over the docserver page-render API, PTS-T1).
 4. **Plugin module + long-tail events:** one dedicated plugins module
    (replacing ad-hoc `wo-command` bridging) and ORM-02's Phase-2/3 frames —
    comments, track-changes, proofing (`SpellCheckVariants` on the existing
@@ -249,7 +250,10 @@ their Phase-2 prerequisite; right-panel parity surface stays green.
 `notes`/`wo_anchor`; re-verified by
 `apps/web/apps/documenteditor-wysiwyg/ui-closure.test.mjs` →
 `UI-CLOSURE-PASS`. The open halves are the editor.js open/apply wiring for
-the P3-U04 specs and the named prerequisites of the 29 `blocked` rows.
+the P3-U04 specs and the named prerequisites of the `blocked` rows —
+26 as of the oo-pts PTS-T2 flip, which hosted `PageThumbnails`+`Pages`
+over the docserver page-render API (PTS-T1; re-verified by
+`page-thumbnails.test.mjs` → `THUMBNAILS-PASS`).
 
 ## Phase 4
 

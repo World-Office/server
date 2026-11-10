@@ -45,24 +45,30 @@ format, runtime or named follow-up deliverable — that must land first).
 
 | oo_type | rows | full | partial | hosted | merged | blocked | missing |
 |---|---|---|---|---|---|---|---|
-| controller | 41 | 9 | 18 | 0 | 6 | 8 | 0 |
-| view | 109 | 34 | 42 | 14 | 5 | 14 | 0 |
-| model | 3 | 1 | 1 | 0 | 0 | 1 | 0 |
+| controller | 41 | 9 | 18 | 1 | 6 | 7 | 0 |
+| view | 109 | 34 | 42 | 15 | 5 | 13 | 0 |
+| model | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
 | collection | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
 | template | 27 | 6 | 12 | 2 | 2 | 5 | 0 |
 | common-component | 34 | 8 | 17 | 1 | 7 | 1 | 0 |
-| **total** | **217** | **60** | **91** | **17** | **20** | **29** | **0** |
+| **total** | **217** | **60** | **91** | **20** | **20** | **26** | **0** |
 
-(Scoreboard current as of the P3-U05 ledger closure: the P3-U01..U04
+(Scoreboard current as of the P3-U05 ledger closure, rebaselined by the
+oo-pts campaign: the P3-U01..U04
 dialog-engine tasks moved `TableSettingsAdvanced` + `ImageSettingsAdvanced`
 (U02) and `ShapeSettings` (view + template), `ReviewPopover`,
 `ExtendedColorDialog` (U03) from `missing` to `partial`, and P3-U05 closed
 the remaining 51 `missing` rows to **0** — 17 `hosted` (P3-U04 engine specs
 + the shapeSettings shadow rows covering ShapeShadowDialog), 5
 `merged-into-editor.js` (Draw controller/view, Calendar, LoadMask,
-MonacoEditor), 29 `blocked` with named prerequisites in the notes. Per-type
+MonacoEditor), 29 `blocked` with named prerequisites in the notes.
+PTS-T2 then flipped the `PageThumbnails` controller+view rows and the
+`Pages` model row from `blocked` to `hosted` (**20 hosted / 26 blocked**):
+the thumbnails rail runs over the docserver page-render API (PTS-T1,
+wo-docx-renderer raster), not DOM screenshots. Per-type
 counts re-computed from the JSON, not hand-summed; gated by
-`ui-closure.test.mjs` → `UI-CLOSURE-PASS`.)
+`ui-closure.test.mjs` → `UI-CLOSURE-PASS` and
+`page-thumbnails.test.mjs` → `THUMBNAILS-PASS`.)
 
 Every row carries an extra `oo_layer` field (`documenteditor` 115 rows vs
 `common` 102 rows) so the documenteditor-app surface and the shared
@@ -104,7 +110,7 @@ no independent UI behavior.
 | `Calendar` (widget) | 503 | **merged (P3-U05)**: served by the native date controls of the datetime/cc dialogs (declared widget divergence); the calendar grid widget itself is a pure-UI follow-up | n/a |
 | `HSBColorPicker` + `ExtendedColorDialog` | — | picker widget ported (P3-U01 `wo-dialogs.js`); **consumer dialog landed (P3-U03)** — `WO_DIALOG_SPECS.extendedColorDialog` hosts HSB sliders + R/G/B/hex/opacity and routes the picked color to page background / shape fill/line/shadow; no HSB wheel widget, no recent-colors memory | `asc_putColor` |
 | `MultiSliderGradient` | 381 | widget ported (P3-U01 `wo-dialogs.js`); **shape fill consumer landed (P3-U03)** — `WO_DIALOG_SPECS.shapeSettings` gradient fill; textart fill spec still pending | `asc_getGradientStops` |
-| forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | **closed in P3-U05 (0 `missing`)** — hosted: `MailMergeEmailDlg`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog` (shapeSettings shadow rows), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip` specs (wo-dialogs.js, P3-U04); merged: `Draw` (ink section in editor.js), `LoadMask` (statusbar), `MonacoEditor` (no macro engine to host); blocked with named prerequisites: forms/roles (`asc_*Role*`/`asc_GetOForm` wo_missing, ORM-01 + ORM-05 sdt engine), signing (`asc_getSigner*`/`asc_getSignatureImage`, Phase 4), `PageThumbnails`+`Pages` (ORM-04 sev-3 rasterizer), `External*` family (Phase-4 plugin/iframe runtime), `MaskedField` (forms layer) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails need paginated raster (ORM-04 severity-3) |
+| forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | **closed in P3-U05 (0 `missing`)** — hosted: `MailMergeEmailDlg`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog` (shapeSettings shadow rows), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip` specs (wo-dialogs.js, P3-U04), `PageThumbnails`+`Pages` (oo-pts PTS-T2: left thumbnails rail in editor.js/index.html over the docserver page-render API — wo-docx-renderer raster, not DOM screenshots); merged: `Draw` (ink section in editor.js), `LoadMask` (statusbar), `MonacoEditor` (no macro engine to host); blocked with named prerequisites: forms/roles (`asc_*Role*`/`asc_GetOForm` wo_missing, ORM-01 + ORM-05 sdt engine), signing (`asc_getSigner*`/`asc_getSignatureImage`, Phase 4), `External*` family (Phase-4 plugin/iframe runtime), `MaskedField` (forms layer) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails served by the docserver page API (PTS-T1 `/pages/count` + `/pages/{n}.png`) |
 
 61 of 217 rows were `missing` at ORM-09 time; the P3-U01..U03 dialog-engine
 tasks closed ten of them (the two pure-widget absences plus
@@ -114,9 +120,10 @@ U03) to `partial`, and **the P3-U05 ledger closure closed the remaining 51
 to 0** — `missing` no longer occurs in the JSON (17 `hosted`, 5
 `merged-into-editor.js`, 29 `blocked` with named prerequisites; per-row
 detail in the JSON notes, re-verified by `ui-closure.test.mjs` →
-`UI-CLOSURE-PASS`). The open work is the 29 `blocked` rows (each note names
+`UI-CLOSURE-PASS`; the oo-pts PTS-T2 flip moved `PageThumbnails`+`Pages`
+to `hosted`, so 26 remain). The open work is the 26 `blocked` rows (each note names
 its prerequisite: forms/docxf + roles exports, the signing flow, the
-ORM-04 sev-3 rasterizer for thumbnails, the Phase-4 plugin/iframe runtime
+Phase-4 plugin/iframe runtime
 for the `External*` family, the docserver gateway/cloud for
 `ExternalUsers`/`ExternalLinks`, the Phase-3 long-tail pass for
 `HintManager`) plus the editor.js open/apply wiring for the 17 `hosted`
@@ -292,9 +299,11 @@ half — `wo-dialogs.js` carries 19 engine specs and the ledger's `missing`
 count is 0 (17 `hosted` / 5 `merged-into-editor.js` / 29 `blocked` with
 named prerequisites). The remaining open half is per-spec editor.js
 open/apply wiring for the P3-U04 long-tail batch (the notes on the `hosted`
-rows say which apply paths are pending), plus the 29 `blocked` rows'
-prerequisites (engine raster for thumbnails, docxf/roles for forms, signing
-exports, the Phase-4 plugin/iframe runtime).
+rows say which apply paths are pending), plus the remaining `blocked` rows'
+prerequisites (docxf/roles for forms, signing
+exports, the Phase-4 plugin/iframe runtime; the oo-pts PTS-T2 flip closed
+the thumbnails prerequisite by hosting `PageThumbnails`+`Pages` over the
+docserver page-render API, leaving 26 `blocked`).
 
 ## Port order recommendation (wasm-contract-first)
 

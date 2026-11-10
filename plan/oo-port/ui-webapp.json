@@ -124,9 +124,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/controller/PageThumbnails.js",
   "oo_lines": null,
-  "wo_status": "blocked",
-  "wo_anchor": "pages today: editor.js paginateQuiet()/currentPageInfo (DOM-counted pages); no engine raster path yet",
-  "notes": "P3-U05: blocked on the paginated page model + paginated raster output from the engine — ORM-04 severity-3 rasterizer rows (engine-internals.json: agg-2.4/include Agg core/rasterizer_cells_aa, graphics/Image.cpp Canvas draw_image; wo-renderer-wasm/src/layout.rs currently skips DocxBlock::Image). Named prerequisite: Phase-2 rasterization (PORT-PLAN Phase 2 §3).",
+  "wo_status": "hosted",
+  "wo_anchor": "openThumbnails()/toggleThumbnails() in editor.js (PTS-T2 rail) over the docserver page API (PTS-T1: GET /pages/count + GET /pages/{n}.png via wo-docx-renderer)",
+  "notes": "PTS: thumbnails rail over /api/documents/{id}/pages/*.png (wo-docx-renderer)",
   "oo_layer": "documenteditor"
  },
  {
@@ -814,9 +814,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/PageThumbnails.js",
   "oo_lines": null,
-  "wo_status": "blocked",
-  "wo_anchor": "same as the PageThumbnails controller row (paginateQuiet() DOM count is the only page source today)",
-  "notes": "P3-U05: blocked on the paginated page model + paginated raster output from the engine (ORM-04 severity-3: agg-2.4/include rasterizer + graphics/Image.cpp; Phase-2 rasterization per PORT-PLAN). The thumbnail pane renders engine raster frames, not DOM screenshots.",
+  "wo_status": "hosted",
+  "wo_anchor": "<aside id=thumbnails-rail> + #thumbnails-strip in index.html, #thumbnails-rail styles in style.css (PTS-T2)",
+  "notes": "PTS: thumbnails rail over /api/documents/{id}/pages/*.png (wo-docx-renderer)",
   "oo_layer": "documenteditor"
  },
  {
@@ -844,9 +844,9 @@
   "oo_type": "model",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/model/Pages.js",
   "oo_lines": null,
-  "wo_status": "blocked",
-  "wo_anchor": "editor.js paginateQuiet()/currentPageInfo (DOM-derived page count, the interim page model)",
-  "notes": "P3-U05: blocked on the engine page model (real pagination) + paginated raster output (ORM-04 severity-3 rasterizer rows, Phase-2 per PORT-PLAN). Until then WO counts pages from the DOM.",
+  "wo_status": "hosted",
+  "wo_anchor": "page count from GET /pages/count (docserver page API, PTS-T1) + the paginated DOM; PTS-T2 approximates the current page from the editor scroll fraction",
+  "notes": "PTS: thumbnails rail over /api/documents/{id}/pages/*.png (wo-docx-renderer)",
   "oo_layer": "documenteditor"
  },
  {

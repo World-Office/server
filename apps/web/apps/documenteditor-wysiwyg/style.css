@@ -1452,6 +1452,7 @@ main {
   /* chrome must not print: ribbon, statusbar, right settings panel, ink
      canvas, open dialogs/backstage, nav/chat rails, toasts */
   #toolbar, footer.statusbar, #right-panel, #nav-panel, #chat-panel,
+  #thumbnails-rail,
   #ink-canvas, .dialog-overlay, .backstage-overlay, [class*="toast"] {
     display: none !important;
   }
@@ -2539,6 +2540,75 @@ main.rp-open { padding-right: 344px; }
 @media (max-width: 900px) {
   main.rp-open { padding-right: 16px; }
   #right-panel-body { width: 260px; }
+}
+
+/* ------------------------------------------------------------------
+   PTS-T2 (ORM-09 PageThumbnails): left thumbnail rail — 140px strip of
+   engine-rendered page previews (docserver /pages/{n}.png, PTS-T1).
+   Positioned absolutely inside main like #right-panel, mirrored to the
+   left edge; collapsed state is the hidden attribute (display:none rule
+   below — author display:flex would otherwise override the UA stylesheet,
+   same VIS-002 pattern as #right-panel[hidden]).
+   ------------------------------------------------------------------ */
+#thumbnails-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 140px;
+  z-index: 39;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+}
+#thumbnails-rail[hidden] { display: none; }
+
+.thumbnails-title {
+  flex: none;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+#thumbnails-strip {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#thumbnails-strip img.thumbnail {
+  width: 116px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+#thumbnails-strip img.thumbnail:hover { border-color: var(--muted); }
+/* Current-page highlight: accent outline + border, mirrors the ribbon
+   active state so the thumb reads as selected, not hovered. */
+#thumbnails-strip img.thumbnail.current {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.thumbnails-empty {
+  margin: 8px 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  #thumbnails-rail { width: 112px; }
+  #thumbnails-strip img.thumbnail { width: 92px; }
 }
 
 /* AF11-SPELLCHECK-CLOSEOUT: custom misspell markers (spellcheck engine). */

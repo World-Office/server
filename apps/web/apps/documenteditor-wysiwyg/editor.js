@@ -1447,6 +1447,8 @@
     if (cmd === "toggleGridlines") { toggleGridlines(); return; }
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
     if (cmd === "toggleRightPanel") { toggleRightPanel(); return; }
+    if (cmd === "toggleThumbnails") { toggleThumbnails(); return; }
+    if (cmd === "view.page-thumbnails") { scrollToThumbnailPage(Number(value) || 1); return; }
     if (cmd === "toggleChat") { toggleChat(); return; }
     if (cmd === "insertCaption") { openCaptionDialog(); return; }
     if (cmd === "insertCitation") { insertCitation(); return; }
@@ -1940,6 +1942,11 @@
           // definition, so no closure constant here).
           const rp = document.getElementById("right-panel");
           active = !!(rp && !rp.hidden);
+        } else if (cmd === "toggleThumbnails") {
+          // PTS-T2: the View-tab thumbnails toggle reflects live rail
+          // visibility (read at call time, like toggleRightPanel above).
+          const rail = document.getElementById("thumbnails-rail");
+          active = !!(rail && !rail.hidden);
         } else {
           active = cmd === "formatBlock"
             ? (btn.dataset.value || "P") === currentBlockTag()
@@ -6921,6 +6928,107 @@
       if (!btn || !rightRail.contains(btn)) return;
       openRightPanelSection(btn.dataset.panel);
     });
+  }
+
+  // PTS-T2 (ORM-09 PageThumbnails): left thumbnail rail — a vertical strip
+  // of engine-rendered page previews served by the docserver page API
+  // (PTS-T1: GET /api/documents/{id}/pages/{n}.png + GET …/pages/count).
+  // Mirrors toggleRightPanel: rail state lives on the element (hidden), the
+  // View-tab toggle reflects it via aria-pressed, and the current page is
+  // approximated from the editor scroll fraction (the DOM page model gives
+  // the page count, the raster frames come from wo-docx-renderer).
+  const thumbnailsRail = document.getElementById("thumbnails-rail");
+  const thumbnailsToggleBtn = document.getElementById("btn-thumbnails-toggle");
+  const thumbnailsStrip = document.getElementById("thumbnails-strip");
+  let thumbnailsPageCount = 0;
+  // Eager-load cap: documents with at most this many pages load every thumb
+  // up front; longer documents rely on native loading="lazy" streaming.
+  const THUMBNAILS_EAGER_MAX = 50;
+
+  function toggleThumbnails() {
+    if (!thumbnailsRail) return;
+    const opening = thumbnailsRail.hidden;
+    thumbnailsRail.hidden = !opening;
+    if (thumbnailsToggleBtn) {
+      thumbnailsToggleBtn.setAttribute("aria-pressed", opening ? "true" : "false");
+    }
+    setStatus(opening
+      ? t("Status.ThumbnailsOpen") || "Thumbnails open"
+      : t("Status.ThumbnailsClosed") || "Thumbnails closed");
+    if (opening) openThumbnails();
+    updateActiveStates();
+  }
+
+  async function openThumbnails() {
+    if (!thumbnailsStrip) return;
+    thumbnailsStrip.textContent = "";
+    thumbnailsPageCount = 0;
+    let count = 0;
+    try {
+      // Docserver page API (PTS-T1): GET /api/documents/{id}/pages/count
+      // -> {"id":…,"pages":N} laid-out page count (1-based pages).
+      const res = await fetch(api("pages/count"));
+      if (res.ok) {
+        const data = await res.json();
+        count = Math.max(0, Number(data && data.pages) || 0);
+      }
+    } catch (err) {
+      count = 0; // offline/no docserver — the rail shows the empty state
+    }
+    if (!count) {
+      const empty = document.createElement("div");
+      empty.className = "thumbnails-empty";
+      empty.textContent = t("Status.ThumbnailsUnavailable") || "No page previews";
+      thumbnailsStrip.appendChild(empty);
+      updateActiveStates();
+      return;
+    }
+    thumbnailsPageCount = count;
+    // One <img data-page=N> per page; <= THUMBNAILS_EAGER_MAX pages load
+    // eagerly, taller documents stream via native loading="lazy".
+    for (let n = 1; n <= count; n++) {
+      const img = document.createElement("img");
+      img.className = "thumbnail";
+      img.setAttribute("data-page", String(n));
+      img.alt = (t("Thumbnails.Page") || "Page {n}").replace("{n}", String(n));
+      img.loading = n <= THUMBNAILS_EAGER_MAX ? "eager" : "lazy";
+      img.src = api("pages/" + n + ".png");
+      img.addEventListener("click", () => emitCommand("view.page-thumbnails", String(n)));
+      thumbnailsStrip.appendChild(img);
+    }
+    highlightCurrentThumbnail();
+  }
+
+  // Current-page highlight: the editor scroll fraction times the page
+  // count, rounded — the same approximation OO's PageThumbnails uses when
+  // the engine does not push asc_onCurrentPage frames.
+  function highlightCurrentThumbnail() {
+    if (!thumbnailsStrip || !thumbnailsPageCount) return;
+    const max = editor.scrollHeight - editor.clientHeight;
+    const frac = max > 0 ? editor.scrollTop / max : 0;
+    const page = Math.min(
+      thumbnailsPageCount,
+      Math.max(1, Math.round(frac * thumbnailsPageCount) || 1)
+    );
+    Array.prototype.forEach.call(thumbnailsStrip.querySelectorAll("img[data-page]"), (img) => {
+      img.classList.toggle("current", Number(img.getAttribute("data-page")) === page);
+    });
+  }
+
+  // Click-to-scroll: jump the editor to the page's scroll fraction (n/count)
+  // and mirror the new position onto the strip.
+  function scrollToThumbnailPage(n) {
+    const total = thumbnailsPageCount || currentPageInfo().total || n;
+    const max = editor.scrollHeight - editor.clientHeight;
+    if (max > 0) editor.scrollTop = Math.max(0, Math.round((n / total) * max));
+    highlightCurrentThumbnail();
+  }
+
+  if (thumbnailsRail && editor) {
+    editor.addEventListener("scroll", () => {
+      if (thumbnailsRail.hidden) return;
+      highlightCurrentThumbnail();
+    }, { passive: true });
   }
   const rpLineSpacing = document.getElementById("rp-line-spacing");
   if (rpLineSpacing) rpLineSpacing.addEventListener("change", () => {
