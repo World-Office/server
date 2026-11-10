@@ -1035,3 +1035,231 @@ fn gap_unmanaged_parts_roundtrip() {
     let html = String::from_utf8(html).unwrap();
     assert!(html.contains("Body survives too."), "body text lost: {html}");
 }
+
+/// Build a minimal valid xlsx zip around hand-written parts (ORM-06: lets
+/// a test drive worksheet print/hyperlink parts end to end).
+fn xlsx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>"#)
+            .unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("xl/workbook.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#)
+            .unwrap();
+        zip.start_file("xl/_rels/workbook.xml.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#)
+            .unwrap();
+        for (name, xml) in parts {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        }
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn gap_xlsx_print_hyperlink_roundtrip() {
+    // ORM-06: the worksheet print parts (pageMargins, pageSetup,
+    // headerFooter, rowBreaks/colBreaks) and cell hyperlinks (external via
+    // the worksheet rels part, internal via location) were all dropped on
+    // import. They must now (a) parse into the typed model with external
+    // targets resolved, (b) survive an xlsx -> xlsx re-serialization with
+    // their rels part regenerated, and (c) re-parse to the identical model.
+    let sheet_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Report</v></c></row>
+    <row r="2"><c r="B2" t="str"><v>Details</v></c><c r="C2" t="str"><v>More</v></c></row>
+  </sheetData>
+  <hyperlinks>
+    <hyperlink ref="A1" r:id="rId1" tooltip="Open the report"/>
+    <hyperlink ref="B2:C2" location="Sheet2!A1" display="Go to details"/>
+    <hyperlink ref="D4" r:id="rId2"/>
+  </hyperlinks>
+  <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+  <pageSetup paperSize="9" orientation="landscape" scale="85" firstPageNumber="2" useFirstPageNumber="1" horizontalDpi="300" verticalDpi="300"/>
+  <headerFooter differentOddEven="1">
+    <oddHeader>&amp;L&amp;"Arial,Bold"&amp;BQuarterly Report&amp;RPage &amp;P</oddHeader>
+    <oddFooter>&amp;LSheet: &amp;A&amp;R&amp;D</oddFooter>
+    <evenHeader>&amp;CEven page</evenHeader>
+  </headerFooter>
+  <rowBreaks count="2" manualBreakCount="2"><brk id="8" max="16383" man="1"/><brk id="20" max="16383" man="1"/></rowBreaks>
+  <colBreaks count="1" manualBreakCount="1"><brk id="2" max="1048575" man="1"/></colBreaks>
+</worksheet>"#;
+    let sheet_rels = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com/report" TargetMode="External"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="mailto:team@example.com" TargetMode="External"/>
+</Relationships>"#;
+    let xlsx = xlsx_from_parts(&[
+        ("xl/worksheets/sheet1.xml", sheet_xml),
+        ("xl/worksheets/_rels/sheet1.xml.rels", sheet_rels),
+    ]);
+
+    // 1. Typed parse: print model + hyperlinks with resolved targets.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&xlsx).unwrap();
+    let sheet = &parsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    let print = &sheet.properties.print;
+    let pm = print
+        .page_margins
+        .as_ref()
+        .expect("pageMargins must parse");
+    assert_eq!(pm.left, 0.7);
+    assert_eq!(pm.right, 0.7);
+    assert_eq!(pm.top, 0.75);
+    assert_eq!(pm.bottom, 0.75);
+    assert_eq!(pm.header, 0.3);
+    assert_eq!(pm.footer, 0.3);
+    let ps = print.page_setup.as_ref().expect("pageSetup must parse");
+    assert_eq!(ps.paper_size, Some(9));
+    assert_eq!(ps.orientation.as_deref(), Some("landscape"));
+    assert_eq!(ps.scale, Some(85));
+    assert_eq!(ps.first_page_number, Some(2));
+    assert!(ps.use_first_page_number);
+    assert_eq!(ps.horizontal_dpi, Some(300));
+    assert_eq!(ps.vertical_dpi, Some(300));
+    let hf = print
+        .header_footer
+        .as_ref()
+        .expect("headerFooter must parse");
+    assert!(hf.different_odd_even);
+    assert_eq!(
+        hf.odd_header.as_deref(),
+        Some(r#"&L&"Arial,Bold"&BQuarterly Report&RPage &P"#),
+        "header format code must keep its section/font markers"
+    );
+    assert_eq!(hf.odd_footer.as_deref(), Some("&LSheet: &A&R&D"));
+    assert_eq!(hf.even_header.as_deref(), Some("&CEven page"));
+    assert_eq!(hf.even_footer, None);
+    assert_eq!(print.row_breaks.len(), 2, "rowBreaks must parse");
+    assert_eq!(print.row_breaks[0].id, 8);
+    assert_eq!(print.row_breaks[0].max, 16383);
+    assert!(print.row_breaks[0].man, "break must keep its manual flag");
+    assert_eq!(print.col_breaks.len(), 1, "colBreaks must parse");
+    assert_eq!(print.col_breaks[0].id, 2);
+    assert_eq!(print.col_breaks[0].max, 1048575);
+
+    assert_eq!(sheet.properties.hyperlinks.len(), 3, "all links must parse");
+    let links = &sheet.properties.hyperlinks;
+    assert_eq!(links[0].ref_range, "A1");
+    assert_eq!(links[0].r_id.as_deref(), Some("rId1"));
+    assert_eq!(
+        links[0].target.as_deref(),
+        Some("https://example.com/report"),
+        "external target must resolve through the worksheet rels part"
+    );
+    assert_eq!(links[0].tooltip.as_deref(), Some("Open the report"));
+    assert_eq!(links[1].ref_range, "B2:C2");
+    assert_eq!(links[1].location.as_deref(), Some("Sheet2!A1"));
+    assert_eq!(links[1].display.as_deref(), Some("Go to details"));
+    assert_eq!(links[1].target, None, "internal link has no relationship");
+    assert_eq!(links[2].target.as_deref(), Some("mailto:team@example.com"));
+
+    // 2. xlsx -> xlsx: the parts re-emit in schema order, the header
+    //    format code re-escapes, and the rels part is regenerated.
+    let reser = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx(parsed.xlsx_workbook.as_ref().unwrap())
+        .unwrap();
+    let sheet2 = zip_entry(&reser, "xl/worksheets/sheet1.xml");
+    assert!(
+        sheet2.contains(r#"<hyperlinks count="3">"#),
+        "hyperlinks element lost: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<hyperlink ref="A1" r:id="rId1" tooltip="Open the report"/>"#),
+        "external link lost its rid/tooltip: {sheet2}"
+    );
+    assert!(
+        sheet2
+            .contains(r#"<hyperlink ref="B2:C2" location="Sheet2!A1" display="Go to details"/>"#),
+        "internal link must carry location without an r:id: {sheet2}"
+    );
+    let p_margins = sheet2.find(r#"<pageMargins left="0.7""#).unwrap();
+    let p_setup = sheet2.find(r#"orientation="landscape""#).unwrap();
+    let p_hf = sheet2
+        .find(r#"&amp;L&amp;&quot;Arial,Bold&quot;&amp;BQuarterly"#)
+        .unwrap();
+    let p_row = sheet2.find("<rowBreaks count=\"2\" manualBreakCount=\"2\">").unwrap();
+    let p_col = sheet2.find("<colBreaks count=\"1\" manualBreakCount=\"1\">").unwrap();
+    let p_end = sheet2.find(r#"<brk id="20" min="0" max="16383" man="1" />"#).unwrap();
+    assert!(
+        p_margins < p_setup && p_setup < p_hf && p_hf < p_row && p_row < p_end && p_end < p_col,
+        "print parts must keep schema order after hyperlinks: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<brk id="8" min="0" max="16383" man="1" />"#),
+        "row break must re-emit: {sheet2}"
+    );
+    let rels2 = zip_entry(&reser, "xl/worksheets/_rels/sheet1.xml.rels");
+    assert!(
+        rels2.contains(r#"Id="rId1""#) && rels2.contains(r#"Target="https://example.com/report""#),
+        "external hyperlink relationship lost: {rels2}"
+    );
+    assert!(
+        rels2.contains(r#"Target="mailto:team@example.com""#),
+        "second external relationship lost: {rels2}"
+    );
+    assert!(
+        rels2.matches("TargetMode=\"External\"").count() == 2,
+        "external rels must carry TargetMode: {rels2}"
+    );
+
+    // 3. Re-parse: the model is identical.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rsheet = &reparsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    assert_eq!(
+        rsheet.properties.print, sheet.properties.print,
+        "print model must survive the round trip"
+    );
+    assert_eq!(
+        rsheet.properties.hyperlinks, sheet.properties.hyperlinks,
+        "hyperlink model must survive the round trip"
+    );
+
+    // 4. Serializer-side rid synthesis: a model that only carries targets
+    //    (no r:id — e.g. built by wo-sheet) still yields a valid rels part
+    //    with fresh rIds in model order.
+    let mut wb = parsed.xlsx_workbook.clone().unwrap();
+    let sheet_mut = &mut wb.sheets[0];
+    sheet_mut.properties.hyperlinks[1].target = Some("mailto:details@example.com".to_string());
+    let reser2 = wo_ooxml::OoxmlSerializer::new().serialize_xlsx(&wb).unwrap();
+    let rels3 = zip_entry(&reser2, "xl/worksheets/_rels/sheet1.xml.rels");
+    for (rid, target) in [
+        ("rId1", "https://example.com/report"),
+        ("rId2", "mailto:details@example.com"),
+        ("rId3", "mailto:team@example.com"),
+    ] {
+        assert!(
+            rels3.contains(&format!(r#"Id="{rid}""#))
+                && rels3.contains(&format!(r#"Target="{target}""#)),
+            "synthesized rel {rid} -> {target} missing: {rels3}"
+        );
+    }
+}

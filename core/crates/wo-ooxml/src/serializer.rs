@@ -228,12 +228,21 @@ impl OoxmlSerializer {
         zip.start_file("xl/_rels/workbook.xml.rels", options)?;
         zip.write_all(wb_rels.as_bytes())?;
 
-        // 5. Each worksheet
+        // 5. Each worksheet (+ a per-sheet rels part when it carries
+        //    external hyperlink relationships — ORM-06).
         for (i, sheet) in wb.sheets.iter().enumerate() {
             let sheet_path = format!("xl/worksheets/sheet{}.xml", i + 1);
-            let sheet_xml = self.build_xlsx_sheet_xml(sheet);
+            let link_rids = xlsx_hyperlink_rids(sheet);
+            let sheet_xml = self.build_xlsx_sheet_xml(sheet, &link_rids);
             zip.start_file(&sheet_path, options)?;
             zip.write_all(sheet_xml.as_bytes())?;
+
+            if link_rids.iter().any(|(rid, _)| !rid.is_empty()) {
+                let rels_path = format!("xl/worksheets/_rels/sheet{}.xml.rels", i + 1);
+                let rels_xml = self.build_xlsx_sheet_rels(&link_rids);
+                zip.start_file(&rels_path, options)?;
+                zip.write_all(rels_xml.as_bytes())?;
+            }
         }
 
         // 6. xl/sharedStrings.xml
@@ -2825,7 +2834,6 @@ impl OoxmlSerializer {
         }
         xml.push_str(
             r#"xWindow="0" yWindow="0" windowWidth="19200" windowHeight="12480"/>
-    </workbookView>
   </bookViews>"#,
         );
 
@@ -2918,7 +2926,7 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_xlsx_sheet_xml(&self, sheet: &XlsxSheet) -> String {
+    fn build_xlsx_sheet_xml(&self, sheet: &XlsxSheet, link_rids: &[(String, String)]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -3117,7 +3125,171 @@ impl OoxmlSerializer {
             );
         }
 
+        // hyperlinks (ORM-06: the single most common interactive feature)
+        if !sheet.properties.hyperlinks.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <hyperlinks count="{}">"#,
+                sheet.properties.hyperlinks.len(),
+            ));
+            for (idx, hl) in sheet.properties.hyperlinks.iter().enumerate() {
+                xml.push_str(&format!(
+                    r#"
+    <hyperlink ref="{}""#,
+                    escape_xml(&hl.ref_range),
+                ));
+                let rid = link_rids
+                    .get(idx)
+                    .map(|(rid, _)| rid.as_str())
+                    .filter(|rid| !rid.is_empty())
+                    .or(hl.r_id.as_deref());
+                if let Some(rid) = rid {
+                    xml.push_str(&format!(r#" r:id="{}""#, escape_xml(rid)));
+                }
+                if let Some(loc) = hl.location.as_deref() {
+                    xml.push_str(&format!(r#" location="{}""#, escape_xml(loc)));
+                }
+                if let Some(display) = hl.display.as_deref() {
+                    xml.push_str(&format!(r#" display="{}""#, escape_xml(display)));
+                }
+                if let Some(tooltip) = hl.tooltip.as_deref() {
+                    xml.push_str(&format!(r#" tooltip="{}""#, escape_xml(tooltip)));
+                }
+                xml.push_str("/>");
+            }
+            xml.push_str(
+                r#"
+  </hyperlinks>"#,
+            );
+        }
+
+        // print model (ORM-06: pageMargins / pageSetup / headerFooter /
+        // rowBreaks / colBreaks, in schema order after hyperlinks)
+        let print = &sheet.properties.print;
+        if let Some(pm) = &print.page_margins {
+            xml.push_str(&format!(
+                r#"
+  <pageMargins left="{}" right="{}" top="{}" bottom="{}" header="{}" footer="{}"/>"#,
+                pm.left, pm.right, pm.top, pm.bottom, pm.header, pm.footer,
+            ));
+        }
+        if let Some(ps) = &print.page_setup {
+            xml.push_str("\n  <pageSetup");
+            if let Some(v) = ps.paper_size {
+                xml.push_str(&format!(r#" paperSize="{}""#, v));
+            }
+            if let Some(ref v) = ps.orientation {
+                xml.push_str(&format!(r#" orientation="{}""#, escape_xml(v)));
+            }
+            if let Some(v) = ps.scale {
+                xml.push_str(&format!(r#" scale="{}""#, v));
+            }
+            if let Some(ref v) = ps.page_order {
+                xml.push_str(&format!(r#" pageOrder="{}""#, escape_xml(v)));
+            }
+            if let Some(v) = ps.fit_to_width {
+                xml.push_str(&format!(r#" fitToWidth="{}""#, v));
+            }
+            if let Some(v) = ps.fit_to_height {
+                xml.push_str(&format!(r#" fitToHeight="{}""#, v));
+            }
+            if let Some(v) = ps.first_page_number {
+                xml.push_str(&format!(r#" firstPageNumber="{}""#, v));
+            }
+            if ps.use_first_page_number {
+                xml.push_str(r#" useFirstPageNumber="1""#);
+            }
+            if ps.black_and_white {
+                xml.push_str(r#" blackAndWhite="1""#);
+            }
+            if ps.draft {
+                xml.push_str(r#" draft="1""#);
+            }
+            if let Some(v) = ps.horizontal_dpi {
+                xml.push_str(&format!(r#" horizontalDpi="{}""#, v));
+            }
+            if let Some(v) = ps.vertical_dpi {
+                xml.push_str(&format!(r#" verticalDpi="{}""#, v));
+            }
+            if let Some(v) = ps.copies {
+                xml.push_str(&format!(r#" copies="{}""#, v));
+            }
+            if let Some(rid) = ps.r_id.as_deref() {
+                xml.push_str(&format!(r#" r:id="{}""#, escape_xml(rid)));
+            }
+            xml.push_str("/>");
+        }
+        if let Some(hf) = &print.header_footer {
+            xml.push_str("\n  <headerFooter");
+            if hf.different_odd_even {
+                xml.push_str(r#" differentOddEven="1""#);
+            }
+            if hf.different_first {
+                xml.push_str(r#" differentFirst="1""#);
+            }
+            xml.push('>');
+            for (tag, part) in [
+                ("oddHeader", &hf.odd_header),
+                ("oddFooter", &hf.odd_footer),
+                ("evenHeader", &hf.even_header),
+                ("evenFooter", &hf.even_footer),
+                ("firstHeader", &hf.first_header),
+                ("firstFooter", &hf.first_footer),
+            ] {
+                if let Some(text) = part.as_deref() {
+                    xml.push_str(&format!("\n    <{}>{}</{}>", tag, escape_xml(text), tag));
+                }
+            }
+            xml.push_str(
+                r#"
+  </headerFooter>"#,
+            );
+        }
+        for (tag, breaks) in [("rowBreaks", &print.row_breaks), ("colBreaks", &print.col_breaks)] {
+            if breaks.is_empty() {
+                continue;
+            }
+            let manual = breaks.iter().filter(|b| b.man).count();
+            xml.push_str(&format!(
+                "\n  <{} count=\"{}\" manualBreakCount=\"{}\">",
+                tag,
+                breaks.len(),
+                manual,
+            ));
+            for b in breaks {
+                xml.push_str(&format!(
+                    "\n    <brk id=\"{}\" min=\"{}\" max=\"{}\"{} />",
+                    b.id,
+                    b.min,
+                    b.max,
+                    if b.man { " man=\"1\"" } else { "" },
+                ));
+            }
+            xml.push_str(&format!("\n  </{}>", tag));
+        }
+
         xml.push_str("\n</worksheet>");
+        xml
+    }
+
+    /// Worksheet rels part holding the external hyperlink relationships.
+    fn build_xlsx_sheet_rels(&self, link_rids: &[(String, String)]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
+        for (rid, target) in link_rids {
+            if rid.is_empty() {
+                continue;
+            }
+            xml.push_str(&format!(
+                r#"
+  <Relationship Id="{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="{}" TargetMode="External"/>"#,
+                escape_xml(rid),
+                escape_xml(target),
+            ));
+        }
+        xml.push_str("\n</Relationships>");
         xml
     }
 
@@ -3573,6 +3745,25 @@ fn escape_xml(s: &str) -> String {
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str("&apos;"),
             _ => out.push(ch),
+        }
+    }
+    out
+}
+
+/// Assign a relationship id to every externally-targeted hyperlink of a
+/// sheet, in model order ("" marks hyperlinks without a relationship —
+/// internal `location` links). Returns (rid, target) pairs so the sheet
+/// XML and its rels part agree.
+fn xlsx_hyperlink_rids(sheet: &XlsxSheet) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut external_count = 0usize;
+    for hl in &sheet.properties.hyperlinks {
+        match hl.target.as_deref() {
+            Some(t) if !t.is_empty() => {
+                external_count += 1;
+                out.push((format!("rId{}", external_count), t.to_string()));
+            }
+            _ => out.push((String::new(), String::new())),
         }
     }
     out
