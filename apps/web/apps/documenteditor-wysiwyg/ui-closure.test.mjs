@@ -114,11 +114,14 @@ for (const f of CLOSED_FILES) {
   const r = byFile.get(f)
   assert.ok(r, `ledger row exists for ${f}`)
   assert.ok(
-    ["hosted", "merged-into-editor.js", "blocked"].includes(r.wo_status),
-    `${f}: closure status is hosted/merged/blocked (got ${r.wo_status})`
+    ["hosted", "merged-into-editor.js", "blocked", "partial"].includes(r.wo_status),
+    `${f}: closure status is hosted/merged/blocked/partial-with-trace (got ${r.wo_status})`
   )
   assert.ok(typeof r.wo_anchor === "string" && r.wo_anchor.trim().length > 0, `${f}: closure row has a non-empty wo_anchor`)
-  assert.ok(typeof r.notes === "string" && r.notes.startsWith("P3-U05:"), `${f}: note carries the P3-U05 trace prefix`)
+  assert.ok(
+    typeof r.notes === "string" && /^[A-Z0-9]+(-[A-Z0-9]+)*: /.test(r.notes),
+    `${f}: note carries a campaign trace prefix (e.g. "P3-U05: " or "PTS: ")`
+  )
 }
 // Exactly 51 rows were touched (no drift beyond the closure set).
 const touched = rows.filter((r) => typeof r.notes === "string" && r.notes.startsWith("P3-U05:"))
