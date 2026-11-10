@@ -1713,7 +1713,7 @@
   "call_kind": "payload-ctor",
   "resolution": "landed-export",
   "resolution_target": "setUserInfo/getUserInfo ↔ WasmUserInfo blob",
-  "note": "landed P1-03; Main.js builds the OO payload shape over the serde blob | P1-04 re-baseline: landed P1-03; Main.js builds the OO payload shape over the serde blob"
+  "note": "landed P1-03; Main.js builds the OO payload shape over the serde blob | P1-04 re-baseline: landed P1-03; Main.js builds the OO payload shape over the serde blob | P4-C01: typed AscCUserInfo{id,name,initials,color} added (wo-renderer-wasm lib.rs)"
  },
  {
   "name": "asc_getUserName",
@@ -2862,10 +2862,11 @@
   "ui_caller_count": 0,
   "ui_caller_files": [],
   "sdk_ref_count": 20,
-  "wo_export_name": "",
-  "wo_missing": true,
-  "resolution": "planned-blob",
-  "resolution_target": "props::WasmVersionHistory (planned struct)"
+  "wo_export_name": "setVersionHistory/getVersionHistory ↔ WasmVersionHistory blob",
+  "wo_missing": false,
+  "resolution": "landed-export",
+  "resolution_target": "setVersionHistory/getVersionHistory ↔ WasmVersionHistory blob (AscCVersionHistoryEntry entries)",
+  "note": "landed P4-C01: serde AscCVersionHistoryEntry{version,author,date,label} + per-document blob store (wo-renderer-wasm lib.rs; props.rs out of scope for the task) | prior: props::WasmVersionHistory (planned struct)"
  },
  {
   "name": "asc_getApplication",
@@ -9976,12 +9977,12 @@
    "Main"
   ],
   "sdk_ref_count": 1,
-  "wo_export_name": "",
-  "wo_missing": true,
+  "wo_export_name": "setDocumentRestriction/getDocumentRestriction",
+  "wo_missing": false,
   "call_kind": "api-call",
-  "resolution": "planned-op",
-  "resolution_target": "apply_structure_op(op:\"set_restriction\")",
-  "note": "DocProtection/FormsTab/Main; restriction modes (read/fill-forms/comments/forms); D3 typed op, Phase 3 with forms | P1-04 re-baseline: DocProtection/FormsTab/Main; restriction modes (read/fill-forms/comments/forms); D3 typed op, Phase 3 with forms"
+  "resolution": "landed-export",
+  "resolution_target": "setDocumentRestriction/getDocumentRestriction ↔ DocumentRestriction blob + WsEvent::RestrictionChange",
+  "note": "landed P4-C01: JSON contract {mode,allowPrint,allowCopy}, modes none/readOnly/comment-only/fill-forms/track-changes, pushes WsEvent::RestrictionChange; the numeric AscRestrictionType-enum spelling is a named divergence (D4: alias only when the boundary covers the shape) | prior: DocProtection/FormsTab/Main; restriction modes (read/fill-forms/comments/forms); D3 typed op, Phase 3 with forms | P1-04 re-baseline: DocProtection/FormsTab/Main; restriction modes (read/fill-forms/comments/forms); D3 typed op, Phase 3 with forms"
  },
  {
   "name": "asc_setEditType",

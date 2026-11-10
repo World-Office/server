@@ -20,6 +20,7 @@ use std::collections::HashSet;
 use std::io::{Cursor, Read, Write};
 use std::sync::Mutex;
 use std::sync::OnceLock;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
@@ -4117,10 +4118,308 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
     Ok(())
 }
 
+// ── Collaboration & protection (Phase 4 item 4, ORM-01/03 collab rows) ─
+
+/// OO `asc_CUserInfo` payload class (ORM-03 collab family): the identity
+/// blob the word UI builds in `Main` and hands to the engine through the
+/// `sendCommand` handshake. Field set is the P4-C01 contract
+/// (`{id, name, initials, color}`); the session half of the identity
+/// (docId/token/server handshake fields) stays on [`session::WasmUserInfo`]
+/// via `setUserInfo`/`getUserInfo`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AscCUserInfo {
+    /// User id as announced by the collaboration server.
+    pub id: String,
+    /// Display name.
+    pub name: String,
+    /// Initials shown on foreign carets/chips.
+    pub initials: String,
+    /// Presence color, `"rrggbb"` / `"#rrggbb"` hex (same hex form the
+    /// session `WasmUserInfo.color` serves).
+    pub color: String,
+}
+
+/// One entry of the version-history (revision) list — the OO
+/// `asc_CVersionHistory` payload class as the version-history dialog
+/// renders it (one row per saved revision).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AscCVersionHistoryEntry {
+    /// Revision id/version label as the server numbers it.
+    pub version: String,
+    /// Author display name of the revision.
+    pub author: String,
+    /// Revision date (ISO string; the wire does not pin a format).
+    pub date: String,
+    /// UI label (e.g. "Version 3 — before sign-off").
+    pub label: String,
+}
+
+/// The version-history blob: one `setVersionHistory`/`getVersionHistory`
+/// payload per document (the WO name of OO's `asc_CVersionHistory`
+/// constructor + history push). ORM-03's planned `WasmVersionHistory`
+/// struct, hosted here because props.rs was out of scope for P4-C01.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WasmVersionHistory {
+    pub entries: Vec<AscCVersionHistoryEntry>,
+}
+
+/// Document-protection mode — OO `asc_setRestriction`'s restriction types,
+/// served as the wire strings the UI already spells (`readOnly`,
+/// `comment-only`, `fill-forms`, `track-changes`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RestrictionMode {
+    /// Unprotected (default).
+    #[default]
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "readOnly")]
+    ReadOnly,
+    #[serde(rename = "comment-only")]
+    CommentOnly,
+    #[serde(rename = "fill-forms")]
+    FillForms,
+    #[serde(rename = "track-changes")]
+    TrackChanges,
+}
+
+impl RestrictionMode {
+    /// The wire string (also the `WsEvent::RestrictionChange.mode` payload).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            RestrictionMode::None => "none",
+            RestrictionMode::ReadOnly => "readOnly",
+            RestrictionMode::CommentOnly => "comment-only",
+            RestrictionMode::FillForms => "fill-forms",
+            RestrictionMode::TrackChanges => "track-changes",
+        }
+    }
+
+    /// Case-insensitive parse so UI callers can pass OO's spellings verbatim.
+    fn parse(s: &str) -> Option<Self> {
+        let norm = s.trim().to_ascii_lowercase();
+        // Accept the wire strings plus the plain-word spellings the OO UI
+        // also uses in controller code ("comments" ≙ comment-only, …).
+        Some(match norm.as_str() {
+            "none" | "" => RestrictionMode::None,
+            "readonly" | "read-only" | "read" => RestrictionMode::ReadOnly,
+            "comment-only" | "commentonly" | "comments" | "comment" => {
+                RestrictionMode::CommentOnly
+            }
+            "fill-forms" | "fillforms" | "fill-form" | "forms" => RestrictionMode::FillForms,
+            "track-changes" | "trackchanges" | "review" => RestrictionMode::TrackChanges,
+            _ => return None,
+        })
+    }
+}
+
+/// Per-document protection blob: `{ mode, allowPrint, allowCopy }` — the
+/// `set_document_restriction`/`get_document_restriction` wire schema.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRestriction {
+    pub mode: RestrictionMode,
+    /// Whether printing stays allowed under the restriction.
+    pub allow_print: bool,
+    /// Whether copying content stays allowed under the restriction.
+    pub allow_copy: bool,
+}
+
+impl Default for DocumentRestriction {
+    fn default() -> Self {
+        DocumentRestriction {
+            mode: RestrictionMode::None,
+            allow_print: true,
+            allow_copy: true,
+        }
+    }
+}
+
+/// Per-document restriction store (handle → blob) — the session.rs pattern:
+/// one process-global `OnceLock<Mutex<HashMap<_>>>`; wasm is
+/// single-threaded, the Mutex guards the slot, not real contention.
+static RESTRICTION_STORE: OnceLock<Mutex<HashMap<u32, DocumentRestriction>>> = OnceLock::new();
+
+fn restriction_store() -> &'static Mutex<HashMap<u32, DocumentRestriction>> {
+    RESTRICTION_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Per-document version-history store (handle → blob), same pattern.
+static VERSION_HISTORY_STORE: OnceLock<Mutex<HashMap<u32, WasmVersionHistory>>> = OnceLock::new();
+
+fn version_history_store() -> &'static Mutex<HashMap<u32, WasmVersionHistory>> {
+    VERSION_HISTORY_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Content-control role payload (`cc-role` kind): `{ id, role }` with
+/// `role` one of `none | rich-text | plain-text | picture | date`.
+///
+/// props.rs carries no content-control kind (checked in P4-C01), so the
+/// kind lives here on its own store until the props module grows one; the
+/// JSON contract (`{id, role}`, camelCase) is exactly what a future
+/// `set_property("cc-role", …)` kind would accept.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CcRole {
+    /// Content-control sdt id the role applies to.
+    pub id: String,
+    /// `none | rich-text | plain-text | picture | date`.
+    pub role: String,
+}
+
+/// The allowed `CcRole.role` values (OO sdt content types).
+const CC_ROLES: &[&str] = &["none", "rich-text", "plain-text", "picture", "date"];
+
+/// Per-(document, content-control) role store, same pattern as the
+/// restriction store but keyed `(doc_handle, cc_id)`.
+static CC_ROLE_STORE: OnceLock<Mutex<HashMap<(u32, String), CcRole>>> = OnceLock::new();
+
+fn cc_role_store() -> &'static Mutex<HashMap<(u32, String), CcRole>> {
+    CC_ROLE_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Set the document-protection blob for a handle (`asc_setRestriction` /
+/// `asc_setEditType` family, ORM-01 protection group). Accepts the
+/// camelCase `DocumentRestriction` schema — `mode` one of
+/// `none | readOnly | comment-only | fill-forms | track-changes` plus
+/// `allowPrint` / `allowCopy` — stores it per document session and pushes
+/// the `WsEvent::RestrictionChange` frame the protection UI listens for.
+/// Returns the canonical stored JSON.
+#[wasm_bindgen(js_name = setDocumentRestriction)]
+pub fn set_document_restriction(doc_handle: u32, json: &str) -> Result<String, String> {
+    // Parse permissively first (mode as raw string) so we can normalize the
+    // OO spellings, then re-validate through the typed mode.
+    let raw: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("Invalid restriction JSON: {e}"))?;
+    let mode_str = raw
+        .get("mode")
+        .and_then(|m| m.as_str())
+        .ok_or("restriction JSON needs a string `mode` field")?;
+    let mode = RestrictionMode::parse(mode_str)
+        .ok_or_else(|| format!("Unknown restriction mode: {mode_str:?}"))?;
+    let restriction = DocumentRestriction {
+        mode,
+        allow_print: raw
+            .get("allowPrint")
+            .or_else(|| raw.get("allow_print"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        allow_copy: raw
+            .get("allowCopy")
+            .or_else(|| raw.get("allow_copy"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+    };
+    restriction_store()
+        .lock()
+        .unwrap()
+        .insert(doc_handle, restriction.clone());
+    let _ = crate::events::push(WsEvent::RestrictionChange {
+        mode: restriction.mode.as_str().to_string(),
+        allow_print: restriction.allow_print,
+        allow_copy: restriction.allow_copy,
+    });
+    serde_json::to_string(&restriction).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// Read back the protection blob for a handle. Returns the unprotected
+/// default (`{"mode":"none","allowPrint":true,"allowCopy":true}`) when
+/// nothing was set — the OO unprotected state, not an error.
+#[wasm_bindgen(js_name = getDocumentRestriction)]
+pub fn get_document_restriction(doc_handle: u32) -> Result<String, String> {
+    let restriction = restriction_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+    serde_json::to_string(&restriction).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// Set the version-history blob for a handle (the `asc_CVersionHistory`
+/// row, ORM-01/03). Accepts `{ entries: [{version, author, date, label}] }`
+/// and returns the canonical stored JSON.
+#[wasm_bindgen(js_name = setVersionHistory)]
+pub fn set_version_history(doc_handle: u32, json: &str) -> Result<String, String> {
+    let history: WasmVersionHistory =
+        serde_json::from_str(json).map_err(|e| format!("Invalid version history JSON: {e}"))?;
+    version_history_store()
+        .lock()
+        .unwrap()
+        .insert(doc_handle, history.clone());
+    serde_json::to_string(&history).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// Read back the version-history blob (empty `entries` when nothing was
+/// set).
+#[wasm_bindgen(js_name = getVersionHistory)]
+pub fn get_version_history(doc_handle: u32) -> Result<String, String> {
+    let history = version_history_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+    serde_json::to_string(&history).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// Set the `cc-role` kind blob for one content control
+/// (`{id, role}`, camelCase — the contract a future
+/// `set_property("cc-role", …)` kind shares). Returns the canonical stored
+/// JSON; unknown roles are rejected.
+#[wasm_bindgen(js_name = setCcRole)]
+pub fn set_cc_role(doc_handle: u32, json: &str) -> Result<String, String> {
+    let raw: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("Invalid cc-role JSON: {e}"))?;
+    let id = raw
+        .get("id")
+        .and_then(|v| v.as_str())
+        .ok_or("cc-role JSON needs a string `id` field")?
+        .to_string();
+    let role = raw
+        .get("role")
+        .and_then(|v| v.as_str())
+        .ok_or("cc-role JSON needs a string `role` field")?;
+    if !CC_ROLES.contains(&role) {
+        return Err(format!(
+            "Unknown cc-role role: {role:?} (expected one of: {})",
+            CC_ROLES.join(", ")
+        ));
+    }
+    let cc_role = CcRole {
+        id: id.clone(),
+        role: role.to_string(),
+    };
+    cc_role_store()
+        .lock()
+        .unwrap()
+        .insert((doc_handle, id), cc_role.clone());
+    serde_json::to_string(&cc_role).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// Read back the `cc-role` blob for one content control (`"null"` when
+/// nothing was stored — same convention as props' store-backed kinds).
+#[wasm_bindgen(js_name = getCcRole)]
+pub fn get_cc_role(doc_handle: u32, cc_id: &str) -> Result<String, String> {
+    let stored = cc_role_store()
+        .lock()
+        .unwrap()
+        .get(&(doc_handle, cc_id.to_string()))
+        .cloned();
+    match stored {
+        Some(cc_role) => serde_json::to_string(&cc_role).map_err(|e| format!("JSON error: {e}")),
+        None => Ok("null".to_string()),
+    }
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod events_tests;
+#[cfg(test)]
+mod collab_tests;
 #[cfg(test)]
 mod navigation_tests;
 #[cfg(test)]

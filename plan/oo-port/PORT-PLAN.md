@@ -275,7 +275,17 @@ the P3-U04 specs and the named prerequisites of the 29 `blocked` rows.
    (`asc_CUserInfo`, `asc_CVersionHistory` serde types), content-control
    roles, document protection (`asc_setRestriction`, `asc_setEditType`,
    `asc_setPassword`, `asc_getIsPassword`), OOXML crypto on the kept CFB
-   substrate.
+   substrate. **Landed (P4-C01, wo-renderer-wasm):** `AscCUserInfo` /
+   `AscCVersionHistoryEntry` camelCase serde plus the `WasmVersionHistory`
+   blob (`setVersionHistory`/`getVersionHistory`), the protection pair
+   `setDocumentRestriction`/`getDocumentRestriction` (JSON
+   `{mode, allowPrint, allowCopy}`, modes
+   `none|readOnly|comment-only|fill-forms|track-changes`, each set pushing
+   `WsEvent::RestrictionChange`), and the `cc-role` store
+   (`setCcRole`/`getCcRole`, `{id, role}` — props.rs carries no
+   content-control kind yet, so the kind lives in lib.rs until the props
+   module grows one). Still open: `asc_setPassword`/`asc_getIsPassword`,
+   the OO numeric restriction-type alias, and OOXML crypto on CFB.
 
 Exit criteria: the never-build list is still respected; every remaining
 `wo_missing` row in the nine JSON maps resolves to *done*, *declared
