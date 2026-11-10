@@ -5465,6 +5465,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "wo-docx-renderer",
  "wo-x2t",
  "zip",
 ]
@@ -5474,6 +5475,7 @@ name = "wo-docx-renderer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "image",
  "pdf-writer",
  "serde",
  "serde_json",
