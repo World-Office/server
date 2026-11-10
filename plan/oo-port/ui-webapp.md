@@ -25,34 +25,44 @@ dialogs rich behavior. WO collapses all of that:
   `#backstage-overlay` (L1344); `StatusBar.template` → `footer.statusbar` (L1297).
 - **Widgets** become native elements: `ComboBox`→`<select>`, `CheckBox`/`RadioBox`
   → native inputs, `Window`→`.dialog-overlay`, `Slider`→`input[type=range]`,
-  `Calendar`→`input[type=date]` (custom calendar is a **missing** row).
+  `Calendar`→ native date controls (custom-calendar row closed as merged in
+  P3-U05; see the JSON).
 - **Commands** flow through `runCommand(cmd, value)` (editor.js L1019) and
   `emitCommand()`/`wo-bridge.js` — the moral equivalent of OO calling
   `window.asc_*` SDK methods (see ORM-01 `plan/oo-port/wasm-api.json`).
 
 `wo_status` semantics used in the JSON: `full` (behavior-equivalent surface
 exists), `partial` (surface exists but options/behaviors are missing — see
-notes), `missing` (no WO counterpart), `merged-into-editor.js` (OO's
-controller/view/template split has no separate WO artifact; the anchor is a
-function or markup region).
+notes), `missing` (no WO counterpart — **zero rows as of the P3-U05
+closure**), `hosted` (the OO dialog/view is data in `wo-dialogs.js` rendered
+by the data-driven dialog engine; the anchor names the spec),
+`merged-into-editor.js` (OO's controller/view/template split has no separate
+WO artifact; the anchor is a function or markup region), `blocked` (no WO
+counterpart yet, by decision: the note names the prerequisite — engine,
+format, runtime or named follow-up deliverable — that must land first).
 
 ## Scoreboard (217 rows)
 
-| oo_type | rows | full | partial | missing | merged |
-|---|---|---|---|---|---|
-| controller | 41 | 9 | 18 | 9 | 5 |
-| view | 109 | 34 | 42 | 29 | 4 |
-| model | 3 | 1 | 1 | 1 | 0 |
-| collection | 3 | 2 | 1 | 0 | 0 |
-| template | 27 | 6 | 12 | 7 | 2 |
-| common-component | 34 | 8 | 17 | 5 | 4 |
-| **total** | **217** | **60** | **91** | **51** | **15** |
+| oo_type | rows | full | partial | hosted | merged | blocked | missing |
+|---|---|---|---|---|---|---|---|
+| controller | 41 | 9 | 18 | 0 | 6 | 8 | 0 |
+| view | 109 | 34 | 42 | 14 | 5 | 14 | 0 |
+| model | 3 | 1 | 1 | 0 | 0 | 1 | 0 |
+| collection | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
+| template | 27 | 6 | 12 | 2 | 2 | 5 | 0 |
+| common-component | 34 | 8 | 17 | 1 | 7 | 1 | 0 |
+| **total** | **217** | **60** | **91** | **17** | **20** | **29** | **0** |
 
-(Scoreboard current as of P3-U03: the P3-U01..U03 dialog-engine tasks moved
-`TableSettingsAdvanced` + `ImageSettingsAdvanced` (U02) and `ShapeSettings`
-(view + template), `ReviewPopover`, `ExtendedColorDialog` (U03) from
-`missing` to `partial`; per-type counts re-computed from the JSON, not hand-
-summed.)
+(Scoreboard current as of the P3-U05 ledger closure: the P3-U01..U04
+dialog-engine tasks moved `TableSettingsAdvanced` + `ImageSettingsAdvanced`
+(U02) and `ShapeSettings` (view + template), `ReviewPopover`,
+`ExtendedColorDialog` (U03) from `missing` to `partial`, and P3-U05 closed
+the remaining 51 `missing` rows to **0** — 17 `hosted` (P3-U04 engine specs
++ the shapeSettings shadow rows covering ShapeShadowDialog), 5
+`merged-into-editor.js` (Draw controller/view, Calendar, LoadMask,
+MonacoEditor), 29 `blocked` with named prerequisites in the notes. Per-type
+counts re-computed from the JSON, not hand-summed; gated by
+`ui-closure.test.mjs` → `UI-CLOSURE-PASS`.)
 
 Every row carries an extra `oo_layer` field (`documenteditor` 115 rows vs
 `common` 102 rows) so the documenteditor-app surface and the shared
@@ -83,24 +93,34 @@ no independent UI behavior.
 | `ImageSettingsAdvanced` | 3322 | no crop, no brightness/contrast adjust, no rotation dial, no wrap-boundary editing, no replace-from-URL | `asc_ChangeCropState`, `asc_getCropOriginSize`, `asc_getWrapText`, `asc_putAnnotProps` |
 | `ShapeSettings` | 2449 | ~~no shape fill/line/shadow styling panel~~ **partial (P3-U03)**: engine-hosted `WO_DIALOG_SPECS.shapeSettings` — fill none/solid/gradient (MultiSliderGradient consumer), line color/width/style + caps/joins + begin/end arrows (`<marker>` defs), shadow, geometry checkboxes; pattern/image fill and the OO fill registry stay out | `asc_getGradientStops`, `asc_CGradientFill`, `asc_CShadowProperty`, `asc_putStrokeStyle`, `asc_putLinebeginstyle`, `asc_putLineendstyle` |
 | `TableSettingsAdvanced` | 2179 | no cell margins, no text-flow-around-table, no repeat-header-row, no border-painting styler | `asc_putBorderStyle`, `asc_putBorderWidth`, `asc_CFormatTableInfo`, `asc_getTableStyleName` |
-| `FormSettings` + `FormsTab` (view 2084 + controller 893) | 2977 | no form modes, role manager, filling status, send-for-signing | `asc_getForm`, `asc_addRole`, `asc_editRole`, `asc_getAllRoles`, `asc_canFillRole` |
-| `TextArtSettings` | 1513 | no WordArt transform gallery / text-art styling | `asc_putStyle`/`asc_setStyle`, `asc_CGradientFill` |
+| `FormSettings` + `FormsTab` (view 2084 + controller 893) | 2977 | **blocked (P3-U05)**: no form modes, role manager, filling status, send-for-signing — needs the docxf/OForm engine layer (roles exports wo_missing in ORM-01; ORM-05 sdt engine unwrap-only) | `asc_getForm`, `asc_addRole`, `asc_editRole`, `asc_getAllRoles`, `asc_canFillRole` |
+| `TextArtSettings` | 1513 | **hosted (P3-U05)**: engine-hosted `text-art-dialog` spec (P3-U04) — text/style/color/size rows; the OO transform gallery collapses to the style select and apply-to-live-object wiring is pending (placeholder objects only, as before) | `asc_putStyle`/`asc_setStyle`, `asc_CGradientFill` |
 | `ReviewPopover` | 1406 | ~~no anchored per-thread comment popover~~ **partial (P3-U03)**: comment click opens the engine-hosted `WO_DIALOG_SPECS.reviewPopover` anchored at the span — edit text, toggle resolved, post reply (data-replies), Go to/Delete; no per-reviewer colors/avatars, panel list unchanged | `asc_addReply`, comment data class `asc_CCommentDataWord` |
-| `ChartSettings` remainder + `Charts3DDlg` | 1134+ | no series/data-range/axis/legend/3D editing | `asc_putCategory`, `asc_canChangeAxisType` |
-| `PdfSignDialog` | 657 | no PDF signing flow | `asc_getSigner1`, `asc_getSigner2`, `asc_getSignatureImage` |
-| `FormatSettingsDialog` | 702 | no number-format pattern editor | `asc_CFieldNumberFormatProperty`, `asc_getFormatCode`, `asc_getNumFormatInfo` |
-| `HintManager` | 829 | no onboarding hints | n/a (pure UI) |
-| `ShortcutsEditDialog` | 526 | shortcut re-binding absent | n/a |
-| `Calendar` (widget) | 503 | no custom date picker (native input only) | n/a |
+| `ChartSettings` remainder + `Charts3DDlg` | 1134+ | no series/data-range/axis/legend editing; **hosted (P3-U05)**: `Charts3DDlg` is the engine-hosted `charts3d-dialog` spec (3D view + lighting rows) — WO chart rendering stays 2D, apply wiring pending | `asc_putCategory`, `asc_canChangeAxisType` |
+| `PdfSignDialog` | 657 | **blocked (P3-U05)**: no PDF signing flow — `asc_getSigner1`/`asc_getSigner2`/`asc_getSignatureImage` are wo_missing (ORM-01) and WO has no PDF signing surface (Phase 4, named divergence candidate) | `asc_getSigner1`, `asc_getSigner2`, `asc_getSignatureImage` |
+| `FormatSettingsDialog` | 702 | **hosted (P3-U05)**: engine-hosted `format-settings-dialog` spec (font/size/color + paragraph rows); the field number-format pattern editor is still unwired | `asc_CFieldNumberFormatProperty`, `asc_getFormatCode`, `asc_getNumFormatInfo` |
+| `HintManager` | 829 | **blocked (P3-U05)**: no onboarding hints — pure-UI, no engine dependency; named prerequisite is the Phase-3 UI long-tail pass | n/a (pure UI) |
+| `ShortcutsEditDialog` | 526 | **hosted (P3-U05)**: engine-hosted `shortcuts-edit-dialog` spec (command/shortcut rows + reset); keymap re-binding in editor.js pending | n/a |
+| `Calendar` (widget) | 503 | **merged (P3-U05)**: served by the native date controls of the datetime/cc dialogs (declared widget divergence); the calendar grid widget itself is a pure-UI follow-up | n/a |
 | `HSBColorPicker` + `ExtendedColorDialog` | — | picker widget ported (P3-U01 `wo-dialogs.js`); **consumer dialog landed (P3-U03)** — `WO_DIALOG_SPECS.extendedColorDialog` hosts HSB sliders + R/G/B/hex/opacity and routes the picked color to page background / shape fill/line/shadow; no HSB wheel widget, no recent-colors memory | `asc_putColor` |
 | `MultiSliderGradient` | 381 | widget ported (P3-U01 `wo-dialogs.js`); **shape fill consumer landed (P3-U03)** — `WO_DIALOG_SPECS.shapeSettings` gradient fill; textart fill spec still pending | `asc_getGradientStops` |
-| forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | clustered absences (docxf forms, signing, external editors, ink, thumbnails) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails need paginated raster (ORM-04 severity-3) |
+| forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | **closed in P3-U05 (0 `missing`)** — hosted: `MailMergeEmailDlg`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog` (shapeSettings shadow rows), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip` specs (wo-dialogs.js, P3-U04); merged: `Draw` (ink section in editor.js), `LoadMask` (statusbar), `MonacoEditor` (no macro engine to host); blocked with named prerequisites: forms/roles (`asc_*Role*`/`asc_GetOForm` wo_missing, ORM-01 + ORM-05 sdt engine), signing (`asc_getSigner*`/`asc_getSignatureImage`, Phase 4), `PageThumbnails`+`Pages` (ORM-04 sev-3 rasterizer), `External*` family (Phase-4 plugin/iframe runtime), `MaskedField` (forms layer) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails need paginated raster (ORM-04 severity-3) |
 
-61 of 217 rows were `missing` at ORM-09 time; 51 remain (the dialog-engine
-tasks P3-U01..U03 closed eight of them: the two pure-widget absences plus
+61 of 217 rows were `missing` at ORM-09 time; the P3-U01..U03 dialog-engine
+tasks closed ten of them (the two pure-widget absences plus
 `TableSettingsAdvanced`/`ImageSettingsAdvanced` view+template in U02 and
 `ShapeSettings` view+template, `ReviewPopover`, `ExtendedColorDialog` in
-U03). The large-block backlog is the
+U03) to `partial`, and **the P3-U05 ledger closure closed the remaining 51
+to 0** — `missing` no longer occurs in the JSON (17 `hosted`, 5
+`merged-into-editor.js`, 29 `blocked` with named prerequisites; per-row
+detail in the JSON notes, re-verified by `ui-closure.test.mjs` →
+`UI-CLOSURE-PASS`). The open work is the 29 `blocked` rows (each note names
+its prerequisite: forms/docxf + roles exports, the signing flow, the
+ORM-04 sev-3 rasterizer for thumbnails, the Phase-4 plugin/iframe runtime
+for the `External*` family, the docserver gateway/cloud for
+`ExternalUsers`/`ExternalLinks`, the Phase-3 long-tail pass for
+`HintManager`) plus the editor.js open/apply wiring for the 17 `hosted`
+specs. The large-block backlog is the
 first table above
 (`ImageSettingsAdvanced` → `TextArtSettings` ≈ 12.5k lines of OO view code
 without a WO counterpart, plus their 5 templates).
@@ -166,6 +186,18 @@ via `runCommand("tableSettingsAdvanced"/"imageSettingsAdvanced")`; gated by
   and `extendedColor` routes the picked color there, rgba below 100% and
   `fill-opacity` on shapes.
 
+P3-U04 added the long-tail batch (14 specs, gated by
+`dialogs-batch.test.mjs` → `DIALOGS-BATCH-PASS`): `renameDialog`,
+`copyWarningDialog`, `textInputDialog`, `footnoteTipDialog`,
+`syncTipDialog`, `styleTitleDialog`, `shortcutsEditDialog`,
+`selectFileDialog`, `quickAccessDialog`, `charts3dDialog`, `textArtDialog`,
+`formatSettingsDialog`, `mailMergeEmailDialog`, `documentAccessDialog`
+(shape-shadow rides the P3-U03 `shapeSettings` spec). The **P3-U05 ledger
+closure** moved the 17 ledger rows those specs cover to `hosted` (the
+shapeSettings shadow rows count as the `ShapeShadowDialog` row) — every
+row's `wo_anchor` names its spec, and `ui-closure.test.mjs` re-verifies the
+anchor→spec link against `WO_DIALOG_SPECS` on every run.
+
 ## What WO already covers well (60 `full` rows)
 
 Dialog-level parity is essentially complete for the "classic Word dialog" set:
@@ -190,7 +222,7 @@ with paragraph/table/image/chart/mailmerge `rp-section`s covers
 `ParagraphSettings` fully and the *simple* halves of `TableSettings`,
 `ImageSettings`, `ChartSettings`, `MailMergeSettings`.
 
-## Partial rows — the long tail of hidden feature gaps (81 rows)
+## Partial rows — the long tail of hidden feature gaps (91 rows)
 
 Representative one-liners (full notes in the JSON):
 
@@ -255,6 +287,15 @@ Recommendation: declare dialogs as data and render them.
    colors), `MultiSliderGradient` (gradient stops) — landed with P3-U01 in
    `wo-dialogs.js` (see "Dialog engine status" above).
 
+P3-U05 closure state: this recommendation is fully executed for the *hosting*
+half — `wo-dialogs.js` carries 19 engine specs and the ledger's `missing`
+count is 0 (17 `hosted` / 5 `merged-into-editor.js` / 29 `blocked` with
+named prerequisites). The remaining open half is per-spec editor.js
+open/apply wiring for the P3-U04 long-tail batch (the notes on the `hosted`
+rows say which apply paths are pending), plus the 29 `blocked` rows'
+prerequisites (engine raster for thumbnails, docxf/roles for forms, signing
+exports, the Phase-4 plugin/iframe runtime).
+
 ## Port order recommendation (wasm-contract-first)
 
 The right order maximizes UI coverage per wasm export already specified in
@@ -278,6 +319,12 @@ ORM-01 (`plan/oo-port/wasm-api.json`, 970 asc_* methods):
 6. **`PageThumbnails` + `Print` preview** — blocked on paginated raster
    output from the engine (ORM-04 flags page-model/rendering as
    severity-3); the `Pages` model row in the JSON is the anchor for it.
+
+P3-U05 closure: the steps above are the *history*; the JSON is now closed —
+every `blocked` row above (forms/signing family, `PageThumbnails`+`Pages`,
+the `External*` plugin-runtime family, `HintManager`) carries its named
+prerequisite in `notes`/`wo_anchor`, and every `hosted` row names its
+`WO_DIALOG_SPECS` entry (see the scoreboard note and `ui-closure.test.mjs`).
 
 ## Method
 
