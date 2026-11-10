@@ -174,6 +174,36 @@ pub fn render_text(
     Ok(())
 }
 
+/// Render an image on a canvas.
+///
+/// # Arguments
+/// * `handle` - Canvas handle from create_canvas()
+/// * `image_data` - Image bytes (PNG, JPEG, etc.)
+/// * `x` - Destination x coordinate
+/// * `y` - Destination y coordinate
+/// * `w` - Destination width in pixels
+/// * `h` - Destination height in pixels
+///
+/// # Returns
+/// * `Result<(), String>` - Ok(()) on success, error message on failure
+#[wasm_bindgen]
+pub fn render_image(
+    handle: u32,
+    image_data: &[u8],
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+) -> Result<(), String> {
+    let store = CANVAS_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    let canvas = store
+        .get_mut(&handle)
+        .ok_or_else(|| format!("Canvas handle {} not found", handle))?;
+
+    canvas.draw_image(image_data, x, y, w, h)
+}
+
 /// Flush canvas pixel data to a Web Canvas element.
 ///
 /// # Arguments

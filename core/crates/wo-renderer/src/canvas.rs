@@ -767,6 +767,111 @@ impl Canvas {
         }
     }
 
+    /// Draw an image onto the canvas at the specified position with the given dimensions.
+    /// The image is scaled to fit the target rectangle.
+    ///
+    /// # Arguments
+    /// * `image_data` - Image bytes (PNG, JPEG, GIF, BMP, TIFF)
+    /// * `x` - Destination x coordinate (top-left)
+    /// * `y` - Destination y coordinate (top-left)
+    /// * `w` - Destination width in pixels
+    /// * `h` - Destination height in pixels
+    ///
+    /// # Errors
+    /// Returns an error if the image cannot be decoded or if the target rectangle is invalid.
+    pub fn draw_image(
+        &mut self,
+        image_data: &[u8],
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+    ) -> Result<(), String> {
+        if w <= 0.0 || h <= 0.0 {
+            return Err("Invalid dimensions: width and height must be positive".to_string());
+        }
+
+        // Decode the image
+        let img = image::io::Reader::new(std::io::Cursor::new(image_data))
+            .with_guessed_format()
+            .and_then(|r| r.decode())
+            .map_err(|e| format!("Failed to decode image: {}", e))?;
+
+        let img_rgba = img.to_rgba8();
+        let img_w = img_rgba.width() as u32;
+        let img_h = img_rgba.height() as u32;
+
+        if img_w == 0 || img_h == 0 {
+            return Err("Decoded image has zero dimensions".to_string());
+        }
+
+        // Calculate source and destination rectangles
+        let dest_x0 = x.floor() as i32;
+        let dest_y0 = y.floor() as i32;
+        let dest_x1 = (x + w).ceil() as i32;
+        let dest_y1 = (y + h).ceil() as i32;
+
+        // Clamp to canvas bounds
+        let src_x0 = 0u32;
+        let src_y0 = 0u32;
+        let src_x1 = img_w;
+        let src_y1 = img_h;
+
+        let mut dest_x = dest_x0.max(0);
+        let mut dest_y = dest_y0.max(0);
+        let mut src_x = (dest_x - dest_x0) as u32 * img_w / (dest_x1 - dest_x0) as u32;
+        let mut src_y = (dest_y - dest_y0) as u32 * img_h / (dest_y1 - dest_y0) as u32;
+
+        // Calculate scaling factors
+        let scale_x = img_w as f32 / w;
+        let scale_y = img_h as f32 / h;
+
+        for screen_y in dest_y..dest_y1.min(self.height as i32) {
+            let screen_y_u = screen_y as u32;
+            if screen_y_u >= self.height {
+                continue;
+            }
+
+            // Calculate source y position with proper scaling
+            let src_y_pos = ((screen_y - dest_y0) as f32 * scale_y) as u32;
+            if src_y_pos >= img_h {
+                continue;
+            }
+
+            for screen_x in dest_x..dest_x1.min(self.width as i32) {
+                let screen_x_u = screen_x as u32;
+                if screen_x_u >= self.width {
+                    continue;
+                }
+
+                // Calculate source x position with proper scaling
+                let src_x_pos = ((screen_x - dest_x0) as f32 * scale_x) as u32;
+                if src_x_pos >= img_w {
+                    continue;
+                }
+
+                // Get source pixel
+                let src_idx = (src_y_pos * img_w + src_x_pos) as usize;
+                if src_idx * 4 + 3 >= img_rgba.len() {
+                    continue;
+                }
+
+                let r = img_rgba[src_idx * 4] as f32 / 255.0;
+                let g = img_rgba[src_idx * 4 + 1] as f32 / 255.0;
+                let b = img_rgba[src_idx * 4 + 2] as f32 / 255.0;
+                let a = img_rgba[src_idx * 4 + 3] as f32 / 255.0;
+
+                // Blend with existing pixel
+                if a > 0.0 {
+                    let color = Color::new(r, g, b, a);
+                    self.buffer.blend(screen_x_u, screen_y_u, &color, a);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     // --- Clipping ---
 
     /// Set a clip path (intersects with current clip).
