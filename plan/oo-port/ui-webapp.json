@@ -1554,9 +1554,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/HintManager.js",
   "oo_lines": 829,
-  "wo_status": "blocked",
-  "wo_anchor": "no engine dependency — pure-UI follow-up; nearest WO surface: toolbar title tooltips (index.html) + table-ops-hint (L1778)",
-  "notes": "P3-U05: blocked on the Phase-3 UI long-tail pass (named deliverable: onboarding hints, PORT-PLAN Phase 3 §4 long tail / Phase 4). No engine prerequisite — scheduled after the dialog backlog; OO's hint bubbles (section-aware, keyboard-navigable) are not covered by WO's static tooltips.",
+  "wo_status": "partial",
+  "wo_anchor": "WoHints hint/toast service (showHint/hintToast/dismissHints) in editor.js + #hint-toast host in index.html + Hints.* i18n (PTS-T3); boot tour + table-selection hint + save toast",
+  "notes": "PTS: hint/toast service — onboarding hint tour (welcome/find/thumbnails) shown once per session, first-table-selection hint, transient save toast, Escape/✕ dismiss. OO's keyboard letter-hint overlay (data-hint badge navigation over toolbar sections) stays out — WO dispatches via data-cmd.",
   "oo_layer": "common"
  },
  {

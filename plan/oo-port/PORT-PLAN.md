@@ -111,7 +111,7 @@ so columns are per-row-of-that-map, not cross-comparable):
 | ORM-06 ooxml-xlsx | 118 XlsxFormat families (829 classes / 5,340 fns) | 2 full / 42 partial / 74 missing | 9 core parts regenerated; charts/pivot/tables/comments ride `extra_parts` passthrough |
 | ORM-07 ooxml-pptx | 134 concepts (447 classes / 3,379 fns) | 26 full / 39 partial / 69 missing | inheritance/theme/group shapes/text-body/tables/transitions unmodeled; `PptxExtraPart` preserves bytes |
 | ORM-08 legacy-binary | MsBinaryFile (2,954 files; DocFile alone 287 files / 330 classes) | 5 full / 9 partial / 1 stub / 38 missing | **`.doc` is unreadable today**; CFB container is spec-complete and kept |
-| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 91 partial / 20 hosted / 20 merged-into-editor.js / 26 blocked / 0 missing (P3-U05 closure) | data-driven dialog engine landed (P3-U01..U04, 19 specs); ledger closed to 0 `missing` — forms/signing/`External*` blocked on named prerequisites (ORM-01 roles exports, ORM-05 sdt engine, Phase-4 plugin/iframe runtime); oo-pts PTS-T2 hosted `PageThumbnails`+`Pages` over the docserver page-render API (PTS-T1) |
+| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 92 partial / 20 hosted / 20 merged-into-editor.js / 25 blocked / 0 missing (P3-U05 closure) | data-driven dialog engine landed (P3-U01..U04, 19 specs); ledger closed to 0 `missing` — forms/signing/`External*` blocked on named prerequisites (ORM-01 roles exports, ORM-05 sdt engine, Phase-4 plugin/iframe runtime); oo-pts PTS-T2 hosted `PageThumbnails`+`Pages` over the docserver page-render API (PTS-T1), PTS-T3 landed the WoHints hint/toast service for `HintManager` |
 
 Target end-state (what "done" means for this plan):
 
@@ -253,7 +253,9 @@ their Phase-2 prerequisite; right-panel parity surface stays green.
 the P3-U04 specs and the named prerequisites of the `blocked` rows —
 26 as of the oo-pts PTS-T2 flip, which hosted `PageThumbnails`+`Pages`
 over the docserver page-render API (PTS-T1; re-verified by
-`page-thumbnails.test.mjs` → `THUMBNAILS-PASS`).
+`page-thumbnails.test.mjs` → `THUMBNAILS-PASS`; PTS-T3 moved `HintManager`
+to `partial` with the WoHints hint/toast service (re-verified by
+`hints.test.mjs` → `HINTS-PASS`), leaving 25).
 
 ## Phase 4
 
@@ -339,3 +341,16 @@ done
    fallback); out-of-range pages are 404, bad ids/pages 400. This is the
    paginated raster output the ORM-09 ledger names as prerequisite for the
    blocked `PageThumbnails`/Print-preview families.
+2. **PTS-T3 (done):** HintManager hint/toast service. The ORM-09 ledger
+   carried OO's `HintManager` (829 lines of section-aware, keyboard-
+   navigable hint bubbles) as blocked pure-UI long tail; WO now has the
+   WO-shaped reduction — the `WoHints` singleton in editor.js over the
+   fixed bottom-right `#hint-toast` host (aria-live=polite, Hints.* i18n
+   en+de): `showHint(id)` plays a staggered once-per-session boot tour
+   (welcome → Ctrl+F find → View→Thumbnails), the first selection inside
+   a table cell fires the table-tools hint, `hintToast(msg)` is the
+   transient tier (wired to the save confirmation), and Escape/✕
+   dismisses. OO's letter-hint overlay (`data-hint` badge navigation) is
+   declared out of scope — WO dispatches via `data-cmd`. Ledger flipped
+   `HintManager` blocked→partial (92 partial / 25 blocked); gated by
+   `hints.test.mjs` → `HINTS-PASS`.

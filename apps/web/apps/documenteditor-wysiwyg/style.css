@@ -2611,6 +2611,61 @@ main.rp-open { padding-right: 344px; }
   #thumbnails-strip img.thumbnail { width: 92px; }
 }
 
+/* PTS-T3 (ORM-09 HintManager): WoHints — hint/toast stack, bottom-right.
+   Fixed so hints float above the editor chrome without displacing layout;
+   [hidden] collapses the host when the stack is empty. */
+#hint-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 40px;
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+#hint-toast[hidden] { display: none; }
+.hint-toast-item {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  padding: 10px 28px 10px 12px;
+  animation: hint-toast-in 0.18s ease-out;
+}
+.hint-toast-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.hint-toast-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+.hint-toast-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px;
+  cursor: pointer;
+}
+.hint-toast-close:hover { color: var(--text); }
+@keyframes hint-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 900px) {
+  #hint-toast { right: 8px; left: 8px; max-width: none; }
+}
+
 /* AF11-SPELLCHECK-CLOSEOUT: custom misspell markers (spellcheck engine). */
 .wo-misspelled {
   text-decoration: underline;
