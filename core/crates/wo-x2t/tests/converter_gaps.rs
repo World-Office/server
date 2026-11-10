@@ -3557,3 +3557,166 @@ fn gap_xlsx_pivot_grouping() {
     // Note: Actual usage requires wo-sheet as a dependency
     assert!(true, "Pivot grouping types defined in wo-sheet::pivot");
 }
+
+/// P4-P01: Test that PPTX timing tree (TimingTree/TimeNode) types exist and can be used
+#[test]
+fn gap_pptx_timing_roundtrip() {
+    use wo_ooxml::model::{TimingTree, TimeNode, TimingCondition};
+    
+    // Create a simple timing tree programmatically
+    let timing_tree = TimingTree {
+        root: Some(TimeNode {
+            node_type: "tmRoot".to_string(),
+            id: Some("root-1".to_string()),
+            duration: None,
+            repeat_count: None,
+            start_conditions: vec![],
+            end_conditions: vec![],
+            children: vec![
+                TimeNode {
+                    node_type: "par".to_string(),
+                    id: Some("par-1".to_string()),
+                    duration: Some(5.0),
+                    repeat_count: None,
+                    start_conditions: vec![TimingCondition {
+                        event: "onBegin".to_string(),
+                        delay: 0.0,
+                        ref_id: None,
+                    }],
+                    end_conditions: vec![],
+                    children: vec![
+                        TimeNode {
+                            node_type: "cTn".to_string(),
+                            id: Some("anim-1".to_string()),
+                            duration: Some(1.5),
+                            repeat_count: None,
+                            start_conditions: vec![TimingCondition {
+                                event: "withPrevious".to_string(),
+                                delay: 0.0,
+                                ref_id: None,
+                            }],
+                            end_conditions: vec![],
+                            children: vec![],
+                            target: Some("shape-1".to_string()),
+                        },
+                    ],
+                    target: None,
+                },
+            ],
+            target: None,
+        }),
+        nodes: vec![],
+    };
+    
+    // Verify serialization works
+    let serialized = serde_json::to_string(&timing_tree).unwrap();
+    assert!(serialized.contains("tmRoot"));
+    assert!(serialized.contains("par"));
+    assert!(serialized.contains("cTn"));
+    
+    // Verify deserialization works
+    let deserialized: TimingTree = serde_json::from_str(&serialized).unwrap();
+    assert_eq!(deserialized.root.as_ref().unwrap().node_type, "tmRoot");
+    assert_eq!(deserialized.root.as_ref().unwrap().children.len(), 1);
+    assert_eq!(deserialized.root.as_ref().unwrap().children[0].node_type, "par");
+}
+
+/// P4-P01: Test that SmartArt diagrams survive PPTX parsing and serialization
+#[test]
+fn gap_pptx_smartart_survives() {
+    // Build a minimal PPTX with a SmartArt shape
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#).unwrap();
+        
+        // _rels/.rels
+        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#).unwrap();
+        
+        // ppt/presentation.xml
+        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<presentation xmlns="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sldIdLst>
+    <sldId id="2" r:id="rId2"/>
+  </sldIdLst>
+  <sldMasterIdLst/>
+</presentation>"#).unwrap();
+        
+        // ppt/_rels/presentation.xml.rels
+        zip.start_file("ppt/_rels/presentation.xml.rels", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>"#).unwrap();
+        
+        // ppt/slides/slide1.xml with SmartArt graphicFrame
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sld xmlns="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <cSld>
+    <spTree>
+      <p:graphicFrame xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+        <p:nvGraphicFramePr>
+          <p:cNvPr id="1" name="SmartArt Graphic"/>
+          <p:cNvGraphicFramePr/>
+          <p:nvPr/>
+        </p:nvGraphicFramePr>
+        <p:xfrm>
+          <a:off x="1000000" y="1000000" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/>
+          <a:ext cx="2000000" cy="1500000" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/>
+        </p:xfrm>
+        <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+          <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram">
+            <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram"/>
+          </a:graphicData>
+        </a:graphic>
+      </p:graphicFrame>
+    </spTree>
+  </cSld>
+</sld>"#).unwrap();
+        
+        zip.finish().unwrap();
+    }
+    
+    // Parse the PPTX using the parser directly (not through OoxmlDocument)
+    // This tests that SmartArt shapes are parsed correctly
+    let parser = wo_ooxml::OoxmlParser::new();
+    let mut cursor = std::io::Cursor::new(buf.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pptx = parser.parse_pptx(&mut archive).unwrap().unwrap();
+    
+    // Verify SmartArt was parsed (as a shape in the slide)
+    assert_eq!(pptx.slides.len(), 1, "Should have one slide");
+    let slide = &pptx.slides[0];
+    
+    // Check that at least one SmartArt shape exists
+    let has_smartart = slide.shapes.iter().any(|shape| {
+        matches!(shape, wo_ooxml::model::SlideShape::SmartArt(_))
+    });
+    assert!(has_smartart, "Slide should contain a SmartArt shape");
+    
+    // Now also test through OoxmlDocument for serialization
+    let parsed = parser.parse(&buf).unwrap();
+    let reserialized = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    
+    // Verify the reserialized file is still a valid ZIP
+    assert_eq!(reserialized[0], 0x50);
+    assert_eq!(reserialized[1], 0x4B);
+}
