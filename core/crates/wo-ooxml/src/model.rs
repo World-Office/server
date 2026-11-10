@@ -1489,6 +1489,26 @@ pub enum LineSpacingRule {
     AtLeast,
 }
 
+/// OMML (Office Math Markup Language) math object carried by a run
+/// (P4-D02). The typed model has no math equivalent, so the parser keeps the
+/// `m:oMath` subtree — or the whole `m:oMathPara` wrapper for display math —
+/// verbatim for a managed round trip, and extracts the linear `m:t` text as
+/// the plain-text fallback converters render.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DocxMath {
+    /// Verbatim subtree captured at parse time: `<m:oMath>…</m:oMath>` for
+    /// inline math, the full `<m:oMathPara>…</m:oMathPara>` wrapper
+    /// (including `m:oMathParaPr`) for display math. Re-emitted unchanged so
+    /// math structure survives a parse-serialize cycle.
+    pub verbatim: String,
+    /// Linear text: every `m:t` chunk concatenated in document order. This
+    /// is what converters render when they cannot lay out OMML.
+    pub linear_text: String,
+    /// True when the math came wrapped in `m:oMathPara` (display math on its
+    /// own paragraph level); false for inline `m:oMath`.
+    pub display: bool,
+}
+
 /// A run of text with formatting.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxRun {
@@ -1569,6 +1589,14 @@ pub struct DocxRun {
     /// pictures survive a parse-serialize cycle.
     #[serde(default)]
     pub pict: Option<String>,
+    /// OMML math object carried by this run (P4-D02): the verbatim
+    /// `m:oMath` / `m:oMathPara` subtree plus its linear `m:t` text.
+    /// Paragraph-level math becomes a marker run that serializes to the
+    /// bare verbatim element (never a `<w:r>`), so math position and
+    /// content survive a round trip; `run.text` carries the linear text so
+    /// converters render it.
+    #[serde(default)]
+    pub math: Option<DocxMath>,
     /// Internal bookmark target (`w:hyperlink w:anchor`) of the enclosing
     /// hyperlink, set on every inner run at parse time; the serializer
     /// re-groups consecutive runs sharing an anchor into a single

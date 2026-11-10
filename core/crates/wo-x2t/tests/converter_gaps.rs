@@ -3279,3 +3279,129 @@ fn gap_docx_revisions_roundtrip() {
         "paragraph-mark revision metadata must round-trip"
     );
 }
+
+#[test]
+fn gap_docx_math_roundtrip() {
+    // P4-D02: OMML math — paragraph-level `m:oMath` (inline) and
+    // `m:oMathPara` (display) must (a) capture their subtree verbatim, with
+    // the linear `m:t` text extracted for converters, (b) still render that
+    // linear text to html, and (c) survive a docx -> docx re-serialization
+    // byte-identical in position — re-parsing to the identical capture.
+    let inline_math = r#"<m:oMath><m:r><m:rPr><m:sty m:val="p"/></m:rPr><m:t>E</m:t></m:r><m:sSup><m:e><m:r><m:t>mc</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup><m:r><m:t>=ahc</m:t></m:r></m:oMath>"#;
+    let display_math = r#"<m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr><m:oMath><m:f><m:num><m:r><m:t>a</m:t></m:r><m:r><m:t>+</m:t></m:r><m:r><m:t>b</m:t></m:r></m:num><m:den><m:r><m:t>2</m:t></m:r></m:den></m:f></m:oMath></m:oMathPara>"#;
+    let document_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+  <w:body>
+    <w:p><w:r><w:t>Einstein wrote </w:t></w:r>{inline_math}<w:r><w:t> in 1905.</w:t></w:r></w:p>
+    <w:p>{display_math}</w:p>
+    <w:p><w:r><w:t>Sentinel paragraph after the math.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#
+    );
+    let docx = docx_from_document_xml(&document_xml);
+
+    // 1. Typed parse: math lands as marker runs carrying the exact source
+    //    subtree plus the linear m:t text; neighboring runs survive.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    assert_eq!(body.blocks.len(), 3, "all three paragraphs parse");
+
+    let p0 = docx_para(body, 0);
+    assert_eq!(p0.runs.len(), 3, "text / math marker / text run order");
+    assert_eq!(p0.runs[0].text, "Einstein wrote ");
+    let math = p0.runs[1].math.as_ref().expect("inline math must be typed");
+    assert_eq!(math.verbatim, inline_math, "inline math must be captured verbatim");
+    assert!(!math.display, "bare m:oMath is inline math");
+    assert_eq!(math.linear_text, "Emc2=ahc", "linear m:t text must concatenate");
+    assert_eq!(
+        p0.runs[1].text, "Emc2=ahc",
+        "the linear text rides run.text so converters render it"
+    );
+    assert_eq!(p0.runs[2].text, " in 1905.", "text after the math must survive");
+
+    let p1 = docx_para(body, 1);
+    assert_eq!(p1.runs.len(), 1, "display math is the paragraph's only content");
+    let dmath = p1.runs[0].math.as_ref().expect("display math must be typed");
+    assert_eq!(dmath.verbatim, display_math, "the whole m:oMathPara wrapper must be verbatim");
+    assert!(dmath.display, "m:oMathPara must be flagged as display math");
+    assert_eq!(dmath.linear_text, "a+b2", "fraction num/den must concatenate in order");
+
+    // 2. docx -> html: the linear math text renders (twice: inline + display).
+    let html = String::from_utf8(DocxToHtmlConverter.convert(&docx).unwrap()).unwrap();
+    assert!(html.contains("Emc2=ahc"), "inline math linear text lost: {html}");
+    assert!(html.contains("a+b2"), "display math linear text lost: {html}");
+
+    // 3. docx -> docx: subtrees re-emit byte-identical, in position.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert!(xml2.contains(inline_math), "inline math must re-emit byte-identical: {xml2}");
+    assert!(xml2.contains(display_math), "display math must re-emit byte-identical: {xml2}");
+    let (t0, m, t1) = (
+        xml2.find("Einstein wrote").unwrap(),
+        xml2.find(inline_math).unwrap(),
+        xml2.find("in 1905.").unwrap(),
+    );
+    assert!(t0 < m && m < t1, "inline math must stay between its neighbor runs: {xml2}");
+    assert!(
+        !xml2.contains("<w:t xml:space=\"preserve\">Emc2=ahc</w:t>"),
+        "the linear extraction must never re-emit as run text: {xml2}"
+    );
+
+    // 4. Re-parse equality: identical captures on both paragraphs.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    assert_eq!(
+        docx_para(rbody, 0).runs[1].math,
+        docx_para(body, 0).runs[1].math,
+        "inline math must survive the round trip"
+    );
+    assert_eq!(
+        docx_para(rbody, 1).runs[0].math,
+        docx_para(body, 1).runs[0].math,
+        "display math must survive the round trip"
+    );
+    assert_eq!(
+        docx_para(rbody, 2).runs[0].text,
+        "Sentinel paragraph after the math.",
+        "neighboring paragraphs must be untouched"
+    );
+}
+
+#[test]
+fn gap_docx_math_in_run_roundtrip() {
+    // P4-D02 (run-nested variant): `m:oMath` is also legal run content
+    // (EG_RunInnerContent). It must capture verbatim on run.math, re-emit
+    // inside the run, and NOT duplicate itself as w:t text.
+    let math = "<m:oMath><m:r><m:t>x</m:t></m:r></m:oMath>";
+    let document_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+  <w:body>
+    <w:p><w:r>{math}</w:r></w:p>
+  </w:body>
+</w:document>"#
+    );
+    let docx = docx_from_document_xml(&document_xml);
+
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    let p0 = docx_para(body, 0);
+    let m = p0.runs[0].math.as_ref().expect("run-nested math must be typed");
+    assert_eq!(m.verbatim, math, "run-nested math must be captured verbatim");
+    assert_eq!(m.linear_text, "x", "linear m:t text must extract");
+
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert!(
+        xml2.contains(&format!("<w:r>{math}</w:r>")),
+        "run-nested math must re-emit verbatim inside its run: {xml2}"
+    );
+
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    assert_eq!(
+        docx_para(reparsed.docx_body.as_ref().unwrap(), 0).runs[0].math,
+        p0.runs[0].math,
+        "run-nested math must survive the round trip"
+    );
+}

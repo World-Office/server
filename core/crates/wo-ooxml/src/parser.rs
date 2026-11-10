@@ -377,6 +377,10 @@ impl OoxmlParser {
     const W_NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     const W15_NS: &str = "http://schemas.microsoft.com/office/word/2012/wordml";
 
+    // --- OMML (Office Math Markup Language) namespace ---
+
+    const M_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/math";
+
     // --- PPTX namespaces ---
 
     const P_NS: &str = "http://schemas.openxmlformats.org/presentationml/2006/main";
@@ -2802,6 +2806,20 @@ impl OoxmlParser {
                     // and the run order inside w:sdtContent.
                     self.inline_sdt(&child, xml, &mut runs);
                 }
+                (Some(Self::M_NS), "oMath") | (Some(Self::M_NS), "oMathPara") => {
+                    // P4-D02: OMML math — a paragraph-level `m:oMath`
+                    // (inline) or `m:oMathPara` wrapper (display) becomes a
+                    // marker run carrying the verbatim subtree; the linear
+                    // `m:t` text rides the run so converters render it.
+                    if let Some(math) = self.parse_math(&child, xml) {
+                        let linear = math.linear_text.clone();
+                        runs.push(DocxRun {
+                            math: Some(math),
+                            text: linear,
+                            ..DocxRun::default()
+                        });
+                    }
+                }
                 _ => {}
             }
         }
@@ -2815,6 +2833,33 @@ impl OoxmlParser {
             raw_flds,
             fields,
         }
+    }
+
+    /// P4-D02: OMML math (`m:oMath`, optionally wrapped in `m:oMathPara`) —
+    /// the typed model has no math equivalent, so capture the subtree
+    /// verbatim (the serializer re-emits it unchanged) and extract the
+    /// linear `m:t` text as the converters' plain-text fallback.
+    fn parse_math(&self, node: &roxmltree::Node, xml: &str) -> Option<DocxMath> {
+        let display = node.tag_name().name() == "oMathPara";
+        // Byte-exact capture: the whole wrapper for display math (so
+        // m:oMathParaPr survives), just the m:oMath for inline math.
+        let r = node.range();
+        let verbatim = xml.get(r.start..r.end)?.to_string();
+        // Linear text: every m:t chunk in document order.
+        let linear_text: String = node
+            .descendants()
+            .filter(|n| {
+                n.is_element()
+                    && n.tag_name().namespace() == Some(Self::M_NS)
+                    && n.tag_name().name() == "t"
+            })
+            .filter_map(|n| n.text())
+            .collect();
+        Some(DocxMath {
+            verbatim,
+            linear_text,
+            display,
+        })
     }
 
     /// P4-D01: a tracked-change span (`w:ins` / `w:del` / `w:moveFrom` /
@@ -3146,6 +3191,7 @@ impl OoxmlParser {
             sdt: None,
             revision: None,
             pict: None,
+            math: None,
         };
 
         for child in r_node.children() {
@@ -3203,6 +3249,14 @@ impl OoxmlParser {
                     // let the serializer re-emit it unchanged.
                     let r = child.range();
                     run.pict = Some(xml[r.start..r.end].to_string());
+                }
+                (Some(Self::M_NS), "oMath") => {
+                    // P4-D02: OMML math nested inside a run (EG_RunInnerContent)
+                    // — capture verbatim + linear m:t text on run.math. The
+                    // linear text deliberately does NOT join run.text here:
+                    // serialize_run re-emits the verbatim subtree, and
+                    // duplicating it as w:t would double the math content.
+                    run.math = self.parse_math(&child, xml);
                 }
                 (Some(Self::W_NS), "fldChar") => {
                     // Fields engine: fldChar begin/separate/end boundaries.
