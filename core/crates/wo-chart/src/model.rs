@@ -93,6 +93,12 @@ pub struct Series {
     /// Whether the series is visible.
     #[serde(default = "default_true")]
     pub visible: bool,
+    /// Regression trendlines attached to this series (ORM-06 xlsx bridge).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub trendlines: Vec<Trendline>,
+    /// Error bars attached to this series (ORM-06 xlsx bridge).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub error_bars: Vec<ErrorBar>,
 }
 
 fn default_true() -> bool {
@@ -107,6 +113,8 @@ impl Series {
             data,
             color: None,
             visible: true,
+            trendlines: Vec::new(),
+            error_bars: Vec::new(),
         }
     }
 }
@@ -322,6 +330,149 @@ impl ChartTitle {
 }
 
 // ---------------------------------------------------------------------------
+// Trendline / ErrorBar — regression and uncertainty overlays (ORM-06)
+// ---------------------------------------------------------------------------
+
+/// The regression type of a trendline.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TrendlineKind {
+    /// Linear regression.
+    #[default]
+    Linear,
+    /// Exponential (`c:trendlineType val="exp"`).
+    Exponential,
+    /// Logarithmic (`log`).
+    Logarithmic,
+    /// Moving average (`movingAvg`).
+    MovingAverage,
+    /// Polynomial (`poly`, with `order`).
+    Polynomial,
+    /// Power (`power`).
+    Power,
+}
+
+/// A regression trendline on a chart series.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Trendline {
+    /// The regression type.
+    pub kind: TrendlineKind,
+    /// Polynomial order (`c:order`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order: Option<u32>,
+    /// Moving-average period (`c:period`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub period: Option<u32>,
+    /// Extrapolated periods forward (`c:forward`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub forward: Option<f64>,
+    /// Extrapolated periods backward (`c:backward`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backward: Option<f64>,
+    /// Fixed intercept (`c:intercept`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub intercept: Option<f64>,
+    /// Show the R² value (`c:dispRSqr`).
+    #[serde(default)]
+    pub show_r_squared: bool,
+    /// Show the regression equation (`c:dispEq`).
+    #[serde(default)]
+    pub show_equation: bool,
+    /// Custom trendline name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+/// Which side(s) of a point carry error-bar caps.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorBarType {
+    /// Caps on both sides (`c:errBarType val="both"`).
+    #[default]
+    Both,
+    /// Negative direction only (`minus`).
+    Minus,
+    /// Positive direction only (`plus`).
+    Plus,
+}
+
+/// Which axis an error bar applies to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorBarDirection {
+    /// X (category) direction (`c:errDir val="x"`).
+    #[default]
+    X,
+    /// Y (value) direction (`c:errDir val="y"`).
+    Y,
+}
+
+/// How the error-bar magnitude is computed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorBarValueType {
+    /// Custom plus/minus arrays (`cust`) — magnitude kept in `value`.
+    #[default]
+    Custom,
+    /// Fixed value (`fixedVal`).
+    Fixed,
+    /// Percentage of the value (`percentage`).
+    Percentage,
+    /// Standard deviation count (`stdDev`).
+    StdDev,
+    /// Standard error (`stdErr`).
+    StdErr,
+}
+
+/// Error bars on a chart series.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ErrorBar {
+    /// Which axis this applies to.
+    #[serde(default)]
+    pub direction: ErrorBarDirection,
+    /// Which side(s) get caps.
+    #[serde(default)]
+    pub bar_type: ErrorBarType,
+    /// How the magnitude is computed.
+    #[serde(default)]
+    pub value_type: ErrorBarValueType,
+    /// The magnitude (fixed value, percentage, std-dev count, …).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+    /// No end caps on the bars (`c:noEndCap`).
+    #[serde(default)]
+    pub no_end_cap: bool,
+}
+
+impl Default for Trendline {
+    fn default() -> Self {
+        Self {
+            kind: TrendlineKind::default(),
+            order: None,
+            period: None,
+            forward: None,
+            backward: None,
+            intercept: None,
+            show_r_squared: false,
+            show_equation: false,
+            name: None,
+        }
+    }
+}
+
+impl Default for ErrorBar {
+    fn default() -> Self {
+        Self {
+            direction: ErrorBarDirection::default(),
+            bar_type: ErrorBarType::default(),
+            value_type: ErrorBarValueType::default(),
+            value: None,
+            no_end_cap: false,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // ChartError
 // ---------------------------------------------------------------------------
 
@@ -390,6 +541,22 @@ impl Chart {
             data_labels: None,
             revision: 0,
         }
+    }
+
+    /// ORM-06 bridge: decode a chart produced by the `wo-ooxml` XLSX chart
+    /// parser — the JSON contract of
+    /// `wo_ooxml::model::ChartSpace::to_chart_json` (snake_case `kind`,
+    /// `series` with `data`/`color`/`trendlines`/`error_bars`, `axes`,
+    /// `legend`, `title`, `data_labels`). The two crates intentionally have
+    /// no dependency edge; this JSON contract is the seam.
+    pub fn from_bridge_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
+
+    /// Serialize this chart into the same bridge contract (inverse of
+    /// [`Chart::from_bridge_json`]).
+    pub fn to_bridge_json(&self) -> String {
+        serde_json::to_string(self).unwrap_or_else(|_| "{}".to_string())
     }
 
     /// Add a series to the chart.
@@ -1558,5 +1725,84 @@ mod tests {
         assert!(back.title.is_some());
         assert!(back.data_labels.is_some());
         assert!(back.data_labels.unwrap().visible);
+    }
+
+    /// The exact JSON the wo-ooxml ChartSpace bridge emits for an Excel
+    /// clustered-column chart (P2B-X02): kind + series (with a trendline,
+    /// an error bar and cached categories/values) + axes + legend + title
+    /// + data labels. Decoding must yield the editable model.
+    #[test]
+    fn chart_from_bridge_json_decodes_xlsx_chart() {
+        let bridge = serde_json::json!({
+            "kind": "column",
+            "series": [
+                {
+                    "name": "Revenue",
+                    "data": [
+                        { "value": 120.5, "category": "Q1" },
+                        { "value": 135.25, "category": "Q2" }
+                    ],
+                    "color": "#4472C4",
+                    "visible": true,
+                    "trendlines": [
+                        { "kind": "linear", "forward": 1.5, "show_r_squared": true }
+                    ],
+                    "error_bars": [
+                        { "direction": "y", "bar_type": "both", "value_type": "percentage", "value": 5.0, "no_end_cap": false }
+                    ]
+                }
+            ],
+            "axes": [
+                { "position": "bottom", "title": "Quarter", "scale": "linear", "show_gridlines": false, "show_labels": true },
+                { "position": "left", "scale": "linear", "show_gridlines": true, "show_labels": true }
+            ],
+            "legend": { "position": "bottom", "visible": true },
+            "title": { "text": "Quarterly Revenue", "visible": true },
+            "data_labels": { "visible": true, "show_value": true, "show_category": false, "show_series_name": false, "show_percentage": false }
+        });
+        let chart = Chart::from_bridge_json(&bridge.to_string()).unwrap();
+        assert_eq!(chart.kind, ChartKind::Column);
+        assert_eq!(chart.series.len(), 1);
+        let series = &chart.series[0];
+        assert_eq!(series.name, "Revenue");
+        assert_eq!(series.color.as_deref(), Some("#4472C4"));
+        assert_eq!(series.data.len(), 2);
+        assert_eq!(series.data[0].value, 120.5);
+        assert_eq!(series.data[0].category.as_deref(), Some("Q1"));
+        assert_eq!(series.trendlines.len(), 1);
+        assert_eq!(series.trendlines[0].kind, TrendlineKind::Linear);
+        assert_eq!(series.trendlines[0].forward, Some(1.5));
+        assert!(series.trendlines[0].show_r_squared);
+        assert_eq!(series.error_bars.len(), 1);
+        assert_eq!(series.error_bars[0].direction, ErrorBarDirection::Y);
+        assert_eq!(series.error_bars[0].value_type, ErrorBarValueType::Percentage);
+        assert_eq!(series.error_bars[0].value, Some(5.0));
+        assert_eq!(chart.axes.len(), 2);
+        assert_eq!(chart.axes[0].position, AxisPosition::Bottom);
+        assert!(!chart.axes[0].show_gridlines);
+        assert_eq!(chart.axes[0].title.as_deref(), Some("Quarter"));
+        assert_eq!(chart.axes[1].position, AxisPosition::Left);
+        assert_eq!(chart.legend.as_ref().map(|l| l.position), Some(LegendPosition::Bottom));
+        assert_eq!(chart.title.as_ref().map(|t| t.text.as_str()), Some("Quarterly Revenue"));
+        assert!(chart.data_labels.as_ref().unwrap().visible);
+
+        // The bridge is symmetric: re-encoding decodes to the same chart.
+        let json = chart.to_bridge_json();
+        let back = Chart::from_bridge_json(&json).unwrap();
+        assert_eq!(back.kind, chart.kind);
+        assert_eq!(back.series, chart.series);
+        assert_eq!(back.axes, chart.axes);
+    }
+
+    /// Series JSON without the trendline/error-bar keys (every producer
+    /// older than the xlsx bridge) still deserializes.
+    #[test]
+    fn series_without_trendline_keys_still_deserializes() {
+        let series: Series = serde_json::from_str(
+            r#"{"name":"s","data":[{"value":1.0,"category":"a"}],"visible":true}"#,
+        )
+        .unwrap();
+        assert!(series.trendlines.is_empty());
+        assert!(series.error_bars.is_empty());
     }
 }

@@ -15,11 +15,15 @@ mod style_chain_tests;
 
 pub use model::builtin_theme_presets;
 pub use model::{
-    Bounds, ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme,
-    GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat, PictureShape,
-    PlaceholderShape, PptxPresentation, ShadowEffect, Slide, SlideLayout, SlideMaster, SlideShape,
-    SlideSize, TableCell, TableColumn, TableRow, TableShape, TextBody, TextBoxShape, Theme,
-    ThemeColor, ThemeFont, ThemePreset, XlsxBrk, XlsxHeaderFooter, XlsxHyperlink,
+    Bounds, ChartAxis, ChartAxisKind, ChartCategories, ChartDLbls, ChartErrBar, ChartExternalData,
+    ChartLayout, ChartLegendNode, ChartMarker, ChartNode, ChartNumData, ChartNumPt, ChartPlot,
+    ChartPlotKind, ChartPrintSettings, ChartScaling, ChartSeries, ChartSpace, ChartStrPt,
+    ChartTitleNode, ChartTrendline, ColorScheme, ConnectorShape, ConnectorShapeType, EffectList,
+    Fill, FontScheme, GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat,
+    PictureShape, PlaceholderShape, PlotAreaNode, PptxPresentation, ShadowEffect, Slide,
+    SlideLayout, SlideMaster, SlideShape, SlideSize, TableCell, TableColumn, TableRow, TableShape,
+    TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, ThemePreset, XlsxBook, XlsxBrk,
+    XlsxChartPart, XLSX_CHART_CONTENT_TYPE, XLSX_CHART_REL_TYPE, XlsxHeaderFooter, XlsxHyperlink,
     XlsxPageMargins, XlsxPageSetup, XlsxPrintSettings,
 };
 pub use parser::OoxmlParser;

@@ -2531,7 +2531,743 @@ pub struct ThemePreset {
     pub font_scheme: FontScheme,
 }
 
-/// Built-in Office themes matching PowerPoint defaults.
+// ---------------------------------------------------------------------------
+// XLSX chart parts (ORM-06) — the `xl/charts/chartN.xml` typed graph
+// ---------------------------------------------------------------------------
+
+/// A parsed XLSX package: the editable workbook model plus the chart parts
+/// that ride beside it (ORM-06). Chart parts are workbook-level ZIP parts
+/// (`xl/charts/chartN.xml`) related from a drawing; the sheet model cannot
+/// host them, so they travel in their own typed list.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxBook {
+    /// The editable workbook model (sheets, styles, shared strings).
+    pub workbook: XlsxWorkbook,
+    /// The typed chart parts (`xl/charts/chartN.xml`), in package order.
+    pub charts: Vec<XlsxChartPart>,
+}
+
+/// One `xl/charts/chartN.xml` part: its package path plus the typed
+/// DrawingML chart graph (`c:chartSpace`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct XlsxChartPart {
+    /// Package path, e.g. `xl/charts/chart1.xml`.
+    pub path: String,
+    /// The parsed `c:chartSpace` graph.
+    pub space: ChartSpace,
+}
+
+/// DrawingML chart content type (used for the `[Content_Types].xml`
+/// Override and the workbook relationship).
+pub const XLSX_CHART_CONTENT_TYPE: &str =
+    "application/vnd.openxmlformats-officedocument.drawingml.chart+xml";
+
+/// DrawingML chart relationship type.
+pub const XLSX_CHART_REL_TYPE: &str =
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart";
+
+/// The `c:chartSpace` root (CT_ChartSpace): workbook-level flags, the chart
+/// itself, its external-data link and its print settings.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartSpace {
+    /// `c:lang` — the language of the chart text.
+    pub lang: Option<String>,
+    /// `c:date1904` — the date system of the cached values.
+    pub date_1904: Option<bool>,
+    /// `c:roundedCorners` — rounded chart-space border.
+    pub rounded_corners: Option<bool>,
+    /// `c:chart` — the chart definition.
+    pub chart: ChartNode,
+    /// `c:externalData` — the linked workbook (`r:id` + auto-update flag).
+    pub external_data: Option<ChartExternalData>,
+    /// `c:printSettings` — print margins/header-footer for the chart sheet.
+    pub print_settings: Option<ChartPrintSettings>,
+}
+
+/// `c:chart` (CT_Chart): title, plot area, legend and behavior flags.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartNode {
+    /// `c:title` — explicit chart title (empty when auto-generated).
+    pub title: Option<ChartTitleNode>,
+    /// `c:autoTitleDeleted` — the user deleted the automatic title.
+    pub auto_title_deleted: Option<bool>,
+    /// `c:plotArea` — the plot groups and axes.
+    pub plot_area: PlotAreaNode,
+    /// `c:legend` — legend configuration.
+    pub legend: Option<ChartLegendNode>,
+    /// `c:plotVisOnly` — plot only visible cells.
+    pub plot_vis_only: Option<bool>,
+    /// `c:dispBlanksAs` — how blank cells render (`gap`/`zero`/`span`).
+    pub disp_blanks_as: Option<String>,
+    /// `c:showDLblsOverMax` — draw labels beyond the axis maximum.
+    pub show_dlbls_over_max: Option<bool>,
+}
+
+/// `c:title` (CT_Title): the resolved text plus overlay flag. The text may
+/// come from `c:rich` runs or from a `c:strRef` formula cache.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartTitleNode {
+    /// Concatenated `a:t` runs of `c:tx/c:rich` (or the cached formula text).
+    pub text: Option<String>,
+    /// `c:strRef/c:f` — the cell formula backing an auto title.
+    pub ref_formula: Option<String>,
+    /// `c:overlay` — draw the title over the plot area.
+    pub overlay: Option<bool>,
+}
+
+/// `c:plotArea` (CT_PlotArea): one or more plot groups plus the axes they
+/// reference through `c:axId`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PlotAreaNode {
+    /// `c:layout` — manual layout of the plot area (fractions of the chart).
+    pub layout: Option<ChartLayout>,
+    /// The plot groups (`c:barChart`, `c:lineChart`, …) in document order.
+    pub plots: Vec<ChartPlot>,
+    /// The axes (`c:catAx`/`c:valAx`/`c:dateAx`/`c:serAx`).
+    pub axes: Vec<ChartAxis>,
+    /// `c:dTable` — a data table under the plot area.
+    pub show_data_table: Option<bool>,
+}
+
+/// `c:layout` (CT_ManualLayout) — fractional x/y/w/h positions.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartLayout {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub w: Option<f64>,
+    pub h: Option<f64>,
+}
+
+/// The kind of a plot group (`c:barChart`, `c:lineChart`, …).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChartPlotKind {
+    /// `c:barChart` — horizontal bars when `barDir="bar"`.
+    #[default]
+    Bar,
+    /// `c:barChart` with `barDir="col"` — vertical columns.
+    Column,
+    /// `c:lineChart`.
+    Line,
+    /// `c:pieChart`.
+    Pie,
+    /// `c:doughnutChart`.
+    Doughnut,
+    /// `c:scatterChart`.
+    Scatter,
+    /// `c:areaChart`.
+    Area,
+    /// `c:radarChart`.
+    Radar,
+    /// `c:bubbleChart`.
+    Bubble,
+    /// `c:surfaceChart` / `c:surface3DChart`.
+    Surface,
+    /// `c:stockChart` (HLC/OHLC/volume-open-high-low-close).
+    Stock,
+    /// `c:ofPieChart` (pie-of-pie / bar-of-pie).
+    OfPie,
+    /// Any other plot group (`c:funnel`, `c:treemap`, …) — kept verbatim so
+    /// an unknown chart type still round trips instead of being dropped.
+    Other(String),
+}
+
+/// One plot group (CT_*Chart). Kind-specific children are optional fields;
+/// everything present is re-emitted in schema order.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartPlot {
+    /// The plot group kind.
+    pub kind: ChartPlotKind,
+    /// `c:barDir` — `bar` or `col` (bar charts only).
+    pub bar_dir: Option<String>,
+    /// `c:grouping` — `clustered`/`stacked`/`percentStacked`/`standard`.
+    pub grouping: Option<String>,
+    /// `c:varyColors` — color each point differently.
+    pub vary_colors: Option<bool>,
+    /// `c:ser` — the series of this plot group.
+    pub series: Vec<ChartSeries>,
+    /// `c:dLbls` — plot-level data labels.
+    pub d_lbls: Option<ChartDLbls>,
+    /// `c:gapWidth` — bar/line gap width in percent.
+    pub gap_width: Option<u32>,
+    /// `c:overlap` — bar overlap in percent (may be negative).
+    pub overlap: Option<i64>,
+    /// `c:holeSize` — doughnut hole size in percent.
+    pub hole_size: Option<u32>,
+    /// `c:firstSliceAng` — pie/doughnut first slice angle.
+    pub first_slice_ang: Option<u32>,
+    /// `c:radarStyle` — `standard`/`marker`/`filled`.
+    pub radar_style: Option<String>,
+    /// `c:scatterStyle` — `lineMarker`, `smoothMarker`, …
+    pub scatter_style: Option<String>,
+    /// `c:ofPieType` — `pie` or `bar` (of-pie charts).
+    pub of_pie_type: Option<String>,
+    /// `c:marker` (chart-level) — scatter/line show markers.
+    pub marker: Option<bool>,
+    /// `c:smooth` (chart-level default for line series).
+    pub smooth: Option<bool>,
+    /// `c:bubble3D`.
+    pub bubble3_d: Option<bool>,
+    /// `c:serLines` — connector lines between stacked bars.
+    pub ser_lines: Option<bool>,
+    /// `c:axId` — the axes this plot group is drawn against.
+    pub ax_ids: Vec<u32>,
+}
+
+/// `c:ser` (CT_BarSer/CT_LineSer/…) — one data series of a plot group.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartSeries {
+    /// `c:idx` — series index.
+    pub idx: u32,
+    /// `c:order` — series plotting order.
+    pub order: u32,
+    /// `c:tx` — series name text (rich or cached formula result).
+    pub name: Option<String>,
+    /// `c:tx/c:strRef/c:f` — the formula backing the series name.
+    pub name_formula: Option<String>,
+    /// `c:spPr` solid fill color (`#RRGGBB`) of the series shape.
+    pub fill_color: Option<String>,
+    /// `c:spPr/a:ln` solid line color (`#RRGGBB`).
+    pub line_color: Option<String>,
+    /// `c:marker` — the series data-point marker.
+    pub marker: Option<ChartMarker>,
+    /// `c:cat` — the category (x) labels.
+    pub categories: Option<ChartCategories>,
+    /// `c:val` — the values.
+    pub values: Option<ChartNumData>,
+    /// `c:xVal` — scatter/bubble x values.
+    pub x_values: Option<ChartNumData>,
+    /// `c:yVal` — scatter/bubble y values.
+    pub y_values: Option<ChartNumData>,
+    /// `c:bubbleSize` — bubble sizes.
+    pub bubble_sizes: Option<ChartNumData>,
+    /// `c:bubble3D` — per-series bubble 3D flag.
+    pub bubble3_d: Option<bool>,
+    /// `c:smooth` — smooth the connecting line.
+    pub smooth: Option<bool>,
+    /// `c:dLbls` — series-level data labels.
+    pub d_lbls: Option<ChartDLbls>,
+    /// `c:trendline` — trendlines attached to the series.
+    pub trendlines: Vec<ChartTrendline>,
+    /// `c:errBars` — error bars attached to the series (x and y).
+    pub error_bars: Vec<ChartErrBar>,
+}
+
+/// `c:cat` (CT_AxDataSource): category labels from a string or number cache.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartCategories {
+    /// `c:strRef/c:f` or `c:numRef/c:f` — the source range.
+    pub formula: Option<String>,
+    /// `c:multiLvlStrRef` — the labels are multi-level categories.
+    pub multi_level: bool,
+    /// `formatCode` of a numeric category cache.
+    pub format_code: Option<String>,
+    /// `c:ptCount/@val`.
+    pub pt_count: Option<u32>,
+    /// Cached points (`c:pt/@idx` → value) in document order.
+    pub points: Vec<ChartStrPt>,
+}
+
+/// One cached string point (`c:pt`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ChartStrPt {
+    pub idx: u32,
+    pub value: Option<String>,
+}
+
+/// Numeric data source (CT_NumDataSource): `c:numRef` or `c:numLit`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartNumData {
+    /// `c:numRef/c:f` — the source range (None for a literal).
+    pub formula: Option<String>,
+    /// `c:numCache/formatCode` (or `numLit/formatCode`).
+    pub format_code: Option<String>,
+    /// `c:ptCount/@val`.
+    pub pt_count: Option<u32>,
+    /// Cached points (`c:pt/@idx` → value); missing cells keep `None`.
+    pub points: Vec<ChartNumPt>,
+}
+
+/// One cached numeric point (`c:pt`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ChartNumPt {
+    pub idx: u32,
+    pub value: Option<f64>,
+}
+
+/// `c:marker` (CT_Marker): symbol, size and color of a data point marker.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartMarker {
+    /// `c:symbol` — `circle`, `square`, `none`, …
+    pub symbol: Option<String>,
+    /// `c:size` — marker size in points.
+    pub size: Option<u32>,
+    /// `c:spPr` solid fill color (`#RRGGBB`).
+    pub fill_color: Option<String>,
+}
+
+/// `c:dLbls` (CT_DLbls): which label parts to show and where.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartDLbls {
+    /// `c:delete` — labels are switched off.
+    pub deleted: bool,
+    /// `c:numFmt/@formatCode`.
+    pub number_format: Option<String>,
+    /// `c:numFmt/@sourceLinked`.
+    pub source_linked: Option<bool>,
+    /// `c:dLblPos` — `outEnd`, `ctr`, `inEnd`, …
+    pub position: Option<String>,
+    pub show_legend_key: bool,
+    pub show_val: bool,
+    pub show_cat_name: bool,
+    pub show_ser_name: bool,
+    pub show_percent: bool,
+    pub show_bubble_size: bool,
+}
+
+/// `c:trendline` (CT_Trendline): a regression line on a series.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartTrendline {
+    /// `c:trendlineType/@val` — `linear`, `exp`, `log`, `movingAvg`,
+    /// `poly`, `power`.
+    pub trendline_type: String,
+    /// `c:order` — polynomial order.
+    pub order: Option<u32>,
+    /// `c:period` — moving-average period.
+    pub period: Option<u32>,
+    /// `c:forward` — extrapolated periods forward.
+    pub forward: Option<f64>,
+    /// `c:backward` — extrapolated periods backward.
+    pub backward: Option<f64>,
+    /// `c:intercept` — fixed intercept.
+    pub intercept: Option<f64>,
+    /// `c:dispRSqr` — show R².
+    pub disp_r_sq: bool,
+    /// `c:dispEq` — show the equation.
+    pub disp_eq: bool,
+    /// `c:name` — custom trendline name.
+    pub name: Option<String>,
+}
+
+/// `c:errBars` (CT_ErrBars): error bars on a series.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartErrBar {
+    /// `c:errBarType/@val` — `both`, `minus`, `plus`.
+    pub err_bar_type: String,
+    /// `c:errValType/@val` — `cust`, `fixedVal`, `percentage`, `stdDev`,
+    /// `stdErr`.
+    pub err_val_type: String,
+    /// `c:noEndCap`.
+    pub no_end_cap: bool,
+    /// Direction: `x` when attached to `c:xVal`, `y` for `c:yVal`.
+    pub direction: String,
+    /// `c:val` — the fixed/percentage/standard-deviation magnitude.
+    pub value: Option<f64>,
+}
+
+/// Axis kinds (the four `*Ax` elements of CT_PlotArea).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChartAxisKind {
+    /// `c:catAx`.
+    #[default]
+    Category,
+    /// `c:valAx`.
+    Value,
+    /// `c:dateAx`.
+    Date,
+    /// `c:serAx` (3-D series axis).
+    Series,
+}
+
+/// One axis (`c:catAx`/`c:valAx`/`c:dateAx`/`c:serAx`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartAxis {
+    /// Which `*Ax` element this came from.
+    pub kind: ChartAxisKind,
+    /// `c:axId` — referenced by the plot groups' `c:axId` children.
+    pub ax_id: u32,
+    /// `c:crossAx` — the id of the crossing axis.
+    pub cross_ax: u32,
+    /// `c:delete` — the axis is hidden.
+    pub delete: Option<bool>,
+    /// `c:axPos` — `b`, `l`, `t`, `r`.
+    pub ax_pos: Option<String>,
+    /// `c:scaling` — log base, orientation and fixed min/max.
+    pub scaling: ChartScaling,
+    /// `c:title` — axis title text.
+    pub title: Option<String>,
+    /// `c:numFmt/@formatCode`.
+    pub number_format: Option<String>,
+    /// `c:numFmt/@sourceLinked`.
+    pub number_format_source_linked: Option<bool>,
+    /// `c:majorGridlines` present.
+    pub major_gridlines: bool,
+    /// `c:minorGridlines` present.
+    pub minor_gridlines: bool,
+    /// `c:majorTickMark` — `out`, `in`, `cross`, `none`.
+    pub major_tick_mark: Option<String>,
+    /// `c:minorTickMark`.
+    pub minor_tick_mark: Option<String>,
+    /// `c:tickLblPos` — `nextTo`, `high`, `low`, `none`.
+    pub tick_label_position: Option<String>,
+    /// `c:crosses` — `autoZero`, `max`, `min`.
+    pub crosses: Option<String>,
+    /// `c:crossesAt` — fixed crossing value.
+    pub crosses_at: Option<f64>,
+    /// `c:crossBetween` — `between`, `midCat`.
+    pub cross_between: Option<String>,
+    /// `c:majorUnit`.
+    pub major_unit: Option<f64>,
+    /// `c:minorUnit`.
+    pub minor_unit: Option<f64>,
+    /// `c:auto` — automatic category axis.
+    pub auto: Option<bool>,
+    /// `c:lblAlgn` — `ctr`, `l`, `r`.
+    pub label_alignment: Option<String>,
+    /// `c:lblOffset`.
+    pub label_offset: Option<u32>,
+    /// `c:noMultiLvlLbl`.
+    pub no_multi_level_labels: Option<bool>,
+}
+
+/// `c:scaling` (CT_Scaling).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartScaling {
+    /// `c:logBase`.
+    pub log_base: Option<f64>,
+    /// `c:orientation/@val` — `minMax` or `maxMin`.
+    pub orientation: Option<String>,
+    /// `c:max`.
+    pub max: Option<f64>,
+    /// `c:min`.
+    pub min: Option<f64>,
+}
+
+/// `c:legend` (CT_Legend).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartLegendNode {
+    /// `c:legendPos/@val` — `b`, `tr`, `l`, `r`, `t`.
+    pub position: Option<String>,
+    /// `c:overlay`.
+    pub overlay: Option<bool>,
+    /// `c:legendEntry` entries with `c:delete` — hidden series indices.
+    pub deleted_entries: Vec<u32>,
+}
+
+/// `c:externalData` (CT_ExternalData): the workbook the chart is linked to.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartExternalData {
+    /// `r:id` of the external-data relationship.
+    pub r_id: String,
+    /// `c:autoUpdate`.
+    pub auto_update: Option<bool>,
+}
+
+/// `c:printSettings`: chart print margins and header/footer (uses the
+/// spreadsheetml CT_PageMargins/CT_HeaderFooter types).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChartPrintSettings {
+    pub page_margins: Option<XlsxPageMargins>,
+    pub header_footer: Option<XlsxHeaderFooter>,
+}
+
+impl ChartPlot {
+    /// The `c:*Chart` element name for this plot kind (used by the writer).
+    pub fn element_name(&self) -> String {
+        match self.kind {
+            ChartPlotKind::Bar | ChartPlotKind::Column => "barChart".to_string(),
+            ChartPlotKind::Line => "lineChart".to_string(),
+            ChartPlotKind::Pie => "pieChart".to_string(),
+            ChartPlotKind::Doughnut => "doughnutChart".to_string(),
+            ChartPlotKind::Scatter => "scatterChart".to_string(),
+            ChartPlotKind::Area => "areaChart".to_string(),
+            ChartPlotKind::Radar => "radarChart".to_string(),
+            ChartPlotKind::Bubble => "bubbleChart".to_string(),
+            ChartPlotKind::Surface => "surfaceChart".to_string(),
+            ChartPlotKind::Stock => "stockChart".to_string(),
+            ChartPlotKind::OfPie => "ofPieChart".to_string(),
+            ChartPlotKind::Other(ref name) => name.clone(),
+        }
+    }
+
+    /// The bar direction for bar plots (`bar` or `col`).
+    pub fn bar_dir_attr(&self) -> Option<&str> {
+        if !matches!(self.kind, ChartPlotKind::Bar | ChartPlotKind::Column) {
+            return None;
+        }
+        Some(if self.kind == ChartPlotKind::Column {
+            "col"
+        } else {
+            "bar"
+        })
+    }
+}
+
+impl ChartSpace {
+    /// The primary plot group (the first plot of the plot area).
+    pub fn primary_plot(&self) -> Option<&ChartPlot> {
+        self.chart.plot_area.plots.first()
+    }
+
+    /// The `wo-chart` `ChartKind` name for the primary plot group
+    /// (snake_case, as `ChartKind` serializes). Plot kinds the editable
+    /// chart model cannot render yet degrade to their nearest supported
+    /// kind: bubble → `scatter`, surface → `area`, stock → `line`,
+    /// of-pie → `pie`, unknown → `bar`. The typed graph keeps the real
+    /// kind regardless — only this bridge view is lossy.
+    pub fn chart_kind_name(&self) -> &'static str {
+        match self.primary_plot().map(|p| &p.kind) {
+            Some(ChartPlotKind::Bar) => "bar",
+            Some(ChartPlotKind::Column) => "column",
+            Some(ChartPlotKind::Line) => "line",
+            Some(ChartPlotKind::Pie) | Some(ChartPlotKind::OfPie) => "pie",
+            Some(ChartPlotKind::Doughnut) => "doughnut",
+            Some(ChartPlotKind::Scatter) | Some(ChartPlotKind::Bubble) => "scatter",
+            Some(ChartPlotKind::Area) | Some(ChartPlotKind::Surface) => "area",
+            Some(ChartPlotKind::Radar) => "radar",
+            Some(ChartPlotKind::Stock) => "line",
+            Some(ChartPlotKind::Other(_)) | None => "bar",
+        }
+    }
+
+    /// ORM-06 bridge: this chart in the **`wo-chart` editable model's serde
+    /// JSON contract** (`wo_chart::model::Chart`: snake_case `kind`,
+    /// `series` with `data` points, `axes`, `legend`, `title`,
+    /// `data_labels`, per-series `trendlines`/`error_bars`).
+    ///
+    /// The decode side is `wo_chart::model::Chart::from_bridge_json` — the
+    /// two crates intentionally stay dependency-free and exchange charts
+    /// through this JSON contract (no crate graph edge exists between
+    /// wo-ooxml and wo-chart, and neither Cargo.toml is allowed to change
+    /// in this task). All series across plot groups are merged in document
+    /// order; the primary plot group decides the chart kind.
+    pub fn to_chart_json(&self) -> String {
+        self.to_chart_model_value().to_string()
+    }
+
+    /// `serde_json::Value` form of [`ChartSpace::to_chart_json`].
+    pub fn to_chart_model_value(&self) -> serde_json::Value {
+        let mut series_values = Vec::new();
+        let mut data_labels = None;
+        for plot in &self.chart.plot_area.plots {
+            for ser in &plot.series {
+                let mut points = Vec::new();
+                if plot.kind == ChartPlotKind::Scatter || plot.kind == ChartPlotKind::Bubble {
+                    // x/y pairs: the x value becomes the point category.
+                    let xs = ser.x_values.as_ref().map(|d| &d.points);
+                    let ys = ser.y_values.as_ref().map(|d| &d.points).or_else(|| {
+                        ser.values.as_ref().map(|d| &d.points)
+                    });
+                    if let (Some(xs), Some(ys)) = (xs, ys) {
+                        for i in 0..xs.len().max(ys.len()) {
+                            let x = xs.get(i).and_then(|p| p.value);
+                            let y = ys.get(i).and_then(|p| p.value).unwrap_or(0.0);
+                            let mut point = serde_json::json!({ "value": y });
+                            if let Some(x) = x {
+                                point["category"] = serde_json::json!(chart_num_repr(x));
+                            }
+                            points.push(point);
+                        }
+                    }
+                } else {
+                    let cats = ser.categories.as_ref().map(|c| &c.points);
+                    let vals = ser.values.as_ref().map(|d| &d.points);
+                    if let Some(vals) = vals {
+                        for i in 0..vals.len().max(cats.map(|c| c.len()).unwrap_or(0)) {
+                            let value = vals.get(i).and_then(|p| p.value).unwrap_or(0.0);
+                            let mut point = serde_json::json!({ "value": value });
+                            if let Some(cat) =
+                                cats.and_then(|c| c.get(i)).and_then(|p| p.value.as_deref())
+                            {
+                                point["category"] = serde_json::json!(cat);
+                            }
+                            points.push(point);
+                        }
+                    }
+                }
+                let mut series = serde_json::json!({
+                    "name": ser.name.clone().unwrap_or_else(|| format!("Series {}", ser.idx + 1)),
+                    "data": points,
+                    "visible": true,
+                });
+                if let Some(ref color) = ser.fill_color {
+                    series["color"] = serde_json::json!(format!("#{}", color.trim_start_matches('#')));
+                }
+                if !ser.trendlines.is_empty() {
+                    series["trendlines"] = serde_json::json!(ser.trendlines.iter().map(trendline_value).collect::<Vec<_>>());
+                }
+                if !ser.error_bars.is_empty() {
+                    series["error_bars"] = serde_json::json!(ser.error_bars.iter().map(err_bar_value).collect::<Vec<_>>());
+                }
+                series_values.push(series);
+            }
+            if data_labels.is_none() {
+                data_labels = plot
+                    .d_lbls
+                    .as_ref()
+                    .or_else(|| plot.series.first().and_then(|s| s.d_lbls.as_ref()))
+                    .map(dlbls_value);
+            }
+        }
+
+        let mut axes_values = Vec::new();
+        for axis in &self.chart.plot_area.axes {
+            let position = match (axis.kind, axis.ax_pos.as_deref()) {
+                (ChartAxisKind::Value, Some("r")) => "right",
+                (ChartAxisKind::Value, _) => "left",
+                (_, Some("t")) => "top",
+                (_, Some("b")) => "bottom",
+                _ => "bottom",
+            };
+            let mut axis_value = serde_json::json!({
+                "position": position,
+                "scale": if axis.scaling.log_base.is_some() { "log" } else { "linear" },
+                "show_gridlines": axis.major_gridlines,
+                "show_labels": axis.tick_label_position.as_deref() != Some("none"),
+            });
+            if let Some(ref title) = axis.title {
+                axis_value["title"] = serde_json::json!(title);
+            }
+            if let Some(v) = axis.scaling.min {
+                axis_value["min"] = serde_json::json!(v);
+            }
+            if let Some(v) = axis.scaling.max {
+                axis_value["max"] = serde_json::json!(v);
+            }
+            axes_values.push(axis_value);
+        }
+
+        let mut value = serde_json::json!({
+            "kind": self.chart_kind_name(),
+            "series": series_values,
+            "axes": axes_values,
+        });
+        if let Some(ref legend) = self.chart.legend {
+            value["legend"] = serde_json::json!({
+                "position": match legend.position.as_deref() {
+                    Some("t") => "top",
+                    Some("tr") => "top_right",
+                    Some("l") => "left",
+                    Some("r") => "right",
+                    _ => "bottom",
+                },
+                "visible": true,
+            });
+        }
+        if let Some(title) = self.chart.title.as_ref().and_then(|t| t.text.clone()) {
+            value["title"] = serde_json::json!({ "text": title, "visible": true });
+        }
+        if let Some(dl) = data_labels {
+            value["data_labels"] = dl;
+        }
+        value
+    }
+}
+
+/// f64 without a trailing `.0`, matching what the chart caches carry.
+fn chart_num_repr(v: f64) -> String {
+    if v.fract() == 0.0 && v.abs() < 1e15 {
+        format!("{}", v as i64)
+    } else {
+        format!("{}", v)
+    }
+}
+
+/// OOXML trendline type name → the wo-chart `TrendlineKind` name.
+fn trendline_kind_name(ooxml_type: &str) -> &'static str {
+    match ooxml_type {
+        "exp" => "exponential",
+        "log" => "logarithmic",
+        "movingAvg" => "moving_average",
+        "poly" => "polynomial",
+        "power" => "power",
+        _ => "linear",
+    }
+}
+
+fn trendline_value(tl: &ChartTrendline) -> serde_json::Value {
+    let mut value = serde_json::json!({
+        "kind": trendline_kind_name(&tl.trendline_type),
+        "show_r_squared": tl.disp_r_sq,
+        "show_equation": tl.disp_eq,
+    });
+    for (key, v) in [
+        ("order", tl.order.map(|v| v as f64)),
+        ("period", tl.period.map(|v| v as f64)),
+        ("forward", tl.forward),
+        ("backward", tl.backward),
+        ("intercept", tl.intercept),
+    ] {
+        if let Some(v) = v {
+            value[key] = serde_json::json!(v);
+        }
+    }
+    if let Some(ref name) = tl.name {
+        value["name"] = serde_json::json!(name);
+    }
+    value
+}
+
+fn err_bar_value(eb: &ChartErrBar) -> serde_json::Value {
+    let mut value = serde_json::json!({
+        "direction": if eb.direction == "x" { "x" } else { "y" },
+        "bar_type": match eb.err_bar_type.as_str() {
+            "minus" => "minus",
+            "plus" => "plus",
+            _ => "both",
+        },
+        "value_type": match eb.err_val_type.as_str() {
+            "cust" => "custom",
+            "percentage" => "percentage",
+            "stdDev" => "std_dev",
+            "stdErr" => "std_err",
+            _ => "fixed",
+        },
+        "no_end_cap": eb.no_end_cap,
+    });
+    if let Some(v) = eb.value {
+        value["value"] = serde_json::json!(v);
+    }
+    value
+}
+
+fn dlbls_value(dlbls: &ChartDLbls) -> serde_json::Value {
+    let any = dlbls.show_val
+        || dlbls.show_cat_name
+        || dlbls.show_ser_name
+        || dlbls.show_percent
+        || dlbls.show_bubble_size
+        || dlbls.show_legend_key;
+    serde_json::json!({
+        "visible": !dlbls.deleted && any,
+        "show_value": dlbls.show_val,
+        "show_category": dlbls.show_cat_name,
+        "show_series_name": dlbls.show_ser_name,
+        "show_percentage": dlbls.show_percent,
+    })
+}
+
+/// The built-in theme presets (name/description/palette) shipped with the
+/// engine — used as the default `xl/theme/theme1.xml` body.
 pub fn builtin_theme_presets() -> Vec<ThemePreset> {
     vec![
         ThemePreset {
