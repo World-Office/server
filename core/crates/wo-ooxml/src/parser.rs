@@ -1721,10 +1721,24 @@ impl OoxmlParser {
                         }
                         Some(FieldMarker::End) => {
                             if let Some(open) = open_fields.pop() {
+                                // A nested field's visible result also belongs
+                                // to the enclosing field's cached result (e.g.
+                                // PAGEREF page numbers inside a TOC result).
+                                if open.has_separate {
+                                    if let Some(parent) = open_fields.last_mut() {
+                                        if parent.has_separate {
+                                            parent
+                                                .cached_result
+                                                .push_str(&open.cached_result);
+                                        }
+                                    }
+                                }
                                 fields.push(DocxField {
                                     kind: FieldKind::from_instruction(&open.instruction),
                                     instruction: open.instruction,
-                                    cached_result: if open.has_separate {
+                                    cached_result: if open.has_separate
+                                        && !open.cached_result.is_empty()
+                                    {
                                         Some(open.cached_result)
                                     } else {
                                         None
