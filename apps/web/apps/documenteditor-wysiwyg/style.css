@@ -2876,6 +2876,10 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
    .dialog-overlay/.dialog rules above; only engine-specific structure and the
    three custom widgets are styled here. */
 .wo-engine-dialog .wo-dlg-panel { min-width: 320px; max-width: min(560px, 92vw); }
+/* P3-U02: range rows (ImageSettingsAdvanced adjust/crop sliders) span the
+   section width so the track reads as a slider, not a stub input. */
+.wo-engine-dialog .wo-dlg-row-range { display: flex; align-items: center; gap: 8px; }
+.wo-engine-dialog .wo-dlg-row-range input[type="range"] { flex: 1; }
 .wo-dlg-section {
   border: 1px solid var(--border);
   border-radius: 8px;
