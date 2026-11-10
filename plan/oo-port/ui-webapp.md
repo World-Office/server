@@ -123,8 +123,12 @@ loaded from index.html) ships the data-driven `WoDialogEngine` —
   ≥2-stop floor). All three are import-safe headless (pure value state) and
   gated by `wo-dialogs.test.mjs` (`WO-DIALOGS-PASS`).
 
-Consumer dialog specs land next: `TableSettingsAdvanced` +
-`ImageSettingsAdvanced` (P3-U02), then `ShapeSettings`/`ReviewPopover`/
+Consumer dialog specs: `TableSettingsAdvanced` + `ImageSettingsAdvanced`
+landed (P3-U02 — `WO_DIALOG_SPECS` in wo-dialogs.js, engine-hosted with
+open-time re-sync from the live selection and one JSON ledger entry per OK
+via `runCommand("tableSettingsAdvanced"/"imageSettingsAdvanced")`; gated by
+`table-advanced.test.mjs` → `TABLE-ADV-PASS` and `image-advanced.test.mjs` →
+`IMAGE-ADV-PASS`). Next: `ShapeSettings`/`ReviewPopover`/
 `ExtendedColorDialog` (P3-U03).
 
 ## What WO already covers well (60 `full` rows)
