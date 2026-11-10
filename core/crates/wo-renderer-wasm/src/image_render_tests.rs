@@ -13,7 +13,7 @@ fn create_test_image_1x1_red() -> Vec<u8> {
     let mut img = RgbaImage::new(1, 1);
     img.put_pixel(0, 0, image::Rgba([255u8, 0u8, 0u8, 255u8]));
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageOutputFormat::Png)
+    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
         .unwrap();
     bytes
 }
@@ -27,7 +27,7 @@ fn create_test_image_2x2_blue() -> Vec<u8> {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageOutputFormat::Png)
+    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
         .unwrap();
     bytes
 }
@@ -41,7 +41,7 @@ fn create_test_image_10x10_green() -> Vec<u8> {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageOutputFormat::Png)
+    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
         .unwrap();
     bytes
 }
@@ -53,7 +53,7 @@ fn test_draw_image_basic() {
     let handle = create_canvas(100, 100);
     let image_data = create_test_image_1x1_red();
 
-    let result = super::canvas_bridge::render_image(handle, 10.0, 10.0, 1.0, 1.0, &image_data);
+    let result = super::canvas_bridge::render_image(handle, &image_data, 10.0, 10.0, 1.0, 1.0);
     assert!(result.is_ok());
 }
 
@@ -63,7 +63,7 @@ fn test_draw_image_scaling() {
     let image_data = create_test_image_1x1_red();
 
     // Draw 1x1 image scaled to 10x10
-    let result = super::canvas_bridge::render_image(handle, 10.0, 10.0, 10.0, 10.0, &image_data);
+    let result = super::canvas_bridge::render_image(handle, &image_data, 10.0, 10.0, 10.0, 10.0);
     assert!(result.is_ok());
 
     // Check that the area was filled
@@ -87,11 +87,11 @@ fn test_draw_image_transparent() {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageOutputFormat::Png)
+    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
         .unwrap();
 
     // Draw the semi-transparent image
-    let result = super::canvas_bridge::render_image(handle, 0.0, 0.0, 10.0, 10.0, &bytes);
+    let result = super::canvas_bridge::render_image(handle, &bytes, 0.0, 0.0, 10.0, 10.0);
     assert!(result.is_ok());
 }
 
@@ -100,7 +100,7 @@ fn test_draw_image_invalid_data() {
     let handle = create_canvas(100, 100);
     let invalid_data = vec![0u8, 1u8, 2u8, 3u8]; // Not a valid image
 
-    let result = super::canvas_bridge::render_image(handle, 10.0, 10.0, 10.0, 10.0, &invalid_data);
+    let result = super::canvas_bridge::render_image(handle, &invalid_data, 10.0, 10.0, 10.0, 10.0);
     assert!(result.is_err());
 }
 
@@ -110,11 +110,11 @@ fn test_draw_image_zero_dimensions() {
     let image_data = create_test_image_10x10_green();
 
     // Zero width
-    let result = super::canvas_bridge::render_image(handle, 10.0, 10.0, 0.0, 10.0, &image_data);
+    let result = super::canvas_bridge::render_image(handle, &image_data, 10.0, 10.0, 0.0, 10.0);
     assert!(result.is_err());
 
     // Zero height
-    let result = super::canvas_bridge::render_image(handle, 10.0, 10.0, 10.0, 0.0, &image_data);
+    let result = super::canvas_bridge::render_image(handle, &image_data, 10.0, 10.0, 10.0, 0.0);
     assert!(result.is_err());
 }
 
@@ -153,6 +153,7 @@ fn test_layout_image_basic() {
     
     let body = DocxBody {
         blocks: vec![DocxBlock::Image(image)],
+        ..Default::default()
     };
     
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);
@@ -188,6 +189,7 @@ fn test_layout_image_with_paragraphs() {
             DocxBlock::Image(image),
             DocxBlock::Paragraph(paragraph),
         ],
+        ..Default::default()
     };
     
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);
@@ -218,6 +220,7 @@ fn test_flat_paragraphs_with_images() {
             DocxBlock::Image(image),
             DocxBlock::Paragraph(paragraph),
         ],
+        ..Default::default()
     };
     
     // This should not panic and should return only the paragraph paths

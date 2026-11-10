@@ -53,6 +53,7 @@ fn three_line_page() -> LaidOutPage {
     LaidOutPage {
         layout,
         paragraphs: vec![para],
+        images: Vec::new(),
     }
 }
 
@@ -161,6 +162,7 @@ fn empty_paragraph_selection_yields_no_rects() {
     let page = LaidOutPage {
         layout: three_line_page().layout,
         paragraphs: vec![empty_para],
+        images: Vec::new(),
     };
     assert!(compute_selection_rects(&[page], (0, 0, 0), (0, 0, 5))[0].is_empty());
 }

@@ -4101,6 +4101,8 @@ mod serialize_merge_tests;
 mod session_tests;
 #[cfg(test)]
 mod table_interaction_tests;
+#[cfg(test)]
+mod image_render_tests;
 
 #[cfg(test)]
 mod tests {

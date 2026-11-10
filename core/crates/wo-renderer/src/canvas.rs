@@ -794,7 +794,8 @@ impl Canvas {
         // Decode the image
         let img = image::io::Reader::new(std::io::Cursor::new(image_data))
             .with_guessed_format()
-            .and_then(|r| r.decode())
+            .map_err(|e| format!("Failed to read image: {}", e))?
+            .decode()
             .map_err(|e| format!("Failed to decode image: {}", e))?;
 
         let img_rgba = img.to_rgba8();
@@ -852,14 +853,15 @@ impl Canvas {
 
                 // Get source pixel
                 let src_idx = (src_y_pos * img_w + src_x_pos) as usize;
-                if src_idx * 4 + 3 >= img_rgba.len() {
+                let raw = img_rgba.as_raw();
+                if src_idx * 4 + 3 >= raw.len() {
                     continue;
                 }
 
-                let r = img_rgba[src_idx * 4] as f32 / 255.0;
-                let g = img_rgba[src_idx * 4 + 1] as f32 / 255.0;
-                let b = img_rgba[src_idx * 4 + 2] as f32 / 255.0;
-                let a = img_rgba[src_idx * 4 + 3] as f32 / 255.0;
+                let r = raw[src_idx * 4] as f32 / 255.0;
+                let g = raw[src_idx * 4 + 1] as f32 / 255.0;
+                let b = raw[src_idx * 4 + 2] as f32 / 255.0;
+                let a = raw[src_idx * 4 + 3] as f32 / 255.0;
 
                 // Blend with existing pixel
                 if a > 0.0 {
