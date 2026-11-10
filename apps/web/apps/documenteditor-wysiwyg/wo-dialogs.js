@@ -1393,6 +1393,359 @@ export const EXTENDED_COLOR_DIALOG_SPEC = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// P3-U04: Long-tail dialog batch from the engine
+//   rename / copy-warning / text-input / footnote-tip / sync-tip / style-title
+//   / shortcuts-edit / select-file / quick-access / charts3d / text-art
+//   / format-settings / mail-merge-email / document-access
+// ---------------------------------------------------------------------------
+
+export const RENAME_DIALOG_SPEC = {
+  id: "rename-dialog",
+  title: "Rename",
+  titleKey: "Dialog.Rename.Title",
+  width: 400,
+  okCmd: "renameDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "name", label: "New name", labelKey: "Dialog.Rename.NewName",
+          value: "", cmd: "renameSetName" },
+      ],
+    },
+  ],
+};
+
+export const COPY_WARNING_DIALOG_SPEC = {
+  id: "copy-warning-dialog",
+  title: "Copy Warning",
+  titleKey: "Dialog.CopyWarning.Title",
+  width: 400,
+  okCmd: "copyWarningDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "message", label: "Warning", labelKey: "Dialog.CopyWarning.Message",
+          value: "Copying may affect formatting", cmd: "copyWarningAck" },
+        { type: "checkbox", key: "dontShowAgain", label: "Don't show again",
+          labelKey: "Dialog.CopyWarning.DontShowAgain", value: false },
+      ],
+    },
+  ],
+};
+
+export const TEXT_INPUT_DIALOG_SPEC = {
+  id: "text-input-dialog",
+  title: "Text Input",
+  titleKey: "Dialog.TextInput.Title",
+  width: 400,
+  okCmd: "textInputDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "input", label: "Enter text", labelKey: "Dialog.TextInput.Label",
+          value: "", cmd: "textInputSet" },
+      ],
+    },
+  ],
+};
+
+export const FOOTNOTE_TIP_DIALOG_SPEC = {
+  id: "footnote-tip-dialog",
+  title: "Footnote",
+  titleKey: "Dialog.FootnoteTip.Title",
+  width: 400,
+  okCmd: "footnoteTipDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "footnote", label: "Footnote text", labelKey: "Dialog.FootnoteTip.Text",
+          value: "", cmd: "footnoteTipSet" },
+        { type: "number", key: "position", label: "Position", labelKey: "Dialog.FootnoteTip.Position",
+          min: 1, max: 100, step: 1, value: 1, cmd: "footnoteTipPosition" },
+      ],
+    },
+  ],
+};
+
+export const SYNC_TIP_DIALOG_SPEC = {
+  id: "sync-tip-dialog",
+  title: "Synchronization",
+  titleKey: "Dialog.SyncTip.Title",
+  width: 400,
+  okCmd: "syncTipDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "status", label: "Sync status", labelKey: "Dialog.SyncTip.Status",
+          value: "Synchronized", cmd: "syncTipStatus" },
+        { type: "checkbox", key: "autoSync", label: "Auto-sync",
+          labelKey: "Dialog.SyncTip.AutoSync", value: true, cmd: "syncTipAuto" },
+      ],
+    },
+  ],
+};
+
+export const STYLE_TITLE_DIALOG_SPEC = {
+  id: "style-title-dialog",
+  title: "Style Title",
+  titleKey: "Dialog.StyleTitle.Title",
+  width: 400,
+  okCmd: "styleTitleDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "title", label: "Title", labelKey: "Dialog.StyleTitle.Label",
+          value: "", cmd: "styleTitleSet" },
+        { type: "color", key: "titleColor", label: "Title color", labelKey: "Dialog.StyleTitle.Color",
+          value: "#000000", cmd: "styleTitleColor" },
+      ],
+    },
+  ],
+};
+
+export const SHORTCUTS_EDIT_DIALOG_SPEC = {
+  id: "shortcuts-edit-dialog",
+  title: "Edit Shortcuts",
+  titleKey: "Dialog.ShortcutsEdit.Title",
+  width: 500,
+  okCmd: "shortcutsEditDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "command", label: "Command", labelKey: "Dialog.ShortcutsEdit.Command",
+          value: "", cmd: "shortcutsEditCommand" },
+        { type: "text", key: "shortcut", label: "Shortcut", labelKey: "Dialog.ShortcutsEdit.Shortcut",
+          value: "", cmd: "shortcutsEditShortcut" },
+        { type: "button", key: "reset", label: "Reset to defaults", labelKey: "Dialog.ShortcutsEdit.Reset",
+          cmd: "shortcutsEditReset" },
+      ],
+    },
+  ],
+};
+
+export const SELECT_FILE_DIALOG_SPEC = {
+  id: "select-file-dialog",
+  title: "Select File",
+  titleKey: "Dialog.SelectFile.Title",
+  width: 500,
+  okCmd: "selectFileDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "filePath", label: "File path", labelKey: "Dialog.SelectFile.Path",
+          value: "", cmd: "selectFilePath" },
+        { type: "button", key: "browse", label: "Browse...", labelKey: "Dialog.SelectFile.Browse",
+          cmd: "selectFileBrowse" },
+        { type: "checkbox", key: "remember", label: "Remember selection",
+          labelKey: "Dialog.SelectFile.Remember", value: false },
+      ],
+    },
+  ],
+};
+
+export const QUICK_ACCESS_DIALOG_SPEC = {
+  id: "quick-access-dialog",
+  title: "Quick Access",
+  titleKey: "Dialog.QuickAccess.Title",
+  width: 400,
+  okCmd: "quickAccessDialog",
+  sections: [
+    {
+      rows: [
+        { type: "select", key: "item", label: "Add to Quick Access", labelKey: "Dialog.QuickAccess.Item",
+          value: "",
+          options: [
+            { value: "save", label: "Save", labelKey: "Dialog.QuickAccess.Save" },
+            { value: "undo", label: "Undo", labelKey: "Dialog.QuickAccess.Undo" },
+            { value: "redo", label: "Redo", labelKey: "Dialog.QuickAccess.Redo" },
+          ], cmd: "quickAccessAdd" },
+      ],
+    },
+  ],
+};
+
+export const CHARTS3D_DIALOG_SPEC = {
+  id: "charts3d-dialog",
+  title: "3D Chart Settings",
+  titleKey: "Dialog.Charts3d.Title",
+  width: 500,
+  okCmd: "charts3dDialog",
+  sections: [
+    {
+      title: "3D View",
+      titleKey: "Dialog.Charts3d.Section.View",
+      rows: [
+        { type: "checkbox", key: "enable3d", label: "Enable 3D", labelKey: "Dialog.Charts3d.Enable3d",
+          value: true, cmd: "charts3dEnable" },
+        { type: "number", key: "rotation", label: "Rotation (degrees)", labelKey: "Dialog.Charts3d.Rotation",
+          min: 0, max: 360, step: 1, value: 30, cmd: "charts3dRotation" },
+        { type: "number", key: "elevation", label: "Elevation (degrees)", labelKey: "Dialog.Charts3d.Elevation",
+          min: 0, max: 90, step: 1, value: 15, cmd: "charts3dElevation" },
+        { type: "number", key: "depth", label: "Depth (%)", labelKey: "Dialog.Charts3d.Depth",
+          min: 0, max: 300, step: 10, value: 100, cmd: "charts3dDepth" },
+      ],
+    },
+    {
+      title: "Lighting",
+      titleKey: "Dialog.Charts3d.Section.Lighting",
+      rows: [
+        { type: "select", key: "lighting", label: "Lighting preset", labelKey: "Dialog.Charts3d.Lighting",
+          value: "bright",
+          options: [
+            { value: "bright", label: "Bright", labelKey: "Dialog.Charts3d.Bright" },
+            { value: "moderate", label: "Moderate", labelKey: "Dialog.Charts3d.Moderate" },
+            { value: "dim", label: "Dim", labelKey: "Dialog.Charts3d.Dim" },
+          ], cmd: "charts3dLighting" },
+      ],
+    },
+  ],
+};
+
+export const TEXT_ART_DIALOG_SPEC = {
+  id: "text-art-dialog",
+  title: "Text Art",
+  titleKey: "Dialog.TextArt.Title",
+  width: 500,
+  okCmd: "textArtDialog",
+  sections: [
+    {
+      rows: [
+        { type: "text", key: "text", label: "Text", labelKey: "Dialog.TextArt.Text",
+          value: "Sample Text", cmd: "textArtSetText" },
+        { type: "select", key: "style", label: "Style", labelKey: "Dialog.TextArt.Style",
+          value: "normal",
+          options: [
+            { value: "normal", label: "Normal", labelKey: "Dialog.TextArt.Normal" },
+            { value: "bold", label: "Bold", labelKey: "Dialog.TextArt.Bold" },
+            { value: "italic", label: "Italic", labelKey: "Dialog.TextArt.Italic" },
+          ], cmd: "textArtStyle" },
+        { type: "color", key: "color", label: "Color", labelKey: "Dialog.TextArt.Color",
+          value: "#000000", cmd: "textArtColor" },
+        { type: "number", key: "size", label: "Size (pt)", labelKey: "Dialog.TextArt.Size",
+          min: 6, max: 72, step: 1, value: 12, cmd: "textArtSize" },
+      ],
+    },
+  ],
+};
+
+export const FORMAT_SETTINGS_DIALOG_SPEC = {
+  id: "format-settings-dialog",
+  title: "Format Settings",
+  titleKey: "Dialog.FormatSettings.Title",
+  width: 500,
+  okCmd: "formatSettingsDialog",
+  sections: [
+    {
+      title: "Text Format",
+      titleKey: "Dialog.FormatSettings.Section.Text",
+      rows: [
+        { type: "select", key: "font", label: "Font", labelKey: "Dialog.FormatSettings.Font",
+          value: "Arial",
+          options: [
+            { value: "Arial", label: "Arial" },
+            { value: " Times New Roman", label: " Times New Roman" },
+            { value: "Courier New", label: "Courier New" },
+          ], cmd: "formatSettingsFont" },
+        { type: "number", key: "size", label: "Size (pt)", labelKey: "Dialog.FormatSettings.Size",
+          min: 6, max: 72, step: 1, value: 12, cmd: "formatSettingsSize" },
+        { type: "color", key: "color", label: "Color", labelKey: "Dialog.FormatSettings.Color",
+          value: "#000000", cmd: "formatSettingsColor" },
+      ],
+    },
+    {
+      title: "Paragraph",
+      titleKey: "Dialog.FormatSettings.Section.Paragraph",
+      rows: [
+        { type: "select", key: "alignment", label: "Alignment", labelKey: "Dialog.FormatSettings.Alignment",
+          value: "left",
+          options: [
+            { value: "left", label: "Left", labelKey: "Dialog.FormatSettings.Left" },
+            { value: "center", label: "Center", labelKey: "Dialog.FormatSettings.Center" },
+            { value: "right", label: "Right", labelKey: "Dialog.FormatSettings.Right" },
+          ], cmd: "formatSettingsAlignment" },
+        { type: "number", key: "lineSpacing", label: "Line spacing", labelKey: "Dialog.FormatSettings.LineSpacing",
+          min: 1, max: 3, step: 0.1, value: 1.5, cmd: "formatSettingsLineSpacing" },
+      ],
+    },
+  ],
+};
+
+export const MAIL_MERGE_EMAIL_DIALOG_SPEC = {
+  id: "mail-merge-email-dialog",
+  title: "Mail Merge Email",
+  titleKey: "Dialog.MailMergeEmail.Title",
+  width: 500,
+  okCmd: "mailMergeEmailDialog",
+  sections: [
+    {
+      title: "Email Settings",
+      titleKey: "Dialog.MailMergeEmail.Section.Settings",
+      rows: [
+        { type: "text", key: "subject", label: "Subject", labelKey: "Dialog.MailMergeEmail.Subject",
+          value: "", cmd: "mailMergeEmailSubject" },
+        { type: "text", key: "from", label: "From", labelKey: "Dialog.MailMergeEmail.From",
+          value: "", cmd: "mailMergeEmailFrom" },
+        { type: "select", key: "format", label: "Format", labelKey: "Dialog.MailMergeEmail.Format",
+          value: "html",
+          options: [
+            { value: "html", label: "HTML", labelKey: "Dialog.MailMergeEmail.HTML" },
+            { value: "plain", label: "Plain Text", labelKey: "Dialog.MailMergeEmail.Plain" },
+          ], cmd: "mailMergeEmailFormat" },
+      ],
+    },
+    {
+      title: "Recipients",
+      titleKey: "Dialog.MailMergeEmail.Section.Recipients",
+      rows: [
+        { type: "text", key: "to", label: "To", labelKey: "Dialog.MailMergeEmail.To",
+          value: "", cmd: "mailMergeEmailTo" },
+        { type: "text", key: "cc", label: "CC", labelKey: "Dialog.MailMergeEmail.CC",
+          value: "", cmd: "mailMergeEmailCC" },
+        { type: "text", key: "bcc", label: "BCC", labelKey: "Dialog.MailMergeEmail.BCC",
+          value: "", cmd: "mailMergeEmailBCC" },
+      ],
+    },
+  ],
+};
+
+export const DOCUMENT_ACCESS_DIALOG_SPEC = {
+  id: "document-access-dialog",
+  title: "Document Access",
+  titleKey: "Dialog.DocumentAccess.Title",
+  width: 500,
+  okCmd: "documentAccessDialog",
+  sections: [
+    {
+      title: "Permissions",
+      titleKey: "Dialog.DocumentAccess.Section.Permissions",
+      rows: [
+        { type: "select", key: "access", label: "Access level", labelKey: "Dialog.DocumentAccess.Access",
+          value: "read",
+          options: [
+            { value: "read", label: "Read Only", labelKey: "Dialog.DocumentAccess.Read" },
+            { value: "comment", label: "Can Comment", labelKey: "Dialog.DocumentAccess.Comment" },
+            { value: "edit", label: "Can Edit", labelKey: "Dialog.DocumentAccess.Edit" },
+          ], cmd: "documentAccessLevel" },
+        { type: "text", key: "users", label: "Users", labelKey: "Dialog.DocumentAccess.Users",
+          value: "", cmd: "documentAccessUsers" },
+        { type: "checkbox", key: "allowDownload", label: "Allow download",
+          labelKey: "Dialog.DocumentAccess.Download", value: false, cmd: "documentAccessDownload" },
+      ],
+    },
+    {
+      title: "Expiration",
+      titleKey: "Dialog.DocumentAccess.Section.Expiration",
+      rows: [
+        { type: "checkbox", key: "expires", label: "Link expires",
+          labelKey: "Dialog.DocumentAccess.Expires", value: false, cmd: "documentAccessExpires" },
+        { type: "number", key: "days", label: "Days until expiration", labelKey: "Dialog.DocumentAccess.Days",
+          min: 1, max: 365, step: 1, value: 7, cmd: "documentAccessDays" },
+      ],
+    },
+  ],
+};
+
 /**
  * Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
 export const WO_DIALOG_SPECS = {
@@ -1401,6 +1754,20 @@ export const WO_DIALOG_SPECS = {
   shapeSettings: SHAPE_SETTINGS_SPEC,
   reviewPopover: REVIEW_POPOVER_SPEC,
   extendedColorDialog: EXTENDED_COLOR_DIALOG_SPEC,
+  renameDialog: RENAME_DIALOG_SPEC,
+  copyWarningDialog: COPY_WARNING_DIALOG_SPEC,
+  textInputDialog: TEXT_INPUT_DIALOG_SPEC,
+  footnoteTipDialog: FOOTNOTE_TIP_DIALOG_SPEC,
+  syncTipDialog: SYNC_TIP_DIALOG_SPEC,
+  styleTitleDialog: STYLE_TITLE_DIALOG_SPEC,
+  shortcutsEditDialog: SHORTCUTS_EDIT_DIALOG_SPEC,
+  selectFileDialog: SELECT_FILE_DIALOG_SPEC,
+  quickAccessDialog: QUICK_ACCESS_DIALOG_SPEC,
+  charts3dDialog: CHARTS3D_DIALOG_SPEC,
+  textArtDialog: TEXT_ART_DIALOG_SPEC,
+  formatSettingsDialog: FORMAT_SETTINGS_DIALOG_SPEC,
+  mailMergeEmailDialog: MAIL_MERGE_EMAIL_DIALOG_SPEC,
+  documentAccessDialog: DOCUMENT_ACCESS_DIALOG_SPEC,
 };
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a
