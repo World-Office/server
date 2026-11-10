@@ -1560,6 +1560,9 @@ impl OoxmlSerializer {
             if body.footer.is_some() {
                 extra.push_str("\n  <Override PartName=\"/word/footer1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml\"/>");
             }
+            if body.settings.is_some() {
+                extra.push_str("\n  <Override PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\"/>");
+            }
             if body.footnotes_raw.is_some() {
                 extra.push_str("\n  <Override PartName=\"/word/footnotes.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml\"/>");
             }
@@ -5823,6 +5826,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
@@ -5971,6 +5975,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
@@ -6114,6 +6119,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
@@ -6280,6 +6286,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
@@ -7381,6 +7388,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
@@ -7463,6 +7471,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 comments: Vec::new(),
                 comment_anchors: Vec::new(),
                 blocks: vec![],

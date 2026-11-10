@@ -2230,6 +2230,7 @@ impl OoxmlParser {
                 | "word/footnotes.xml"
                 | "word/comments.xml"
                 | "word/commentsExtended.xml"
+                | "word/settings.xml"
         ) || (name.starts_with("word/header") && name.ends_with(".xml"))
             || (name.starts_with("word/footer") && name.ends_with(".xml"))
             || name.starts_with("word/media/")

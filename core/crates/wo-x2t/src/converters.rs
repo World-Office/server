@@ -309,6 +309,7 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                settings: None,
                 blocks: hf.blocks.clone(),
                 raw_sect_pr: None,
                 header: None,
@@ -2935,6 +2936,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
         relationships: vec![],
         xlsx_workbook: None,
         docx_body: Some(DocxBody {
+            settings: None,
             blocks: DocxBody::from_parts(paragraphs, tables).blocks,
             raw_sect_pr: None,
             header,

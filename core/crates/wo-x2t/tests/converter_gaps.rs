@@ -980,9 +980,11 @@ fn gap_unmanaged_parts_roundtrip() {
         .iter()
         .map(|p| p.name.as_str())
         .collect();
+    // P4-D03: settings.xml is now TYPED+managed (DocxSettings) — it must
+    // stay OUT of the byte bag; endnotes/customXml remain bagged verbatim.
     assert!(
-        names.contains(&"word/settings.xml"),
-        "settings.xml must be bagged: {names:?}"
+        !names.contains(&"word/settings.xml"),
+        "settings.xml is typed-managed (P4-D03), not bagged: {names:?}"
     );
     assert!(names.contains(&"word/endnotes.xml"), "endnotes must be bagged: {names:?}");
     assert!(
@@ -993,30 +995,25 @@ fn gap_unmanaged_parts_roundtrip() {
         !names.contains(&"word/document.xml"),
         "managed parts must not enter the bag: {names:?}"
     );
-    let settings_part = body
-        .unmanaged_parts
-        .iter()
-        .find(|p| p.name == "word/settings.xml")
-        .unwrap();
-    assert_eq!(
-        &settings_part.bytes[..],
-        settings.as_bytes(),
-        "bagged bytes must be identical"
-    );
+    // P4-D03: settings is typed-managed now — its bytes live on
+    // body.settings, semantic round-trip asserted in gap_settings_typed_roundtrip.
+    assert!(body.settings.is_some(), "settings must be typed-parsed");
 
     // 2. docx -> docx: parts re-zip byte-identical and their content
     //    types are re-declared.
     let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
-    assert_eq!(
-        zip_entry(&reser, "word/settings.xml"),
-        settings,
-        "settings.xml must re-zip byte-identical"
+    let reser_settings = zip_entry(&reser, "word/settings.xml");
+    assert!(
+        reser_settings.contains("defaultTabStop") && reser_settings.contains("720"),
+        "settings.xml must survive typed round-trip with its defaultTabStop: {reser_settings}"
     );
     assert_eq!(zip_entry(&reser, "word/endnotes.xml"), endnotes);
     assert_eq!(zip_entry(&reser, "customXml/item1.xml"), custom);
     let ct = zip_entry(&reser, "[Content_Types].xml");
+    // P4-D03: typed-managed settings re-declares like every managed part
+    // (exact ContentType spelling asserted by gap_settings_typed_roundtrip).
     assert!(
-        ct.contains(r#"<Override PartName="/word/settings.xml""#),
+        ct.contains("/word/settings.xml"),
         "settings content type must be re-declared: {ct}"
     );
     assert!(

@@ -38,6 +38,8 @@ pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
 pub use serializer::OoxmlSerializer;
 
+pub use detector::{is_flat_opc_docx, is_ooxml};
+
 pub const FORMAT_NAME: &str = "ooxml";
 
 /// Check if data is an OOXML file (ZIP with [Content_Types].xml).
