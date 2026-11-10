@@ -19,12 +19,12 @@ pub use model::{
     ChartDLbls, ChartErrBar, ChartExternalData, ChartLayout, ChartLegendNode, ChartMarker,
     ChartNode, ChartNumData, ChartNumPt, ChartPlot, ChartPlotKind, ChartPrintSettings,
     ChartScaling, ChartSeries, ChartSpace, ChartStrPt, ChartTitleNode, ChartTrendline, ClrMap,
-    ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FmtScheme, FontScheme,
-    GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat, PictureShape,
-    PlaceholderShape, PptxPresentation, PptxStyleReference, PptxTableStyle, PptxTableStyleBorder,
-    PptxTableStylePart, PptxTableStyles, SchemeClr, SchemeClrTransform, ShadowEffect, Slide,
-    SlideBodyProperties, SlideLayout, SlideMaster, SlideParagraph, SlideShape, SlideSize,
-    SlideTextBody, SlideTextFit, TableCell, TableColumn, TableRow, TableShape, TextBody,
+    ColorScheme, ConnectorShape, ConnectorShapeType, DocxProtection, DocxSettings, EffectList, Fill,
+    FmtScheme, FontScheme, GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat,
+    PictureShape, PlaceholderShape, PptxPresentation, PptxStyleReference, PptxTableStyle,
+    PptxTableStyleBorder, PptxTableStylePart, PptxTableStyles, SchemeClr, SchemeClrTransform,
+    ShadowEffect, Slide, SlideBodyProperties, SlideLayout, SlideMaster, SlideParagraph, SlideShape,
+    SlideSize, SlideTextBody, SlideTextFit, TableCell, TableColumn, TableRow, TableShape, TextBody,
     TextBullet, TextBoxShape, Theme, ThemeColor, ThemeColorRef, ThemeEffectStyle, ThemeFillStyle,
     ThemeFont, ThemeGradientStop, ThemeLineStyle, ThemePreset, ThemeSystemColor, XlsxBook, XlsxBrk,
     XlsxChartPart, XLSX_CHART_CONTENT_TYPE, XLSX_CHART_REL_TYPE, XlsxColorScale,
@@ -37,6 +37,8 @@ pub use model::{
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
 pub use serializer::OoxmlSerializer;
+
+pub use detector::{is_flat_opc_docx, is_ooxml};
 
 pub const FORMAT_NAME: &str = "ooxml";
 
