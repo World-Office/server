@@ -228,7 +228,13 @@ getters), identity (`asc_Set|putUserId`, `asc_Set|putUserName`, `asc_SetUserColo
 `asc_isSupportFeature` over a static capability table, and `asc_coAuthoringDisconnect`
 (state flip + `WsEvent::CoAuthoringDisconnect` push). Still open in R2: app-props
 (`asc_getAppProps`/`asc_getApplication`/`asc_getAppVersion`), statistics counters
-(`asc_getCharacters`/`asc_getWords`/…), `asc_setDocumentSha256`, `asc_CVersionHistory`.
+(`asc_getCharacters`/`asc_getWords`/…), `asc_setDocumentSha256`. The `asc_CVersionHistory`
+class landed P4-C01 as the `WasmVersionHistory` blob (`setVersionHistory`/`getVersionHistory`
+over `AscCVersionHistoryEntry{version,author,date,label}`), alongside typed
+`AscCUserInfo{id,name,initials,color}` and the protection pair
+`setDocumentRestriction`/`getDocumentRestriction` (JSON `{mode, allowPrint, allowCopy}`,
+modes `none|readOnly|comment-only|fill-forms|track-changes`, each set pushing
+`WsEvent::RestrictionChange`).
 
 **R3 — property-blob formatting exports** (the word UI's real formatting path): one
 `set_property(kind, json)` + `get_property(kind)` pair consuming the ORM-03 serde structs

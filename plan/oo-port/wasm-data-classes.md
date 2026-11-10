@@ -112,8 +112,11 @@ Aggregate `ui_uses` (occurrences in documenteditor app sources) per missing fami
 6. **spreadsheet view state**: `asc_CSheetViewSettings`, `asc_CPane`, `asc_CSheetPr`,
    `asc_CAutoFilterInfo`, `asc_CFormatTableInfo` — frozen panes / filter / sheet tab
    props all missing on the `wo-sheet` side.
-7. **collab**: `asc_CUserInfo`, `asc_CVersionHistory` — no collaborator identity or
-   revision list model.
+7. **collab**: `asc_CUserInfo`, `asc_CVersionHistory` — landed P4-C01 as
+   `AscCUserInfo{id, name, initials, color}` / `AscCVersionHistoryEntry{version, author,
+   date, label}` camelCase serde (wo-renderer-wasm lib.rs) with the `WasmVersionHistory`
+   blob served by `setVersionHistory`/`getVersionHistory`; OO's `FullName`/
+   `IsAnonymousUser` fields remain unmodeled.
 8. **comment coords** (`asc_CCommentCoords`) — anchor rectangles unmodeled.
 
 Ranking rationale: items are ordered by how often the OO UI actually constructs the

@@ -225,13 +225,13 @@
    "lastName",
    "isAnonymousUser"
   ],
-  "wo_struct_name": "NONE",
-  "wo_missing": true,
-  "wo_coverage": "missing",
+  "wo_struct_name": "wo-renderer-wasm::AscCUserInfo (lib.rs) + session::WasmUserInfo",
+  "wo_missing": false,
+  "wo_coverage": "partial",
   "sdk_def": "sdk-all-min.js:17248",
   "ui_uses": 3,
   "ui_files": 1,
-  "note": "collaborator identity (name/id/color) unmodeled"
+  "note": "P4-C01 landed: AscCUserInfo{id,name,initials,color} camelCase serde + the P1-03 session WasmUserInfo{id,username,first/lastname,color} cover the Main.js handshake payload; OO's FullName/IsAnonymousUser fields unmodeled"
  },
  {
   "name": "asc_CVersionHistory",
@@ -253,13 +253,13 @@
    "userColor",
    "dateOfRevision"
   ],
-  "wo_struct_name": "NONE",
-  "wo_missing": true,
-  "wo_coverage": "missing",
+  "wo_struct_name": "wo-renderer-wasm::AscCVersionHistoryEntry + WasmVersionHistory blob (lib.rs)",
+  "wo_missing": false,
+  "wo_coverage": "partial",
   "sdk_def": "sdk-all.js:770243",
   "ui_uses": 0,
   "ui_files": 0,
-  "note": "version-history revision list unmodeled"
+  "note": "P4-C01 landed: entries {version,author,date,label} camelCase serde served by setVersionHistory/getVersionHistory per document; the coAuthSettings-shaped property list (docId/url/token/serverVersion/…) rides the session connection fields"
  },
  {
   "name": "asc_CColor",
