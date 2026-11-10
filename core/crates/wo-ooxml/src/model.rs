@@ -2494,6 +2494,262 @@ impl GroupShape {
     }
 }
 
+// --- PPTX slide text bodies (ORM-07 ranked gaps #4/#10) ---
+
+/// DrawingML bullet definition for a slide paragraph (`CT_TextBullet*`):
+/// the `a:buNone` / `a:buChar` / `a:buAutoNum` children of `a:pPr`. Parsed
+/// decks previously lost every bullet — paragraphs collapsed to plain text
+/// (ORM-07 ranked gap #4).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum TextBullet {
+    /// `a:buNone` — bullet explicitly suppressed for this paragraph.
+    None,
+    /// `a:buChar` — literal character bullet (e.g. "•", "–", "➔").
+    Char {
+        /// Bullet glyph (`char` attribute).
+        character: String,
+        /// Bullet typeface (`a:buFont typeface`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font: Option<String>,
+        /// Bullet color (`a:buClr`), hex when `a:srgbClr`, else `None` with
+        /// `scheme_color` set.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        /// Theme color token (`a:schemeClr val`) when the bullet color is
+        /// theme-referenced rather than literal.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        scheme_color: Option<String>,
+        /// Bullet size as thousandths of a percent (`a:buSzPct val`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        size_pct: Option<i64>,
+    },
+    /// `a:buAutoNum` — automatic numbered bullet.
+    AutoNum {
+        /// Numbering scheme (`type` attribute: arabicPeriod, alphaLcPeriod,
+        /// romanUcParenR, ...).
+        auto_num_type: String,
+        /// First number (`startAt` attribute); `None` = continue at 1.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        start_at: Option<i64>,
+        /// Numbering typeface (`a:buFont typeface`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font: Option<String>,
+        /// Number color (`a:buClr`), hex when `a:srgbClr`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        /// Theme color token (`a:schemeClr val`) when theme-referenced.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        scheme_color: Option<String>,
+        /// Number size as thousandths of a percent (`a:buSzPct val`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        size_pct: Option<i64>,
+    },
+}
+
+/// Text autofit mode (`CT_TextBodyProperties` autofit choice): the
+/// `a:noAutofit` / `a:normAutofit` / `a:spAutoFit` child of `a:bodyPr`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SlideTextFit {
+    /// `a:noAutofit` — text stays at its authored size and may overflow.
+    None,
+    /// `a:normAutofit` — shrink text on overflow (and the scale applied).
+    NormAutofit {
+        /// Font scale in thousandths of a percent (`fontScale`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font_scale: Option<i64>,
+        /// Line-spacing reduction in thousandths of a percent
+        /// (`lnSpcReduction`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_space_reduction: Option<i64>,
+    },
+    /// `a:spAutoFit` — resize the shape to fit its text.
+    ShapeAutofit,
+}
+
+/// `a:bodyPr` (`CT_TextBodyProperties`) — slide text body layout: vertical
+/// anchoring, insets, wrap mode and autofit. Dropped at parse before, so
+/// dense text boxes overflow differently than in OO (ORM-07 gap #10).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SlideBodyProperties {
+    /// Vertical anchor (`anchor`): "t" | "ctr" | "b".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<String>,
+    /// Center the text box regardless of anchoring (`anchorCtr="1"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor_centered: Option<bool>,
+    /// Word-wrap mode (`wrap`): "none" | "square".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wrap: Option<String>,
+    /// Text direction (`vert`): "horz" | "vert" | "vert270" | "eaVert" | ...
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vert: Option<String>,
+    /// Left inset in EMU (`lIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub left_inset: Option<i64>,
+    /// Top inset in EMU (`tIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_inset: Option<i64>,
+    /// Right inset in EMU (`rIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub right_inset: Option<i64>,
+    /// Bottom inset in EMU (`bIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bottom_inset: Option<i64>,
+    /// Autofit behavior (the `a:bodyPr` autofit choice).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub autofit: Option<SlideTextFit>,
+    /// Number of text columns (`numCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub num_columns: Option<i64>,
+    /// Column spacing in EMU (`spcCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column_spacing: Option<i64>,
+    /// Right-to-left columns (`rtlCol="1"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rtl_columns: Option<bool>,
+}
+
+/// One slide paragraph: the shared word-model paragraph (runs) plus the
+/// DrawingML-only bullet from its `a:pPr`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SlideParagraph {
+    /// Runs + shared paragraph properties (reuses the word model, exactly
+    /// like `TextBody` does).
+    pub paragraph: DocxParagraph,
+    /// Bullet definition; `None` when the paragraph declares no bullet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bullet: Option<TextBullet>,
+}
+
+/// Rich text body of a slide shape: `a:bodyPr` layout plus bullet-aware
+/// paragraphs. The flat `TextBody` shared with the word model cannot carry
+/// these, so the typed view is exposed alongside via
+/// `OoxmlParser::parse_pptx_text_bodies` and re-emitted by
+/// `OoxmlSerializer::build_slide_xml_with_text_bodies` (ORM-07).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SlideTextBody {
+    /// Owning shape's `p:cNvPr/@id` (lets writers map a body back to its
+    /// shape; bodies are otherwise in slide document order).
+    #[serde(default)]
+    pub shape_id: String,
+    /// `a:bodyPr` layout properties, when the element is present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub body_pr: Option<SlideBodyProperties>,
+    /// Paragraphs in document order.
+    #[serde(default)]
+    pub paragraphs: Vec<SlideParagraph>,
+}
+
+// --- PPTX table styles (ORM-07 ranked gap #5) ---
+
+/// `ppt/tableStyles.xml` root (`a:tblStyleLst`) — the named table-style
+/// catalog that a deck's tables reference through `a:tableStyleId`
+/// (ORM-07: the whole pipeline was absent, so tables lost every rule).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyles {
+    /// Style id applied when a table names no explicit style (`def`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_style_id: Option<String>,
+    /// Declared table styles in document order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub styles: Vec<PptxTableStyle>,
+}
+
+/// One `a:tblStyle` entry: per-scope formatting parts over the
+/// whole-table/banding/first-last axes.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyle {
+    /// Style GUID (`styleId`).
+    #[serde(default)]
+    pub style_id: String,
+    /// Human-readable name (`styleName`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub style_name: Option<String>,
+    /// Table background fill color (`a:tblBg`, resolved hex when `srgbClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub table_background: Option<String>,
+    /// Whole-table defaults (`a:wholeTbl`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub whole_table: Option<PptxTableStylePart>,
+    /// First-row special formatting (`a:firstRow`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_row: Option<PptxTableStylePart>,
+    /// First-column special formatting (`a:firstCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_col: Option<PptxTableStylePart>,
+    /// Last-row special formatting (`a:lastRow`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_row: Option<PptxTableStylePart>,
+    /// Last-column special formatting (`a:lastCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_col: Option<PptxTableStylePart>,
+    /// First horizontal band style (`a:band1H`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band1_h: Option<PptxTableStylePart>,
+    /// First vertical band style (`a:band1V`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band1_v: Option<PptxTableStylePart>,
+    /// Second horizontal band style (`a:band2H`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band2_h: Option<PptxTableStylePart>,
+    /// Second vertical band style (`a:band2V`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band2_v: Option<PptxTableStylePart>,
+}
+
+/// One named scope of a table style: borders + fill/font style references.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStylePart {
+    /// Cell borders (`a:tcBdr` children, in document order).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub borders: Vec<PptxTableStyleBorder>,
+    /// Fill reference (`a:fillRef idx` + color).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_ref: Option<PptxStyleReference>,
+    /// Text style reference (`a:fontRef idx` + color).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_ref: Option<PptxStyleReference>,
+}
+
+/// One `a:tcBdr` border line (`a:lnL`/`a:lnR`/`a:lnT`/`a:lnB`/
+/// `a:lnTlToBr`/`a:lnBlToTr`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyleBorder {
+    /// Border edge element name (lnL/lnR/lnT/lnB/lnTlToBr/lnBlToTr).
+    #[serde(default)]
+    pub edge: String,
+    /// Line width in EMU (`w`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<i64>,
+    /// Dash style (`a:prstDash val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash: Option<String>,
+    /// Literal color (`a:solidFill/a:srgbClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Theme color token (`a:solidFill/a:schemeClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme_color: Option<String>,
+}
+
+/// `a:fillRef` / `a:fontRef` style reference: an index into the theme's
+/// fill/font style table plus the referenced color.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxStyleReference {
+    /// Index token (`idx`): numeric for `fillRef`, "major"/"minor" for
+    /// `fontRef`.
+    #[serde(default)]
+    pub idx: String,
+    /// Literal color (`a:srgbClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Theme color token (`a:schemeClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme_color: Option<String>,
+}
+
 impl ConnectorShapeType {
     pub fn from_name(s: &str) -> Self {
         match s {
