@@ -1,0 +1,17 @@
+{
+  "task": "PTS-T2",
+  "attempt": 3,
+  "worker": "p2b-glm1",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 886.583356816,
+  "tokens": 2729631,
+  "turns": 55,
+  "prompt_tokens": 2684893,
+  "completion_tokens": 44738,
+  "ts": 1794335406,
+  "outcome": "failed",
+  "error": "acceptance gate failed (exit 1): node:internal/modules/cjs/loader:1433",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}
