@@ -2197,6 +2197,15 @@ impl OoxmlSerializer {
                     }
                 }
             }
+            // P4-D02: paragraph-level OMML math hoists out as the bare
+            // verbatim m:oMath / m:oMathPara element (never a <w:r>) — the
+            // linear m:t text on the marker run is extraction-only and must
+            // not leak back into the XML.
+            if let Some(math) = &run.math {
+                xml.push_str(&math.verbatim);
+                i += 1;
+                continue;
+            }
             match run.hyperlink_rid.as_deref() {
                 None => {
                     // F-102: comment anchor markers are paragraph-level
@@ -2481,6 +2490,14 @@ impl OoxmlSerializer {
             // P2-06: verbatim <w:pict> subtree (legacy VML/OLE graphics) —
             // re-emitted unchanged so the picture survives a round trip.
             xml.push_str(pict);
+        }
+
+        if let Some(ref math) = run.math {
+            // P4-D02: verbatim OMML math subtree nested inside the run —
+            // re-emitted unchanged so math survives a round trip. The
+            // linear m:t extraction never re-emits here (it is already
+            // inside the verbatim subtree).
+            xml.push_str(&math.verbatim);
         }
 
         if let Some(rid) = &run.footnote_rid {
@@ -5781,6 +5798,7 @@ mod tests {
                         bookmark: None,
                         sdt: None,
                         pict: None,
+                        math: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -5929,6 +5947,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -5959,6 +5978,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -5989,6 +6009,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         },
                     ],
                     raw_ppr: None,
@@ -6069,6 +6090,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -6110,6 +6132,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -6151,6 +6174,7 @@ mod tests {
                             bookmark: None,
                             sdt: None,
                             pict: None,
+                            math: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -6236,6 +6260,7 @@ mod tests {
                                             bookmark: None,
                                             sdt: None,
                                             pict: None,
+                                            math: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -6281,6 +6306,7 @@ mod tests {
                                             bookmark: None,
                                             sdt: None,
                                             pict: None,
+                                            math: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -6332,6 +6358,7 @@ mod tests {
                                             bookmark: None,
                                             sdt: None,
                                             pict: None,
+                                            math: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -6377,6 +6404,7 @@ mod tests {
                                             bookmark: None,
                                             sdt: None,
                                             pict: None,
+                                            math: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -6902,6 +6930,7 @@ mod tests {
                                     bookmark: None,
                                     sdt: None,
                                     pict: None,
+                                    math: None,
                                 },
                                 DocxRun {
                                     footnote_rid: None,
@@ -7327,6 +7356,7 @@ mod tests {
                         bookmark: None,
                         sdt: None,
                         pict: None,
+                        math: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
