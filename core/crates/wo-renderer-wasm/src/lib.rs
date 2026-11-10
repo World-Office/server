@@ -3929,6 +3929,34 @@ pub fn spell_suggest(word: &str, lang: &str) -> String {
     }
 }
 
+/// OO `asc_onSpellCheckVariantsFound` (P3-E01): compute the correction
+/// variants for `word` in `lang`, push the `WsEvent::SpellCheckVariants`
+/// frame through the event sink (see `set_event_sink`), and return the
+/// variants as a JSON array — the push frame and `spell_suggest`'s
+/// pull-compatible return in one call.
+///
+/// The frame is pushed even for an empty variant list (correct word, or no
+/// dictionary loaded — both fail open) so the UI can clear a stale
+/// suggestion menu.
+///
+/// # Example
+/// ```javascript
+/// const variants = spell_check_variants('helo', 'en-US');
+/// // => '["hello"]' plus one {"event":"spell_check_variants", ...} frame
+/// ```
+#[wasm_bindgen]
+pub fn spell_check_variants(word: &str, lang: &str) -> String {
+    let variants_json = spell_suggest(word, lang);
+    let variants: Vec<String> =
+        serde_json::from_str(&variants_json).unwrap_or_else(|_| Vec::new());
+    let _ = push(WsEvent::SpellCheckVariants {
+        word: word.to_string(),
+        variants: variants.clone(),
+        lang: lang.to_string(),
+    });
+    variants_json
+}
+
 /// Check a text segment and return all misspelled words with positions.
 ///
 /// Scans `text` for word boundaries (ASCII letters + common accented Latin),
@@ -4105,6 +4133,8 @@ mod selection_undo_tests;
 mod serialize_merge_tests;
 #[cfg(test)]
 mod session_tests;
+#[cfg(test)]
+mod spell_variants_tests;
 #[cfg(test)]
 mod table_interaction_tests;
 #[cfg(test)]

@@ -307,12 +307,14 @@ fn frames_round_trip_through_serde() {
 
 #[test]
 fn emit_without_sink_returns_false_and_drops() {
+    let _lock = lock_test_sink();
     clear_event_sink_for_test();
     assert!(!emit_event(&WsEvent::SelectionEnd));
 }
 
 #[test]
 fn test_sink_receives_every_pushed_frame() {
+    let _lock = lock_test_sink();
     clear_event_sink_for_test();
     let seen: std::sync::Mutex<Vec<WsEvent>> = std::sync::Mutex::new(Vec::new());
     let seen2 = std::sync::Arc::new(seen);
