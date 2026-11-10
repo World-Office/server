@@ -174,6 +174,133 @@ pub struct XlsxSheetProperties {
     pub zoom_scale_normal: Option<u32>,
     pub zoom_scale_page_layout_view: Option<u32>,
     pub workbook_view_id: Option<u32>,
+    /// Print model (pageMargins / pageSetup / headerFooter / breaks).
+    pub print: XlsxPrintSettings,
+    /// Cell hyperlinks (`<hyperlinks><hyperlink ref="A1" .../>`).
+    pub hyperlinks: Vec<XlsxHyperlink>,
+}
+
+/// Worksheet print model (ORM-06 print/PDF parity): page margins, page
+/// setup, running header/footer and manual row/column breaks.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxPrintSettings {
+    /// `<pageMargins .../>` in inches.
+    pub page_margins: Option<XlsxPageMargins>,
+    /// `<pageSetup .../>` (paper, orientation, scaling).
+    pub page_setup: Option<XlsxPageSetup>,
+    /// `<headerFooter>` with its section text parts.
+    pub header_footer: Option<XlsxHeaderFooter>,
+    /// `<rowBreaks><brk .../>` manual page breaks between rows.
+    pub row_breaks: Vec<XlsxBrk>,
+    /// `<colBreaks><brk .../>` manual page breaks between columns.
+    pub col_breaks: Vec<XlsxBrk>,
+}
+
+/// Page margins (CT_PageMargins), all values in inches. Defaults follow
+/// ECMA-376 (0.75" sides, 1" top/bottom, 0.5" header/footer).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct XlsxPageMargins {
+    pub left: f64,
+    pub right: f64,
+    pub top: f64,
+    pub bottom: f64,
+    pub header: f64,
+    pub footer: f64,
+}
+
+impl Default for XlsxPageMargins {
+    fn default() -> Self {
+        Self {
+            left: 0.75,
+            right: 0.75,
+            top: 1.0,
+            bottom: 1.0,
+            header: 0.5,
+            footer: 0.5,
+        }
+    }
+}
+
+/// Page setup (CT_PageSetup): paper, orientation and print scaling.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxPageSetup {
+    /// Paper size code (9 = A4, 1 = Letter, ...).
+    pub paper_size: Option<u32>,
+    /// "portrait" | "landscape".
+    pub orientation: Option<String>,
+    /// Print scaling in percent (ignored when fit_to_width/height is set).
+    pub scale: Option<u32>,
+    /// "overThenDown" | "downThenOver".
+    pub page_order: Option<String>,
+    /// Fit-to-page columns (`fitToWidth`).
+    pub fit_to_width: Option<u32>,
+    /// Fit-to-page rows (`fitToHeight`).
+    pub fit_to_height: Option<u32>,
+    /// First printed page number.
+    pub first_page_number: Option<u32>,
+    /// Use `first_page_number` instead of automatic numbering.
+    pub use_first_page_number: bool,
+    /// Print in black and white.
+    pub black_and_white: bool,
+    /// Print in draft quality.
+    pub draft: bool,
+    pub horizontal_dpi: Option<u32>,
+    pub vertical_dpi: Option<u32>,
+    pub copies: Option<u32>,
+    /// Printer-settings relationship (`r:id`), if present.
+    pub r_id: Option<String>,
+}
+
+/// Running header/footer (CT_HeaderFooter). Each part keeps the raw
+/// header-footer format code (e.g. `&L&BReport&RPage &P`) so section and
+/// font codes survive a round trip verbatim.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxHeaderFooter {
+    /// Different header/footer for even pages (`differentOddEven`).
+    pub different_odd_even: bool,
+    /// Different header/footer for the first page (`differentFirst`).
+    pub different_first: bool,
+    pub odd_header: Option<String>,
+    pub odd_footer: Option<String>,
+    pub even_header: Option<String>,
+    pub even_footer: Option<String>,
+    pub first_header: Option<String>,
+    pub first_footer: Option<String>,
+}
+
+/// A manual row/column page break (CT_Brk).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct XlsxBrk {
+    /// Row/column index (1-based) the break sits above/left of.
+    pub id: u32,
+    pub min: u32,
+    pub max: u32,
+    /// Manual break (set by the user, not computed).
+    pub man: bool,
+}
+
+/// A cell hyperlink (CT_Hyperlink). External links carry an `r:id` into
+/// the worksheet rels (kept resolved in `target`); internal links use
+/// `location` (e.g. "Sheet2!A1") and have no relationship.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxHyperlink {
+    /// Cell or range the link is attached to (e.g. "A1", "A1:B2").
+    #[serde(rename = "ref")]
+    pub ref_range: String,
+    /// Relationship id for external targets.
+    pub r_id: Option<String>,
+    /// External target URL resolved from the worksheet rels part.
+    pub target: Option<String>,
+    /// Internal location ("Sheet2!A1" or a defined name).
+    pub location: Option<String>,
+    /// Display text override.
+    pub display: Option<String>,
+    /// Tooltip text.
+    pub tooltip: Option<String>,
 }
 
 /// A row in a worksheet.

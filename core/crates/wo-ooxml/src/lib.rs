@@ -19,7 +19,8 @@ pub use model::{
     GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat, PictureShape,
     PlaceholderShape, PptxPresentation, ShadowEffect, Slide, SlideLayout, SlideMaster, SlideShape,
     SlideSize, TableCell, TableColumn, TableRow, TableShape, TextBody, TextBoxShape, Theme,
-    ThemeColor, ThemeFont, ThemePreset,
+    ThemeColor, ThemeFont, ThemePreset, XlsxBrk, XlsxHeaderFooter, XlsxHyperlink,
+    XlsxPageMargins, XlsxPageSetup, XlsxPrintSettings,
 };
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;

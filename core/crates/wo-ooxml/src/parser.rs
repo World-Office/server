@@ -3331,8 +3331,37 @@ impl OoxmlParser {
                         message: format!("Invalid worksheet {}: {}", worksheet_path, e),
                     })?;
 
-                let (rows, cols, merges, sheet_properties) =
+                let (rows, cols, merges, mut sheet_properties) =
                     self.parse_xlsx_worksheet(&worksheet_doc, shared_strings, styles)?;
+
+                // ORM-06: external hyperlink targets live in the
+                // worksheet-level rels part (xl/worksheets/_rels/sheetN.xml.rels).
+                // Resolve r:id -> target so the model carries usable URLs.
+                let mut link_targets: std::collections::HashMap<String, String> =
+                    std::collections::HashMap::new();
+                let rels_path = worksheet_rels_path(&worksheet_path);
+                if let Ok(rels_xml) = self.read_zip_entry(archive, &rels_path) {
+                    if let Ok(rels_doc) = XmlDoc::parse(&rels_xml) {
+                        for rel_elem in rels_doc.descendants() {
+                            if rel_elem.has_tag_name("Relationship")
+                                && rel_elem.tag_name().namespace() == Some(Self::S_R_NS)
+                            {
+                                if let (Some(id), Some(target)) =
+                                    (rel_elem.attribute("Id"), rel_elem.attribute("Target"))
+                                {
+                                    link_targets.insert(id.to_string(), target.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+                for hl in &mut sheet_properties.hyperlinks {
+                    if let Some(rid) = hl.r_id.as_deref() {
+                        if let Some(target) = link_targets.get(rid) {
+                            hl.target = Some(target.clone());
+                        }
+                    }
+                }
 
                 sheets.push(XlsxSheet {
                     name,
@@ -3398,6 +3427,130 @@ impl OoxmlParser {
                     if let Some(workbook_view_id) = prop_elem.attribute("workbookViewId") {
                         sheet_properties.workbook_view_id = workbook_view_id.parse().ok();
                     }
+                }
+            }
+
+            // ORM-06: print model (pageMargins / pageSetup / headerFooter /
+            // rowBreaks / colBreaks) so print + PDF export parity is kept.
+            for elem in worksheet_elem.descendants() {
+                if elem.has_tag_name("pageMargins")
+                    && elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let mut margins = XlsxPageMargins::default();
+                    if let Some(v) = elem.attribute("left").and_then(|v| v.parse().ok()) {
+                        margins.left = v;
+                    }
+                    if let Some(v) = elem.attribute("right").and_then(|v| v.parse().ok()) {
+                        margins.right = v;
+                    }
+                    if let Some(v) = elem.attribute("top").and_then(|v| v.parse().ok()) {
+                        margins.top = v;
+                    }
+                    if let Some(v) = elem.attribute("bottom").and_then(|v| v.parse().ok()) {
+                        margins.bottom = v;
+                    }
+                    if let Some(v) = elem.attribute("header").and_then(|v| v.parse().ok()) {
+                        margins.header = v;
+                    }
+                    if let Some(v) = elem.attribute("footer").and_then(|v| v.parse().ok()) {
+                        margins.footer = v;
+                    }
+                    sheet_properties.print.page_margins = Some(margins);
+                } else if elem.has_tag_name("pageSetup")
+                    && elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let mut setup = XlsxPageSetup {
+                        paper_size: elem.attribute("paperSize").and_then(|v| v.parse().ok()),
+                        orientation: elem
+                            .attribute("orientation")
+                            .map(|v| v.to_string()),
+                        scale: elem.attribute("scale").and_then(|v| v.parse().ok()),
+                        page_order: elem.attribute("pageOrder").map(|v| v.to_string()),
+                        fit_to_width: elem
+                            .attribute("fitToWidth")
+                            .and_then(|v| v.parse().ok()),
+                        fit_to_height: elem
+                            .attribute("fitToHeight")
+                            .and_then(|v| v.parse().ok()),
+                        first_page_number: elem
+                            .attribute("firstPageNumber")
+                            .and_then(|v| v.parse().ok()),
+                        use_first_page_number: elem.attribute("useFirstPageNumber") == Some("1"),
+                        black_and_white: elem.attribute("blackAndWhite") == Some("1"),
+                        draft: elem.attribute("draft") == Some("1"),
+                        horizontal_dpi: elem
+                            .attribute("horizontalDpi")
+                            .and_then(|v| v.parse().ok()),
+                        vertical_dpi: elem.attribute("verticalDpi").and_then(|v| v.parse().ok()),
+                        copies: elem.attribute("copies").and_then(|v| v.parse().ok()),
+                        r_id: None,
+                    };
+                    if let Some(rid) = elem.attribute((Self::S_R_NS, "id")) {
+                        setup.r_id = Some(rid.to_string());
+                    }
+                    sheet_properties.print.page_setup = Some(setup);
+                } else if elem.has_tag_name("headerFooter")
+                    && elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let mut hf = XlsxHeaderFooter {
+                        different_odd_even: elem.attribute("differentOddEven") == Some("1"),
+                        different_first: elem.attribute("differentFirst") == Some("1"),
+                        ..Default::default()
+                    };
+                    for part in elem.children() {
+                        if !part.is_element() {
+                            continue;
+                        }
+                        let text = part.text().map(|t| t.to_string());
+                        match part.tag_name().name() {
+                            "oddHeader" => hf.odd_header = text,
+                            "oddFooter" => hf.odd_footer = text,
+                            "evenHeader" => hf.even_header = text,
+                            "evenFooter" => hf.even_footer = text,
+                            "firstHeader" => hf.first_header = text,
+                            "firstFooter" => hf.first_footer = text,
+                            _ => {}
+                        }
+                    }
+                    sheet_properties.print.header_footer = Some(hf);
+                } else if elem.has_tag_name("rowBreaks")
+                    && elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    for brk_elem in elem
+                        .descendants()
+                        .filter(|n| n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS))
+                    {
+                        sheet_properties.print.row_breaks.push(Self::parse_xlsx_brk(brk_elem));
+                    }
+                } else if elem.has_tag_name("colBreaks")
+                    && elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    for brk_elem in elem
+                        .descendants()
+                        .filter(|n| n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS))
+                    {
+                        sheet_properties.print.col_breaks.push(Self::parse_xlsx_brk(brk_elem));
+                    }
+                }
+            }
+
+            // ORM-06: cell hyperlinks (the single most common interactive
+            // feature — previously dropped on import).
+            for link_elem in worksheet_elem.descendants() {
+                if link_elem.has_tag_name("hyperlink")
+                    && link_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let rid = link_elem
+                        .attribute((Self::S_R_NS, "id"))
+                        .map(|v| v.to_string());
+                    sheet_properties.hyperlinks.push(XlsxHyperlink {
+                        ref_range: link_elem.attribute("ref").unwrap_or_default().to_string(),
+                        r_id: rid,
+                        target: None,
+                        location: link_elem.attribute("location").map(|v| v.to_string()),
+                        display: link_elem.attribute("display").map(|v| v.to_string()),
+                        tooltip: link_elem.attribute("tooltip").map(|v| v.to_string()),
+                    });
                 }
             }
 
@@ -3483,6 +3636,22 @@ impl OoxmlParser {
         }
 
         Ok((rows, cols, merges, sheet_properties))
+    }
+
+    /// Parse a `<brk id=".." min=".." max=".." man=".."/>` page break.
+    fn parse_xlsx_brk(elem: roxmltree::Node) -> XlsxBrk {
+        XlsxBrk {
+            id: elem.attribute("id").and_then(|v| v.parse().ok()).unwrap_or(0),
+            min: elem
+                .attribute("min")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
+            max: elem
+                .attribute("max")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
+            man: elem.attribute("man") == Some("1"),
+        }
     }
 
     fn parse_xlsx_cell(
@@ -3814,6 +3983,15 @@ impl OoxmlParser {
 impl Default for OoxmlParser {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Path of the rels part that belongs to a worksheet part
+/// (`xl/worksheets/sheet1.xml` -> `xl/worksheets/_rels/sheet1.xml.rels`).
+fn worksheet_rels_path(worksheet_path: &str) -> String {
+    match worksheet_path.rsplit_once('/') {
+        Some((dir, file)) => format!("{}/_rels/{}.rels", dir, file),
+        None => format!("_rels/{}.rels", worksheet_path),
     }
 }
 
