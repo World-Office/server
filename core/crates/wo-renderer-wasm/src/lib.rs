@@ -4414,6 +4414,502 @@ pub fn get_cc_role(doc_handle: u32, cc_id: &str) -> Result<String, String> {
     }
 }
 
+// ── OForm roles / filling / signers (OO asc_addRole family) ──────────
+
+/// One OForm fill role — the WO payload of OO's PDF-form role object
+/// (`asc_addRole` / `asc_editRole` / `asc_getAllRoles`). A role is a named
+/// bucket form fields belong to; the quick-fill UI walks one role at a
+/// time and [`asc_can_fill_role`] gates who may fill it. Wire schema is
+/// camelCase, same convention as the other `asc_C*` payloads in this
+/// file.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AscRole {
+    /// Stable role id, engine-generated (`role-N`, never reused within a
+    /// document).
+    pub id: String,
+    /// Display name; unique per document (the roles editor lists by name).
+    pub name: String,
+    /// Chip color, `"rrggbb"` hex without the leading `#` (OO palette
+    /// form; same hex form the session `WasmUserInfo.color` serves).
+    pub color: String,
+    /// Collaborator the role is assigned to; `""` = open role any user may
+    /// fill. Patched through `asc_edit_role`'s `user` field.
+    pub user: String,
+}
+
+/// One recorded form-field entry: the write-behind registry
+/// `asc_fill_field` keeps per document so [`asc_get_filling_status`] can
+/// answer "how complete is this form". A field is *registered* by its
+/// first `asc_fill_field` call (that call declares its required flag and
+/// role); `value` empty means the field is known but currently unfilled.
+/// camelCase wire, like the OO form-field blob it mirrors.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OFormFieldFill {
+    /// The form field (sdt/annotation id) this entry belongs to.
+    pub field_id: String,
+    /// Role the field belongs to (re-registrable after role removal).
+    pub role_id: String,
+    /// Whether the field is required for the form to count complete.
+    pub required: bool,
+    /// The current value; `""` = registered but not (yet) filled.
+    pub value: String,
+    /// Who last filled it (session user id; `""` while unfilled).
+    pub user_id: String,
+}
+
+/// Per-role slice of [`OFormFillingStatus`] — what the quick-fill role
+/// list renders (progress per role).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OFormRoleStatus {
+    pub role_id: String,
+    pub name: String,
+    /// Fields recorded under this role (required + optional).
+    pub total_fields: u32,
+    /// How many of those hold a value right now.
+    pub filled_fields: u32,
+    /// Required fields still empty.
+    pub required_left: u32,
+    /// `required_left == 0` (vacuously true when the role owns no fields).
+    pub complete: bool,
+}
+
+/// The `asc_getFillingStatus` answer blob. `status` is
+/// `"empty" | "filling" | "complete"`: nothing recorded yet → `"empty"`;
+/// every required field filled (and at least one fill recorded) →
+/// `"complete"`; otherwise `"filling"`. Field fills survive role removal
+/// (document data outlives role bookkeeping), so `totalFields` may exceed
+/// the sum over the per-role breakdown.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OFormFillingStatus {
+    pub status: String,
+    pub total_fields: u32,
+    pub filled_fields: u32,
+    /// Required fields still empty, document-wide.
+    pub required_left: u32,
+    /// Per-role breakdown, roles in insertion order.
+    pub roles: Vec<OFormRoleStatus>,
+}
+
+/// OO `asc_CSigner` payload class: one signer of the OForm signature
+/// flow, served as the `asc_setSigners`/`asc_getSigners` JSON list.
+/// Fields default to `""` so the OO partial payloads (`{"id","name"}`)
+/// parse verbatim.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct AscSigner {
+    /// Signer id; unique per document.
+    pub id: String,
+    /// Display name (the signature line label).
+    pub name: String,
+    /// Signing date, ISO string (the wire does not pin a format).
+    pub date: String,
+    /// Signature image, data-URL or resource id; `""` until signed.
+    pub image: String,
+}
+
+/// Default role colors, in the roles-editor palette order; `asc_add_role`
+/// takes the next free entry when the caller passes an empty color.
+const ROLE_COLORS: &[&str] = &[
+    "6C8EBF", "D79B00", "82B366", "B85450", "9673A6", "5085BD", "D6B656", "808080",
+];
+
+/// Per-document role list (handle → roles in insertion order), same
+/// session.rs store pattern as the restriction store.
+static FORM_ROLES_STORE: OnceLock<Mutex<HashMap<u32, Vec<AscRole>>>> = OnceLock::new();
+
+fn form_roles_store() -> &'static Mutex<HashMap<u32, Vec<AscRole>>> {
+    FORM_ROLES_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Per-document field-fill records (handle → field id → fill).
+static FORM_FILL_STORE: OnceLock<Mutex<HashMap<u32, BTreeMap<String, OFormFieldFill>>>> =
+    OnceLock::new();
+
+fn form_fill_store() -> &'static Mutex<HashMap<u32, BTreeMap<String, OFormFieldFill>>> {
+    FORM_FILL_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Per-document signer list (handle → signers), the `asc_setSigners` blob.
+static FORM_SIGNERS_STORE: OnceLock<Mutex<HashMap<u32, Vec<AscSigner>>>> = OnceLock::new();
+
+fn form_signers_store() -> &'static Mutex<HashMap<u32, Vec<AscSigner>>> {
+    FORM_SIGNERS_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Smallest unused `role-N` id for the given role list (`N` counts from
+/// 1; ids of removed roles may be reused — they carry no state).
+fn next_role_id(roles: &[AscRole]) -> String {
+    let mut n = 1usize;
+    while roles.iter().any(|r| r.id == format!("role-{n}")) {
+        n += 1;
+    }
+    format!("role-{n}")
+}
+
+/// Validate a role name: non-empty after trimming.
+fn validate_role_name(name: &str) -> Result<String, String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err("Role name must not be empty".to_string());
+    }
+    Ok(name.to_string())
+}
+
+/// Validate a role color: non-empty after trimming (any string spelling
+/// the UI paints; the palette supplies `""`).
+fn validate_role_color(color: &str) -> Result<String, String> {
+    let color = color.trim();
+    if color.is_empty() {
+        return Err("Role color must not be empty".to_string());
+    }
+    Ok(color.to_string())
+}
+
+/// Whether the document protection mode lets a user fill form fields:
+/// `readOnly` and `comment-only` both seal the form; the dedicated
+/// `fill-forms` mode (and everything less strict) allows filling. Reads
+/// [`DocumentRestriction`] for the handle; unset → unprotected.
+fn form_filling_allowed(doc_handle: u32) -> bool {
+    let mode = restriction_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .map(|r| r.mode)
+        .unwrap_or(RestrictionMode::None);
+    !matches!(mode, RestrictionMode::ReadOnly | RestrictionMode::CommentOnly)
+}
+
+/// Whether `user_id` may fill fields of `role`: the role exists, the
+/// protection mode permits filling, and an assigned role is only fillable
+/// by its assignee (empty `user_id` = unauthenticated caller, which may
+/// fill open roles only).
+fn role_fillable(role: &AscRole, user_id: &str, doc_handle: u32) -> bool {
+    if !form_filling_allowed(doc_handle) {
+        return false;
+    }
+    role.user.is_empty() || (!user_id.is_empty() && role.user == user_id)
+}
+
+/// Locate a role by id inside the per-document store (locked); returns
+/// the position in the insertion-ordered list.
+fn role_index(roles: &[AscRole], role_id: &str) -> Option<usize> {
+    roles.iter().position(|r| r.id == role_id)
+}
+
+/// OO `asc_addRole(sRoleName, sColor)`: create a fill role for the
+/// document. An empty `color` picks the next palette entry
+/// ([`ROLE_COLORS`]); the id is engine-generated and the role starts
+/// unassigned (`user: ""`). Duplicate names are rejected — the roles
+/// editor addresses roles by name. Returns the canonical stored JSON.
+#[wasm_bindgen(js_name = asc_addRole)]
+pub fn asc_add_role(doc_handle: u32, name: &str, color: &str) -> Result<String, String> {
+    let name = validate_role_name(name)?;
+    let mut roles = form_roles_store().lock().unwrap();
+    let list = roles.entry(doc_handle).or_default();
+    if list.iter().any(|r| r.name == name) {
+        return Err(format!("Role name already in use: {name:?}"));
+    }
+    let color = if color.trim().is_empty() {
+        ROLE_COLORS[list.len() % ROLE_COLORS.len()].to_string()
+    } else {
+        validate_role_color(color)?
+    };
+    let role = AscRole {
+        id: next_role_id(list),
+        name,
+        color,
+        user: String::new(),
+    };
+    let json = serde_json::to_string(&role).map_err(|e| format!("JSON error: {e}"))?;
+    list.push(role);
+    Ok(json)
+}
+
+/// OO `asc_editRole(oRole, sName, sColor)`, WO flavor: patch one role by
+/// id with a partial JSON blob `{"name"?, "color"?, "user"?}` (camelCase;
+/// missing fields stay, `user: ""` unassigns, an empty patched color
+/// falls back to the palette). Positional OO args cannot express a
+/// partial patch, so — like the other store-backed setters in this file —
+/// the payload rides JSON. Returns the canonical stored JSON.
+#[wasm_bindgen(js_name = asc_editRole)]
+pub fn asc_edit_role(doc_handle: u32, role_id: &str, json: &str) -> Result<String, String> {
+    let raw: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("Invalid role patch JSON: {e}"))?;
+    let mut roles = form_roles_store().lock().unwrap();
+    let list = roles.entry(doc_handle).or_default();
+    let idx = role_index(list, role_id).ok_or_else(|| format!("Unknown role id: {role_id:?}"))?;
+
+    let name = match raw.get("name") {
+        Some(v) => {
+            let name = validate_role_name(
+                v.as_str().ok_or("Role patch `name` must be a string")?,
+            )?;
+            if list
+                .iter()
+                .any(|r| r.name == name && r.id != role_id)
+            {
+                return Err(format!("Role name already in use: {name:?}"));
+            }
+            Some(name)
+        }
+        None => None,
+    };
+    let color = match raw.get("color") {
+        Some(v) => {
+            let color = v
+                .as_str()
+                .ok_or("Role patch `color` must be a string")?
+                .trim();
+            Some(if color.is_empty() {
+                ROLE_COLORS[idx % ROLE_COLORS.len()].to_string()
+            } else {
+                validate_role_color(color)?
+            })
+        }
+        None => None,
+    };
+    let user = match raw.get("user") {
+        Some(v) => Some(
+            v.as_str()
+                .ok_or("Role patch `user` must be a string")?
+                .trim()
+                .to_string(),
+        ),
+        None => None,
+    };
+
+    let role = &mut list[idx];
+    if let Some(name) = name {
+        role.name = name;
+    }
+    if let Some(color) = color {
+        role.color = color;
+    }
+    if let Some(user) = user {
+        role.user = user;
+    }
+    serde_json::to_string(role).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// OO `asc_removeRole(oRole)`: drop the role by id. Field fills recorded
+/// under the role are kept (document data outlives role bookkeeping; the
+/// status breakdown just stops listing the role). Returns the removed
+/// role's canonical JSON so the UI can offer an undo.
+#[wasm_bindgen(js_name = asc_removeRole)]
+pub fn asc_remove_role(doc_handle: u32, role_id: &str) -> Result<String, String> {
+    let mut roles = form_roles_store().lock().unwrap();
+    let list = roles.get_mut(&doc_handle).ok_or_else(|| {
+        format!(
+            "Unknown role id: {role_id:?} (document has no roles)"
+        )
+    })?;
+    let idx = role_index(list, role_id).ok_or_else(|| format!("Unknown role id: {role_id:?}"))?;
+    let role = list.remove(idx);
+    if list.is_empty() {
+        roles.remove(&doc_handle);
+    }
+    serde_json::to_string(&role).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// OO `asc_getAllRoles()`: every role of the document, insertion order.
+/// Empty array `[]` when none — the OO default state, not an error.
+#[wasm_bindgen(js_name = asc_getAllRoles)]
+pub fn asc_get_all_roles(doc_handle: u32) -> Result<String, String> {
+    let roles = form_roles_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+    serde_json::to_string(&roles).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// OO `asc_canFillRole(oRole)`: may `user_id` fill the fields of `role_id`?
+/// False (not an error) for unknown roles — a missing role is simply not
+/// fillable. Gates: the protection mode must permit form filling
+/// ([`form_filling_allowed`]) and an assigned role only fills for its
+/// assignee; unassigned (open) roles fill for anyone.
+#[wasm_bindgen(js_name = asc_canFillRole)]
+pub fn asc_can_fill_role(doc_handle: u32, role_id: &str, user_id: &str) -> Result<bool, String> {
+    let roles = form_roles_store().lock().unwrap();
+    let role = roles
+        .get(&doc_handle)
+        .and_then(|list| list.iter().find(|r| r.id == role_id));
+    match role {
+        Some(role) => Ok(role_fillable(role, user_id, doc_handle)),
+        None => Ok(false),
+    }
+}
+
+/// Record one form-field fill — the write path behind
+/// [`asc_get_filling_status`]. The first call for a `field_id` registers
+/// it (with its `required` flag and `role_id`); later calls update the
+/// value, the flag (last write wins), and the role. An empty `value`
+/// clears the field's content while keeping the registration — that is
+/// how a required field re-opens a completed form. Enforces the
+/// [`asc_can_fill_role`] gates (unknown role / restricted document / role
+/// assigned to someone else are errors, not silent accepts). Returns the
+/// canonical stored blob.
+#[wasm_bindgen(js_name = asc_fillField)]
+pub fn asc_fill_field(
+    doc_handle: u32,
+    field_id: &str,
+    role_id: &str,
+    value: &str,
+    required: bool,
+    user_id: &str,
+) -> Result<String, String> {
+    if field_id.trim().is_empty() {
+        return Err("Field id must not be empty".to_string());
+    }
+    // Gates: resolve the role under the same rules can_fill_role applies.
+    let (role_exists, assigned_to) = {
+        let roles = form_roles_store().lock().unwrap();
+        roles
+            .get(&doc_handle)
+            .and_then(|list| list.iter().find(|r| r.id == role_id))
+            .map(|role| (true, role.user.clone()))
+            .unwrap_or((false, String::new()))
+    };
+    if !role_exists {
+        return Err(format!("Unknown role id: {role_id:?}"));
+    }
+    if !form_filling_allowed(doc_handle) {
+        return Err("Form filling is restricted for this document".to_string());
+    }
+    if !assigned_to.is_empty() && (user_id.is_empty() || assigned_to != user_id) {
+        return Err(format!(
+            "User {user_id:?} may not fill role {role_id:?} (assigned to {assigned_to:?})"
+        ));
+    }
+
+    let field_id = field_id.trim().to_string();
+    let mut fills = form_fill_store().lock().unwrap();
+    let store = fills.entry(doc_handle).or_default();
+    let fill = OFormFieldFill {
+        field_id: field_id.clone(),
+        role_id: role_id.to_string(),
+        required,
+        value: value.to_string(),
+        user_id: if value.is_empty() {
+            String::new()
+        } else {
+            user_id.to_string()
+        },
+    };
+    let json = serde_json::to_string(&fill).map_err(|e| format!("JSON error: {e}"))?;
+    store.insert(field_id, fill);
+    Ok(json)
+}
+
+/// OO `asc_getFillingStatus()`: how complete the form is — the
+/// [`OFormFillingStatus`] blob computed from the recorded field fills and
+/// the current role list (see the struct docs for the `status` states).
+#[wasm_bindgen(js_name = asc_getFillingStatus)]
+pub fn asc_get_filling_status(doc_handle: u32) -> Result<String, String> {
+    let roles = form_roles_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+    let fills = form_fill_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+
+    let total_fields = fills.len() as u32;
+    let filled_fields = fills.values().filter(|f| !f.value.is_empty()).count() as u32;
+    let required_left = fills
+        .values()
+        .filter(|f| f.required && f.value.is_empty())
+        .count() as u32;
+
+    let mut role_statuses = Vec::with_capacity(roles.len());
+    for role in &roles {
+        let under_role: Vec<&OFormFieldFill> = fills
+            .values()
+            .filter(|f| f.role_id == role.id)
+            .collect();
+        let filled = under_role.iter().filter(|f| !f.value.is_empty()).count() as u32;
+        let required_left = under_role
+            .iter()
+            .filter(|f| f.required && f.value.is_empty())
+            .count() as u32;
+        role_statuses.push(OFormRoleStatus {
+            role_id: role.id.clone(),
+            name: role.name.clone(),
+            total_fields: under_role.len() as u32,
+            filled_fields: filled,
+            required_left,
+            complete: required_left == 0,
+        });
+    }
+
+    let status = if filled_fields == 0 {
+        "empty"
+    } else if required_left == 0 {
+        "complete"
+    } else {
+        "filling"
+    };
+    let answer = OFormFillingStatus {
+        status: status.to_string(),
+        total_fields,
+        filled_fields,
+        required_left,
+        roles: role_statuses,
+    };
+    serde_json::to_string(&answer).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// OO `asc_setSigners(aSigners)`: replace the document's signer list — a
+/// camelCase `[{id, name, date, image}]` array ([`AscSigner`]). Ids must
+/// be non-empty and unique; `date`/`image` default to `""`. Returns the
+/// canonical stored JSON.
+#[wasm_bindgen(js_name = asc_setSigners)]
+pub fn asc_set_signers(doc_handle: u32, json: &str) -> Result<String, String> {
+    let signers: Vec<AscSigner> =
+        serde_json::from_str(json).map_err(|e| format!("Invalid signers JSON: {e}"))?;
+    for signer in &signers {
+        if signer.id.trim().is_empty() {
+            return Err("Signer `id` must not be empty".to_string());
+        }
+        if signer.name.trim().is_empty() {
+            return Err(format!("Signer {:?} needs a non-empty `name`", signer.id));
+        }
+    }
+    let mut seen = HashSet::new();
+    for signer in &signers {
+        if !seen.insert(signer.id.clone()) {
+            return Err(format!("Duplicate signer id: {:?}", signer.id));
+        }
+    }
+    form_signers_store()
+        .lock()
+        .unwrap()
+        .insert(doc_handle, signers.clone());
+    serde_json::to_string(&signers).map_err(|e| format!("JSON error: {e}"))
+}
+
+/// OO `asc_getSigners()`: the stored signer list, `[]` when none was set.
+#[wasm_bindgen(js_name = asc_getSigners)]
+pub fn asc_get_signers(doc_handle: u32) -> Result<String, String> {
+    let signers = form_signers_store()
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned()
+        .unwrap_or_default();
+    serde_json::to_string(&signers).map_err(|e| format!("JSON error: {e}"))
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -5241,3 +5737,368 @@ mod clipboard_tests {
         assert_eq!(c2.char_idx, 0);
     }
 }
+
+/// Tests for the OForm role/fill/signer engine (`asc_addRole` family,
+/// FX-R1). Inline because the task's file scope is lib.rs alone. Every
+/// test uses its own document handles — the engine's stores are
+/// process-global and the test threads share them.
+#[cfg(test)]
+mod oform_tests {
+    use super::*;
+
+    // ── serde wire contract (camelCase = OO asc_C* schema) ───────────
+
+    #[test]
+    fn asc_role_payload_round_trips_camel_case() {
+        let role = AscRole {
+            id: "role-1".to_string(),
+            name: "Buyer".to_string(),
+            color: "6C8EBF".to_string(),
+            user: "uid-42".to_string(),
+        };
+        let s = serde_json::to_string(&role).expect("serialize");
+        assert!(s.contains("\"id\":\"role-1\""), "wire: {s}");
+        assert!(s.contains("\"name\":\"Buyer\""), "wire: {s}");
+        assert!(s.contains("\"color\":\"6C8EBF\""), "wire: {s}");
+        assert!(s.contains("\"user\":\"uid-42\""), "wire: {s}");
+        assert!(!s.contains("role_id") && !s.contains("user_"), "no snake_case: {s}");
+        let back: AscRole = serde_json::from_str(&s).expect("deserialize");
+        assert_eq!(back, role);
+    }
+
+    #[test]
+    fn asc_signer_payload_round_trips_camel_case() {
+        let signer = AscSigner {
+            id: "signer-1".to_string(),
+            name: "Ada Lovelace".to_string(),
+            date: "2026-11-10T12:00:00Z".to_string(),
+            image: "data:image/png;base64,AAA".to_string(),
+        };
+        let s = serde_json::to_string(&signer).expect("serialize");
+        assert!(s.contains("\"id\":\"signer-1\""), "wire: {s}");
+        assert!(s.contains("\"name\":\"Ada Lovelace\""), "wire: {s}");
+        let back: AscSigner = serde_json::from_str(&s).expect("deserialize");
+        assert_eq!(back, signer);
+        assert!(s.contains("\"date\":\"2026-11-10T12:00:00Z\""), "wire: {s}");
+    }
+
+    #[test]
+    fn field_fill_payload_uses_camel_case_wire() {
+        let fill = OFormFieldFill {
+            field_id: "field-1".to_string(),
+            role_id: "role-1".to_string(),
+            required: true,
+            value: "Acme GmbH".to_string(),
+            user_id: "uid-42".to_string(),
+        };
+        let s = serde_json::to_string(&fill).expect("serialize");
+        assert!(s.contains("\"fieldId\":\"field-1\""), "wire: {s}");
+        assert!(s.contains("\"roleId\":\"role-1\""), "wire: {s}");
+        assert!(s.contains("\"userId\":\"uid-42\""), "wire: {s}");
+    }
+
+    // ── asc_addRole / asc_getAllRoles ────────────────────────────────
+
+    #[test]
+    fn add_role_assigns_ids_palette_colors_and_keeps_order() {
+        const H: u32 = 4_010_001;
+        let first = asc_add_role(H, " Buyer ", "").expect("first role");
+        let first: AscRole = serde_json::from_str(&first).expect("canonical JSON");
+        assert_eq!(first.id, "role-1");
+        assert_eq!(first.name, "Buyer", "name is trimmed");
+        assert_eq!(first.color, ROLE_COLORS[0], "empty color picks the palette");
+        assert_eq!(first.user, "", "fresh roles start unassigned");
+
+        let second = asc_add_role(H, "Seller", "FF7F00").expect("second role");
+        let second: AscRole = serde_json::from_str(&second).expect("canonical JSON");
+        assert_eq!(second.color, "FF7F00", "explicit color stored verbatim");
+
+        let all = asc_get_all_roles(H).expect("roles list");
+        let all: Vec<AscRole> = serde_json::from_str(&all).expect("array");
+        assert_eq!(all, vec![first, second], "insertion order");
+    }
+
+    #[test]
+    fn add_role_rejects_empty_and_duplicate_names() {
+        const H: u32 = 4_020_001;
+        asc_add_role(H, "Buyer", "").expect("seed");
+        let dup = asc_add_role(H, "Buyer", "").unwrap_err();
+        assert!(dup.contains("already in use"), "err: {dup}");
+        let empty = asc_add_role(H, "   ", "").unwrap_err();
+        assert!(empty.contains("must not be empty"), "err: {empty}");
+        // A different document may reuse the name — uniqueness is per doc.
+        asc_add_role(4_020_002, "Buyer", "").expect("other doc");
+    }
+
+    // ── asc_editRole / asc_removeRole ────────────────────────────────
+
+    #[test]
+    fn edit_role_patches_only_given_fields_and_validates() {
+        const H: u32 = 4_030_001;
+        let seeded = asc_add_role(H, "Buyer", "6C8EBF").expect("seed");
+        let id: String = serde_json::from_str::<AscRole>(&seeded).expect("role").id;
+
+        let patched = asc_edit_role(H, &id, r#"{"user":"uid-42"}"#).expect("patch user");
+        let patched: AscRole = serde_json::from_str(&patched).expect("canonical JSON");
+        assert_eq!(patched.user, "uid-42");
+        assert_eq!(patched.name, "Buyer", "unpatched fields stay");
+        assert_eq!(patched.color, "6C8EBF");
+
+        let renamed = asc_edit_role(H, &id, r#"{"name":"  Seller  ","color":""}"#)
+            .expect("rename + palette color");
+        let renamed: AscRole = serde_json::from_str(&renamed).expect("canonical JSON");
+        assert_eq!(renamed.name, "Seller");
+        assert_eq!(renamed.color, ROLE_COLORS[0], "empty patch color → palette");
+        assert_eq!(renamed.user, "uid-42", "still patched from before");
+
+        assert!(asc_edit_role(H, "role-404", "{}").is_err(), "unknown id");
+        let dup = asc_edit_role(H, &id, r#"{"user":""}"#);
+        assert!(dup.is_ok(), "unassigning still works");
+        asc_add_role(H, "Notary", "").expect("second role");
+        let clash = asc_edit_role(H, &id, r#"{"name":"Notary"}"#).unwrap_err();
+        assert!(clash.contains("already in use"), "err: {clash}");
+    }
+
+    #[test]
+    fn remove_role_returns_payload_and_updates_list() {
+        const H: u32 = 4_040_001;
+        let seeded = asc_add_role(H, "Buyer", "").expect("seed");
+        let id: String = serde_json::from_str::<AscRole>(&seeded).expect("role").id;
+
+        let removed = asc_remove_role(H, &id).expect("remove");
+        assert_eq!(serde_json::from_str::<AscRole>(&removed).expect("json").name, "Buyer");
+
+        assert_eq!(asc_get_all_roles(H).expect("list"), "[]");
+        assert!(asc_remove_role(H, &id).is_err(), "second remove errors");
+        assert!(asc_remove_role(4_040_002, &id).is_err(), "unknown doc errors");
+        // Freed ids may be reused: removing role-1 lets the next add take it.
+        let again = asc_add_role(H, "Buyer", "").expect("re-add");
+        assert_eq!(serde_json::from_str::<AscRole>(&again).expect("json").id, "role-1");
+    }
+
+    // ── asc_canFillRole ──────────────────────────────────────────────
+
+    #[test]
+    fn can_fill_role_gates_on_assignment_and_protection() {
+        const H: u32 = 4_050_001;
+        let open = asc_add_role(H, "Open", "").expect("open role");
+        let open: AscRole = serde_json::from_str(&open).expect("json");
+        // Seed the assigned role through the public edit surface.
+        let assigned = asc_add_role(H, "Closed", "").expect("assigned role");
+        let assigned_id = serde_json::from_str::<AscRole>(&assigned).expect("json").id;
+        asc_edit_role(H, &assigned_id, r#"{"user":"uid-42"}"#).expect("assign");
+
+        assert!(asc_can_fill_role(H, &open.id, "uid-7").expect("bool"), "open role: anyone");
+        assert!(asc_can_fill_role(H, &open.id, "").expect("bool"), "open role: anonymous");
+        assert!(
+            asc_can_fill_role(H, &assigned_id, "uid-42").expect("bool"),
+            "assignee fills their role"
+        );
+        assert!(
+            !asc_can_fill_role(H, &assigned_id, "uid-7").expect("bool"),
+            "others cannot fill an assigned role"
+        );
+        assert!(
+            !asc_can_fill_role(H, &assigned_id, "").expect("bool"),
+            "anonymous cannot fill an assigned role"
+        );
+        assert!(
+            !asc_can_fill_role(H, "role-404", "uid-42").expect("bool"),
+            "unknown role is not fillable"
+        );
+
+        // Protection interplay: read-only and comment-only seal the form,
+        // the dedicated fill-forms mode (and unsetting) reopens it.
+        set_document_restriction(
+            H,
+            r#"{"mode":"readOnly","allowPrint":true,"allowCopy":true}"#,
+        )
+        .expect("restrict");
+        assert!(
+            !asc_can_fill_role(H, &open.id, "uid-7").expect("bool"),
+            "readOnly seals every role"
+        );
+        set_document_restriction(H, r#"{"mode":"comment-only"}"#).expect("restrict");
+        assert!(!asc_can_fill_role(H, &open.id, "uid-7").expect("bool"));
+        set_document_restriction(H, r#"{"mode":"fill-forms"}"#).expect("restrict");
+        assert!(
+            asc_can_fill_role(H, &open.id, "uid-7").expect("bool"),
+            "fill-forms mode exists for exactly this"
+        );
+        assert!(
+            !asc_can_fill_role(H, &assigned_id, "uid-7").expect("bool"),
+            "protection reopening does not bypass assignment"
+        );
+    }
+
+    // ── asc_fillField / asc_getFillingStatus ─────────────────────────
+
+    #[test]
+    fn fill_field_enforces_gates_and_clears_on_empty_value() {
+        const H: u32 = 4_060_001;
+        let seeded = asc_add_role(H, "Buyer", "").expect("role");
+        let id = serde_json::from_str::<AscRole>(&seeded).expect("json").id;
+
+        let blob = asc_fill_field(H, "field-1", &id, "Acme GmbH", true, "uid-7")
+            .expect("fill by anyone on an open role");
+        let blob: OFormFieldFill = serde_json::from_str(&blob).expect("canonical JSON");
+        assert_eq!(blob.value, "Acme GmbH");
+        assert_eq!(blob.user_id, "uid-7");
+        assert!(blob.required);
+
+        assert!(
+            asc_fill_field(H, "  ", &id, "x", false, "uid-7").is_err(),
+            "blank field id rejected"
+        );
+        assert!(
+            asc_fill_field(H, "field-1", "role-404", "x", false, "uid-7").is_err(),
+            "unknown role rejected"
+        );
+
+        // Protection gating flows through the fill path too.
+        set_document_restriction(H, r#"{"mode":"readOnly"}"#).expect("restrict");
+        let denied = asc_fill_field(H, "field-1", &id, "sealed", true, "uid-7");
+        assert!(denied.unwrap_err().contains("restricted"));
+        set_document_restriction(H, r#"{"mode":"fill-forms"}"#).expect("reopen");
+
+        // Assignment gating flows through the fill path too.
+        let closed = asc_add_role(H, "Seller", "").expect("role");
+        let closed_id = serde_json::from_str::<AscRole>(&closed).expect("json").id;
+        asc_edit_role(H, &closed_id, r#"{"user":"uid-42"}"#).expect("assign");
+        let denied = asc_fill_field(H, "field-2", &closed_id, "nope", false, "uid-7");
+        let err = denied.unwrap_err();
+        assert!(err.contains("may not fill"), "err: {err}");
+
+        // An empty value clears the content but keeps the registration
+        // (and forgets who filled it).
+        asc_fill_field(H, "field-2", &closed_id, "signed", false, "uid-42")
+            .expect("assignee fill");
+        let cleared: OFormFieldFill = serde_json::from_str(
+            &asc_fill_field(H, "field-2", &closed_id, "", false, "uid-42").expect("clear"),
+        )
+        .expect("blob");
+        assert_eq!(cleared.value, "");
+        assert_eq!(cleared.user_id, "");
+        assert_eq!(cleared.role_id, closed_id, "registration kept");
+    }
+
+    #[test]
+    fn filling_status_transitions_empty_filling_complete() {
+        const H: u32 = 4_070_001;
+        // Role slice lookup, resolved against the status blob passed in —
+        // never against a shadowed outer binding.
+        fn role_status<'a>(st: &'a OFormFillingStatus, id: &str) -> &'a OFormRoleStatus {
+            st.roles.iter().find(|r| r.role_id == id).expect("role in breakdown")
+        }
+        let buyer = asc_add_role(H, "Buyer", "").expect("role");
+        let buyer = serde_json::from_str::<AscRole>(&buyer).expect("json");
+        let seller = asc_add_role(H, "Seller", "").expect("role");
+        let seller = serde_json::from_str::<AscRole>(&seller).expect("json");
+
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.status, "empty");
+        assert_eq!(st.total_fields, 0);
+        assert!(st.roles.iter().all(|r| r.complete), "no fields → vacuously complete");
+
+        // Register the buyer's required field without filling it yet.
+        asc_fill_field(H, "f-1", &buyer.id, "", true, "u").expect("register");
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.status, "empty", "registered but nothing filled");
+        assert_eq!((st.total_fields, st.filled_fields, st.required_left), (1, 0, 1));
+        assert!(!role_status(&st, &buyer.id).complete);
+
+        // Fill it → complete (the only required field is satisfied).
+        asc_fill_field(H, "f-1", &buyer.id, "Acme", true, "u").expect("fill");
+        asc_fill_field(H, "f-2", &seller.id, "addr", false, "u").expect("fill optional");
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.status, "complete");
+        assert_eq!((st.total_fields, st.filled_fields, st.required_left), (2, 2, 0));
+        assert_eq!(
+            (
+                role_status(&st, &buyer.id).filled_fields,
+                role_status(&st, &seller.id).filled_fields
+            ),
+            (1, 1)
+        );
+
+        // Clearing the required field re-opens the form → "filling".
+        asc_fill_field(H, "f-1", &buyer.id, "", true, "u").expect("clear");
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.status, "filling", "required field emptied again");
+        assert_eq!((st.filled_fields, st.required_left), (1, 1));
+        assert!(!role_status(&st, &buyer.id).complete);
+        assert!(
+            role_status(&st, &seller.id).complete,
+            "optional-only role stays complete"
+        );
+
+        // Re-fill completes it again.
+        asc_fill_field(H, "f-1", &buyer.id, "Acme GmbH", true, "u").expect("refill");
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.status, "complete");
+    }
+
+    #[test]
+    fn filling_status_survives_role_removal() {
+        const H: u32 = 4_080_001;
+        let seeded = asc_add_role(H, "Buyer", "").expect("role");
+        let id = serde_json::from_str::<AscRole>(&seeded).expect("json").id;
+        asc_fill_field(H, "f-1", &id, "keep", true, "u").expect("fill");
+        asc_remove_role(H, &id).expect("remove");
+
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.total_fields, 1, "fills outlive role bookkeeping");
+        assert_eq!(st.status, "complete");
+        assert!(st.roles.is_empty(), "no roles left to break down");
+        // The orphaned field can be re-registered under a fresh role.
+        let fresh = asc_add_role(H, "Buyer II", "").expect("role");
+        let fresh = serde_json::from_str::<AscRole>(&fresh).expect("json");
+        asc_fill_field(H, "f-1", &fresh.id, "moved", true, "u").expect("refill");
+        let st: OFormFillingStatus =
+            serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
+        assert_eq!(st.roles.len(), 1);
+        assert_eq!(st.roles[0].total_fields, 1, "field now tracked under the new role");
+    }
+
+    // ── asc_setSigners / asc_getSigners ──────────────────────────────
+
+    #[test]
+    fn signers_round_trip_and_validate() {
+        const H: u32 = 4_090_001;
+        assert_eq!(asc_get_signers(H).expect("default"), "[]", "unset → empty list");
+
+        let json = r#"[
+            {"id":"s-1","name":"Ada Lovelace","date":"2026-11-10","image":""},
+            {"id":"s-2","name":"Grace Hopper","date":"2026-11-11",
+             "image":"data:image/png;base64,AAA"}
+        ]"#;
+        let stored = asc_set_signers(H, json).expect("set");
+        assert_eq!(asc_get_signers(H).expect("get"), stored, "canonical round trip");
+        let signers: Vec<AscSigner> = serde_json::from_str(&stored).expect("array");
+        assert_eq!(signers.len(), 2);
+        assert_eq!(signers[0].name, "Ada Lovelace");
+        assert_eq!(signers[1].image, "data:image/png;base64,AAA");
+
+        let dup = asc_set_signers(H, r#"[{"id":"s-1","name":"A"},{"id":"s-1","name":"B"}]"#)
+            .unwrap_err();
+        assert!(dup.contains("Duplicate signer id"), "err: {dup}");
+        let no_id = asc_set_signers(H, r#"[{"id":"  ","name":"A"}]"#).unwrap_err();
+        assert!(no_id.contains("must not be empty"), "err: {no_id}");
+        let no_name = asc_set_signers(H, r#"[{"id":"s-9"}]"#).unwrap_err();
+        assert!(no_name.contains("name"), "err: {no_name}");
+        // A failed set leaves the previous list untouched.
+        assert_eq!(asc_get_signers(H).expect("get").matches("Ada Lovelace").count(), 1);
+        // Replacing wholesale (not appending) is the OO contract.
+        asc_set_signers(H, r#"[{"id":"s-3","name":"Only One"}]"#).expect("replace");
+        let signers: Vec<AscSigner> =
+            serde_json::from_str(&asc_get_signers(H).expect("get")).expect("array");
+        assert_eq!(signers.len(), 1);
+    }
+}
+
