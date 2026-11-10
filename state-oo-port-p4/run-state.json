@@ -1,0 +1,34 @@
+{
+ "P4-C01": {
+  "state": "done",
+  "attempts": 1,
+  "last_error": null,
+  "phase": "gate_passed",
+  "attempt_started_ts": 1794318342,
+  "attempt_worker": "p2b-glm1"
+ },
+ "P4-D01": {
+  "state": "done",
+  "attempts": 1,
+  "last_error": null,
+  "phase": "gate_passed",
+  "attempt_started_ts": 1794318342,
+  "attempt_worker": "p2b-glm0"
+ },
+ "P4-D02": {
+  "state": "done",
+  "attempts": 3,
+  "last_error": null,
+  "phase": "gate_passed",
+  "attempt_started_ts": 1794320410,
+  "attempt_worker": "p2b-glm2"
+ },
+ "P4-D03": {
+  "state": "done",
+  "attempts": 3,
+  "last_error": null,
+  "phase": "gate_passed",
+  "attempt_started_ts": 0,
+  "attempt_worker": "salvage"
+ }
+}
