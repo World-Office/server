@@ -616,7 +616,8 @@ impl Canvas {
 
     /// Draw text at the specified position using the given font size and color.
     ///
-    /// Uses rustybuzz for text shaping and swash for glyph rasterization.
+    /// Shapes the text with [`crate::shaping::Shaper`] (rustybuzz) and
+    /// rasterizes the glyphs with swash.
     /// Latin-only for v1 — no kerning, ligatures, OpenType features, bidi, or
     /// complex script support.
     ///
@@ -662,53 +663,38 @@ impl Canvas {
             None => return,
         };
 
-        // Get font data from library — select a heavier face for bold
-        let (font_data, face_index) = match font_library.query_face_weighted(bold) {
-            Some(data) => data,
+        // Shape with the extracted Shaper (rustybuzz) — Phase B. Selects
+        // the best face (heavier for bold) and scales to pixel space.
+        let shaper = match crate::shaping::Shaper::from_library(font_library, bold) {
+            Some(shaper) => shaper,
             None => return,
         };
-
-        // Create rustybuzz face for shaping
-        let rb_face = match rustybuzz::Face::from_slice(&font_data, face_index) {
-            Some(face) => face,
-            None => return,
-        };
-
-        // Shape text with rustybuzz (Latin v1: no features)
-        let mut buffer = rustybuzz::UnicodeBuffer::new();
-        buffer.push_str(text);
-        buffer.guess_segment_properties();
-        let glyph_buffer = rustybuzz::shape(&rb_face, &[], buffer);
-
-        // Compute scale factor: font design units → pixels
-        let upem = rb_face.units_per_em();
-        let upem = if upem > 0 { upem as f32 } else { 1000.0 };
-        let font_size_f32 = font_size as f32;
-        let unit_scale = font_size_f32 / upem;
+        let run = shaper.shape(text, font_size as f32);
+        if run.is_empty() {
+            return;
+        }
 
         // Create swash font reference and scale context
-        let swash_font = match swash::FontRef::from_index(&font_data, face_index as usize) {
-            Some(font) => font,
-            None => return,
-        };
+        let swash_font =
+            match swash::FontRef::from_index(shaper.font_data(), shaper.face_index() as usize) {
+                Some(font) => font,
+                None => return,
+            };
 
         let mut scale_context = swash::scale::ScaleContext::new();
         let mut scaler = scale_context
             .builder(swash_font)
-            .size(font_size_f32)
+            .size(font_size as f32)
             .build();
 
         let alpha = self.state.global_alpha;
         let x_start = x as f32;
         let y_baseline = y as f32;
 
-        let infos = glyph_buffer.glyph_infos();
-        let positions = glyph_buffer.glyph_positions();
-
         let mut cursor_x = x_start;
 
-        for (info, pos) in infos.iter().zip(positions.iter()) {
-            let glyph_id = info.glyph_id as u16;
+        for g in &run.glyphs {
+            let glyph_id = g.glyph_id;
 
             // Rasterize glyph with swash
             if let Some(image) = swash::scale::Render::new(&[swash::scale::Source::Outline])
@@ -718,8 +704,8 @@ impl Canvas {
                 let placement = &image.placement;
                 if placement.width > 0 && placement.height > 0 {
                     // Glyph position in canvas coordinates
-                    let gx0 = cursor_x + pos.x_offset as f32 * unit_scale + placement.left as f32;
-                    let gy0 = y_baseline + pos.y_offset as f32 * unit_scale - placement.top as f32;
+                    let gx0 = cursor_x + g.x_offset + placement.left as f32;
+                    let gy0 = y_baseline + g.y_offset - placement.top as f32;
 
                     // Composite glyph bitmap onto pixel buffer
                     for row in 0..placement.height {
@@ -745,7 +731,7 @@ impl Canvas {
             }
 
             // Advance cursor to next glyph origin
-            cursor_x += pos.x_advance as f32 * unit_scale;
+            cursor_x += g.x_advance;
         }
     }
 

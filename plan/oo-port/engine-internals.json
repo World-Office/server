@@ -843,7 +843,7 @@
   "wo_crate": "wo-renderer",
   "wo_file": "core/crates/wo-renderer/src/canvas.rs",
   "gap_severity": 1,
-  "notes": "HarfBuzz shaping interface. WO uses rustybuzz (an HB port) + swash inside Canvas::draw_text — but shaping is NOT wired into TextLayoutEngine or the wasm layout path. (source: DesktopEditor/fontengine/TextShaper.h)"
+  "notes": "HarfBuzz shaping interface. Phase B (P2-02): `wo-renderer::shaping::Shaper` (rustybuzz) extracted from Canvas::draw_text; TextLayoutEngine now breaks lines on shaped runs via `wo-renderer::textlayout::break_lines` (char_advance kept only as the no-font fallback). The wasm layout path (wo-renderer-wasm/src/layout.rs) still measures with char_advance. (source: DesktopEditor/fontengine/TextShaper.h)"
  },
  {
   "oo_area": "freetype_names/FontMaps",

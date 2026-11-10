@@ -152,7 +152,7 @@ const SPEC = {
     "CGlyphString: shaped, measured string (kerned/ligated glyph array, tab runs, Y positions). WO TextLayoutEngine measures with char_advance — no kerning, ligatures, or bidi — so line breaks and glyph positions diverge on complex text."],
   "fontengine/GlyphString.cpp": ["wo-renderer", "core/crates/wo-renderer/src/text.rs", 3, "See GlyphString.h note."],
   "fontengine/TextShaper.h": ["wo-renderer", "core/crates/wo-renderer/src/canvas.rs", 1,
-    "HarfBuzz shaping interface. WO uses rustybuzz (an HB port) + swash inside Canvas::draw_text — but shaping is NOT wired into TextLayoutEngine or the wasm layout path."],
+    "HarfBuzz shaping interface. Phase B (P2-02): `wo-renderer::shaping::Shaper` (rustybuzz) extracted from Canvas::draw_text; TextLayoutEngine now breaks lines on shaped runs via `wo-renderer::textlayout::break_lines` (char_advance kept only as the no-font fallback). The wasm layout path (wo-renderer-wasm/src/layout.rs) still measures with char_advance."],
   "fontengine/TextShaper.cpp": ["wo-renderer", "core/crates/wo-renderer/src/canvas.rs", 1, "See TextShaper.h note."],
   "fontengine/TextShaper_p.h": ["wo-renderer", "core/crates/wo-renderer/src/canvas.rs", 1, "Shaper internals; see TextShaper.h note."],
   "fontengine/TextHyphen.h": ["wo-spell", "core/crates/wo-spell/src/hyphenate.rs", 0,
