@@ -4135,6 +4135,610 @@ impl OoxmlParser {
         })
     }
 
+    // --- ORM-06: XLSX chart parts (xl/charts/chartN.xml) ---
+
+    const C_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/chart";
+
+    /// Parse a whole XLSX package: the editable workbook model plus the
+    /// typed `xl/charts/*` chart parts (ORM-06). Opens the archive once and
+    /// parses both from the same ZIP.
+    pub fn parse_xlsx_book(&self, data: &[u8]) -> Result<XlsxBook> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP: {}", e),
+        })?;
+        let workbook = self.parse_xlsx(&mut archive)?;
+        let charts = self.parse_xlsx_charts(&mut archive)?;
+        Ok(XlsxBook { workbook, charts })
+    }
+
+    /// Parse every `xl/charts/chartN.xml` part into the typed ChartSpace
+    /// graph, in package (sorted-path) order.
+    pub fn parse_xlsx_charts(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Vec<XlsxChartPart>> {
+        let mut paths: Vec<String> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(name) = archive.by_index(i).map(|f| f.name().to_string()) {
+                if name.starts_with("xl/charts/chart") && name.ends_with(".xml") {
+                    paths.push(name);
+                }
+            }
+        }
+        paths.sort();
+
+        let mut charts = Vec::new();
+        for path in paths {
+            let xml = self.read_zip_entry(archive, &path)?;
+            let space = self.parse_chart_space_xml(&xml)?;
+            charts.push(XlsxChartPart { path, space });
+        }
+        Ok(charts)
+    }
+
+    /// Convenience wrapper that opens `data` (an XLSX ZIP) itself.
+    pub fn parse_xlsx_charts_from(&self, data: &[u8]) -> Result<Vec<XlsxChartPart>> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP: {}", e),
+        })?;
+        self.parse_xlsx_charts(&mut archive)
+    }
+
+    fn parse_chart_space_xml(&self, xml: &str) -> Result<ChartSpace> {
+        let doc = XmlDoc::parse(xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid chart part: {}", e),
+        })?;
+        Ok(Self::parse_chart_space(doc.root_element()))
+    }
+
+    /// Direct child in the drawingml-chart namespace.
+    fn c_child<'a, 'input>(
+        node: roxmltree::Node<'a, 'input>,
+        name: &str,
+    ) -> Option<roxmltree::Node<'a, 'input>> {
+        node.children()
+            .find(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::C_NS))
+    }
+
+    /// Direct child in the drawingml (main) namespace.
+    fn a_child<'a, 'input>(
+        node: roxmltree::Node<'a, 'input>,
+        name: &str,
+    ) -> Option<roxmltree::Node<'a, 'input>> {
+        node.children()
+            .find(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::A_NS))
+    }
+
+    fn c_children<'a, 'input>(
+        node: roxmltree::Node<'a, 'input>,
+        name: &str,
+    ) -> Vec<roxmltree::Node<'a, 'input>> {
+        node.children()
+            .filter(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::C_NS))
+            .collect()
+    }
+
+    /// Text of the first `c:<name>` child, trimmed.
+    fn c_child_text(node: roxmltree::Node, name: &str) -> Option<String> {
+        Self::c_child(node, name).and_then(|n| n.text()).map(|t| t.trim().to_string())
+    }
+
+    fn attr_f64(node: roxmltree::Node, name: &str) -> Option<f64> {
+        node.attribute(name).and_then(|v| v.parse().ok())
+    }
+
+    fn attr_u32(node: roxmltree::Node, name: &str) -> Option<u32> {
+        node.attribute(name).and_then(|v| v.parse().ok())
+    }
+
+    /// OOXML boolean attribute: "1"/"true" vs "0"/"false".
+    fn attr_bool(node: roxmltree::Node, name: &str) -> Option<bool> {
+        node.attribute(name).map(|v| v == "1" || v == "true")
+    }
+
+    /// `val` attribute of the first `c:<name>` child, as f64.
+    fn child_val_f64(node: roxmltree::Node, name: &str) -> Option<f64> {
+        Self::c_child(node, name).and_then(|n| Self::attr_f64(n, "val"))
+    }
+
+    /// `val` attribute of the first `c:<name>` child, as u32.
+    fn child_val_u32(node: roxmltree::Node, name: &str) -> Option<u32> {
+        Self::c_child(node, name).and_then(|n| Self::attr_u32(n, "val"))
+    }
+
+    /// `val` attribute of the first `c:<name>` child, as i64 (signed —
+    /// e.g. the bar `overlap` attribute can be negative).
+    fn child_val_i64(node: roxmltree::Node, name: &str) -> Option<i64> {
+        Self::c_child(node, name)
+            .and_then(|n| n.attribute("val"))
+            .and_then(|v| v.parse().ok())
+    }
+
+    /// `val` attribute of the first `c:<name>` child, as bool.
+    fn child_val_bool(node: roxmltree::Node, name: &str) -> Option<bool> {
+        Self::c_child(node, name).and_then(|n| Self::attr_bool(n, "val"))
+    }
+
+    /// `val` attribute of the first `c:<name>` child, as string.
+    fn child_val_str(node: roxmltree::Node, name: &str) -> Option<String> {
+        Self::c_child(node, name)
+            .and_then(|n| n.attribute("val"))
+            .map(|v| v.to_string())
+    }
+
+    fn parse_chart_space(root: roxmltree::Node) -> ChartSpace {
+        let mut space = ChartSpace::default();
+        if root.has_tag_name("chartSpace") {
+            space.lang = root
+                .attribute("lang")
+                .or_else(|| Self::c_child(root, "lang").and_then(|n| n.attribute("val")))
+                .map(|v| v.to_string());
+            space.date_1904 = Self::child_val_bool(root, "date1904");
+            space.rounded_corners = Self::child_val_bool(root, "roundedCorners");
+            if let Some(chart) = Self::c_child(root, "chart") {
+                space.chart = Self::parse_chart_node(chart);
+            }
+            if let Some(ext) = Self::c_child(root, "externalData") {
+                space.external_data = Some(ChartExternalData {
+                    r_id: ext
+                        .attribute((Self::R_NS, "id"))
+                        .or_else(|| ext.attribute("id"))
+                        .unwrap_or_default()
+                        .to_string(),
+                    auto_update: Self::child_val_bool(ext, "autoUpdate"),
+                });
+            }
+            if let Some(print_elem) = Self::c_child(root, "printSettings") {
+                space.print_settings = Some(ChartPrintSettings {
+                    page_margins: Self::c_child(print_elem, "pageMargins")
+                        .map(Self::parse_xlsx_page_margins),
+                    header_footer: Self::c_child(print_elem, "headerFooter")
+                        .map(Self::parse_xlsx_header_footer),
+                });
+            }
+        }
+        space
+    }
+
+    fn parse_chart_node(chart: roxmltree::Node) -> ChartNode {
+        let mut node = ChartNode::default();
+        node.title = Self::c_child(chart, "title").map(Self::parse_chart_title);
+        node.auto_title_deleted = Self::child_val_bool(chart, "autoTitleDeleted");
+        if let Some(plot_area) = Self::c_child(chart, "plotArea") {
+            node.plot_area = Self::parse_plot_area(plot_area);
+        }
+        node.legend = Self::c_child(chart, "legend").map(Self::parse_chart_legend);
+        node.plot_vis_only = Self::child_val_bool(chart, "plotVisOnly");
+        node.disp_blanks_as = Self::child_val_str(chart, "dispBlanksAs");
+        node.show_dlbls_over_max = Self::child_val_bool(chart, "showDLblsOverMax");
+        node
+    }
+
+    fn parse_chart_title(title: roxmltree::Node) -> ChartTitleNode {
+        let mut node = ChartTitleNode::default();
+        if let Some(tx) = Self::c_child(title, "tx") {
+            if let Some(rich) = Self::c_child(tx, "rich") {
+                // Concatenate every a:t run of the rich text body.
+                let text: String = rich
+                    .descendants()
+                    .filter(|n| n.has_tag_name("t") && n.tag_name().namespace() == Some(Self::A_NS))
+                    .filter_map(|n| n.text())
+                    .collect();
+                let text = text.trim().to_string();
+                if !text.is_empty() {
+                    node.text = Some(text);
+                }
+            } else if let Some(str_ref) = Self::c_child(tx, "strRef") {
+                node.ref_formula = Self::c_child_text(str_ref, "f");
+                if let Some(cache) = Self::c_child(str_ref, "strCache") {
+                    node.text = Self::c_children(cache, "pt").first().and_then(|pt| {
+                        pt.children()
+                            .find(|n| n.has_tag_name("v"))
+                            .and_then(|n| n.text())
+                            .map(|t| t.trim().to_string())
+                    });
+                }
+            }
+        }
+        node.overlay = Self::child_val_bool(title, "overlay");
+        node
+    }
+
+    fn parse_plot_area(plot_area: roxmltree::Node) -> PlotAreaNode {
+        let mut node = PlotAreaNode::default();
+        if let Some(layout) = Self::c_child(plot_area, "layout") {
+            node.layout = Some(ChartLayout {
+                x: Self::child_val_f64(layout, "x"),
+                y: Self::child_val_f64(layout, "y"),
+                w: Self::child_val_f64(layout, "w"),
+                h: Self::child_val_f64(layout, "h"),
+            });
+            // An empty <c:layout/> means "automatic" — keep it None.
+            if node.layout == Some(ChartLayout::default()) {
+                node.layout = None;
+            }
+        }
+        for child in plot_area.children() {
+            if !child.is_element() || child.tag_name().namespace() != Some(Self::C_NS) {
+                continue;
+            }
+            let name = child.tag_name().name();
+            match name {
+                "barChart" | "lineChart" | "pieChart" | "doughnutChart" | "scatterChart"
+                | "areaChart" | "radarChart" | "bubbleChart" | "surfaceChart"
+                | "surface3DChart" | "stockChart" | "ofPieChart" => {
+                    node.plots.push(Self::parse_plot(child, name));
+                }
+                "catAx" | "valAx" | "dateAx" | "serAx" => {
+                    node.axes.push(Self::parse_axis(child, name));
+                }
+                "dTable" => node.show_data_table = Some(true),
+                _ => {}
+            }
+        }
+        node
+    }
+
+    fn parse_plot_kind(element: &str, node: roxmltree::Node) -> ChartPlotKind {
+        match element {
+            "barChart" => {
+                if Self::child_val_str(node, "barDir").as_deref() == Some("col") {
+                    ChartPlotKind::Column
+                } else {
+                    ChartPlotKind::Bar
+                }
+            }
+            "lineChart" => ChartPlotKind::Line,
+            "pieChart" => ChartPlotKind::Pie,
+            "doughnutChart" => ChartPlotKind::Doughnut,
+            "scatterChart" => ChartPlotKind::Scatter,
+            "areaChart" => ChartPlotKind::Area,
+            "radarChart" => ChartPlotKind::Radar,
+            "bubbleChart" => ChartPlotKind::Bubble,
+            "surfaceChart" | "surface3DChart" => ChartPlotKind::Surface,
+            "stockChart" => ChartPlotKind::Stock,
+            "ofPieChart" => ChartPlotKind::OfPie,
+            other => ChartPlotKind::Other(other.to_string()),
+        }
+    }
+
+    fn parse_plot(plot: roxmltree::Node, element: &str) -> ChartPlot {
+        let mut node = ChartPlot {
+            kind: Self::parse_plot_kind(element, plot),
+            ..Default::default()
+        };
+        node.bar_dir = Self::child_val_str(plot, "barDir");
+        node.grouping = Self::child_val_str(plot, "grouping");
+        node.vary_colors = Self::child_val_bool(plot, "varyColors");
+        for ser in Self::c_children(plot, "ser") {
+            node.series.push(Self::parse_series(ser));
+        }
+        node.d_lbls = Self::c_child(plot, "dLbls").map(Self::parse_dlbls);
+        node.gap_width = Self::child_val_u32(plot, "gapWidth");
+        node.overlap = Self::child_val_i64(plot, "overlap");
+        node.hole_size = Self::child_val_u32(plot, "holeSize");
+        node.first_slice_ang = Self::child_val_u32(plot, "firstSliceAng");
+        node.radar_style = Self::child_val_str(plot, "radarStyle");
+        node.scatter_style = Self::child_val_str(plot, "scatterStyle");
+        node.of_pie_type = Self::child_val_str(plot, "ofPieType");
+        node.marker = Self::child_val_bool(plot, "marker");
+        node.smooth = Self::child_val_bool(plot, "smooth");
+        node.bubble3_d = Self::child_val_bool(plot, "bubble3D");
+        node.ser_lines = Some(!Self::c_children(plot, "serLines").is_empty());
+        node.ax_ids = Self::c_children(plot, "axId")
+            .iter()
+            .filter_map(|n| Self::attr_u32(*n, "val"))
+            .collect();
+        node
+    }
+
+    fn parse_series(ser: roxmltree::Node) -> ChartSeries {
+        let mut node = ChartSeries {
+            idx: Self::child_val_u32(ser, "idx").unwrap_or(0),
+            order: Self::child_val_u32(ser, "order").unwrap_or(0),
+            ..Default::default()
+        };
+        if let Some(tx) = Self::c_child(ser, "tx") {
+            if let Some(str_ref) = Self::c_child(tx, "strRef") {
+                node.name_formula = Self::c_child_text(str_ref, "f");
+                if let Some(cache) = Self::c_child(str_ref, "strCache") {
+                    node.name = Self::c_children(cache, "pt")
+                        .first()
+                        .and_then(|pt| pt.children().find(|n| n.has_tag_name("v")))
+                        .and_then(|n| n.text())
+                        .map(|t| t.trim().to_string());
+                }
+            } else if let Some(v) = Self::c_child(tx, "v") {
+                node.name = v.text().map(|t| t.trim().to_string());
+            }
+        }
+        // spPr: solid shape fill and/or line color (a:solidFill/a:srgbClr).
+        if let Some(sp_pr) = Self::c_child(ser, "spPr").or_else(|| Self::a_child(ser, "spPr")) {
+            let fill = Self::solid_fill_color(sp_pr, false);
+            let line = Self::solid_fill_color(sp_pr, true);
+            node.fill_color = fill;
+            node.line_color = line;
+        }
+        node.marker = Self::c_child(ser, "marker").map(Self::parse_marker);
+        if let Some(cat) = Self::c_child(ser, "cat") {
+            node.categories = Some(Self::parse_categories(cat));
+        }
+        node.values = Self::c_child(ser, "val").map(Self::parse_num_data);
+        node.x_values = Self::c_child(ser, "xVal").map(Self::parse_num_data);
+        node.y_values = Self::c_child(ser, "yVal").map(Self::parse_num_data);
+        node.bubble_sizes = Self::c_child(ser, "bubbleSize").map(Self::parse_num_data);
+        node.bubble3_d = Self::child_val_bool(ser, "bubble3D");
+        node.smooth = Self::child_val_bool(ser, "smooth");
+        node.d_lbls = Self::c_child(ser, "dLbls").map(Self::parse_dlbls);
+        for tl in Self::c_children(ser, "trendline") {
+            node.trendlines.push(Self::parse_trendline(tl));
+        }
+        for eb in Self::c_children(ser, "errBars") {
+            node.error_bars.push(Self::parse_err_bar(eb));
+        }
+        node
+    }
+
+    /// Extract a solid `a:srgbClr` color: `into_lines` selects the fill of
+    /// the `a:ln` stroke instead of the shape fill.
+    fn solid_fill_color(sp_pr: roxmltree::Node, from_line: bool) -> Option<String> {
+        let scope = if from_line {
+            Self::a_child(sp_pr, "ln")?
+        } else {
+            sp_pr
+        };
+        let fill = scope
+            .children()
+            .find(|n| n.is_element() && n.has_tag_name("solidFill") && n.tag_name().namespace() == Some(Self::A_NS))?;
+        let srgb = fill
+            .children()
+            .find(|n| n.is_element() && n.has_tag_name("srgbClr") && n.tag_name().namespace() == Some(Self::A_NS))?;
+        srgb.attribute("val").map(|v| v.to_string())
+    }
+
+    fn parse_marker(marker: roxmltree::Node) -> ChartMarker {
+        ChartMarker {
+            symbol: Self::child_val_str(marker, "symbol"),
+            size: Self::child_val_u32(marker, "size"),
+            fill_color: Self::c_child(marker, "spPr")
+                .and_then(|sp| Self::solid_fill_color(sp, false)),
+        }
+    }
+
+    fn parse_categories(cat: roxmltree::Node) -> ChartCategories {
+        let mut node = ChartCategories::default();
+        if let Some(str_ref) = Self::c_child(cat, "strRef") {
+            node.formula = Self::c_child_text(str_ref, "f");
+            if let Some(cache) = Self::c_child(str_ref, "strCache") {
+                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                node.points = Self::parse_str_points(cache);
+            }
+        } else if let Some(multi) = Self::c_child(cat, "multiLvlStrRef") {
+            node.multi_level = true;
+            node.formula = Self::c_child_text(multi, "f");
+            if let Some(cache) = Self::c_child(multi, "multiLvlStrCache") {
+                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                // Flatten every level's points, keeping document order.
+                for lvl in Self::c_children(cache, "lvl") {
+                    node.points.extend(Self::parse_str_points(lvl));
+                }
+            }
+        } else if let Some(num_ref) = Self::c_child(cat, "numRef") {
+            node.formula = Self::c_child_text(num_ref, "f");
+            let cache = Self::c_child(num_ref, "numCache");
+            if let Some(cache) = cache {
+                node.format_code = Self::c_child_text(cache, "formatCode");
+                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                node.points = Self::parse_str_points(cache);
+            }
+        } else if let Some(lit) = Self::c_child(cat, "strLit") {
+            node.pt_count = Self::c_child(lit, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+            node.points = Self::parse_str_points(lit);
+        }
+        node
+    }
+
+    fn parse_str_points(cache: roxmltree::Node) -> Vec<ChartStrPt> {
+        Self::c_children(cache, "pt")
+            .into_iter()
+            .map(|pt| ChartStrPt {
+                idx: Self::attr_u32(pt, "idx").unwrap_or(0),
+                value: pt.children().find(|n| n.has_tag_name("v")).and_then(|n| n.text()).map(|t| t.trim().to_string()),
+            })
+            .collect()
+    }
+
+    /// Parse a `c:numRef` (formula + cache) or `c:numLit` data source.
+    fn parse_num_data(src: roxmltree::Node) -> ChartNumData {
+        let mut node = ChartNumData::default();
+        let cache = if let Some(num_ref) = Self::c_child(src, "numRef") {
+            node.formula = Self::c_child_text(num_ref, "f");
+            Self::c_child(num_ref, "numCache")
+        } else {
+            Self::c_child(src, "numLit")
+        };
+        if let Some(cache) = cache {
+            node.format_code = Self::c_child_text(cache, "formatCode");
+            node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+            node.points = Self::c_children(cache, "pt")
+                .into_iter()
+                .map(|pt| ChartNumPt {
+                    idx: Self::attr_u32(pt, "idx").unwrap_or(0),
+                    value: pt
+                        .children()
+                        .find(|n| n.has_tag_name("v"))
+                        .and_then(|n| n.text())
+                        .and_then(|t| t.trim().parse::<f64>().ok()),
+                })
+                .collect();
+        }
+        node
+    }
+
+    fn parse_dlbls(dlbls: roxmltree::Node) -> ChartDLbls {
+        ChartDLbls {
+            deleted: Self::child_val_bool(dlbls, "delete").unwrap_or(false),
+            number_format: Self::c_child(dlbls, "numFmt")
+                .and_then(|n| n.attribute("formatCode"))
+                .map(|v| v.to_string()),
+            source_linked: Self::c_child(dlbls, "numFmt").and_then(|n| Self::attr_bool(n, "sourceLinked")),
+            position: Self::child_val_str(dlbls, "dLblPos"),
+            show_legend_key: Self::child_val_bool(dlbls, "showLegendKey").unwrap_or(false),
+            show_val: Self::child_val_bool(dlbls, "showVal").unwrap_or(false),
+            show_cat_name: Self::child_val_bool(dlbls, "showCatName").unwrap_or(false),
+            show_ser_name: Self::child_val_bool(dlbls, "showSerName").unwrap_or(false),
+            show_percent: Self::child_val_bool(dlbls, "showPercent").unwrap_or(false),
+            show_bubble_size: Self::child_val_bool(dlbls, "showBubbleSize").unwrap_or(false),
+        }
+    }
+
+    fn parse_trendline(tl: roxmltree::Node) -> ChartTrendline {
+        ChartTrendline {
+            trendline_type: Self::child_val_str(tl, "trendlineType").unwrap_or_else(|| "linear".to_string()),
+            order: Self::child_val_u32(tl, "order"),
+            period: Self::child_val_u32(tl, "period"),
+            forward: Self::child_val_f64(tl, "forward"),
+            backward: Self::child_val_f64(tl, "backward"),
+            intercept: Self::child_val_f64(tl, "intercept"),
+            disp_r_sq: Self::child_val_bool(tl, "dispRSqr").unwrap_or(false),
+            disp_eq: Self::child_val_bool(tl, "dispEq").unwrap_or(false),
+            name: Self::c_child_text(tl, "name"),
+        }
+    }
+
+    fn parse_err_bar(eb: roxmltree::Node) -> ChartErrBar {
+        // c:val is a numDataSource: the magnitude hides in its first
+        // c:numRef/c:numLit point value.
+        let value = Self::c_child(eb, "val").and_then(|val| {
+            let cache = Self::c_child(val, "numRef")
+                .and_then(|r| Self::c_child(r, "numCache"))
+                .or_else(|| Self::c_child(val, "numLit"));
+            cache
+                .and_then(|cache| {
+                    Self::c_children(cache, "pt")
+                        .first()
+                        .and_then(|pt| pt.children().find(|n| n.has_tag_name("v")))
+                        .and_then(|n| n.text())
+                        .and_then(|t| t.trim().parse::<f64>().ok())
+                })
+        });
+        ChartErrBar {
+            direction: Self::child_val_str(eb, "errDir").unwrap_or_else(|| "y".to_string()),
+            err_bar_type: Self::child_val_str(eb, "errBarType").unwrap_or_else(|| "both".to_string()),
+            err_val_type: Self::child_val_str(eb, "errValType").unwrap_or_else(|| "fixedVal".to_string()),
+            no_end_cap: Self::child_val_bool(eb, "noEndCap").unwrap_or(false),
+            value,
+        }
+    }
+
+    fn parse_axis(ax: roxmltree::Node, element: &str) -> ChartAxis {
+        let mut node = ChartAxis {
+            kind: match element {
+                "valAx" => ChartAxisKind::Value,
+                "dateAx" => ChartAxisKind::Date,
+                "serAx" => ChartAxisKind::Series,
+                _ => ChartAxisKind::Category,
+            },
+            ax_id: Self::child_val_u32(ax, "axId").unwrap_or(0),
+            cross_ax: Self::child_val_u32(ax, "crossAx").unwrap_or(0),
+            ..Default::default()
+        };
+        if let Some(scaling) = Self::c_child(ax, "scaling") {
+            node.scaling = ChartScaling {
+                log_base: Self::child_val_f64(scaling, "logBase"),
+                orientation: Self::child_val_str(scaling, "orientation"),
+                max: Self::child_val_f64(scaling, "max"),
+                min: Self::child_val_f64(scaling, "min"),
+            };
+        }
+        node.delete = Self::child_val_bool(ax, "delete");
+        node.ax_pos = Self::child_val_str(ax, "axPos");
+        node.title = Self::c_child(ax, "title").and_then(|t| Self::parse_chart_title(t).text);
+        if let Some(num_fmt) = Self::c_child(ax, "numFmt") {
+            node.number_format = num_fmt.attribute("formatCode").map(|v| v.to_string());
+            node.number_format_source_linked = Self::attr_bool(num_fmt, "sourceLinked");
+        }
+        node.major_gridlines = !Self::c_children(ax, "majorGridlines").is_empty();
+        node.minor_gridlines = !Self::c_children(ax, "minorGridlines").is_empty();
+        node.major_tick_mark = Self::child_val_str(ax, "majorTickMark");
+        node.minor_tick_mark = Self::child_val_str(ax, "minorTickMark");
+        node.tick_label_position = Self::child_val_str(ax, "tickLblPos");
+        node.crosses = Self::child_val_str(ax, "crosses");
+        node.crosses_at = Self::child_val_f64(ax, "crossesAt");
+        node.cross_between = Self::child_val_str(ax, "crossBetween");
+        node.major_unit = Self::child_val_f64(ax, "majorUnit");
+        node.minor_unit = Self::child_val_f64(ax, "minorUnit");
+        node.auto = Self::child_val_bool(ax, "auto");
+        node.label_alignment = Self::child_val_str(ax, "lblAlgn");
+        node.label_offset = Self::child_val_u32(ax, "lblOffset");
+        node.no_multi_level_labels = Self::child_val_bool(ax, "noMultiLvlLbl");
+        node
+    }
+
+    fn parse_chart_legend(legend: roxmltree::Node) -> ChartLegendNode {
+        let mut node = ChartLegendNode {
+            position: Self::child_val_str(legend, "legendPos"),
+            overlay: Self::child_val_bool(legend, "overlay"),
+            deleted_entries: Vec::new(),
+        };
+        for entry in Self::c_children(legend, "legendEntry") {
+            let idx = Self::child_val_u32(entry, "idx");
+            let delete = Self::child_val_bool(entry, "delete").unwrap_or(false);
+            if let (Some(idx), true) = (idx, delete) {
+                node.deleted_entries.push(idx);
+            }
+        }
+        node
+    }
+
+    /// Reuse the spreadsheetml page-margins reader for chart print settings.
+    fn parse_xlsx_page_margins(elem: roxmltree::Node) -> XlsxPageMargins {
+        let mut margins = XlsxPageMargins::default();
+        for (attr, field) in [
+            ("left", &mut margins.left),
+            ("right", &mut margins.right),
+            ("top", &mut margins.top),
+            ("bottom", &mut margins.bottom),
+            ("header", &mut margins.header),
+            ("footer", &mut margins.footer),
+        ] {
+            if let Some(v) = elem.attribute(attr).and_then(|v| v.parse().ok()) {
+                *field = v;
+            }
+        }
+        margins
+    }
+
+    /// Reuse the spreadsheetml header/footer reader for chart print settings.
+    fn parse_xlsx_header_footer(elem: roxmltree::Node) -> XlsxHeaderFooter {
+        let mut hf = XlsxHeaderFooter {
+            different_odd_even: elem.attribute("differentOddEven") == Some("1"),
+            different_first: elem.attribute("differentFirst") == Some("1"),
+            ..Default::default()
+        };
+        for part in elem.children() {
+            if !part.is_element() {
+                continue;
+            }
+            let text = part.text().map(|t| t.to_string());
+            match part.tag_name().name() {
+                "oddHeader" => hf.odd_header = text,
+                "oddFooter" => hf.odd_footer = text,
+                "evenHeader" => hf.even_header = text,
+                "evenFooter" => hf.even_footer = text,
+                "firstHeader" => hf.first_header = text,
+                "firstFooter" => hf.first_footer = text,
+                _ => {}
+            }
+        }
+        hf
+    }
+
     fn parse_xlsx_workbook_properties(&self, doc: &XmlDoc) -> Result<XlsxWorkbookProperties> {
         let workbook_elem = doc
             .descendants()
@@ -6600,5 +7204,327 @@ mod tests {
             .read_to_string(&mut rels)
             .unwrap();
         assert!(rels.contains("numbering"));
+    }
+
+    // --- ORM-06: XLSX chart parts -> ChartSpace typed graph ---
+
+    /// A realistic Excel-style `c:chartSpace` (clustered column chart with
+    /// category/value axes, trendline, error bars and an external-data link).
+    const SAMPLE_CHART_XML: &str = r##"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:s="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <c:lang val="en-US"/>
+  <c:roundedCorners val="0"/>
+  <c:chart>
+    <c:title>
+      <c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Quarterly Revenue</a:t></a:r></a:p></c:rich></c:tx>
+      <c:overlay val="0"/>
+    </c:title>
+    <c:autoTitleDeleted val="0"/>
+    <c:plotArea>
+      <c:layout/>
+      <c:barChart>
+        <c:barDir val="col"/>
+        <c:grouping val="clustered"/>
+        <c:varyColors val="0"/>
+        <c:ser>
+          <c:idx val="0"/>
+          <c:order val="0"/>
+          <c:tx><c:strRef><c:f>Sheet1!$B$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Revenue</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></c:spPr>
+          <c:dLbls>
+            <c:numFmt formatCode="#,##0" sourceLinked="0"/>
+            <c:dLblPos val="outEnd"/>
+            <c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/>
+          </c:dLbls>
+          <c:trendline>
+            <c:trendlineType val="linear"/>
+            <c:forward val="1.5"/>
+            <c:dispRSqr val="1"/>
+          </c:trendline>
+          <c:errBars>
+            <c:errDir val="y"/>
+            <c:errBarType val="both"/>
+            <c:errValType val="percentage"/>
+            <c:val><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="1"/><c:pt idx="0"><c:v>5</c:v></c:pt></c:numLit></c:val>
+          </c:errBars>
+          <c:cat><c:strRef><c:f>Sheet1!$A$2:$A$5</c:f><c:strCache><c:ptCount val="4"/><c:pt idx="0"><c:v>Q1</c:v></c:pt><c:pt idx="1"><c:v>Q2</c:v></c:pt><c:pt idx="2"><c:v>Q3</c:v></c:pt><c:pt idx="3"><c:v>Q4</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:f>Sheet1!$B$2:$B$5</c:f><c:numCache><c:formatCode>#,##0.00</c:formatCode><c:ptCount val="4"/><c:pt idx="0"><c:v>120.5</c:v></c:pt><c:pt idx="1"><c:v>135.25</c:v></c:pt><c:pt idx="2"><c:v>98</c:v></c:pt><c:pt idx="3"><c:v>142</c:v></c:pt></c:numCache></c:numRef></c:val>
+        </c:ser>
+        <c:gapWidth val="150"/>
+        <c:overlap val="-27"/>
+        <c:axId val="111111111"/>
+        <c:axId val="222222222"/>
+      </c:barChart>
+      <c:catAx>
+        <c:axId val="111111111"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="b"/>
+        <c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Quarter</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>
+        <c:numFmt formatCode="General" sourceLinked="1"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:tickLblPos val="nextTo"/>
+        <c:crossAx val="222222222"/>
+        <c:crosses val="autoZero"/>
+        <c:auto val="1"/>
+        <c:lblAlgn val="ctr"/>
+        <c:lblOffset val="100"/>
+        <c:noMultiLvlLbl val="0"/>
+      </c:catAx>
+      <c:valAx>
+        <c:axId val="222222222"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="l"/>
+        <c:majorGridlines/>
+        <c:numFmt formatCode="General" sourceLinked="1"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:tickLblPos val="nextTo"/>
+        <c:crossAx val="111111111"/>
+        <c:crosses val="autoZero"/>
+        <c:crossBetween val="between"/>
+      </c:valAx>
+    </c:plotArea>
+    <c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>
+    <c:plotVisOnly val="1"/>
+    <c:dispBlanksAs val="gap"/>
+  </c:chart>
+  <c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>
+</c:chartSpace>"##;
+
+    fn make_xlsx_with_chart(chart_xml: &str) -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>
+</Types>"#).unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#).unwrap();
+            zip.start_file("xl/workbook.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#).unwrap();
+            zip.start_file("xl/_rels/workbook.xml.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#).unwrap();
+            zip.start_file("xl/worksheets/sheet1.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Quarter</v></c><c r="B1" t="str"><v>Revenue</v></c></row>
+    <row r="2"><c r="A2" t="str"><v>Q1</v></c><c r="B2"><v>120.5</v></c></row>
+    <row r="3"><c r="A3" t="str"><v>Q2</v></c><c r="B3"><v>135.25</v></c></row>
+  </sheetData>
+</worksheet>"#).unwrap();
+            zip.start_file("xl/charts/chart1.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(chart_xml.as_bytes()).unwrap();
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
+    #[test]
+    fn xlsx_chart_space_parses_typed() {
+        let xlsx = make_xlsx_with_chart(SAMPLE_CHART_XML);
+        let book = OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
+        assert_eq!(book.workbook.sheets[0].name, "Data");
+        assert_eq!(book.charts.len(), 1, "the chart part must parse");
+        let chart = &book.charts[0];
+        assert_eq!(chart.path, "xl/charts/chart1.xml");
+        let space = &chart.space;
+        assert_eq!(space.lang.as_deref(), Some("en-US"));
+        assert_eq!(space.rounded_corners, Some(false));
+        assert_eq!(space.chart.disp_blanks_as.as_deref(), Some("gap"));
+        assert_eq!(space.chart.plot_vis_only, Some(true));
+
+        let title = space.chart.title.as_ref().unwrap();
+        assert_eq!(title.text.as_deref(), Some("Quarterly Revenue"));
+        assert_eq!(title.overlay, Some(false));
+
+        let plot = space.primary_plot().unwrap();
+        assert_eq!(plot.kind, ChartPlotKind::Column, "barDir=col is a column chart");
+        assert_eq!(plot.grouping.as_deref(), Some("clustered"));
+        assert_eq!(plot.gap_width, Some(150));
+        assert_eq!(plot.overlap, Some(-27));
+        assert_eq!(plot.ax_ids, vec![111111111, 222222222]);
+
+        let ser = &plot.series[0];
+        assert_eq!(ser.name.as_deref(), Some("Revenue"));
+        assert_eq!(ser.name_formula.as_deref(), Some("Sheet1!$B$1"));
+        assert_eq!(ser.fill_color.as_deref(), Some("4472C4"));
+        let cats = ser.categories.as_ref().unwrap();
+        assert_eq!(cats.formula.as_deref(), Some("Sheet1!$A$2:$A$5"));
+        assert_eq!(cats.points.len(), 4);
+        assert_eq!(cats.points[0].value.as_deref(), Some("Q1"));
+        assert_eq!(cats.points[3].value.as_deref(), Some("Q4"));
+        let vals = ser.values.as_ref().unwrap();
+        assert_eq!(vals.formula.as_deref(), Some("Sheet1!$B$2:$B$5"));
+        assert_eq!(vals.format_code.as_deref(), Some("#,##0.00"));
+        assert_eq!(vals.pt_count, Some(4));
+        assert_eq!(vals.points[0].value, Some(120.5));
+        assert_eq!(vals.points[1].value, Some(135.25));
+        assert_eq!(vals.points[2].value, Some(98.0));
+        assert_eq!(vals.points[3].value, Some(142.0));
+        let dl = ser.d_lbls.as_ref().unwrap();
+        assert!(dl.show_val);
+        assert!(!dl.show_cat_name);
+        assert_eq!(dl.number_format.as_deref(), Some("#,##0"));
+        assert_eq!(dl.position.as_deref(), Some("outEnd"));
+        assert_eq!(ser.trendlines.len(), 1);
+        assert_eq!(ser.trendlines[0].trendline_type, "linear");
+        assert_eq!(ser.trendlines[0].forward, Some(1.5));
+        assert!(ser.trendlines[0].disp_r_sq);
+        assert_eq!(ser.error_bars.len(), 1);
+        assert_eq!(ser.error_bars[0].direction, "y");
+        assert_eq!(ser.error_bars[0].err_val_type, "percentage");
+        assert_eq!(ser.error_bars[0].value, Some(5.0), "magnitude must come from the numLit point");
+
+        assert_eq!(space.chart.plot_area.axes.len(), 2);
+        let cat_ax = &space.chart.plot_area.axes[0];
+        assert_eq!(cat_ax.kind, ChartAxisKind::Category);
+        assert_eq!(cat_ax.ax_id, 111111111);
+        assert_eq!(cat_ax.cross_ax, 222222222);
+        assert_eq!(cat_ax.ax_pos.as_deref(), Some("b"));
+        assert_eq!(cat_ax.title.as_deref(), Some("Quarter"));
+        assert_eq!(cat_ax.number_format.as_deref(), Some("General"));
+        assert!(cat_ax.number_format_source_linked == Some(true));
+        assert_eq!(cat_ax.label_offset, Some(100));
+        assert!(!cat_ax.major_gridlines);
+        let val_ax = &space.chart.plot_area.axes[1];
+        assert_eq!(val_ax.kind, ChartAxisKind::Value);
+        assert!(val_ax.major_gridlines);
+        assert_eq!(val_ax.cross_between.as_deref(), Some("between"));
+        assert_eq!(val_ax.scaling.orientation.as_deref(), Some("minMax"));
+
+        let legend = space.chart.legend.as_ref().unwrap();
+        assert_eq!(legend.position.as_deref(), Some("b"));
+        assert!(legend.deleted_entries.is_empty());
+        let ext = space.external_data.as_ref().unwrap();
+        assert_eq!(ext.r_id, "rId1");
+        assert_eq!(ext.auto_update, Some(false));
+    }
+
+    #[test]
+    fn xlsx_chart_space_reserializes_identically() {
+        let xlsx = make_xlsx_with_chart(SAMPLE_CHART_XML);
+        let book = OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
+        let out = OoxmlSerializer::new().serialize_xlsx_book(&book).unwrap();
+
+        // The chart part is regenerated, content-typed and reachable.
+        let cursor = std::io::Cursor::new(&out[..]);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        assert!(zip.by_name("xl/charts/chart1.xml").is_ok());
+        let mut ct = String::new();
+        zip.by_name("[Content_Types].xml").unwrap().read_to_string(&mut ct).unwrap();
+        assert!(
+            ct.contains(r#"<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>"#),
+            "chart content type must be re-declared: {ct}"
+        );
+        let mut rels = String::new();
+        zip.by_name("xl/_rels/workbook.xml.rels").unwrap().read_to_string(&mut rels).unwrap();
+        assert!(
+            rels.contains(r#"Target="charts/chart1.xml""#)
+                && rels.contains("officeDocument/2006/relationships/chart"),
+            "chart relationship must keep the part reachable: {rels}"
+        );
+
+        // Re-parse: the typed graph is identical (round trip, no byte bag).
+        let reparsed = OoxmlParser::new().parse_xlsx_book(&out).unwrap();
+        assert_eq!(reparsed.charts, book.charts, "chart graph must survive the round trip");
+        assert_eq!(
+            reparsed.workbook.sheets[0].name, book.workbook.sheets[0].name,
+            "the workbook still parses beside its charts"
+        );
+    }
+
+    #[test]
+    fn xlsx_chart_serializes_without_input_path() {
+        // A hand-built chart (no package path yet) still lands at
+        // xl/charts/chart1.xml — the wo-sheet edit path.
+        let mut space = ChartSpace::default();
+        space.chart.plot_area.plots.push(ChartPlot {
+            kind: ChartPlotKind::Line,
+            series: vec![ChartSeries {
+                idx: 0,
+                order: 0,
+                name: Some("t".to_string()),
+                smooth: Some(true),
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
+        let book = XlsxBook {
+            workbook: XlsxWorkbook::default(),
+            charts: vec![XlsxChartPart {
+                path: String::new(),
+                space,
+            }],
+        };
+        let out = OoxmlSerializer::new().serialize_xlsx_book(&book).unwrap();
+        let xml = {
+            let cursor = std::io::Cursor::new(&out[..]);
+            let mut zip = zip::ZipArchive::new(cursor).unwrap();
+            let mut xml = String::new();
+            zip.by_name("xl/charts/chart1.xml").unwrap().read_to_string(&mut xml).unwrap();
+            xml
+        };
+        assert!(xml.contains("<c:lineChart>"), "plot group must re-emit: {xml}");
+        assert!(xml.contains(r#"<c:smooth val="1"/>"#));
+        assert!(xml.contains("<c:v>t</c:v>"), "series name must re-emit");
+    }
+
+    #[test]
+    fn xlsx_chart_bridge_json_matches_wo_chart_contract() {
+        let xlsx = make_xlsx_with_chart(SAMPLE_CHART_XML);
+        let book = OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
+        let space = &book.charts[0].space;
+
+        assert_eq!(space.chart_kind_name(), "column");
+        let value = space.to_chart_model_value();
+        assert_eq!(value["kind"], "column", "bridge kind must be the ChartKind name");
+        let series = value["series"].as_array().unwrap();
+        assert_eq!(series.len(), 1);
+        assert_eq!(series[0]["name"], "Revenue");
+        assert_eq!(series[0]["color"], "#4472C4");
+        assert_eq!(series[0]["visible"], true);
+        let data = series[0]["data"].as_array().unwrap();
+        assert_eq!(data.len(), 4, "cached values become data points");
+        assert_eq!(data[0]["value"], 120.5);
+        assert_eq!(data[0]["category"], "Q1");
+        assert_eq!(data[2]["value"], 98.0);
+        assert_eq!(series[0]["trendlines"][0]["kind"], "linear");
+        assert_eq!(series[0]["trendlines"][0]["show_r_squared"], true);
+        assert_eq!(series[0]["error_bars"][0]["value_type"], "percentage");
+        assert_eq!(series[0]["error_bars"][0]["value"], 5.0);
+        let axes = value["axes"].as_array().unwrap();
+        assert_eq!(axes.len(), 2);
+        assert_eq!(axes[0]["position"], "bottom", "catAx at axPos=b maps to bottom");
+        assert_eq!(axes[0]["title"], "Quarter");
+        assert_eq!(axes[1]["position"], "left", "valAx at axPos=l maps to left");
+        assert_eq!(axes[1]["show_gridlines"], true);
+        assert_eq!(value["legend"]["position"], "bottom");
+        assert_eq!(value["title"]["text"], "Quarterly Revenue");
+        assert_eq!(value["data_labels"]["visible"], true);
+        assert_eq!(value["data_labels"]["show_value"], true);
+        assert_eq!(value["data_labels"]["show_category"], false);
     }
 }

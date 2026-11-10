@@ -202,6 +202,31 @@ impl OoxmlSerializer {
 
     /// Serialize an XlsxWorkbook to XLSX bytes (ZIP archive).
     pub fn serialize_xlsx(&self, wb: &XlsxWorkbook) -> Result<Vec<u8>, anyhow::Error> {
+        self.write_xlsx_zip(wb, &[])
+    }
+
+    /// Serialize a workbook plus its typed chart parts (ORM-06): the
+    /// `xl/charts/chartN.xml` parts are regenerated from the typed graph —
+    /// with their content-type overrides and workbook relationships — so a
+    /// chart survives a round trip without byte-bag passthrough.
+    pub fn serialize_xlsx_with_charts(
+        &self,
+        wb: &XlsxWorkbook,
+        charts: &[XlsxChartPart],
+    ) -> Result<Vec<u8>, anyhow::Error> {
+        self.write_xlsx_zip(wb, charts)
+    }
+
+    /// Serialize a whole parsed book (workbook model + chart parts).
+    pub fn serialize_xlsx_book(&self, book: &XlsxBook) -> Result<Vec<u8>, anyhow::Error> {
+        self.write_xlsx_zip(&book.workbook, &book.charts)
+    }
+
+    fn write_xlsx_zip(
+        &self,
+        wb: &XlsxWorkbook,
+        charts: &[XlsxChartPart],
+    ) -> Result<Vec<u8>, anyhow::Error> {
         let buf = Cursor::new(Vec::new());
         let mut zip = zip::ZipWriter::new(buf);
 
@@ -209,7 +234,7 @@ impl OoxmlSerializer {
             .compression_method(zip::CompressionMethod::Deflated);
 
         // 1. [Content_Types].xml
-        let content_types = self.build_xlsx_content_types(wb);
+        let content_types = self.build_xlsx_content_types(wb, charts);
         zip.start_file("[Content_Types].xml", options)?;
         zip.write_all(content_types.as_bytes())?;
 
@@ -224,7 +249,7 @@ impl OoxmlSerializer {
         zip.write_all(wb_xml.as_bytes())?;
 
         // 4. xl/_rels/workbook.xml.rels
-        let wb_rels = self.build_xlsx_workbook_rels(wb);
+        let wb_rels = self.build_xlsx_workbook_rels(wb, charts);
         zip.start_file("xl/_rels/workbook.xml.rels", options)?;
         zip.write_all(wb_rels.as_bytes())?;
 
@@ -243,6 +268,18 @@ impl OoxmlSerializer {
                 zip.start_file(&rels_path, options)?;
                 zip.write_all(rels_xml.as_bytes())?;
             }
+        }
+
+        // 5b. The typed chart parts (ORM-06): regenerated chartN.xml.
+        for (i, chart) in charts.iter().enumerate() {
+            let path = if chart.path.is_empty() {
+                format!("xl/charts/chart{}.xml", i + 1)
+            } else {
+                chart.path.clone()
+            };
+            let chart_xml = self.build_xlsx_chart_xml(chart);
+            zip.start_file(&path, options)?;
+            zip.write_all(chart_xml.as_bytes())?;
         }
 
         // 6. xl/sharedStrings.xml
@@ -3400,7 +3437,7 @@ impl OoxmlSerializer {
 
     // --- XLSX helpers ---
 
-    fn build_xlsx_content_types(&self, wb: &XlsxWorkbook) -> String {
+    fn build_xlsx_content_types(&self, wb: &XlsxWorkbook, charts: &[XlsxChartPart]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -3420,6 +3457,20 @@ impl OoxmlSerializer {
         if !wb.shared_strings.is_empty() {
             xml.push_str(r#"
   <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>"#);
+        }
+        // ORM-06: the regenerated chart parts.
+        for (i, chart) in charts.iter().enumerate() {
+            let part = if chart.path.is_empty() {
+                format!("/xl/charts/chart{}.xml", i + 1)
+            } else {
+                format!("/{}", chart.path)
+            };
+            xml.push_str(&format!(
+                r#"
+  <Override PartName="{}" ContentType="{}"/>"#,
+                escape_xml(&part),
+                XLSX_CHART_CONTENT_TYPE
+            ));
         }
         xml.push_str("\n</Types>");
         xml
@@ -3518,7 +3569,7 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_xlsx_workbook_rels(&self, wb: &XlsxWorkbook) -> String {
+    fn build_xlsx_workbook_rels(&self, wb: &XlsxWorkbook, charts: &[XlsxChartPart]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
@@ -3551,6 +3602,28 @@ impl OoxmlSerializer {
   <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>"#,
             rel_id,
         ));
+        rel_id += 1;
+        // ORM-06: chart parts stay reachable in the regenerated package —
+        // each chart gets a workbook-level relationship to its part.
+        for (i, chart) in charts.iter().enumerate() {
+            let target = if chart.path.is_empty() {
+                format!("charts/chart{}.xml", i + 1)
+            } else {
+                chart
+                    .path
+                    .strip_prefix("xl/")
+                    .map(|t| t.to_string())
+                    .unwrap_or_else(|| chart.path.clone())
+            };
+            xml.push_str(&format!(
+                r#"
+  <Relationship Id="rId{}" Type="{}" Target="{}"/>"#,
+                rel_id,
+                XLSX_CHART_REL_TYPE,
+                escape_xml(&target),
+            ));
+            rel_id += 1;
+        }
         xml.push_str("\n</Relationships>");
         xml
     }
@@ -4142,6 +4215,117 @@ impl OoxmlSerializer {
         xml
     }
 
+    /// Regenerate `xl/charts/chartN.xml` from the typed ChartSpace graph
+    /// (ORM-06). All children are emitted in ECMA-376 schema order so the
+    /// part stays valid and a re-parse yields the identical model.
+    fn build_xlsx_chart_xml(&self, part: &XlsxChartPart) -> String {
+        let space = &part.space;
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"
+              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+              xmlns:s="http://schemas.openxmlformats.org/spreadsheetml/2006/main">"#,
+        );
+        if let Some(v) = space.date_1904 {
+            push_chart_bool(&mut xml, 1, "date1904", v);
+        }
+        if let Some(ref v) = space.lang {
+            push_chart_str(&mut xml, 1, "lang", v);
+        }
+        if let Some(v) = space.rounded_corners {
+            push_chart_bool(&mut xml, 1, "roundedCorners", v);
+        }
+
+        let chart = &space.chart;
+        xml.push_str("\n  <c:chart>");
+        if let Some(ref title) = chart.title {
+            push_chart_title(&mut xml, 2, title);
+        }
+        if let Some(v) = chart.auto_title_deleted {
+            push_chart_bool(&mut xml, 2, "autoTitleDeleted", v);
+        }
+
+        // c:plotArea — layout, plot groups, then axes (schema order).
+        let pa = &chart.plot_area;
+        xml.push_str("\n    <c:plotArea>");
+        match pa.layout {
+            None => xml.push_str("\n      <c:layout/>"),
+            Some(ref layout) => {
+                xml.push_str("\n      <c:layout>\n        <c:manualLayout>");
+                for (name, v) in [("x", layout.x), ("y", layout.y), ("w", layout.w), ("h", layout.h)] {
+                    if let Some(v) = v {
+                        push_chart_num(&mut xml, 5, name, v);
+                    }
+                }
+                xml.push_str("\n        </c:manualLayout>\n      </c:layout>");
+            }
+        }
+        for plot in &pa.plots {
+            push_chart_plot(&mut xml, plot);
+        }
+        for axis in &pa.axes {
+            push_chart_axis(&mut xml, axis);
+        }
+        if pa.show_data_table == Some(true) {
+            xml.push_str("\n      <c:dTable/>");
+        }
+        xml.push_str("\n    </c:plotArea>");
+
+        if let Some(ref legend) = chart.legend {
+            xml.push_str("\n    <c:legend>");
+            if let Some(ref pos) = legend.position {
+                push_chart_str(&mut xml, 3, "legendPos", pos);
+            }
+            for idx in &legend.deleted_entries {
+                xml.push_str(&format!(
+                    "\n      <c:legendEntry>\n        <c:idx val=\"{}\"/>\n        <c:delete val=\"1\"/>\n      </c:legendEntry>",
+                    idx
+                ));
+            }
+            if let Some(v) = legend.overlay {
+                push_chart_bool(&mut xml, 3, "overlay", v);
+            }
+            xml.push_str("\n    </c:legend>");
+        }
+        if let Some(v) = chart.plot_vis_only {
+            push_chart_bool(&mut xml, 2, "plotVisOnly", v);
+        }
+        if let Some(ref v) = chart.disp_blanks_as {
+            push_chart_str(&mut xml, 2, "dispBlanksAs", v);
+        }
+        if let Some(v) = chart.show_dlbls_over_max {
+            push_chart_bool(&mut xml, 2, "showDLblsOverMax", v);
+        }
+        xml.push_str("\n  </c:chart>");
+
+        if let Some(ref ext) = space.external_data {
+            xml.push_str(&format!(
+                "\n  <c:externalData r:id=\"{}\">",
+                escape_xml(&ext.r_id)
+            ));
+            if let Some(v) = ext.auto_update {
+                push_chart_bool(&mut xml, 2, "autoUpdate", v);
+            }
+            xml.push_str("\n  </c:externalData>");
+        }
+        if let Some(ref print_settings) = space.print_settings {
+            xml.push_str("\n  <c:printSettings>");
+            if let Some(ref hf) = print_settings.header_footer {
+                push_chart_header_footer(&mut xml, hf);
+            }
+            if let Some(ref margins) = print_settings.page_margins {
+                xml.push_str(&format!(
+                    "\n    <s:pageMargins left=\"{}\" right=\"{}\" top=\"{}\" bottom=\"{}\" header=\"{}\" footer=\"{}\" />",
+                    margins.left, margins.right, margins.top, margins.bottom, margins.header, margins.footer
+                ));
+            }
+            xml.push_str("\n  </c:printSettings>");
+        }
+        xml.push_str("\n</c:chartSpace>");
+        xml
+    }
+
     fn build_xlsx_shared_strings(&self, strings: &[String]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -4696,6 +4880,574 @@ fn escape_xml(s: &str) -> String {
         }
     }
     out
+}
+
+// --- ORM-06: DrawingML chart XML emission helpers ---
+
+/// Render an f64 the way OOXML caches store numbers (no trailing `.0`).
+fn chart_num_str(v: f64) -> String {
+    if v.fract() == 0.0 && v.abs() < 1e15 {
+        format!("{}", v as i64)
+    } else {
+        format!("{}", v)
+    }
+}
+
+/// `<c:<name> val="<bool>"/>` at the given indent.
+fn push_chart_bool(xml: &mut String, indent: usize, name: &str, v: bool) {
+    push_chart_str(xml, indent, name, if v { "1" } else { "0" });
+}
+
+/// `<c:<name> val="<text>"/>` at the given indent.
+fn push_chart_str(xml: &mut String, indent: usize, name: &str, v: &str) {
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!("\n{}<c:{} val=\"{}\"/>", pad, name, escape_xml(v)));
+}
+
+/// `<c:<name> val="<number>"/>` at the given indent.
+fn push_chart_num(xml: &mut String, indent: usize, name: &str, v: f64) {
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!(
+        "\n{}<c:{} val=\"{}\"/>",
+        pad,
+        name,
+        chart_num_str(v)
+    ));
+}
+
+/// A `c:title` with a rich text body (or an auto-title marker when the
+/// title text is absent).
+fn push_chart_title(xml: &mut String, indent: usize, title: &ChartTitleNode) {
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!("\n{}<c:title>", pad));
+    if title.ref_formula.is_some() || title.text.is_some() {
+        xml.push_str("\n    <c:tx>");
+        if let Some(ref formula) = title.ref_formula {
+            xml.push_str(&format!(
+                "\n      <c:strRef>\n        <c:f>{}</c:f>\n        <c:strCache>\n          <c:ptCount val=\"1\"/>\n          <c:pt idx=\"0\"><c:v>{}</c:v></c:pt>\n        </c:strCache>\n      </c:strRef>",
+                escape_xml(formula),
+                escape_xml(title.text.as_deref().unwrap_or(""))
+            ));
+        } else {
+            xml.push_str(&format!(
+                "\n      <c:rich>\n        <a:bodyPr/>\n        <a:lstStyle/>\n        <a:p>\n          <a:r>\n            <a:t>{}</a:t>\n          </a:r>\n        </a:p>\n      </c:rich>",
+                escape_xml(title.text.as_deref().unwrap_or(""))
+            ));
+        }
+        xml.push_str("\n    </c:tx>");
+    }
+    if let Some(v) = title.overlay {
+        push_chart_bool(xml, indent + 1, "overlay", v);
+    }
+    xml.push_str(&format!("\n{}</c:title>", pad));
+}
+
+/// A solid `c:spPr` carrying the series fill and/or line color.
+fn push_chart_sp_pr(xml: &mut String, indent: usize, fill: &Option<String>, line: &Option<String>) {
+    if fill.is_none() && line.is_none() {
+        return;
+    }
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!("\n{}<c:spPr>", pad));
+    if let Some(ref color) = fill {
+        xml.push_str(&format!(
+            "\n    <a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill>",
+            escape_xml(color)
+        ));
+    }
+    if let Some(ref color) = line {
+        xml.push_str(&format!(
+            "\n    <a:ln>\n      <a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill>\n    </a:ln>",
+            escape_xml(color)
+        ));
+    }
+    xml.push_str(&format!("\n{}</c:spPr>", pad));
+}
+
+/// A `c:dLbls` block in schema order.
+fn push_chart_dlbls(xml: &mut String, indent: usize, dlbls: &ChartDLbls) {
+    let pad = " ".repeat(indent * 2);
+    if dlbls.deleted {
+        push_chart_bool(xml, indent, "delete", true);
+        return;
+    }
+    xml.push_str(&format!("\n{}<c:dLbls>", pad));
+    if let Some(ref code) = dlbls.number_format {
+        let linked = if dlbls.source_linked == Some(true) { "1" } else { "0" };
+        xml.push_str(&format!(
+            "\n    <c:numFmt formatCode=\"{}\" sourceLinked=\"{}\"/>",
+            escape_xml(code),
+            linked
+        ));
+    }
+    if let Some(ref pos) = dlbls.position {
+        push_chart_str(xml, indent + 1, "dLblPos", pos);
+    }
+    push_chart_bool(xml, indent + 1, "showLegendKey", dlbls.show_legend_key);
+    push_chart_bool(xml, indent + 1, "showVal", dlbls.show_val);
+    push_chart_bool(xml, indent + 1, "showCatName", dlbls.show_cat_name);
+    push_chart_bool(xml, indent + 1, "showSerName", dlbls.show_ser_name);
+    push_chart_bool(xml, indent + 1, "showPercent", dlbls.show_percent);
+    push_chart_bool(xml, indent + 1, "showBubbleSize", dlbls.show_bubble_size);
+    xml.push_str(&format!("\n{}</c:dLbls>", pad));
+}
+
+/// The cached points of a `c:strCache` / `c:numCache` body.
+fn push_chart_cache_points(xml: &mut String, indent: usize, points: &[ChartStrPt], values: &[ChartNumPt]) {
+    let pad = " ".repeat(indent * 2);
+    // Interleave string and numeric points by their idx so both caches
+    // render through one ordered loop.
+    let mut idx = 0u32;
+    loop {
+        let str_pt = points.iter().find(|p| p.idx == idx);
+        let num_pt = values.iter().find(|p| p.idx == idx);
+        if str_pt.is_none() && num_pt.is_none() {
+            break;
+        }
+        if let Some(pt) = str_pt {
+            match pt.value {
+                Some(ref v) => xml.push_str(&format!(
+                    "\n{}<c:pt idx=\"{}\"><c:v>{}</c:v></c:pt>",
+                    pad,
+                    pt.idx,
+                    escape_xml(v)
+                )),
+                None => xml.push_str(&format!("\n{}<c:pt idx=\"{}\"/>", pad, pt.idx)),
+            }
+        } else if let Some(pt) = num_pt {
+            match pt.value {
+                Some(v) => xml.push_str(&format!(
+                    "\n{}<c:pt idx=\"{}\"><c:v>{}</c:v></c:pt>",
+                    pad,
+                    pt.idx,
+                    chart_num_str(v)
+                )),
+                None => xml.push_str(&format!("\n{}<c:pt idx=\"{}\"/>", pad, pt.idx)),
+            }
+        }
+        idx += 1;
+    }
+}
+
+/// The `c:strCache` / `c:numCache` element body (formatCode, ptCount, pts).
+fn push_chart_cache(
+    xml: &mut String,
+    indent: usize,
+    cache_name: &str,
+    format_code: &Option<String>,
+    pt_count: &Option<u32>,
+    points: &[ChartStrPt],
+    values: &[ChartNumPt],
+) {
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!("\n{}<{}>", pad, cache_name));
+    if let Some(ref code) = format_code {
+        xml.push_str(&format!(
+            "\n    <c:formatCode>{}</c:formatCode>",
+            escape_xml(code)
+        ));
+    }
+    if let Some(count) = pt_count {
+        xml.push_str(&format!("\n    <c:ptCount val=\"{}\"/>", count));
+    }
+    push_chart_cache_points(xml, indent + 1, points, values);
+    xml.push_str(&format!("\n{}</{}>", pad, cache_name));
+}
+
+/// A `c:cat` data source: strRef/numRef/multiLvlStrRef for ranges and
+/// strLit/numLit for literals (chosen from the parsed shape).
+fn push_chart_categories(xml: &mut String, indent: usize, cat: &ChartCategories) {
+    let pad = " ".repeat(indent * 2);
+    let numeric = cat.format_code.is_some();
+    xml.push_str(&format!("\n{}<c:cat>", pad));
+    match (&cat.formula, cat.multi_level) {
+        (Some(formula), true) => {
+            xml.push_str(&format!(
+                "\n    <c:multiLvlStrRef>\n      <c:f>{}</c:f>",
+                escape_xml(formula)
+            ));
+            push_chart_cache(
+                xml,
+                3,
+                "c:multiLvlStrCache",
+                &None,
+                &cat.pt_count,
+                &cat.points,
+                &[],
+            );
+            xml.push_str("\n    </c:multiLvlStrRef>");
+        }
+        (Some(formula), false) if numeric => {
+            xml.push_str(&format!(
+                "\n    <c:numRef>\n      <c:f>{}</c:f>",
+                escape_xml(formula)
+            ));
+            push_chart_cache(xml, 3, "c:numCache", &cat.format_code, &cat.pt_count, &cat.points, &[]);
+            xml.push_str("\n    </c:numRef>");
+        }
+        (Some(formula), false) => {
+            xml.push_str(&format!(
+                "\n    <c:strRef>\n      <c:f>{}</c:f>",
+                escape_xml(formula)
+            ));
+            push_chart_cache(xml, 3, "c:strCache", &None, &cat.pt_count, &cat.points, &[]);
+            xml.push_str("\n    </c:strRef>");
+        }
+        (None, _) if numeric => {
+            push_chart_cache(xml, 2, "c:numLit", &cat.format_code, &cat.pt_count, &cat.points, &[]);
+        }
+        (None, _) => {
+            push_chart_cache(xml, 2, "c:strLit", &None, &cat.pt_count, &cat.points, &[]);
+        }
+    }
+    xml.push_str(&format!("\n{}</c:cat>", pad));
+}
+
+/// A numeric data source (`c:val`, `c:xVal`, `c:yVal`, `c:bubbleSize`).
+fn push_chart_num_data(xml: &mut String, indent: usize, element: &str, data: &ChartNumData) {
+    let pad = " ".repeat(indent * 2);
+    xml.push_str(&format!("\n{}<c:{}>", pad, element));
+    let str_points: Vec<ChartStrPt> = Vec::new();
+    if let Some(ref formula) = data.formula {
+        xml.push_str(&format!(
+            "\n    <c:numRef>\n      <c:f>{}</c:f>",
+            escape_xml(formula)
+        ));
+        push_chart_cache(
+            xml,
+            3,
+            "c:numCache",
+            &data.format_code,
+            &data.pt_count,
+            &str_points,
+            &data.points,
+        );
+        xml.push_str("\n    </c:numRef>");
+    } else {
+        push_chart_cache(
+            xml,
+            2,
+            "c:numLit",
+            &data.format_code,
+            &data.pt_count,
+            &str_points,
+            &data.points,
+        );
+    }
+    xml.push_str(&format!("\n{}</c:{}>", pad, element));
+}
+
+/// One `c:ser` in schema order for its plot kind.
+fn push_chart_series(xml: &mut String, indent: usize, plot: &ChartPlot, ser: &ChartSeries) {
+    let pad = " ".repeat(indent * 2);
+    let shows_marker = matches!(
+        plot.kind,
+        ChartPlotKind::Line | ChartPlotKind::Scatter | ChartPlotKind::Radar
+    );
+    let scatter_like = matches!(plot.kind, ChartPlotKind::Scatter | ChartPlotKind::Bubble);
+    xml.push_str(&format!("\n{}<c:ser>", pad));
+    push_chart_num(xml, indent + 1, "idx", f64::from(ser.idx));
+    push_chart_num(xml, indent + 1, "order", f64::from(ser.order));
+    if ser.name.is_some() || ser.name_formula.is_some() {
+        xml.push_str("\n    <c:tx>");
+        if let Some(ref formula) = ser.name_formula {
+            xml.push_str(&format!(
+                "\n      <c:strRef>\n        <c:f>{}</c:f>\n        <c:strCache>\n          <c:ptCount val=\"1\"/>\n          <c:pt idx=\"0\"><c:v>{}</c:v></c:pt>\n        </c:strCache>\n      </c:strRef>",
+                escape_xml(formula),
+                escape_xml(ser.name.as_deref().unwrap_or(""))
+            ));
+        } else {
+            xml.push_str(&format!(
+                "\n      <c:v>{}</c:v>",
+                escape_xml(ser.name.as_deref().unwrap_or(""))
+            ));
+        }
+        xml.push_str("\n    </c:tx>");
+    }
+    push_chart_sp_pr(xml, indent + 1, &ser.fill_color, &ser.line_color);
+    if shows_marker {
+        if let Some(ref marker) = ser.marker {
+            xml.push_str("\n    <c:marker>");
+            if let Some(ref symbol) = marker.symbol {
+                push_chart_str(xml, 3, "symbol", symbol);
+            }
+            if let Some(size) = marker.size {
+                push_chart_num(xml, 3, "size", f64::from(size));
+            }
+            if let Some(ref color) = marker.fill_color {
+                xml.push_str(&format!(
+                    "\n      <c:spPr><a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill></c:spPr>",
+                    escape_xml(color)
+                ));
+            }
+            xml.push_str("\n    </c:marker>");
+        }
+    }
+    if let Some(ref dlbls) = ser.d_lbls {
+        push_chart_dlbls(xml, indent + 1, dlbls);
+    }
+    for tl in &ser.trendlines {
+        xml.push_str(&format!("\n{}  <c:trendline>", pad));
+        if let Some(ref name) = tl.name {
+            push_chart_str(xml, indent + 2, "name", name);
+        }
+        push_chart_str(xml, indent + 2, "trendlineType", &tl.trendline_type);
+        if let Some(order) = tl.order {
+            push_chart_num(xml, indent + 2, "order", f64::from(order));
+        }
+        if let Some(period) = tl.period {
+            push_chart_num(xml, indent + 2, "period", f64::from(period));
+        }
+        if let Some(v) = tl.forward {
+            push_chart_num(xml, indent + 2, "forward", v);
+        }
+        if let Some(v) = tl.backward {
+            push_chart_num(xml, indent + 2, "backward", v);
+        }
+        if let Some(v) = tl.intercept {
+            push_chart_num(xml, indent + 2, "intercept", v);
+        }
+        if tl.disp_r_sq {
+            push_chart_bool(xml, indent + 2, "dispRSqr", true);
+        }
+        if tl.disp_eq {
+            push_chart_bool(xml, indent + 2, "dispEq", true);
+        }
+        xml.push_str(&format!("\n{}  </c:trendline>", pad));
+    }
+    for eb in &ser.error_bars {
+        xml.push_str(&format!("\n{}  <c:errBars>", pad));
+        push_chart_str(xml, indent + 2, "errDir", &eb.direction);
+        push_chart_str(xml, indent + 2, "errBarType", &eb.err_bar_type);
+        push_chart_str(xml, indent + 2, "errValType", &eb.err_val_type);
+        if eb.no_end_cap {
+            push_chart_bool(xml, indent + 2, "noEndCap", true);
+        }
+        if let Some(v) = eb.value {
+            xml.push_str(&format!(
+                "\n{}    <c:val>\n{}      <c:numLit>\n{}        <c:formatCode>General</c:formatCode>\n{}        <c:ptCount val=\"1\"/>\n{}        <c:pt idx=\"0\"><c:v>{}</c:v></c:pt>\n{}      </c:numLit>\n{}    </c:val>",
+                pad, pad, pad, pad, pad,
+                chart_num_str(v),
+                pad, pad
+            ));
+        }
+        xml.push_str(&format!("\n{}  </c:errBars>", pad));
+    }
+    if let Some(ref cat) = ser.categories {
+        push_chart_categories(xml, indent + 1, cat);
+    }
+    if let Some(ref values) = ser.values {
+        push_chart_num_data(xml, indent + 1, "val", values);
+    }
+    if scatter_like {
+        if let Some(ref x) = ser.x_values {
+            push_chart_num_data(xml, indent + 1, "xVal", x);
+        }
+        if let Some(ref y) = ser.y_values {
+            push_chart_num_data(xml, indent + 1, "yVal", y);
+        }
+    }
+    if let Some(ref sizes) = ser.bubble_sizes {
+        push_chart_num_data(xml, indent + 1, "bubbleSize", sizes);
+    }
+    if let Some(v) = ser.bubble3_d {
+        push_chart_bool(xml, indent + 1, "bubble3D", v);
+    }
+    if let Some(v) = ser.smooth {
+        push_chart_bool(xml, indent + 1, "smooth", v);
+    }
+    xml.push_str(&format!("\n{}</c:ser>", pad));
+}
+
+/// One plot group (`c:barChart`, `c:lineChart`, …) in schema order.
+fn push_chart_plot(xml: &mut String, plot: &ChartPlot) {
+    let element = plot.element_name();
+    xml.push_str(&format!("\n      <c:{}>", element));
+    match plot.kind {
+        ChartPlotKind::Bar | ChartPlotKind::Column => {
+            push_chart_str(xml, 4, "barDir", plot.bar_dir_attr().unwrap_or("bar"));
+        }
+        ChartPlotKind::OfPie => {
+            if let Some(ref t) = plot.of_pie_type {
+                push_chart_str(xml, 4, "ofPieType", t);
+            }
+        }
+        ChartPlotKind::Radar => {
+            push_chart_str(xml, 4, "radarStyle", plot.radar_style.as_deref().unwrap_or("standard"));
+        }
+        ChartPlotKind::Scatter => {
+            push_chart_str(xml, 4, "scatterStyle", plot.scatter_style.as_deref().unwrap_or("lineMarker"));
+        }
+        _ => {}
+    }
+    if let Some(ref grouping) = plot.grouping {
+        push_chart_str(xml, 4, "grouping", grouping);
+    }
+    if let Some(v) = plot.vary_colors {
+        push_chart_bool(xml, 4, "varyColors", v);
+    }
+    for ser in &plot.series {
+        push_chart_series(xml, 3, plot, ser);
+    }
+    if let Some(ref dlbls) = plot.d_lbls {
+        push_chart_dlbls(xml, 3, dlbls);
+    }
+    if let Some(v) = plot.gap_width {
+        push_chart_num(xml, 3, "gapWidth", f64::from(v));
+    }
+    if let Some(v) = plot.overlap {
+        xml.push_str(&format!(
+            "\n        <c:overlap val=\"{}\"/>",
+            v
+        ));
+    }
+    if let Some(v) = plot.first_slice_ang {
+        push_chart_num(xml, 3, "firstSliceAng", f64::from(v));
+    }
+    if let Some(v) = plot.hole_size {
+        push_chart_num(xml, 3, "holeSize", f64::from(v));
+    }
+    if plot.ser_lines == Some(true) {
+        xml.push_str("\n        <c:serLines/>");
+    }
+    if plot.marker == Some(true) {
+        push_chart_bool(xml, 3, "marker", true);
+    }
+    if plot.smooth == Some(true) {
+        push_chart_bool(xml, 3, "smooth", true);
+    }
+    if let Some(v) = plot.bubble3_d {
+        push_chart_bool(xml, 3, "bubble3D", v);
+    }
+    for ax_id in &plot.ax_ids {
+        push_chart_num(xml, 3, "axId", f64::from(*ax_id));
+    }
+    xml.push_str(&format!("\n      </c:{}>", element));
+}
+
+/// One axis (`c:catAx` / `c:valAx` / `c:dateAx` / `c:serAx`).
+fn push_chart_axis(xml: &mut String, axis: &ChartAxis) {
+    let element = match axis.kind {
+        ChartAxisKind::Category => "catAx",
+        ChartAxisKind::Value => "valAx",
+        ChartAxisKind::Date => "dateAx",
+        ChartAxisKind::Series => "serAx",
+    };
+    xml.push_str(&format!("\n      <c:{}>", element));
+    push_chart_num(xml, 4, "axId", f64::from(axis.ax_id));
+    xml.push_str("\n        <c:scaling>");
+    if let Some(v) = axis.scaling.log_base {
+        push_chart_num(xml, 5, "logBase", v);
+    }
+    if let Some(ref o) = axis.scaling.orientation {
+        push_chart_str(xml, 5, "orientation", o);
+    }
+    if let Some(v) = axis.scaling.max {
+        push_chart_num(xml, 5, "max", v);
+    }
+    if let Some(v) = axis.scaling.min {
+        push_chart_num(xml, 5, "min", v);
+    }
+    xml.push_str("\n        </c:scaling>");
+    if let Some(v) = axis.delete {
+        push_chart_bool(xml, 4, "delete", v);
+    }
+    if let Some(ref pos) = axis.ax_pos {
+        push_chart_str(xml, 4, "axPos", pos);
+    }
+    if axis.major_gridlines {
+        xml.push_str("\n        <c:majorGridlines/>");
+    }
+    if axis.minor_gridlines {
+        xml.push_str("\n        <c:minorGridlines/>");
+    }
+    if let Some(ref title) = axis.title {
+        push_chart_title(
+            xml,
+            4,
+            &ChartTitleNode {
+                text: Some(title.clone()),
+                ref_formula: None,
+                overlay: Some(false),
+            },
+        );
+    }
+    if let Some(ref code) = axis.number_format {
+        let linked = if axis.number_format_source_linked == Some(true) { "1" } else { "0" };
+        xml.push_str(&format!(
+            "\n        <c:numFmt formatCode=\"{}\" sourceLinked=\"{}\"/>",
+            escape_xml(code),
+            linked
+        ));
+    }
+    if let Some(ref mark) = axis.major_tick_mark {
+        push_chart_str(xml, 4, "majorTickMark", mark);
+    }
+    if let Some(ref mark) = axis.minor_tick_mark {
+        push_chart_str(xml, 4, "minorTickMark", mark);
+    }
+    if let Some(ref pos) = axis.tick_label_position {
+        push_chart_str(xml, 4, "tickLblPos", pos);
+    }
+    push_chart_num(xml, 4, "crossAx", f64::from(axis.cross_ax));
+    if let Some(ref crosses) = axis.crosses {
+        push_chart_str(xml, 4, "crosses", crosses);
+    }
+    if let Some(v) = axis.crosses_at {
+        push_chart_num(xml, 4, "crossesAt", v);
+    }
+    if let Some(ref v) = axis.cross_between {
+        push_chart_str(xml, 4, "crossBetween", v);
+    }
+    if let Some(v) = axis.major_unit {
+        push_chart_num(xml, 4, "majorUnit", v);
+    }
+    if let Some(v) = axis.minor_unit {
+        push_chart_num(xml, 4, "minorUnit", v);
+    }
+    if let Some(v) = axis.auto {
+        push_chart_bool(xml, 4, "auto", v);
+    }
+    if let Some(ref v) = axis.label_alignment {
+        push_chart_str(xml, 4, "lblAlgn", v);
+    }
+    if let Some(v) = axis.label_offset {
+        push_chart_num(xml, 4, "lblOffset", f64::from(v));
+    }
+    if let Some(v) = axis.no_multi_level_labels {
+        push_chart_bool(xml, 4, "noMultiLvlLbl", v);
+    }
+    xml.push_str(&format!("\n      </c:{}>", element));
+}
+
+/// A chart print-settings header/footer (`s:` spreadsheetml namespace).
+fn push_chart_header_footer(xml: &mut String, hf: &XlsxHeaderFooter) {
+    xml.push_str("\n    <s:headerFooter");
+    if hf.different_odd_even {
+        xml.push_str(" differentOddEven=\"1\"");
+    }
+    if hf.different_first {
+        xml.push_str(" differentFirst=\"1\"");
+    }
+    xml.push_str(">");
+    for (name, text) in [
+        ("oddHeader", &hf.odd_header),
+        ("oddFooter", &hf.odd_footer),
+        ("evenHeader", &hf.even_header),
+        ("evenFooter", &hf.even_footer),
+        ("firstHeader", &hf.first_header),
+        ("firstFooter", &hf.first_footer),
+    ] {
+        if let Some(t) = text {
+            xml.push_str(&format!(
+                "\n      <s:{}>{}</s:{}>",
+                name,
+                escape_xml(t),
+                name
+            ));
+        }
+    }
+    xml.push_str("\n    </s:headerFooter>");
 }
 
 /// Assign a relationship id to every externally-targeted hyperlink of a

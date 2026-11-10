@@ -1037,8 +1037,9 @@ fn gap_unmanaged_parts_roundtrip() {
 }
 
 /// Build a minimal valid xlsx zip around hand-written parts (ORM-06: lets
-/// a test drive worksheet print/hyperlink parts end to end).
-fn xlsx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
+/// a test drive worksheet print/hyperlink parts end to end), with extra
+/// `[Content_Types].xml` Overrides (e.g. for chart parts).
+fn xlsx_from_parts_with_types(parts: &[(&str, &str)], overrides: &[(&str, &str)]) -> Vec<u8> {
     use std::io::Write;
     use zip::write::SimpleFileOptions;
     let mut buf = Vec::new();
@@ -1046,14 +1047,22 @@ fn xlsx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
         zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
             .unwrap();
-        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        let mut ct = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-</Types>"#)
-            .unwrap();
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>"#,
+        );
+        for (part, content_type) in overrides {
+            ct.push_str(&format!(
+                "\n  <Override PartName=\"{}\" ContentType=\"{}\"/>",
+                part, content_type
+            ));
+        }
+        ct.push_str("\n</Types>");
+        zip.write_all(ct.as_bytes()).unwrap();
         zip.start_file("_rels/.rels", SimpleFileOptions::default())
             .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -1082,6 +1091,11 @@ fn xlsx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
         zip.finish().unwrap();
     }
     buf
+}
+
+/// Same fixture without extra content-type overrides.
+fn xlsx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
+    xlsx_from_parts_with_types(parts, &[])
 }
 
 #[test]
@@ -1262,6 +1276,229 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
             "synthesized rel {rid} -> {target} missing: {rels3}"
         );
     }
+}
+
+/// A realistic Excel-style `c:chartSpace` (ORM-06): clustered columns with
+/// two series, category/value axes, a linear trendline and y error bars.
+const XLSX_CHART_XML: &str = r##"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:s="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <c:lang val="en-US"/>
+  <c:roundedCorners val="0"/>
+  <c:chart>
+    <c:title>
+      <c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Quarterly Revenue</a:t></a:r></a:p></c:rich></c:tx>
+      <c:overlay val="0"/>
+    </c:title>
+    <c:autoTitleDeleted val="0"/>
+    <c:plotArea>
+      <c:layout/>
+      <c:barChart>
+        <c:barDir val="col"/>
+        <c:grouping val="clustered"/>
+        <c:varyColors val="0"/>
+        <c:ser>
+          <c:idx val="0"/>
+          <c:order val="0"/>
+          <c:tx><c:strRef><c:f>Sheet1!$B$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Revenue</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></c:spPr>
+          <c:cat><c:strRef><c:f>Sheet1!$A$2:$A$5</c:f><c:strCache><c:ptCount val="4"/><c:pt idx="0"><c:v>Q1</c:v></c:pt><c:pt idx="1"><c:v>Q2</c:v></c:pt><c:pt idx="2"><c:v>Q3</c:v></c:pt><c:pt idx="3"><c:v>Q4</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:f>Sheet1!$B$2:$B$5</c:f><c:numCache><c:formatCode>#,##0.00</c:formatCode><c:ptCount val="4"/><c:pt idx="0"><c:v>120.5</c:v></c:pt><c:pt idx="1"><c:v>135.25</c:v></c:pt><c:pt idx="2"><c:v>98</c:v></c:pt><c:pt idx="3"><c:v>142</c:v></c:pt></c:numCache></c:numRef></c:val>
+        </c:ser>
+        <c:ser>
+          <c:idx val="1"/>
+          <c:order val="1"/>
+          <c:tx><c:strRef><c:f>Sheet1!$C$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Costs</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:spPr><a:solidFill><a:srgbClr val="ED7D31"/></a:solidFill></c:spPr>
+          <c:dLbls>
+            <c:dLblPos val="outEnd"/>
+            <c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/>
+          </c:dLbls>
+          <c:trendline>
+            <c:trendlineType val="linear"/>
+            <c:dispRSqr val="1"/>
+            <c:dispEq val="1"/>
+          </c:trendline>
+          <c:errBars>
+            <c:errDir val="y"/>
+            <c:errBarType val="both"/>
+            <c:errValType val="percentage"/>
+            <c:val><c:numLit><c:formatCode>General</c:formatCode><c:ptCount val="1"/><c:pt idx="0"><c:v>5</c:v></c:pt></c:numLit></c:val>
+          </c:errBars>
+          <c:cat><c:strRef><c:f>Sheet1!$A$2:$A$5</c:f><c:strCache><c:ptCount val="4"/><c:pt idx="0"><c:v>Q1</c:v></c:pt><c:pt idx="1"><c:v>Q2</c:v></c:pt><c:pt idx="2"><c:v>Q3</c:v></c:pt><c:pt idx="3"><c:v>Q4</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:f>Sheet1!$C$2:$C$5</c:f><c:numCache><c:formatCode>#,##0.00</c:formatCode><c:ptCount val="4"/><c:pt idx="0"><c:v>80</c:v></c:pt><c:pt idx="1"><c:v>92.5</c:v></c:pt><c:pt idx="2"><c:v>77</c:v></c:pt><c:pt idx="3"><c:v>101</c:v></c:pt></c:numCache></c:numRef></c:val>
+        </c:ser>
+        <c:gapWidth val="150"/>
+        <c:overlap val="-27"/>
+        <c:axId val="111111111"/>
+        <c:axId val="222222222"/>
+      </c:barChart>
+      <c:catAx>
+        <c:axId val="111111111"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="b"/>
+        <c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Quarter</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>
+        <c:numFmt formatCode="General" sourceLinked="1"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:tickLblPos val="nextTo"/>
+        <c:crossAx val="222222222"/>
+        <c:crosses val="autoZero"/>
+        <c:auto val="1"/>
+        <c:lblAlgn val="ctr"/>
+        <c:lblOffset val="100"/>
+        <c:noMultiLvlLbl val="0"/>
+      </c:catAx>
+      <c:valAx>
+        <c:axId val="222222222"/>
+        <c:scaling><c:orientation val="minMax"/></c:scaling>
+        <c:delete val="0"/>
+        <c:axPos val="l"/>
+        <c:majorGridlines/>
+        <c:numFmt formatCode="General" sourceLinked="1"/>
+        <c:majorTickMark val="out"/>
+        <c:minorTickMark val="none"/>
+        <c:tickLblPos val="nextTo"/>
+        <c:crossAx val="111111111"/>
+        <c:crosses val="autoZero"/>
+        <c:crossBetween val="between"/>
+      </c:valAx>
+    </c:plotArea>
+    <c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>
+    <c:plotVisOnly val="1"/>
+    <c:dispBlanksAs val="gap"/>
+  </c:chart>
+</c:chartSpace>"##;
+
+#[test]
+fn gap_xlsx_chart_roundtrip() {
+    // ORM-06 (PORT-PLAN Phase 2 item 5): an xlsx with a clustered column
+    // chart + category/value axes previously kept its chart ONLY as an
+    // opaque extra_parts byte bag — no model, so an edit silently produced
+    // a book without the chart. The chart part must now parse into the
+    // typed ChartSpace graph (series values, chart kind, axes), survive a
+    // serializer round trip (regenerated chartN.xml + content type +
+    // workbook relationship), and re-parse to the identical graph — so the
+    // chart is owned, not bagged.
+    let sheet_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Quarter</v></c><c r="B1" t="str"><v>Revenue</v></c><c r="C1" t="str"><v>Costs</v></c></row>
+    <row r="2"><c r="A2" t="str"><v>Q1</v></c><c r="B2"><v>120.5</v></c><c r="C2"><v>80</v></c></row>
+    <row r="3"><c r="A3" t="str"><v>Q2</v></c><c r="B3"><v>135.25</v></c><c r="C3"><v>92.5</v></c></row>
+  </sheetData>
+</worksheet>"#;
+    let xlsx = xlsx_from_parts_with_types(
+        &[
+            ("xl/worksheets/sheet1.xml", sheet_xml),
+            ("xl/charts/chart1.xml", XLSX_CHART_XML),
+        ],
+        &[(
+            "/xl/charts/chart1.xml",
+            "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
+        )],
+    );
+
+    // 1. Parse -> typed ChartSpace graph (not a byte bag).
+    let book = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
+    assert_eq!(book.workbook.sheets.len(), 1);
+    assert_eq!(book.charts.len(), 1, "the chart part must parse into a typed graph");
+    let space = &book.charts[0].space;
+    assert_eq!(space.chart_kind_name(), "column", "barDir=col is a column chart");
+    let plot = space.primary_plot().unwrap();
+    assert_eq!(plot.kind, wo_ooxml::model::ChartPlotKind::Column);
+    assert_eq!(plot.grouping.as_deref(), Some("clustered"));
+    assert_eq!(plot.gap_width, Some(150));
+    assert_eq!(plot.overlap, Some(-27));
+    assert_eq!(plot.ax_ids, vec![111111111, 222222222]);
+
+    let series = &plot.series;
+    assert_eq!(series.len(), 2, "both series must parse");
+    assert_eq!(series[0].name.as_deref(), Some("Revenue"));
+    let values = series[0].values.as_ref().unwrap();
+    let nums: Vec<f64> = values.points.iter().filter_map(|p| p.value).collect();
+    assert_eq!(nums, vec![120.5, 135.25, 98.0, 142.0], "series values must survive");
+    assert_eq!(values.format_code.as_deref(), Some("#,##0.00"));
+    let cats = series[0].categories.as_ref().unwrap();
+    let labels: Vec<&str> = cats.points.iter().filter_map(|p| p.value.as_deref()).collect();
+    assert_eq!(labels, vec!["Q1", "Q2", "Q3", "Q4"], "cached categories must survive");
+    assert_eq!(series[1].name.as_deref(), Some("Costs"));
+    assert!(series[1].trendlines[0].disp_eq, "trendline flags must survive");
+    assert_eq!(
+        series[1].error_bars[0].value,
+        Some(5.0),
+        "error-bar magnitude must come out of the numLit cache"
+    );
+
+    let axes = &space.chart.plot_area.axes;
+    assert_eq!(axes.len(), 2, "category + value axes must parse");
+    assert_eq!(axes[0].kind, wo_ooxml::model::ChartAxisKind::Category);
+    assert_eq!(axes[0].ax_pos.as_deref(), Some("b"));
+    assert_eq!(axes[0].title.as_deref(), Some("Quarter"));
+    assert_eq!(axes[1].kind, wo_ooxml::model::ChartAxisKind::Value);
+    assert_eq!(axes[1].ax_pos.as_deref(), Some("l"));
+    assert!(axes[1].major_gridlines);
+
+    // 2. wo-chart bridge: the same graph as the editable Chart JSON.
+    let chart_json = space.to_chart_json();
+    assert!(chart_json.contains(r#""kind":"column""#), "bridge kind: {chart_json}");
+    assert!(chart_json.contains(r#""name":"Revenue""#), "bridge series name: {chart_json}");
+    assert!(chart_json.contains("120.5"), "bridge series values: {chart_json}");
+    assert!(chart_json.contains(r#""category":"Q1""#), "bridge categories: {chart_json}");
+    assert!(chart_json.contains(r#""position":"bottom""#), "bridge catAx: {chart_json}");
+    assert!(chart_json.contains(r#""position":"left""#), "bridge valAx: {chart_json}");
+
+    // 3. Serialize: chartN.xml regenerated + content type + workbook rel.
+    let reser = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx_book(&book)
+        .unwrap();
+    let ct = zip_entry(&reser, "[Content_Types].xml");
+    assert!(
+        ct.contains(r#"<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>"#),
+        "chart content type must be re-declared: {ct}"
+    );
+    let rels = zip_entry(&reser, "xl/_rels/workbook.xml.rels");
+    assert!(
+        rels.contains("officeDocument/2006/relationships/chart") && rels.contains(r#"Target="charts/chart1.xml""#),
+        "chart relationship must keep the part reachable: {rels}"
+    );
+    let chart2 = zip_entry(&reser, "xl/charts/chart1.xml");
+    assert!(chart2.contains("<c:barChart>"), "plot group must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:barDir val="col"/>"#), "bar direction must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:gapWidth val="150"/>"#), "gapWidth must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:overlap val="-27"/>"#), "overlap must re-emit: {chart2}");
+    assert!(chart2.contains("<c:v>Revenue</c:v>"), "series names must re-emit: {chart2}");
+    assert!(chart2.contains("<c:v>142</c:v>"), "cached values must re-emit: {chart2}");
+    assert!(chart2.contains("<c:v>Q4</c:v>"), "cached categories must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:majorGridlines/>"#), "valAx gridlines must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:legendPos val="b"/>"#), "legend must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:errValType val="percentage"/>"#), "error bars must re-emit: {chart2}");
+    assert!(chart2.contains(r#"<c:trendlineType val="linear"/>"#), "trendlines must re-emit: {chart2}");
+
+    // 4. Re-parse: the typed graph is identical, so the chart survives an
+    //    edit round trip without any extra_parts passthrough.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&reser).unwrap();
+    assert_eq!(
+        reparsed.charts, book.charts,
+        "chart graph must survive the round trip byte-bag-free"
+    );
+    assert_eq!(
+        reparsed.workbook.sheets[0].name, book.workbook.sheets[0].name,
+        "the workbook model still parses beside its charts"
+    );
+    // The regenerated package carries only serializer-owned parts — the
+    // chart needs no bag companion.
+    let names: Vec<String> = {
+        let cursor = std::io::Cursor::new(&reser[..]);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        (0..zip.len())
+            .filter_map(|i| zip.by_index(i).ok().map(|f| f.name().to_string()))
+            .collect()
+    };
+    assert!(
+        names.iter().any(|n| n == "xl/charts/chart1.xml"),
+        "the owned chart part must be in the package: {names:?}"
+    );
 }
 
 #[test]
