@@ -602,18 +602,26 @@
          real feature by giving it an id + a command handler. -->
     <div class="ribbon-page" data-tab="draw" role="group" aria-label="Draw ribbon" data-i18n-aria-label="Tab.Draw">
     <div class="ribbon-row">
-    <!-- CHROME2 census mapping: census-oo-deep.json tab "draw" lists Select + pen/highlighter/eraser stacks + Eraser at y=68 (row 1); WO-only mode/color/thickness/group controls moved to row 2 -->
-    <button type="button" id="btn-ink-select" data-cmd="inkSelect" data-i18n="Draw.Select" title="Select" data-i18n-title="Draw.SelectTitle" aria-pressed="false">Select</button>
-    <button type="button" id="btn-ink-pen" data-cmd="toggleInk" data-value="pen" data-i18n="Draw.Pen" title="Pen" data-i18n-title="Draw.PenTitle" aria-pressed="false">Pen</button>
-    <button type="button" id="btn-ink-highlighter" data-cmd="toggleInk" data-value="highlighter" data-i18n="Draw.Highlighter" title="Highlighter" data-i18n-title="Draw.HighlighterTitle" aria-pressed="false">Highlighter</button>
-    <button type="button" id="btn-ink-eraser" data-cmd="toggleInk" data-value="eraser" data-i18n="Draw.Eraser" title="Eraser" data-i18n-title="Draw.EraserTitle" aria-pressed="false">Eraser</button>
+    <!-- OO 9.4 draw tab (census + live probe 2026-11-10): Auswahl | Stift | Stift 2 | Textmarker | Radierer —
+         icon-only buttons with the OO pictograms; WO extras (mode/color/thickness/group/merge) on row 2 -->
+    <div class="rb-group" role="group" aria-label="Ink tools">
+    <button type="button" id="btn-ink-select" data-cmd="inkSelect" title="Auswahl" data-i18n-title="Draw.SelectTitle" aria-label="Auswahl" data-i18n-aria-label="Draw.Select" aria-pressed="false"><span class="oo-ic oo-ic-big oo-ic-btn-select" aria-hidden="true"></span></button>
+    <button type="button" id="btn-ink-pen" data-cmd="toggleInk" data-value="pen" title="Stift" data-i18n-title="Draw.PenTitle" aria-label="Stift" data-i18n-aria-label="Draw.Pen" aria-pressed="false"><span class="oo-ic oo-ic-big oo-ic-btn-pen-tool" aria-hidden="true"></span></button>
+    <button type="button" id="btn-ink-pen-2" data-cmd="toggleInk" data-value="pen2" title="Stift 2" data-i18n-title="Draw.Pen2Title" aria-label="Stift 2" data-i18n-aria-label="Draw.Pen2" aria-pressed="false"><span class="oo-ic oo-ic-big oo-ic-btn-pen-tool" aria-hidden="true"></span></button>
+    <button type="button" id="btn-ink-highlighter" data-cmd="toggleInk" data-value="highlighter" title="Textmarker" data-i18n-title="Draw.HighlighterTitle" aria-label="Textmarker" data-i18n-aria-label="Draw.Highlighter" aria-pressed="false"><span class="oo-ic oo-ic-big oo-ic-btn-highlighter-tool" aria-hidden="true"></span></button>
+    <button type="button" id="btn-ink-eraser" data-cmd="toggleInk" data-value="eraser" title="Radierer" data-i18n-title="Draw.EraserTitle" aria-label="Radierer" data-i18n-aria-label="Draw.Eraser" aria-pressed="false"><span class="oo-ic oo-ic-big oo-ic-btn-eraser" aria-hidden="true"></span></button>
+    </div>
+    </div>
     </div>
     <div class="ribbon-row">
+    <div class="rb-group" role="group" aria-label="Stifteinstellungen">
     <button type="button" id="btn-ink-draw" data-cmd="inkMode" data-i18n="Draw.Mode" title="Toggle drawing mode" data-i18n-title="Draw.ModeTitle" aria-pressed="false">Draw</button>
     <button type="button" id="btn-ink-color" data-cmd="inkColor" data-i18n="Draw.Ink" title="Ink color" data-i18n-title="Draw.InkTitle">Ink color</button>
     <button type="button" id="btn-ink-thickness" data-cmd="inkThickness" data-i18n="Draw.InkThickness" title="Ink thickness" data-i18n-title="Draw.InkThicknessTitle">Ink thickness</button>
     <button type="button" id="btn-group" data-i18n="Draw.Group" title="Group selected strokes" aria-label="Group selected strokes">Group</button>
     <button type="button" id="btn-mergeshapes" data-i18n="Draw.Merge" title="Merge selected strokes into one" aria-label="Merge selected strokes">Merge shapes</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
     </div>
     </div>
     <div class="ribbon-page" data-tab="layout" role="group" aria-label="Layout ribbon">
@@ -1343,8 +1351,9 @@
   <footer class="statusbar">
     <div class="sb-cluster sb-cluster-left">
       <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf">Page 1 of 0</span>
-      <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount">0 words</button>
-      <button type="button" id="sb-doc-spell" class="sb status-meta" role="status" aria-pressed="false" title="Check spelling" aria-label="Check spelling" data-i18n="Statusbar.Spellcheck" data-i18n-title="Statusbar.Spellcheck" data-i18n-aria-label="Statusbar.Spellcheck">Spell</button>
+      <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount"><span class="oo-ic oo-ic-btn-word-count" aria-hidden="true"></span><span id="sb-word-count-label" aria-hidden="true"></span>0 words</button>
+      <!-- OO parity: persistent save-state indicator ("Alle Änderungen gespeichert") -->
+      <span id="sb-save-state" class="sb status-meta" role="status" aria-live="polite" data-i18n="Statusbar.Saved">All changes saved</span>
     </div>
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
     <!-- Offline indicator: shown (with the edit queue armed) whenever a save
@@ -1352,22 +1361,29 @@
     <span id="offline-indicator" class="offline-indicator" role="status" aria-live="polite" hidden data-i18n="Status.OfflineIndicator">Offline</span>
     <span class="spacer"></span>
     <div class="sb-cluster sb-cluster-right">
+      <!-- OO 9.4 statusbar order (live census): lang caption ▾ | doclang | spell | review |
+           multiple-pages | fit-page | fit-width | zoom- | slider | zoom+ | Zoom N% -->
       <!-- Language indicator (OO parity): mirrors the document/spellcheck
            language; click opens the settings dialog language row. -->
-      <button type="button" id="sb-lang" class="sb status-meta" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Document language" aria-label="Document language">English (United States)</button>
-      <!-- Document language select: drives spellcheck + the editor lang attr. -->
-      <select id="doc-lang" class="sb" title="Document language" aria-label="Document language">
+      <button type="button" id="sb-lang" class="sb status-meta" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Document language" aria-label="Document language">English (United States) <span aria-hidden="true">▾</span></button>
+      <!-- Document language select: drives spellcheck + the editor lang attr
+           (visually folded into sb-lang; kept in the DOM for the settings flow). -->
+      <select id="doc-lang" class="sb sb-hidden-native" title="Document language" aria-label="Document language">
         <option value="en-US" selected>English (United States)</option>
         <option value="en-GB">English (United Kingdom)</option>
         <option value="de-DE">Deutsch (Deutschland)</option>
       </select>
-      <button class="sb menu-trigger caret-btn" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
-      <button class="sb" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
-      <button id="sb-track-changes" class="sb" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges">Track Changes</button>
+      <button class="sb menu-trigger caret-btn sb-hidden-native" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
+      <button type="button" id="sb-doc-lang" class="sb sb-icon" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Dokumentsprache" aria-label="Document language"><span class="oo-ic oo-ic-btn-ic-doclang" aria-hidden="true"></span></button>
+      <button type="button" id="sb-doc-spell" class="sb sb-icon" role="status" aria-live="polite" aria-pressed="false" title="Check spelling" aria-label="Check spelling" data-i18n="Statusbar.Spellcheck" data-i18n-title="Statusbar.Spellcheck" data-i18n-aria-label="Statusbar.Spellcheck"><span class="oo-ic oo-ic-btn-ic-docspell" aria-hidden="true"></span></button>
+      <button id="sb-track-changes" class="sb sb-icon" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges"><span class="oo-ic oo-ic-btn-ic-review" aria-hidden="true"></span></button>
+      <button class="sb sb-icon" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false"><span class="oo-ic oo-ic-btn-multiple-pages" aria-hidden="true"></span></button>
+      <button class="sb sb-icon" id="btn-zoom-fitpage" data-i18n-title="View.FitPage" data-i18n-aria-label="View.FitPage" title="Fit to page" aria-label="Fit to page"><span class="oo-ic oo-ic-btn-ic-zoomtopage" aria-hidden="true"></span></button>
+      <button class="sb sb-zoom-square" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width" aria-pressed="false"><span class="oo-ic oo-ic-btn-ic-zoomtowidth" aria-hidden="true"></span></button>
       <span class="sb-sep" aria-hidden="true"></span>
-      <!-- Zoom cluster: − / slider / + / fit / %. The slider is the live zoom
+      <!-- Zoom cluster: − / slider / + / %. The slider is the live zoom
            control (50%..200%, matches applyZoom). -->
-      <button class="sb sb-zoom-square" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
+      <button class="sb sb-zoom-square" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><span class="oo-ic oo-ic-btn-zoomdown" aria-hidden="true"></span></button>
       <!-- CHROME5-POLISH-ACCENTS: the slider is the live zoom control
            (50%..200%, matches applyZoom); id sb-zoom-slider, aria-label
            i18n'd (Statusbar.ZoomSlider) so the label localizes. -->
@@ -1375,9 +1391,8 @@
       <input type="range" id="sb-zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
              title="Zoom" aria-label="Zoom slider" data-i18n-aria-label="Statusbar.ZoomSlider">
       </span>
-      <button class="sb sb-boxed" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
-      <button class="sb sb-zoom-square" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
-      <button class="sb" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
+      <button class="sb sb-zoom-square" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><span class="oo-ic oo-ic-btn-zoomup" aria-hidden="true"></span></button>
+      <button class="sb sb-zoom-square sb-hidden-native" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
       <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
     </div>
   </footer>

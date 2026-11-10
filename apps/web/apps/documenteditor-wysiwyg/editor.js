@@ -653,6 +653,9 @@
       // A save reached the host: any queued offline snapshot is superseded.
       clearOfflineQueue();
       setStatus(t("Status.Saved"));
+      // OO parity statusbar: persistent save-state chip ("Alle Änderungen
+      // gespeichert") mirrors the OO statusbar save indicator.
+      { const s = document.getElementById("sb-save-state"); if (s) s.textContent = t("Statusbar.Saved"); }
       // PTS-T3 (HintManager): transient save confirmation via WoHints —
       // the toast tier of the hint service (auto-dismisses, once per save).
       if (window.WoHints) window.WoHints.hintToast(t("Hints.SavedText"));
@@ -1614,7 +1617,17 @@
     if (cmd === "allowEditRange") { applyEditableRangeCommand(value); return; }
     if (cmd === "toggleSameAsPrev") { toggleSameAsPrevCommand(); return; }
     if (cmd === "browsePlugins") { browsePlugins(); return; }
-    if (cmd === "toggleInk") { toggleInk(value); return; }
+    if (cmd === "toggleInk") {
+      // OO 9.4 draw-tab pen presets: "Stift 2" applies the saved preset-2
+      // (red, thicker) before entering pen mode, like OO's second pen slot.
+      if (value === "pen2") {
+        inkColor = "#FF0000";
+        inkThickness = 6;
+        if (inkCtx) inkCtx.strokeStyle = inkColor;
+      }
+      toggleInk(value === "pen2" ? "pen" : value);
+      return;
+    }
     if (cmd === "inkMode") { setInkMode(value); return; }
     if (cmd === "inkSelect") { inkSelect(); return; }
     if (cmd === "readAloud") { readAloud(); return; }
@@ -1956,8 +1969,10 @@
           const blk = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
           active = !!(blk && blk.style.direction === "rtl");
         } else if (cmd === "toggleInk") {
-          // Ink tool buttons reflect the active tool (pen/highlighter/eraser).
-          active = inkMode === (btn.dataset.value || null);
+          // Ink tool buttons reflect the active tool (pen/highlighter/eraser);
+          // the "Stift 2" preset slot maps to pen mode (OO pen-slot parity).
+          const inkV = btn.dataset.value === "pen2" ? "pen" : btn.dataset.value;
+          active = inkMode === (inkV || null);
         } else if (cmd === "inkMode") {
           // Draw master toggle is active while any ink tool is engaged.
           active = !!inkMode;
@@ -11978,6 +11993,17 @@
     zoomLevel = Math.min(2, Math.max(0.5, avail / 830));
     applyZoom();
   });
+  // OO parity (btn-ic-zoomtopage): fit the WHOLE page — page height drives
+  // the scale so both edges fit, not just the width.
+  const zoomFitPageBtn = document.getElementById("btn-zoom-fitpage");
+  if (zoomFitPageBtn) zoomFitPageBtn.addEventListener("click", () => {
+    const page = editor.querySelector(".wo-page, [class*=page]") || editor;
+    const ph = page.scrollHeight || 1123;
+    const availH = window.innerHeight - 200;
+    const availW = window.innerWidth - 96;
+    zoomLevel = Math.min(2, Math.max(0.5, Math.min(availH / ph, availW / 830)));
+    applyZoom();
+  });
   // Ctrl/Cmd+wheel zooms the page in 10% steps (the mouse equivalent of
   // the zoom buttons / Ctrl+Minus|Plus). passive:false so preventDefault()
   // can stop the browser's own page-zoom gesture.
@@ -13520,8 +13546,16 @@
     const chars = (editor.innerText || "").replace(/\n/g, "").length;
     const el = document.getElementById("sb-word-count");
     if (el) {
+      // OO parity chrome: icon span + ONE live text node (the i18n applier
+      // re-appends text after element children; keep the same shape here).
+      const label = el.querySelector("#sb-word-count-label");
+      const wordsTpl = t("Statusbar.WordsLabel") || "{n}";
+      const txt = wordsTpl.replace("{n}", String(words));
+      [...el.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
+      el.appendChild(document.createTextNode(" " + txt));
+      if (label) label.textContent = ""; // hidden span kept for hooks
       const tpl = t("Statusbar.WordsCount") || "Words: {n} · Characters: {c}";
-      el.textContent = tpl.replace("{n}", String(words)).replace("{c}", String(chars));
+      el.title = tpl.replace("{n}", String(words)).replace("{c}", String(chars));
     }
     // CHROME4-BACKSTAGE-DEEP: the backstage Info pane counters read the
     // same computation as the statusbar cluster.
