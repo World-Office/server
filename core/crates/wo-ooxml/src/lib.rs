@@ -15,15 +15,18 @@ mod style_chain_tests;
 
 pub use model::builtin_theme_presets;
 pub use model::{
-    Bounds, ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme,
-    GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat, PictureShape,
-    PlaceholderShape, PptxPresentation, PptxStyleReference, PptxTableStyle, PptxTableStyleBorder,
-    PptxTableStylePart, PptxTableStyles, ShadowEffect, Slide, SlideBodyProperties, SlideLayout,
-    SlideMaster, SlideParagraph, SlideShape, SlideSize, SlideTextBody, SlideTextFit, TableCell,
-    TableColumn, TableRow, TableShape, TextBody, TextBullet, TextBoxShape, Theme, ThemeColor,
-    ThemeFont, ThemePreset, XlsxBrk, XlsxConditionalFormatKind, XlsxConditionalFormatRule,
-    XlsxConditionalFormatting, XlsxColorScale, XlsxCfColor, XlsxCfvo, XlsxDataBar, XlsxDxf,
-    XlsxHeaderFooter, XlsxHyperlink, XlsxIconSet, XlsxPageMargins, XlsxPageSetup, XlsxPrintSettings,
+    apply_scheme_color_transforms, Bounds, ClrMap, ColorScheme, ConnectorShape,
+    ConnectorShapeType, EffectList, Fill, FmtScheme, FontScheme, GradientFill, GradientKind,
+    GradientStop, OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape,
+    PptxPresentation, PptxStyleReference, PptxTableStyle, PptxTableStyleBorder,
+    PptxTableStylePart, PptxTableStyles, SchemeClr, SchemeClrTransform, ShadowEffect, Slide,
+    SlideBodyProperties, SlideLayout, SlideMaster, SlideParagraph, SlideShape, SlideSize,
+    SlideTextBody, SlideTextFit, TableCell, TableColumn, TableRow, TableShape, TextBody,
+    TextBullet, TextBoxShape, Theme, ThemeColor, ThemeColorRef, ThemeEffectStyle, ThemeFillStyle,
+    ThemeFont, ThemeGradientStop, ThemeLineStyle, ThemePreset, ThemeSystemColor, XlsxBrk,
+    XlsxConditionalFormatKind, XlsxConditionalFormatRule, XlsxConditionalFormatting, XlsxColorScale,
+    XlsxCfColor, XlsxCfvo, XlsxDataBar, XlsxDxf, XlsxHeaderFooter, XlsxHyperlink, XlsxIconSet,
+    XlsxPageMargins, XlsxPageSetup, XlsxPrintSettings,
 };
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;

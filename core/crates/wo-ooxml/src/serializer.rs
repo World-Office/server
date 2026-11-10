@@ -3076,9 +3076,12 @@ impl OoxmlSerializer {
         xml.push_str(&self.build_theme_font_xml("minorFont", &theme.font_scheme.minor_font));
         xml.push_str("\n    </a:fontScheme>");
 
-        // Format scheme (placeholder)
-        xml.push_str(
-            r#"
+        // Format scheme: emit the parsed style tables when present, else the
+        // minimal placeholder (a:fmtScheme is schema-required for a:theme).
+        match &theme.format_scheme {
+            Some(fs) => xml.push_str(&self.build_fmt_scheme_xml(fs)),
+            None => xml.push_str(
+                r#"
     <a:fmtScheme name="none">
       <a:fillStyleLst>
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
@@ -3101,10 +3104,236 @@ impl OoxmlSerializer {
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
       </a:bgFillStyleLst>
     </a:fmtScheme>"#,
-        );
+            ),
+        }
 
         xml.push_str("\n  </a:themeElements>\n</a:theme>");
         xml
+    }
+
+    /// Serialize a parsed `a:fmtScheme` (fill/line/effect/bg-fill tables).
+    fn build_fmt_scheme_xml(&self, fs: &FmtScheme) -> String {
+        let mut xml = format!(
+            "\n    <a:fmtScheme name=\"{}\">",
+            escape_xml(&fs.name)
+        );
+        // The schema requires exactly three entries per table; empty tables
+        // fall back to the minimal solid-white placeholder triple so the
+        // output stays schema-valid.
+        xml.push_str("\n      <a:fillStyleLst>");
+        for style in fs.fill_styles.iter() {
+            xml.push_str(&self.build_fill_style_xml(style, 6));
+        }
+        for _ in fs.fill_styles.len()..3 {
+            xml.push_str(&self.build_fill_style_xml(&ThemeFillStyle::default(), 6));
+        }
+        xml.push_str("\n      </a:fillStyleLst>");
+
+        xml.push_str("\n      <a:lnStyleLst>");
+        for style in fs.line_styles.iter() {
+            xml.push_str(&self.build_line_style_xml(style, 6));
+        }
+        for _ in fs.line_styles.len()..3 {
+            xml.push_str(&self.build_line_style_xml(&ThemeLineStyle::default(), 6));
+        }
+        xml.push_str("\n      </a:lnStyleLst>");
+
+        xml.push_str("\n      <a:effectStyleLst>");
+        for style in fs.effect_styles.iter() {
+            match &style.raw {
+                // Verbatim capture from the source document: lossless.
+                Some(raw) => xml.push_str(&format!("\n        <a:effectStyle>{}</a:effectStyle>", raw)),
+                // Effects are modeled shallowly (presence only), so styles
+                // without a capture re-emit an empty a:effectLst marker.
+                None => xml.push_str("\n        <a:effectStyle><a:effectLst/> </a:effectStyle>"),
+            }
+        }
+        for _ in fs.effect_styles.len().max(3)..3 {
+            xml.push_str("\n        <a:effectStyle><a:effectLst/> </a:effectStyle>");
+        }
+        xml.push_str("\n      </a:effectStyleLst>");
+
+        xml.push_str("\n      <a:bgFillStyleLst>");
+        for style in fs.bg_fill_styles.iter() {
+            xml.push_str(&self.build_fill_style_xml(style, 8));
+        }
+        for _ in fs.bg_fill_styles.len()..3 {
+            xml.push_str(&self.build_fill_style_xml(&ThemeFillStyle::default(), 8));
+        }
+        xml.push_str("\n      </a:bgFillStyleLst>");
+
+        xml.push_str("\n    </a:fmtScheme>");
+        xml
+    }
+
+    /// One entry of a fill style list (`indent` = leading spaces).
+    fn build_fill_style_xml(&self, style: &ThemeFillStyle, indent: usize) -> String {
+        let pad = " ".repeat(indent);
+        match style {
+            ThemeFillStyle::NoFill => format!("\n{}<a:noFill/>", pad),
+            ThemeFillStyle::GroupFill => format!("\n{}<a:grpFill/>", pad),
+            ThemeFillStyle::Blip => format!("\n{}<a:blipFill/>", pad),
+            ThemeFillStyle::Solid(color) => format!(
+                "\n{}<a:solidFill>{} </a:solidFill>",
+                pad,
+                self.build_theme_color_ref_xml(color)
+            ),
+            ThemeFillStyle::Gradient(stops) => {
+                let mut xml = format!("\n{}<a:gradFill>\n{}  <a:gsLst>", pad, pad);
+                for stop in stops {
+                    let pos = stop
+                        .position
+                        .map(|p| (p * 100_000.0).round() as i64)
+                        .unwrap_or(0);
+                    xml.push_str(&format!(
+                        "\n{}    <a:gs pos=\"{}\">{} </a:gs>",
+                        pad,
+                        pos,
+                        self.build_theme_color_ref_xml(&stop.color)
+                    ));
+                }
+                xml.push_str(&format!("\n{}  </a:gsLst>\n{}</a:gradFill>", pad, pad));
+                xml
+            }
+            ThemeFillStyle::Pattern {
+                preset,
+                foreground,
+                background,
+            } => {
+                let mut xml = format!(
+                    "\n{}<a:pattFill prst=\"{}\">",
+                    pad,
+                    escape_xml(preset.as_deref().unwrap_or("solid"))
+                );
+                if let Some(fg) = foreground {
+                    xml.push_str(&format!(
+                        "\n{}  <a:fgClr>{} </a:fgClr>",
+                        pad,
+                        self.build_theme_color_ref_xml(fg)
+                    ));
+                }
+                if let Some(bg) = background {
+                    xml.push_str(&format!(
+                        "\n{}  <a:bgClr>{} </a:bgClr>",
+                        pad,
+                        self.build_theme_color_ref_xml(bg)
+                    ));
+                }
+                xml.push_str(&format!("\n{}</a:pattFill>", pad));
+                xml
+            }
+            ThemeFillStyle::Unknown => format!(
+                "\n{}<a:solidFill><a:srgbClr val=\"FFFFFF\"/></a:solidFill>",
+                pad
+            ),
+        }
+    }
+
+    /// One entry of the line style list.
+    fn build_line_style_xml(&self, style: &ThemeLineStyle, indent: usize) -> String {
+        let pad = " ".repeat(indent);
+        let mut attrs = String::new();
+        if let Some(w) = style.width {
+            attrs.push_str(&format!(" w=\"{}\"", w));
+        }
+        if let Some(ref cap) = style.cap {
+            attrs.push_str(&format!(" cap=\"{}\"", escape_xml(cap)));
+        }
+        if let Some(ref cmpd) = style.compound {
+            attrs.push_str(&format!(" cmpd=\"{}\"", escape_xml(cmpd)));
+        }
+        if let Some(ref algn) = style.alignment {
+            attrs.push_str(&format!(" algn=\"{}\"", escape_xml(algn)));
+        }
+        let mut xml = format!("\n{}<a:ln{}>", pad, attrs);
+        if let Some(ref fill) = style.fill {
+            xml.push_str(&self.build_fill_style_xml(fill, indent + 2));
+        } else {
+            xml.push_str(&format!(
+                "\n{}  <a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill>",
+                pad
+            ));
+        }
+        if let Some(ref dash) = style.dash {
+            xml.push_str(&format!(
+                "\n{}  <a:prstDash val=\"{}\"/>",
+                pad,
+                escape_xml(dash)
+            ));
+        }
+        if let Some(ref head) = style.head_end {
+            xml.push_str(&format!(
+                "\n{}  <a:headEnd type=\"{}\"/>",
+                pad,
+                escape_xml(head)
+            ));
+        }
+        if let Some(ref tail) = style.tail_end {
+            xml.push_str(&format!(
+                "\n{}  <a:tailEnd type=\"{}\"/>",
+                pad,
+                escape_xml(tail)
+            ));
+        }
+        xml.push_str(&format!("\n{}</a:ln>", pad));
+        xml
+    }
+
+    /// A color reference child: srgbClr / schemeClr / sysClr / prstClr.
+    fn build_theme_color_ref_xml(&self, color: &ThemeColorRef) -> String {
+        if let Some(ref rgb) = color.rgb {
+            return format!("\n        <a:srgbClr val=\"{}\"/>", escape_xml(rgb));
+        }
+        if let Some(ref sys) = color.system {
+            let last = sys
+                .last_clr
+                .as_deref()
+                .map(|c| format!(" lastClr=\"{}\"", escape_xml(c)))
+                .unwrap_or_default();
+            return format!(
+                "\n        <a:sysClr val=\"{}\"{}/>",
+                escape_xml(&sys.val),
+                last
+            );
+        }
+        if let Some(ref prst) = color.preset {
+            return format!("\n        <a:prstClr val=\"{}\"/>", escape_xml(prst));
+        }
+        if let Some(ref scheme) = color.scheme {
+            let mut xml = format!(
+                "\n        <a:schemeClr val=\"{}\">",
+                escape_xml(&scheme.val)
+            );
+            for m in &scheme.modifiers {
+                xml.push_str(&Self::build_scheme_clr_transform_xml(m));
+            }
+            xml.push_str("\n        </a:schemeClr>");
+            return xml;
+        }
+        "\n        <a:srgbClr val=\"FFFFFF\"/>".to_string()
+    }
+
+    fn build_scheme_clr_transform_xml(m: &SchemeClrTransform) -> String {
+        match *m {
+            SchemeClrTransform::Complement => "\n          <a:comp/>".to_string(),
+            SchemeClrTransform::Gray => "\n          <a:gray/>".to_string(),
+            other => {
+                let (tag, val) = match other {
+                    SchemeClrTransform::Tint(v) => ("tint", v),
+                    SchemeClrTransform::Shade(v) => ("shade", v),
+                    SchemeClrTransform::LumMod(v) => ("lumMod", v),
+                    SchemeClrTransform::LumOff(v) => ("lumOff", v),
+                    SchemeClrTransform::Alpha(v) => ("alpha", v),
+                    SchemeClrTransform::AlphaMod(v) => ("alphaMod", v),
+                    SchemeClrTransform::AlphaOff(v) => ("alphaOff", v),
+                    SchemeClrTransform::SatMod(v) => ("satMod", v),
+                    SchemeClrTransform::SatOff(v) => ("satOff", v),
+                    SchemeClrTransform::HueMod(v) => ("hueMod", v),
+                    _ => unreachable!("handled above"),
+                };
+                format!("\n          <a:{} val=\"{}\"/>", tag, val)
+            }
+        }
     }
 
     fn build_theme_font_xml(&self, slot: &str, font: &ThemeFont) -> String {
@@ -3135,8 +3364,26 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_slide_master_xml(&self, _master: &SlideMaster) -> String {
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    fn build_slide_master_xml(&self, master: &SlideMaster) -> String {
+        // p:clrMap remaps scheme slots; emit it after p:cSld (schema order).
+        let cm = &master.clr_map;
+        let clr_map = format!(
+            "  <p:clrMap bg1=\"{}\" tx1=\"{}\" bg2=\"{}\" tx2=\"{}\" accent1=\"{}\" accent2=\"{}\" accent3=\"{}\" accent4=\"{}\" accent5=\"{}\" accent6=\"{}\" hlink=\"{}\" folHlink=\"{}\"/>\n",
+            escape_xml(&cm.bg1),
+            escape_xml(&cm.tx1),
+            escape_xml(&cm.bg2),
+            escape_xml(&cm.tx2),
+            escape_xml(&cm.accent1),
+            escape_xml(&cm.accent2),
+            escape_xml(&cm.accent3),
+            escape_xml(&cm.accent4),
+            escape_xml(&cm.accent5),
+            escape_xml(&cm.accent6),
+            escape_xml(&cm.hlink),
+            escape_xml(&cm.fol_hlink),
+        );
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -3146,8 +3393,9 @@ impl OoxmlSerializer {
       <p:grpSpPr/>
     </p:spTree>
   </p:cSld>
-</p:sldMaster>"#
-            .to_string()
+{} </p:sldMaster>"#,
+            clr_map
+        )
     }
 
     // --- XLSX helpers ---

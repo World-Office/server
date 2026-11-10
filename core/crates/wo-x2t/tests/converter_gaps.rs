@@ -2214,3 +2214,377 @@ fn gap_pptx_textbody_roundtrip() {
         PptxTableStyles::default()
     );
 }
+
+// ---------------------------------------------------------------------------
+// P2B-P02: PPTX theme `a:fmtScheme` + `p:clrMap` — schemeClr (with color
+// transforms) and major/minor font resolution into the theme model (ORM-07
+// ranked gaps: "FmtScheme is the lookup table behind every styleRef" and
+// "master ClrMap + ClrMapOvr -> SchemeClr -> theme ClrScheme ... never
+// resolved").
+// ---------------------------------------------------------------------------
+
+/// Theme fixture: `dk1` as `a:sysClr` (lastClr path), a full `a:fmtScheme`
+/// whose style-table entries reference `a:schemeClr` with lumMod/lumOff/tint
+/// transforms, and major/minor fonts with ea/cs slots.
+const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Default">
+      <a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Default">
+      <a:majorFont>
+        <a:latin typeface="Calibri Light"/>
+        <a:ea typeface="MS Gothic"/>
+        <a:cs typeface="Arial"/>
+      </a:majorFont>
+      <a:minorFont>
+        <a:latin typeface="Calibri"/>
+        <a:ea typeface="MS PGothic"/>
+      </a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Office">
+      <a:fillStyleLst>
+        <a:solidFill>
+          <a:schemeClr val="dk1"><a:tint val="50000"/></a:schemeClr>
+        </a:solidFill>
+        <a:gradFill rotWithShape="1">
+          <a:gsLst>
+            <a:gs pos="0"><a:schemeClr val="accent1"/></a:gs>
+            <a:gs pos="100000"><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:gs>
+          </a:gsLst>
+        </a:gradFill>
+        <a:pattFill prst="ltUpDiag">
+          <a:fgClr><a:schemeClr val="accent2"><a:satMod val="150000"/></a:schemeClr></a:fgClr>
+          <a:bgClr><a:srgbClr val="D9E2F3"/></a:bgClr>
+        </a:pattFill>
+      </a:fillStyleLst>
+      <a:lnStyleLst>
+        <a:ln w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:schemeClr val="lt1"><a:lumMod val="50000"/></a:schemeClr></a:solidFill>
+          <a:prstDash val="sysDot"/>
+          <a:headEnd type="triangle"/>
+          <a:tailEnd type="arrow"/>
+        </a:ln>
+        <a:ln w="6350"><a:solidFill><a:schemeClr val="accent3"/></a:solidFill></a:ln>
+        <a:ln w="19050"><a:solidFill><a:schemeClr val="accent4"/></a:solidFill></a:ln>
+      </a:lnStyleLst>
+      <a:effectStyleLst>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle>
+          <a:effectLst>
+            <a:outerShdw blurRad="40000" dist="23000" dir="5400000">
+              <a:srgbClr val="000000"><a:alpha val="38000"/></a:srgbClr>
+            </a:outerShdw>
+          </a:effectLst>
+        </a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+      </a:effectStyleLst>
+      <a:bgFillStyleLst>
+        <a:solidFill><a:schemeClr val="bg1"/></a:solidFill>
+        <a:noFill/>
+        <a:solidFill><a:schemeClr val="tx2"><a:lumMod val="75000"/><a:lumOff val="25000"/></a:schemeClr></a:solidFill>
+      </a:bgFillStyleLst>
+    </a:fmtScheme>
+  </a:themeElements>
+</a:theme>"#;
+
+/// Slide master with a non-identity `p:clrMap`: `bg2`/`tx2` are deliberately
+/// swapped so a naive identity map cannot pass the test.
+const MASTER_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+             xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+  </p:cSld>
+  <p:clrMap bg1="lt1" tx1="dk1" bg2="dk2" tx2="lt2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+</p:sldMaster>"#;
+
+/// Build a minimal pptx zip carrying theme1.xml + slideMaster1.xml alongside
+/// an empty slide (theme/master are discovered by scanning the archive).
+fn pptx_theme_fixture() -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let slide_xml = r#"<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld><p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+  </p:spTree></p:cSld>
+</p:sld>"#;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+  <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
+  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+        zip.start_file(
+            "ppt/_rels/presentation.xml.rels",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+        zip.start_file(
+            "ppt/presentation.xml",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="12192000" cy="6858000"/>
+  <p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst>
+</p:presentation>"#,
+        )
+        .unwrap();
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+        zip.start_file("ppt/theme/theme1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(THEME_XML.as_bytes()).unwrap();
+        zip.start_file(
+            "ppt/slideMasters/slideMaster1.xml",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(MASTER_XML.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn gap_pptx_theme_roundtrip() {
+    use wo_ooxml::model::{
+        ClrMap, SchemeClr, SchemeClrTransform, ThemeFillStyle, ThemeLineStyle,
+    };
+
+    let data = pptx_theme_fixture();
+    let parser = wo_ooxml::OoxmlParser::new();
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+
+    // 1. The theme parses with a typed FmtScheme (was `Option<String>`).
+    let theme = pres.theme.as_ref().expect("theme part must parse");
+    let fs = theme
+        .format_scheme
+        .as_ref()
+        .expect("fmtScheme must parse into the typed model");
+    assert_eq!(fs.name, "Office");
+    assert_eq!(fs.fill_styles.len(), 3, "solid + gradient + pattern");
+    assert_eq!(fs.line_styles.len(), 3);
+    assert_eq!(fs.effect_styles.len(), 3);
+    assert_eq!(fs.bg_fill_styles.len(), 3);
+
+    // Style table entry 1: solid fill referencing dk1 (sysClr lastClr path
+    // inside the clrScheme) with a 50% tint -> exact mid gray.
+    let ThemeFillStyle::Solid(solid) = &fs.fill_styles[0] else {
+        panic!("fill style 1 must be solidFill");
+    };
+    let scheme = solid.scheme.as_ref().expect("schemeClr reference kept");
+    assert_eq!(scheme.val, "dk1");
+    assert_eq!(scheme.modifiers, vec![SchemeClrTransform::Tint(50000)]);
+    assert_eq!(
+        theme.resolve_scheme_color("dk1", &scheme.modifiers).as_deref(),
+        Some("808080"),
+        "tint 50% over dk1 sysClr/lastClr"
+    );
+
+    // Style table entry 2: gradient with two accent1 stops (untinted +
+    // 50% shade), positions preserved as fractions.
+    let ThemeFillStyle::Gradient(stops) = &fs.fill_styles[1] else {
+        panic!("fill style 2 must be gradFill");
+    };
+    assert_eq!(stops.len(), 2);
+    assert_eq!(stops[0].position, Some(0.0));
+    assert_eq!(stops[1].position, Some(1.0));
+    assert_eq!(stops[0].color.scheme.as_ref().unwrap().val, "accent1");
+    assert_eq!(
+        stops[1].color.scheme.as_ref().unwrap().modifiers,
+        vec![SchemeClrTransform::Shade(50000)]
+    );
+    assert_eq!(
+        theme
+            .resolve_scheme_color("accent1", &[SchemeClrTransform::Shade(50000)])
+            .as_deref(),
+        Some("223962"),
+        "shade is per-channel: 4472C4 * 50% = 223962"
+    );
+
+    // Style table entry 3: pattern fill with fgClr/bgClr.
+    let ThemeFillStyle::Pattern { preset, foreground, background } = &fs.fill_styles[2] else {
+        panic!("fill style 3 must be pattFill");
+    };
+    assert_eq!(preset.as_deref(), Some("ltUpDiag"));
+    assert_eq!(
+        foreground.as_ref().unwrap().scheme.as_ref().unwrap().val,
+        "accent2"
+    );
+    assert_eq!(background.as_ref().unwrap().rgb.as_deref(), Some("D9E2F3"));
+    // satMod is recorded but does not alter the resolved RGB.
+    assert_eq!(
+        foreground
+            .as_ref()
+            .unwrap()
+            .resolve(theme, &ClrMap::default())
+            .as_deref(),
+        Some("ED7D31")
+    );
+
+    // Line styles: width + cap/cmpd/algn attrs, fill, dash, arrow ends.
+    let ln: &ThemeLineStyle = &fs.line_styles[0];
+    assert_eq!(ln.width, Some(12700));
+    assert_eq!(ln.cap.as_deref(), Some("flat"));
+    assert_eq!(ln.compound.as_deref(), Some("sng"));
+    assert_eq!(ln.alignment.as_deref(), Some("ctr"));
+    assert_eq!(ln.dash.as_deref(), Some("sysDot"));
+    assert_eq!(ln.head_end.as_deref(), Some("triangle"));
+    assert_eq!(ln.tail_end.as_deref(), Some("arrow"));
+    assert_eq!(
+        ln.fill.as_ref().unwrap(),
+        &ThemeFillStyle::Solid(wo_ooxml::model::ThemeColorRef {
+            scheme: Some(SchemeClr {
+                val: "lt1".to_string(),
+                modifiers: vec![SchemeClrTransform::LumMod(50000)],
+            }),
+            ..Default::default()
+        }),
+        "lnRef table keeps the schemeClr + transforms"
+    );
+
+    // Effect styles: empty effectLst vs one carrying an outerShdw.
+    assert!(!fs.effect_styles[0].has_effects);
+    assert!(fs.effect_styles[1].has_effects, "outerShdw detected");
+
+    // 2. Master p:clrMap parses (bg2/tx2 deliberately swapped in fixture).
+    let master = pres.slide_masters.first().expect("master part");
+    assert_eq!(master.clr_map.bg2, "dk2");
+    assert_eq!(master.clr_map.tx2, "lt2");
+    assert_eq!(master.clr_map.accent1, "accent1");
+
+    // Scheme resolution goes through the clrMap: tx2 remaps to lt2, not dk2.
+    assert_eq!(
+        theme
+            .resolve_scheme_color_with_clr_map(&master.clr_map, "tx2", &[])
+            .as_deref(),
+        Some("E7E6E6"),
+        "tx2 must resolve through the master clrMap (-> lt2)"
+    );
+    assert_eq!(
+        theme.resolve_scheme_color("tx2", &[]).as_deref(),
+        Some("44546A"),
+        "unmapped tx2 falls through to dk2"
+    );
+    // bg1 -> lt1 (white) per the default map.
+    assert_eq!(
+        theme
+            .resolve_scheme_color_with_clr_map(&master.clr_map, "bg1", &[])
+            .as_deref(),
+        Some("FFFFFF")
+    );
+
+    // 3. Major/minor font resolution (a:fontRef idx="major"/"minor").
+    assert_eq!(theme.major_latin_font(), Some("Calibri Light"));
+    assert_eq!(theme.minor_latin_font(), Some("Calibri"));
+    assert_eq!(theme.resolve_font("major").unwrap().east_asian.as_deref(), Some("MS Gothic"));
+    assert_eq!(theme.resolve_font("minor").unwrap().east_asian.as_deref(), Some("MS PGothic"));
+    assert_eq!(theme.resolve_font("major").unwrap().complex_script.as_deref(), Some("Arial"));
+    assert!(theme.resolve_font("bogus").is_none());
+
+    // 4. Serialize and re-parse: fmtScheme + clrMap survive byte-level
+    //    serialization into ppt/theme/theme1.xml + slideMaster1.xml.
+    let out = wo_ooxml::OoxmlSerializer::new()
+        .serialize_pptx(&pres)
+        .expect("pptx serialization");
+    let theme_blob = String::from_utf8(
+        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
+            .unwrap()
+            .by_name("ppt/theme/theme1.xml")
+            .unwrap()
+            .bytes()
+            .collect::<Result<Vec<u8>, _>>()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(
+        theme_blob.contains("<a:fmtScheme name=\"Office\">"),
+        "parsed fmtScheme must re-emit: {}",
+        &theme_blob[..theme_blob.len().min(6000)]
+    );
+    assert!(theme_blob.contains("<a:schemeClr val=\"dk1\">"));
+    assert!(theme_blob.contains("<a:tint val=\"50000\"/>"));
+    assert!(theme_blob.contains("<a:prstDash val=\"sysDot\"/>"));
+
+    let master_blob = String::from_utf8(
+        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
+            .unwrap()
+            .by_name("ppt/slideMasters/slideMaster1.xml")
+            .unwrap()
+            .bytes()
+            .collect::<Result<Vec<u8>, _>>()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(
+        master_blob.contains("bg2=\"dk2\"") && master_blob.contains("tx2=\"lt2\""),
+        "master clrMap must re-emit: {}",
+        master_blob
+    );
+
+    let cursor2 = std::io::Cursor::new(out.as_slice());
+    let mut archive2 = zip::ZipArchive::new(cursor2).unwrap();
+    let pres2 = parser.parse_pptx(&mut archive2).unwrap().unwrap();
+    let theme2 = pres2.theme.as_ref().expect("theme after roundtrip");
+    let fs2 = theme2
+        .format_scheme
+        .as_ref()
+        .expect("fmtScheme after roundtrip");
+    assert_eq!(fs, fs2, "fmtScheme must round-trip identically");
+    let master2 = pres2.slide_masters.first().expect("master after roundtrip");
+    assert_eq!(master.clr_map, master2.clr_map, "clrMap must round-trip");
+    assert_eq!(theme2.major_latin_font(), Some("Calibri Light"));
+    assert_eq!(theme2.minor_latin_font(), Some("Calibri"));
+}

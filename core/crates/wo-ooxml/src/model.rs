@@ -2915,7 +2915,10 @@ pub struct Theme {
     pub name: String,
     pub color_scheme: ColorScheme,
     pub font_scheme: FontScheme,
-    pub format_scheme: Option<String>,
+    /// Format scheme (`a:fmtScheme`): the fill/line/effect style tables
+    /// referenced by every `a:styleRef`/`a:fillRef`/`a:lnRef`/`a:effectRef`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format_scheme: Option<FmtScheme>,
 }
 
 impl Default for Theme {
@@ -3036,11 +3039,468 @@ pub struct ThemeFont {
     pub complex_script: Option<String>,
 }
 
+/// A themed color reference (`a:schemeClr`): a scheme color token plus the
+/// color transforms applied to it, in document order.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SchemeClr {
+    /// Scheme color token (`val`): dk1/lt1/dk2/lt2/accent1-6/hlink/folHlink
+    /// or the placeholder token `phClr` inside style-table entries.
+    #[serde(default)]
+    pub val: String,
+    /// Color transforms (`a:lumMod`, `a:tint`, `a:shade`, ...).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub modifiers: Vec<SchemeClrTransform>,
+}
+
+/// One color-transform child of `a:schemeClr`/`a:srgbClr`/`a:sysClr`.
+/// Values are stored in 1000ths of a percent, exactly as serialized
+/// (`val="50000"` = 50%).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum SchemeClrTransform {
+    /// `a:tint` — lighten toward white.
+    Tint(i64),
+    /// `a:shade` — darken toward black.
+    Shade(i64),
+    /// `a:lumMod` — scale luminance.
+    LumMod(i64),
+    /// `a:lumOff` — shift luminance toward white.
+    LumOff(i64),
+    /// `a:alpha` — opacity.
+    Alpha(i64),
+    /// `a:alphaMod` — opacity scale.
+    AlphaMod(i64),
+    /// `a:alphaOff` — opacity shift.
+    AlphaOff(i64),
+    /// `a:satMod` — saturation scale.
+    SatMod(i64),
+    /// `a:satOff` — saturation shift.
+    SatOff(i64),
+    /// `a:hueMod` — hue scale.
+    HueMod(i64),
+    /// `a:comp` — complement color (no value).
+    Complement,
+    /// `a:gray` — grayscale conversion (no value).
+    Gray,
+}
+
+/// A concrete color inside a theme style-table entry: either a literal
+/// (`a:srgbClr`), a theme reference (`a:schemeClr`), a system color
+/// (`a:sysClr`), or a preset color (`a:prstClr`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeColorRef {
+    /// `a:srgbClr val` hex color.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rgb: Option<String>,
+    /// `a:schemeClr` themed reference (may itself carry transforms).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme: Option<SchemeClr>,
+    /// `a:sysClr` system color (`val` + `lastClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system: Option<ThemeSystemColor>,
+    /// `a:prstClr val` preset color name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
+}
+
+impl ThemeColorRef {
+    /// Resolve to a concrete hex color using `theme` for scheme lookups and
+    /// `clr_map` for slot remapping. Returns `None` when nothing is set or
+    /// the scheme token is unknown (`phClr` stays unresolved until placed
+    /// against a real color context).
+    pub fn resolve(&self, theme: &Theme, clr_map: &ClrMap) -> Option<String> {
+        if let Some(ref rgb) = self.rgb {
+            return Some(rgb.clone());
+        }
+        if let Some(ref sys) = self.system {
+            return sys.last_clr.clone().or_else(|| Some(sys.val.clone()));
+        }
+        if let Some(ref prst) = self.preset {
+            return preset_color(prst);
+        }
+        self.scheme.as_ref().and_then(|s| {
+            let token = clr_map.map(&s.val);
+            theme.resolve_scheme_color_with_clr_map(clr_map, &token, &s.modifiers)
+        })
+    }
+}
+
+/// `a:sysClr` — an OS-defined color with the last concrete value recorded.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeSystemColor {
+    /// System color name (`window`, `windowText`, ...).
+    #[serde(default)]
+    pub val: String,
+    /// Cached concrete color (`lastClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_clr: Option<String>,
+}
+
+/// A gradient stop inside a theme gradient fill (`a:gs pos` + color).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ThemeGradientStop {
+    /// Stop position as a fraction (0.0–1.0).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<f64>,
+    /// Stop color.
+    pub color: ThemeColorRef,
+}
+
+/// One entry of `a:fillStyleLst` / `a:bgFillStyleLst`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub enum ThemeFillStyle {
+    /// Unrecognized / unparsed fill — kept as a marker so the style index
+    /// stays aligned with the document order.
+    #[default]
+    Unknown,
+    /// `a:noFill`.
+    NoFill,
+    /// `a:grpFill` — inherit from the group.
+    GroupFill,
+    /// `a:blipFill` — image fill (image data lives outside the theme).
+    Blip,
+    /// `a:solidFill`.
+    Solid(ThemeColorRef),
+    /// `a:gradFill` with its `a:gs` stops.
+    Gradient(Vec<ThemeGradientStop>),
+    /// `a:pattFill` with preset pattern + foreground/background colors.
+    Pattern {
+        /// Pattern preset name (`prst`).
+        preset: Option<String>,
+        /// `a:fgClr`.
+        foreground: Option<ThemeColorRef>,
+        /// `a:bgClr`.
+        background: Option<ThemeColorRef>,
+    },
+}
+
+/// One entry of `a:lnStyleLst` — a themed line style.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeLineStyle {
+    /// Line width in EMU (`w`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<i64>,
+    /// Line cap (`cap`): flat/rnd/sys.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cap: Option<String>,
+    /// Compound line type (`cmpd`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compound: Option<String>,
+    /// Line alignment (`algn`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub alignment: Option<String>,
+    /// The line's fill (solid/gradient/...).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<ThemeFillStyle>,
+    /// Dash preset (`a:prstDash val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash: Option<String>,
+    /// Head end type (`a:headEnd type`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub head_end: Option<String>,
+    /// Tail end type (`a:tailEnd type`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail_end: Option<String>,
+}
+
+/// One entry of `a:effectStyleLst`. Effects are modeled shallowly: presence
+/// of a non-empty `a:effectLst` is what `effectRef idx` consumers need. The
+/// raw effect-list XML is kept so serialization stays lossless.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeEffectStyle {
+    /// Whether the style carries a non-empty effect list.
+    #[serde(default)]
+    pub has_effects: bool,
+    /// Raw `a:effectLst` XML (captured verbatim at parse time).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw: Option<String>,
+}
+
+/// `a:fmtScheme` — the theme's style tables: exactly three entries each for
+/// fills, lines, effects and background fills, looked up by `idx` on every
+/// `a:styleRef`/`a:fillRef`/`a:lnRef`/`a:effectRef` (1-based).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct FmtScheme {
+    /// Scheme name (`name`).
+    #[serde(default)]
+    pub name: String,
+    /// `a:fillStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fill_styles: Vec<ThemeFillStyle>,
+    /// `a:lnStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub line_styles: Vec<ThemeLineStyle>,
+    /// `a:effectStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub effect_styles: Vec<ThemeEffectStyle>,
+    /// `a:bgFillStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bg_fill_styles: Vec<ThemeFillStyle>,
+}
+
+/// `p:clrMap` — the slide master's color map: remaps scheme slots for the
+/// slides that follow the master (`bg1`→`lt1` etc. by default). A slide
+/// `a:clrMapOvr` can replace it per slide.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClrMap {
+    pub bg1: String,
+    pub tx1: String,
+    pub bg2: String,
+    pub tx2: String,
+    pub accent1: String,
+    pub accent2: String,
+    pub accent3: String,
+    pub accent4: String,
+    pub accent5: String,
+    pub accent6: String,
+    pub hlink: String,
+    pub fol_hlink: String,
+}
+
+impl Default for ClrMap {
+    fn default() -> Self {
+        Self {
+            bg1: "lt1".to_string(),
+            tx1: "dk1".to_string(),
+            bg2: "lt2".to_string(),
+            tx2: "dk2".to_string(),
+            accent1: "accent1".to_string(),
+            accent2: "accent2".to_string(),
+            accent3: "accent3".to_string(),
+            accent4: "accent4".to_string(),
+            accent5: "accent5".to_string(),
+            accent6: "accent6".to_string(),
+            hlink: "hlink".to_string(),
+            fol_hlink: "folHlink".to_string(),
+        }
+    }
+}
+
+impl ClrMap {
+    /// Map a scheme token through the color map (identity for unknown
+    /// tokens such as `phClr`).
+    pub fn map(&self, token: &str) -> String {
+        match token {
+            "bg1" => self.bg1.clone(),
+            "tx1" => self.tx1.clone(),
+            "bg2" => self.bg2.clone(),
+            "tx2" => self.tx2.clone(),
+            "accent1" => self.accent1.clone(),
+            "accent2" => self.accent2.clone(),
+            "accent3" => self.accent3.clone(),
+            "accent4" => self.accent4.clone(),
+            "accent5" => self.accent5.clone(),
+            "accent6" => self.accent6.clone(),
+            "hlink" => self.hlink.clone(),
+            "folHlink" => self.fol_hlink.clone(),
+            other => other.to_string(),
+        }
+    }
+
+    /// Set one slot from a `p:clrMap` attribute pair.
+    pub fn set_slot(&mut self, slot: &str, value: &str) {
+        if value.is_empty() {
+            return;
+        }
+        match slot {
+            "bg1" => self.bg1 = value.to_string(),
+            "tx1" => self.tx1 = value.to_string(),
+            "bg2" => self.bg2 = value.to_string(),
+            "tx2" => self.tx2 = value.to_string(),
+            "accent1" => self.accent1 = value.to_string(),
+            "accent2" => self.accent2 = value.to_string(),
+            "accent3" => self.accent3 = value.to_string(),
+            "accent4" => self.accent4 = value.to_string(),
+            "accent5" => self.accent5 = value.to_string(),
+            "accent6" => self.accent6 = value.to_string(),
+            "hlink" => self.hlink = value.to_string(),
+            "folHlink" => self.fol_hlink = value.to_string(),
+            _ => {}
+        }
+    }
+}
+
+/// Built-in preset color names for `a:prstClr` (subset covering the common
+/// black/white/gray tokens; unknown names resolve to `None`).
+pub fn preset_color(name: &str) -> Option<String> {
+    let color = match name {
+        "black" => "000000",
+        "white" => "FFFFFF",
+        "darkGray" => "404040",
+        "gray" => "808080",
+        "lightGray" => "C0C0C0",
+        "red" => "FF0000",
+        "green" => "008000",
+        "blue" => "0000FF",
+        "yellow" => "FFFF00",
+        "cyan" => "00FFFF",
+        "magenta" => "FF00FF",
+        _ => return None,
+    };
+    Some(color.to_string())
+}
+
+impl Theme {
+    /// Resolve a scheme color token (already clrMap-normalized) to a concrete
+    /// 6-digit hex color, applying the reference's transforms.
+    pub fn resolve_scheme_color(
+        &self,
+        token: &str,
+        modifiers: &[SchemeClrTransform],
+    ) -> Option<String> {
+        self.resolve_scheme_color_with_clr_map(&ClrMap::default(), token, modifiers)
+    }
+
+    /// Resolve a scheme color token through a master/slide color map
+    /// (`p:clrMap` remaps dk1/lt1/dk2/lt2 before the palette lookup).
+    pub fn resolve_scheme_color_with_clr_map(
+        &self,
+        clr_map: &ClrMap,
+        token: &str,
+        modifiers: &[SchemeClrTransform],
+    ) -> Option<String> {
+        let mapped = clr_map.map(token);
+        let base = self
+            .color_scheme
+            .colors
+            .iter()
+            .find(|c| c.name == mapped || c.name == token)
+            .map(|c| c.color.clone())?;
+        Some(apply_scheme_color_transforms(&base, modifiers))
+    }
+
+    /// Look up a theme font slot by `a:fontRef idx` token ("major"/"minor").
+    pub fn resolve_font(&self, slot: &str) -> Option<&ThemeFont> {
+        match slot {
+            "major" => Some(&self.font_scheme.major_font),
+            "minor" => Some(&self.font_scheme.minor_font),
+            _ => None,
+        }
+    }
+
+    /// Resolve the major (headings) latin typeface.
+    pub fn major_latin_font(&self) -> Option<&str> {
+        self.font_scheme.major_font.latin.as_deref()
+    }
+
+    /// Resolve the minor (body) latin typeface.
+    pub fn minor_latin_font(&self) -> Option<&str> {
+        self.font_scheme.minor_font.latin.as_deref()
+    }
+}
+
+/// Apply `a:schemeClr` color transforms to a 6-digit hex color, returning the
+/// transformed hex. `tint`/`shade` work per channel
+/// (`c·t + 255·(1−t)` / `c·s`); `lumMod`/`lumOff` scale and shift the HSL
+/// luminance; `alpha*`/`sat*`/`hue*` and the value-less `comp`/`gray` are
+/// recorded on the reference but do not change the returned RGB.
+pub fn apply_scheme_color_transforms(hex: &str, modifiers: &[SchemeClrTransform]) -> String {
+    let mut rgb = parse_hex_rgb(hex);
+    for m in modifiers {
+        match *m {
+            SchemeClrTransform::Tint(v) => {
+                let t = pct(v);
+                for c in rgb.iter_mut() {
+                    *c = (*c as f64 * t + 255.0 * (1.0 - t)).round();
+                }
+            }
+            SchemeClrTransform::Shade(v) => {
+                let s = pct(v);
+                for c in rgb.iter_mut() {
+                    let v = (*c as f64 * s).round();
+                    *c = v.clamp(0.0, 255.0);
+                }
+            }
+            SchemeClrTransform::LumMod(v) => {
+                let (h, s, l) = rgb_to_hsl(rgb);
+                rgb = hsl_to_rgb(h, s, (l * pct(v)).clamp(0.0, 1.0));
+            }
+            SchemeClrTransform::LumOff(v) => {
+                let (h, s, l) = rgb_to_hsl(rgb);
+                rgb = hsl_to_rgb(h, s, (l + pct(v)).clamp(0.0, 1.0));
+            }
+            _ => {}
+        }
+    }
+    format!(
+        "{:02X}{:02X}{:02X}",
+        rgb[0].round() as i32, rgb[1].round() as i32, rgb[2].round() as i32
+    )
+}
+
+/// Parse a hex color (6 or 8 digits, optional `#`) to RGB; unknown input
+/// yields black so transforms keep a defined base.
+fn parse_hex_rgb(hex: &str) -> [f64; 3] {
+    let cleaned = hex.trim_start_matches('#');
+    let take = |i: usize| -> f64 {
+        cleaned
+            .get(i..i + 2)
+            .and_then(|s| u8::from_str_radix(s, 16).ok())
+            .map(|v| v as f64)
+            .unwrap_or(0.0)
+    };
+    if cleaned.len() >= 6 {
+        [take(0), take(2), take(4)]
+    } else {
+        [0.0; 3]
+    }
+}
+
+/// 1000ths-of-a-percent value to a 0.0–1.0 fraction.
+fn pct(v: i64) -> f64 {
+    v as f64 / 100_000.0
+}
+
+fn rgb_to_hsl(rgb: [f64; 3]) -> (f64, f64, f64) {
+    let r = rgb[0] / 255.0;
+    let g = rgb[1] / 255.0;
+    let b = rgb[2] / 255.0;
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let l = (max + min) / 2.0;
+    if (max - min).abs() < f64::EPSILON {
+        return (0.0, 0.0, l);
+    }
+    let d = max - min;
+    let s = d / (1.0 - (2.0 * l - 1.0).abs());
+    let h = if (max - r).abs() < f64::EPSILON {
+        ((g - b) / d) % 6.0
+    } else if (max - g).abs() < f64::EPSILON {
+        (b - r) / d + 2.0
+    } else {
+        (r - g) / d + 4.0
+    };
+    ((h * 60.0 + 360.0) % 360.0, s, l)
+}
+
+fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [f64; 3] {
+    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let hp = h / 60.0;
+    let x = c * (1.0 - (hp % 2.0 - 1.0).abs());
+    let (r1, g1, b1) = if hp < 1.0 {
+        (c, x, 0.0)
+    } else if hp < 2.0 {
+        (x, c, 0.0)
+    } else if hp < 3.0 {
+        (0.0, c, x)
+    } else if hp < 4.0 {
+        (0.0, x, c)
+    } else if hp < 5.0 {
+        (x, 0.0, c)
+    } else {
+        (c, 0.0, x)
+    };
+    let m = l - c / 2.0;
+    [(r1 + m) * 255.0, (g1 + m) * 255.0, (b1 + m) * 255.0]
+}
+
 /// A slide master (from ppt/slideMasters/slideMaster*.xml).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SlideMaster {
     pub id: u32,
     pub name: String,
+    /// Master color map (`p:clrMap`): remaps scheme slots for its slides.
+    #[serde(default)]
+    pub clr_map: ClrMap,
     pub slide_layouts: Vec<SlideLayout>,
 }
 
