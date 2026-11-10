@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use wo_common::units;
 
 /// OOXML format type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OoxmlFormat {
     /// Word Document (.docx)
     Docx,
@@ -10,6 +10,7 @@ pub enum OoxmlFormat {
     Xlsx,
     /// PowerPoint Presentation (.pptx)
     Pptx,
+    #[default]
     /// Unknown OOXML format
     Unknown,
 }
@@ -80,7 +81,7 @@ pub struct OoxmlDocument {
 }
 
 /// A content type entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ContentTypeEntry {
     pub extension: String,
     pub content_type: String,
@@ -1123,9 +1124,71 @@ pub struct UnmanagedPart {
     pub content_type: Option<String>,
 }
 
+/// Typed DOCX settings from word/settings.xml (P4-D03): track-changes
+/// and document protection defaults parsed into a typed model so converters
+/// and editors can read/write them without re-scraping XML; the verbatim
+/// source remains available as an escape hatch.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DocxSettings {
+    /// `w:trackRevisions` — whether change tracking is enabled (true = on).
+    pub track_changes: Option<bool>,
+    /// `w:documentProtection` — the protection mode that was last applied to
+    /// the document (edited via Review → Restrict Editing in Word). `None`
+    /// means the document is not protected.
+    pub protection: Option<DocxProtection>,
+    /// Verbatim `word/settings.xml` content captured at parse time. When set,
+    /// the serializer emits it unchanged, preserving any foreign settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw_xml: Option<String>,
+}
+
+/// Document protection mode (CT_DocProtect, ECMA-376 §17.15.1.30).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DocxProtection {
+    /// No changes allowed (full document read-only).
+    ReadOnly,
+    /// Comments only; no content edits.
+    Comments,
+    /// Tracked changes only; users must mark up via revisions.
+    TrackedChanges,
+    /// Form filling only; content controls and fields can be edited.
+    Forms,
+}
+
+impl DocxProtection {
+    /// Map the OOXML local name string to its enum variant.
+    pub fn from_local_name(name: &str) -> Option<Self> {
+        match name {
+            "readOnly" => Some(DocxProtection::ReadOnly),
+            "comments" => Some(DocxProtection::Comments),
+            "trackedChanges" => Some(DocxProtection::TrackedChanges),
+            "forms" => Some(DocxProtection::Forms),
+            _ => None,
+        }
+    }
+
+    /// The OOXML local name for this protection kind.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DocxProtection::ReadOnly => "readOnly",
+            DocxProtection::Comments => "comments",
+            DocxProtection::TrackedChanges => "trackedChanges",
+            DocxProtection::Forms => "forms",
+        }
+    }
+}
+
+impl Default for DocxProtection {
+    fn default() -> Self {
+        DocxProtection::ReadOnly
+    }
+}
+
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct DocxBody {
+pub struct DocxBody{
     /// Blocks preserving document order (paragraphs and tables interleaved)
     pub blocks: Vec<DocxBlock>,
     /// Embedded media parts (word/media/*) so converters can emit data-URI
@@ -1183,6 +1246,10 @@ pub struct DocxBody {
     /// kept byte-identical across the round trip.
     #[serde(default)]
     pub unmanaged_parts: Vec<UnmanagedPart>,
+    /// Typed DOCX settings (track-changes / protection defaults, P4-D03).
+    /// Parsed from word/settings.xml if present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub settings: Option<DocxSettings>,
 }
 
 impl DocxBody {
@@ -1203,6 +1270,7 @@ impl DocxBody {
             bookmarks: Vec::new(),
             sdt_wraps: Vec::new(),
             unmanaged_parts: Vec::new(),
+            settings: None,
         }
     }
 
@@ -1227,6 +1295,7 @@ impl DocxBody {
             bookmarks: Vec::new(),
             sdt_wraps: Vec::new(),
             unmanaged_parts: Vec::new(),
+            settings: None,
         }
     }
 

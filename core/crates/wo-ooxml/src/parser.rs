@@ -167,7 +167,7 @@ impl OoxmlParser {
         };
 
         // Parse format-specific content
-        let docx_body = match format {
+        let mut docx_body = match format {
             OoxmlFormat::Docx => self.parse_docx_body(&mut archive)?,
             _ => None,
         };
@@ -176,6 +176,11 @@ impl OoxmlParser {
             OoxmlFormat::Xlsx => Some(self.parse_xlsx(&mut archive)?),
             _ => None,
         };
+
+        // Parse DOCX settings and store in docx_body
+        if let Some(ref mut body) = docx_body {
+            body.settings = self.parse_docx_settings(&mut archive)?;
+        }
 
         Ok(OoxmlDocument {
             format,
@@ -2144,6 +2149,72 @@ impl OoxmlParser {
         Ok(Some(body))
     }
 
+    /// Parse DOCX settings from word/settings.xml (P4-D03). Returns Some
+    /// when the file exists; returns None when it is absent. If present but
+    /// unparseable, falls back to storing the raw XML in DocxSettings::raw_xml.
+    pub fn parse_docx_settings(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Option<DocxSettings>> {
+        if archive.by_name("word/settings.xml").is_err() {
+            return Ok(None);
+        }
+        let xml = self.read_zip_entry(archive, "word/settings.xml")?;
+        
+        // Try to parse as XML
+        match XmlDoc::parse(&xml) {
+            Ok(doc) => {
+                let root = doc.root_element();
+                let w_ns = Self::W_NS;
+                
+                let mut settings = DocxSettings::default();
+                settings.raw_xml = Some(xml.clone());
+                
+                // Parse w:trackRevisions
+                for child in root.children() {
+                    if child.has_tag_name("trackRevisions") 
+                        && child.tag_name().namespace() == Some(w_ns)
+                    {
+                        if let Some(val) = child.attribute((w_ns, "val")) {
+                            settings.track_changes = Some(val.parse::<bool>().unwrap_or_default());
+                        } else if let Some(val) = child.attribute("val") {
+                            settings.track_changes = Some(val.parse::<bool>().unwrap_or_default());
+                        }
+                    }
+                    
+                    // Parse w:documentProtection
+                    if child.has_tag_name("documentProtection") 
+                        && child.tag_name().namespace() == Some(w_ns)
+                    {
+                        if let Some(edit) = child.attribute((w_ns, "edit")) {
+                            settings.protection = DocxProtection::from_local_name(edit);
+                        } else if let Some(edit) = child.attribute("edit") {
+                            settings.protection = DocxProtection::from_local_name(edit);
+                        }
+                    }
+                }
+                
+                // If we found any typed fields, use the typed struct; otherwise keep raw_xml only
+                if settings.track_changes.is_some() || settings.protection.is_some() {
+                    Ok(Some(settings))
+                } else {
+                    // No typed fields found, but keep the raw XML
+                    Ok(Some(DocxSettings {
+                        raw_xml: Some(xml),
+                        ..Default::default()
+                    }))
+                }
+            }
+            Err(_) => {
+                // If we can't parse it, still keep the raw XML
+                Ok(Some(DocxSettings {
+                    raw_xml: Some(xml),
+                    ..Default::default()
+                }))
+            }
+        }
+    }
+
     /// True when the serializer re-emits this part itself (P2-06) — only
     /// everything else belongs in the unmanaged-parts bag.
     fn is_managed_docx_part(name: &str) -> bool {
@@ -2294,6 +2365,7 @@ impl OoxmlParser {
             bookmarks: Vec::new(),
             sdt_wraps,
             unmanaged_parts: Vec::new(),
+            settings: None,
         }
     }
 

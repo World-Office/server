@@ -196,6 +196,22 @@ impl OoxmlSerializer {
         zip.start_file("docProps/core.xml", options)?;
         zip.write_all(core_xml.as_bytes())?;
 
+        // 7. word/settings.xml (P4-D03): typed settings from DocxBody
+        if let Some(ref body) = doc.docx_body {
+            if let Some(ref settings) = body.settings {
+                if let Some(ref raw) = settings.raw_xml {
+                    // Prefer verbatim raw XML if available
+                    zip.start_file("word/settings.xml", options)?;
+                    zip.write_all(raw.as_bytes())?;
+                } else {
+                    // Build from typed model
+                    let settings_xml = self.build_settings_xml(settings);
+                    zip.start_file("word/settings.xml", options)?;
+                    zip.write_all(settings_xml.as_bytes())?;
+                }
+            }
+        }
+
         let result = zip.finish()?;
         Ok(result.into_inner())
     }
@@ -3201,6 +3217,31 @@ impl OoxmlSerializer {
         }
 
         xml.push_str("</cp:coreProperties>");
+        xml
+    }
+
+    /// Build word/settings.xml from typed DocxSettings (P4-D03).
+    fn build_settings_xml(&self, settings: &DocxSettings) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">"#,
+        );
+
+        // w:trackRevisions
+        if let Some(track) = settings.track_changes {
+            xml.push_str("\n  <w:trackRevisions w:val=\"");
+            xml.push_str(if track { "true" } else { "false" });
+            xml.push_str("\"/>");
+        }
+
+        // w:documentProtection
+        if let Some(ref prot) = settings.protection {
+            xml.push_str("\n  <w:documentProtection w:edit=\"");
+            xml.push_str(prot.as_str());
+            xml.push_str("\"/>");
+        }
+
+        xml.push_str("\n</w:settings>");
         xml
     }
 

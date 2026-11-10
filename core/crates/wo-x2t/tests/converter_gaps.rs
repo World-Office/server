@@ -3405,3 +3405,139 @@ fn gap_docx_math_in_run_roundtrip() {
         "run-nested math must survive the round trip"
     );
 }
+
+#[test]
+fn gap_flat_opc_entry() {
+    // P4-D03: flat OPC (single-XML) DOCX must detect correctly.
+    // Flat OPC DOCX is a single XML file (not a ZIP) with Word 2003 XML format.
+    let flat_opc_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml">
+  <w:body>
+    <w:p><w:r><w:t>Test flat OPC document</w:t></w:r></w:p>
+  </w:body>
+</w:wordDocument>"#;
+    
+    // Verify flat OPC detection
+    assert!(
+        wo_ooxml::detector::is_flat_opc_docx(flat_opc_xml.as_bytes()),
+        "Word 2003 XML must detect as flat OPC"
+    );
+    
+    // Verify it's also detected as OOXML
+    assert!(
+        wo_ooxml::is_ooxml(flat_opc_xml.as_bytes()),
+        "Word 2003 XML must detect as OOXML"
+    );
+    
+    // Flat OPC with Word 2007+ namespace
+    let flat_opc_2007 = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Test Word 2007 flat OPC</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    
+    assert!(
+        wo_ooxml::detector::is_flat_opc_docx(flat_opc_2007.as_bytes()),
+        "Word 2007+ XML must detect as flat OPC"
+    );
+}
+
+#[test]
+fn gap_settings_typed_roundtrip() {
+    // P4-D03: DOCX settings (track-changes / protection) must parse into
+    // typed DocxSettings and survive a parse → serialize → parse round trip.
+    
+    // Build a minimal DOCX with word/settings.xml
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        
+        // [Content_Types].xml
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
+</Types>"#).unwrap();
+        
+        // _rels/.rels
+        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#).unwrap();
+        
+        // word/document.xml
+        zip.start_file("word/document.xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Test paragraph</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#).unwrap();
+        
+        // word/settings.xml with trackRevisions and documentProtection
+        zip.start_file("word/settings.xml", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:trackRevisions w:val="true"/>
+  <w:documentProtection w:edit="comments"/>
+</w:settings>"#).unwrap();
+        
+        zip.finish().unwrap();
+    }
+    
+    // Parse the DOCX
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&buf).unwrap();
+    assert!(
+        parsed.docx_body.is_some(),
+        "DOCX must have body"
+    );
+    let body = parsed.docx_body.as_ref().unwrap();
+    assert!(
+        body.settings.is_some(),
+        "DOCX must parse settings.xml"
+    );
+    
+    let settings = body.settings.as_ref().unwrap();
+    assert_eq!(
+        settings.track_changes,
+        Some(true),
+        "trackRevisions must parse as true"
+    );
+    assert!(
+        settings.protection == Some(wo_ooxml::model::DocxProtection::Comments),
+        "documentProtection must parse as Comments variant"
+    );
+    
+    // Serialize back
+    let reserialized = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    
+    // Re-parse the serialization
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reserialized).unwrap();
+    let rebody = reparsed.docx_body.as_ref().unwrap();
+    let resettings = rebody.settings.as_ref().unwrap();
+    
+    // Verify typed fields survive
+    assert_eq!(
+        resettings.track_changes,
+        Some(true),
+        "trackRevisions must survive round trip"
+    );
+    assert!(
+        resettings.protection == Some(wo_ooxml::model::DocxProtection::Comments),
+        "documentProtection must survive round trip"
+    );
+    
+    // Verify raw XML also survives
+    assert!(
+        resettings.raw_xml.is_some(),
+        "raw_xml must be preserved in settings"
+    );
+}
