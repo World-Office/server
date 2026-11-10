@@ -3400,7 +3400,7 @@
     const count = document.getElementById("columns-count");
     const gap = document.getElementById("columns-gap");
     const cols = Math.max(1, Math.min(6, parseInt((count && count.value) || "2", 10) || 2));
-    const gapPx = Math.max(0, parseInt((gap && gap.value) || "36", 10) || 0);
+    const gapPx = Math.min(200, Math.max(0, parseInt((gap && gap.value) || "36", 10) || 0));
     if (dialog) dialog.classList.remove("open");
     restoreFocus();
     editor.focus();
