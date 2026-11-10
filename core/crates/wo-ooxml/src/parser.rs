@@ -607,6 +607,12 @@ impl OoxmlParser {
                             self.flatten_group_shapes(&group, None, &mut shapes);
                         }
                     }
+                    (Some(ns), "graphicFrame") if ns == Self::P_NS => {
+                        // P4-P01: Parse SmartArt and other graphic frames
+                        if let Some(smartart) = self.parse_pptx_smartart(&child) {
+                            shapes.push(SlideShape::SmartArt(smartart));
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -1998,6 +2004,51 @@ impl OoxmlParser {
             has_end_arrow,
             fill,
             effect,
+        })
+    }
+
+    /// P4-P01: Parse a SmartArt diagram from a `<p:graphicFrame>` element.
+    fn parse_pptx_smartart(&self, frame: &roxmltree::Node) -> Option<SmartArtShape> {
+        let bounds = self.parse_pptx_bounds(frame);
+        let id = frame
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr"))?
+            .attribute("id")
+            .unwrap_or("0")
+            .to_string();
+
+        // Extract diagram type and layout from the graphic data
+        let (diagram_type, data_layout) = frame
+            .descendants()
+            .find(|n| n.has_tag_name("graphicData"))
+            .and_then(|gd| {
+                let uri = gd.attribute("uri")?;
+                // For SmartArt, the URI is typically the diagram namespace
+                if uri.contains("diagram") {
+                    // Get diagram type from chart or diagram properties
+                    let mut diag_type = "SmartArt".to_string();
+                    let mut layout = "".to_string();
+                    
+                    // Try to find diagram-specific attributes
+                    if let Some(dgm) = gd.children().find(|c| c.has_tag_name("relIds")) {
+                        // In a real SmartArt, we'd parse the diagram definition XML
+                        // For now, we'll use placeholder values
+                        diag_type = "SmartArt Diagram".to_string();
+                        layout = "Default".to_string();
+                    }
+                    
+                    Some((diag_type, layout))
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(("SmartArt".to_string(), "Default".to_string()));
+
+        Some(SmartArtShape {
+            id,
+            bounds,
+            diagram_type,
+            data_layout,
         })
     }
 

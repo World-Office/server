@@ -2522,6 +2522,61 @@ pub struct AnimationData {
     pub delay: f64,
 }
 
+/// A timing node in the PPTX timing tree.
+/// Represents elements like `<p:par>`, `<p:seq>`, or `<p:cTn>`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimeNode {
+    /// Node type: "par" (parallel), "seq" (sequential), or "cTn" (child).
+    #[serde(default)]
+    pub node_type: String,
+    /// Unique identifier for this timing node.
+    #[serde(default)]
+    pub id: Option<String>,
+    /// Duration in seconds (from dur attribute).
+    #[serde(default)]
+    pub duration: Option<f64>,
+    /// Repeat count for this node.
+    #[serde(default)]
+    pub repeat_count: Option<i32>,
+    /// Start conditions for this node.
+    #[serde(default)]
+    pub start_conditions: Vec<TimingCondition>,
+    /// End conditions for this node.
+    #[serde(default)]
+    pub end_conditions: Vec<TimingCondition>,
+    /// Child timing nodes.
+    #[serde(default)]
+    pub children: Vec<TimeNode>,
+    /// Target shape ID if this node animates a specific shape.
+    #[serde(default)]
+    pub target: Option<String>,
+}
+
+/// A timing condition (start or end condition in PPTX timing).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimingCondition {
+    /// Event type: "onClick", "onBegin", "onEnd", etc.
+    #[serde(default)]
+    pub event: String,
+    /// Delay in seconds.
+    #[serde(default)]
+    pub delay: f64,
+    /// Reference to another timing node ID.
+    #[serde(default)]
+    pub ref_id: Option<String>,
+}
+
+/// The timing tree for a PPTX slide, representing the structured timing hierarchy.
+/// This provides typed access to the `<p:timing>` element structure.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TimingTree {
+    /// Root timing node (typically tmRoot).
+    pub root: Option<TimeNode>,
+    /// List of top-level timing nodes (parallel sequences).
+    #[serde(default)]
+    pub nodes: Vec<TimeNode>,
+}
+
 /// Shape types that can appear on a slide.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SlideShape {

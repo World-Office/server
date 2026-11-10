@@ -15,7 +15,7 @@ mod style_chain_tests;
 
 pub use model::builtin_theme_presets;
 pub use model::{
-    apply_scheme_color_transforms, Bounds, ChartAxis, ChartAxisKind, ChartCategories,
+    apply_scheme_color_transforms, AnimationData, Bounds, ChartAxis, ChartAxisKind, ChartCategories,
     ChartDLbls, ChartErrBar, ChartExternalData, ChartLayout, ChartLegendNode, ChartMarker,
     ChartNode, ChartNumData, ChartNumPt, ChartPlot, ChartPlotKind, ChartPrintSettings,
     ChartScaling, ChartSeries, ChartSpace, ChartStrPt, ChartTitleNode, ChartTrendline, ClrMap,
@@ -26,7 +26,8 @@ pub use model::{
     ShadowEffect, Slide, SlideBodyProperties, SlideLayout, SlideMaster, SlideParagraph, SlideShape,
     SlideSize, SlideTextBody, SlideTextFit, TableCell, TableColumn, TableRow, TableShape, TextBody,
     TextBullet, TextBoxShape, Theme, ThemeColor, ThemeColorRef, ThemeEffectStyle, ThemeFillStyle,
-    ThemeFont, ThemeGradientStop, ThemeLineStyle, ThemePreset, ThemeSystemColor, XlsxBook, XlsxBrk,
+    ThemeFont, ThemeGradientStop, ThemeLineStyle, ThemePreset, ThemeSystemColor, TimingCondition,
+    TimingTree, TimeNode, XlsxBook, XlsxBrk,
     XlsxChartPart, XLSX_CHART_CONTENT_TYPE, XLSX_CHART_REL_TYPE, XlsxColorScale,
     XlsxConditionalFormatKind, XlsxConditionalFormatRule, XlsxConditionalFormatting, XlsxCfColor,
     XlsxCfvo, XlsxDataBar, XlsxDxf, XlsxDynamicArray, XlsxFileSharing, XlsxHeaderFooter,

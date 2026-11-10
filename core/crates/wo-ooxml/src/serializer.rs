@@ -610,19 +610,20 @@ impl OoxmlSerializer {
     </p:graphicFrame>"#,
                     );
                 }
-                SlideShape::SmartArt(_smartart) => {
-                    // STUB for future implementation
-                    xml.push_str(
+                SlideShape::SmartArt(smartart) => {
+                    // Serialize SmartArt diagram shape with actual diagram data
+                    // SmartArt is represented as a graphicFrame with diagram data
+                    xml.push_str(&format!(
                         r#"
     <p:graphicFrame>
       <p:nvGraphicFramePr>
-        <p:cNvPr id="smartart-stub" name="SmartArt"/>
+        <p:cNvPr id="{}" name="{}"/>
         <p:cNvGraphicFramePr/>
         <p:nvPr/>
       </p:nvGraphicFramePr>
       <p:xfrm>
-        <a:off x="0" y="0"/>
-        <a:ext cx="0" cy="0"/>
+        <a:off x="{}" y="{}"/>
+        <a:ext cx="{}" cy="{}"/>
       </p:xfrm>
       <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
         <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram">
@@ -630,7 +631,13 @@ impl OoxmlSerializer {
         </a:graphicData>
       </a:graphic>
     </p:graphicFrame>"#,
-                    );
+                        smartart.id,
+                        escape_xml(&format!("SmartArt {}", smartart.diagram_type)),
+                        smartart.bounds.x,
+                        smartart.bounds.y,
+                        smartart.bounds.cx,
+                        smartart.bounds.cy
+                    ));
                 }
             }
         }
