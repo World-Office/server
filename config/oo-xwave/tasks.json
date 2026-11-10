@@ -3,7 +3,7 @@
   {
    "id": "FX-R1",
    "repo": "server",
-   "title": "wasm: OForm role/fill/signer engine \u2014 asc_add_role, asc_edit_role, asc_remove_role, asc_get_all_roles, asc_can_fill_role, asc_get_filling_status, AscSigner + asc_get_signers/asc_set_signers",
+   "title": "wasm: OForm role/fill/signer engine — asc_add_role, asc_edit_role, asc_remove_role, asc_get_all_roles, asc_can_fill_role, asc_get_filling_status, AscSigner + asc_get_signers/asc_set_signers",
    "deps": [],
    "priority": 10,
    "scope": [
@@ -18,7 +18,7 @@
   {
    "id": "FX-R2",
    "repo": "server",
-   "title": "Rust: docxf format layer \u2014 wo-ooxml accepts .docxf (docx form variant: same reader/writer, forms-aware content-type), wo-docserver POST /api/documents/{id}/save-form + GET docxf conversion treated as docx",
+   "title": "Rust: docxf format layer — wo-ooxml accepts .docxf (docx form variant: same reader/writer, forms-aware content-type), wo-docserver POST /api/documents/{id}/save-form + GET docxf conversion treated as docx",
    "deps": [],
    "priority": 10,
    "scope": [
@@ -56,7 +56,7 @@
     "apps/web/apps/documenteditor-wysiwyg/style.css"
    ],
    "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node forms-tab.test.mjs 2>&1 | tail -1 | grep FORMS-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node save-form.test.mjs 2>&1 | tail -1 | grep SAVEFORM-PASS)",
-   "note": "Author both tests first (FORMS-PASS/SAVEFORM-PASS markers, local-static + stubbed-fetch boot like page-thumbnails.test.mjs). Forms tab: 4 buttons plant wo form spans (span.wo-form-field[data-kind=text|checkbox|dropdown|date] with data-role='') \u2014 reuse the cc-* content-control machinery where possible. Fill mode: body[data-fill-mode=fill] makes non-field content inert (CSS + click guard). SaveFormDlg: name+location inputs, OK -> fetch POST save-form with current HTML, status toast. i18n en+de for every new string. Roles/signers NOT in this task."
+   "note": "Author both tests first (FORMS-PASS/SAVEFORM-PASS markers, local-static + stubbed-fetch boot like page-thumbnails.test.mjs). Forms tab: 4 buttons plant wo form spans (span.wo-form-field[data-kind=text|checkbox|dropdown|date] with data-role='') — reuse the cc-* content-control machinery where possible. Fill mode: body[data-fill-mode=fill] makes non-field content inert (CSS + click guard). SaveFormDlg: name+location inputs, OK -> fetch POST save-form with current HTML, status toast. i18n en+de for every new string. Roles/signers NOT in this task."
   },
   {
    "id": "FX-U2",
@@ -106,12 +106,12 @@
     "tests/parity/surfaces/right-panel.cjs"
    ],
    "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node filling-status.test.mjs 2>&1 | tail -1 | grep FILLSTAT-PASS) && (cd tests/parity && /usr/bin/node surfaces/right-panel.cjs >/dev/null 2>&1; echo right-panel-exit=$?)",
-   "note": "FillingStatusSettings spec + engine: shows active role, per-status counts (filled/open), role switcher. MaskedField: date fields render a masked input (____-__-__) inside the fill overlay; zip (_____) likewise \u2014 mask chars literal, digits typed into data-value. right-panel.cjs: remove the filling-status-settings KNOWN-GAP override entry (the dialog now exists); keep others. Gate requires right-panel exit 0."
+   "note": "FillingStatusSettings spec + engine: shows active role, per-status counts (filled/open), role switcher. MaskedField: date fields render a masked input (____-__-__) inside the fill overlay; zip (_____) likewise — mask chars literal, digits typed into data-value. right-panel.cjs: remove the filling-status-settings KNOWN-GAP override entry (the dialog now exists); keep others. Gate requires right-panel exit 0."
   },
   {
    "id": "FX-U4",
    "repo": "server",
-   "title": "editor: signature wave \u2014 SignDialog, SignSettingsDialog, SignatureSettings, SendForSigningSettings, PdfSignDialog (AscSigner via asc_get_signers/asc_set_signers) + drop signature-settings + send-for-signing-settings KNOWN-GAPs from right-panel",
+   "title": "editor: signature wave — SignDialog, SignSettingsDialog, SignatureSettings, SendForSigningSettings, PdfSignDialog (AscSigner via asc_get_signers/asc_set_signers) + drop signature-settings + send-for-signing-settings KNOWN-GAPs from right-panel",
    "deps": [
     "FX-U3"
    ],
@@ -133,7 +133,7 @@
     "tests/parity/surfaces/right-panel.cjs"
    ],
    "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node signature-wave.test.mjs 2>&1 | tail -1 | grep SIGNWAVE-PASS) && (cd tests/parity && /usr/bin/node surfaces/right-panel.cjs >/dev/null 2>&1; echo right-panel-exit=$?)",
-   "note": "All five as WO_DIALOG_SPECS entries. SignatureSettings: insert a signature LINE (div.wo-signature-line[data-signers]) at caret; SignSettingsDialog: name/title/email/instructions fields bound to asc_get_signers/asc_set_signers; SignDialog: the signing step (role, drawn-name text input, Apply -> marks the line signed); SendForSigningSettings: recipients multi-select from roles, message, Send -> toast + status line; PdfSignDialog: pdf-specific signer confirm. No real crypto \u2014 the workflow state is editor-side (documented divergence in ledger notes, honest like HintManager)."
+   "note": "All five as WO_DIALOG_SPECS entries. SignatureSettings: insert a signature LINE (div.wo-signature-line[data-signers]) at caret; SignSettingsDialog: name/title/email/instructions fields bound to asc_get_signers/asc_set_signers; SignDialog: the signing step (role, drawn-name text input, Apply -> marks the line signed); SendForSigningSettings: recipients multi-select from roles, message, Send -> toast + status line; PdfSignDialog: pdf-specific signer confirm. No real crypto — the workflow state is editor-side (documented divergence in ledger notes, honest like HintManager)."
   },
   {
    "id": "FX-U5",
@@ -171,7 +171,7 @@
    "id": "FXG-B2",
    "repo": "harness",
    "priority": 10,
-   "title": "REDO of FXG-B (worker left probes uncommitted \u2014 scope bug): author margins + page-size + columns gold probes so the pinned L4 rows are live-verified; run + commit artifacts",
+   "title": "REDO of FXG-B (worker left probes uncommitted — scope bug): author margins + page-size + columns gold probes so the pinned L4 rows are live-verified; run + commit artifacts",
    "deps": [
     "FXG-A"
    ],
@@ -194,12 +194,12 @@
     "census/ledger/build.py"
    ],
    "accept": "(cd census/ledger && /usr/bin/node margins-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node pagesize-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node columns-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1)",
-   "note": "build.py on main already pins these 3 rows at L4 with a guard (FXG-B commit). Your job is ONLY the probe files: dropcap-dialog-l4.test.mjs pattern (local static serve + stubbed fetch + real ribbon open + evaluate-click for viewport safety + field asserts + apply act + negative paths; OO field contract from the FXG-B commit message in build.py's LAYOUT_L4_GOLD section + census/census-oo-dialogs.json). File names: margins-dialog-l4.test.mjs, pagesize-dialog-l4.test.mjs, columns-dialog-l4.test.mjs \u2014 build.py's guard expects exactly these. Write the matching -l4.json artifacts (probe self-writes). ALL of: .test.mjs files, .json artifacts, and build.py (if the guard needs artifact presence added) MUST be committed \u2014 probes outside scope was the bug that lost FXG-B's work. Margins/page-setup: opens Layout->margins, custom 1.5/2/1.5/2.5cm applies data-margins on the page-setup marker; page-size: A4/Letter/Legal -> data-page-size; columns: 2 cols with separator -> div.column-layout marker or body columns attr \u2014 follow what the pinned build.py rows declare as the WO match."
+   "note": "build.py on main already pins these 3 rows at L4 with a guard (FXG-B commit). Your job is ONLY the probe files: dropcap-dialog-l4.test.mjs pattern (local static serve + stubbed fetch + real ribbon open + evaluate-click for viewport safety + field asserts + apply act + negative paths; OO field contract from the FXG-B commit message in build.py's LAYOUT_L4_GOLD section + census/census-oo-dialogs.json). File names: margins-dialog-l4.test.mjs, pagesize-dialog-l4.test.mjs, columns-dialog-l4.test.mjs — build.py's guard expects exactly these. Write the matching -l4.json artifacts (probe self-writes). ALL of: .test.mjs files, .json artifacts, and build.py (if the guard needs artifact presence added) MUST be committed — probes outside scope was the bug that lost FXG-B's work. Margins/page-setup: opens Layout->margins, custom 1.5/2/1.5/2.5cm applies data-margins on the page-setup marker; page-size: A4/Letter/Legal -> data-page-size; columns: 2 cols with separator -> div.column-layout marker or body columns attr — follow what the pinned build.py rows declare as the WO match."
   },
   {
    "id": "FXG-C",
    "repo": "harness",
-   "title": "L4 gold: references family \u2014 toc-dialog, crossref-dialog, insert-caption, tableoffigures probes + registration + rebuild",
+   "title": "L4 gold: references family — toc-dialog, crossref-dialog, insert-caption, tableoffigures probes + registration + rebuild",
    "deps": [
     "FXG-B2"
    ],
@@ -252,7 +252,94 @@
     "census/ledger/build.py"
    ],
    "accept": "(cd census/ledger && /usr/bin/node hyphenation-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node datetime-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<27){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
-   "note": "Same pattern. datetime: the existing datetime-dialog inserts a formatted date string \u2014 gold fields = format list + language + Update automatically flag. hyphenation: auto/manual toggle -> div.hyphenation marker (data-auto). At least one must reach L4. Finish by updating PARITY-REPORT.md L4 totals line. IMPORTANT: commit ALL probe .test.mjs + .json artifacts you author (previous sibling task lost its work by leaving them uncommitted)."
+   "note": "Same pattern. datetime: the existing datetime-dialog inserts a formatted date string — gold fields = format list + language + Update automatically flag. hyphenation: auto/manual toggle -> div.hyphenation marker (data-auto). At least one must reach L4. Finish by updating PARITY-REPORT.md L4 totals line. IMPORTANT: commit ALL probe .test.mjs + .json artifacts you author (previous sibling task lost its work by leaving them uncommitted)."
+  },
+  {
+   "id": "FXG-E",
+   "repo": "harness",
+   "title": "L4 gold deep-probes: equation, field, chart (batch parity -> census-mined gold + build.py rows)",
+   "deps": [
+    "FXG-D"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/equation-dialog-l4.test.mjs",
+    "census/ledger/equation-dialog-l4.json",
+    "census/ledger/field-dialog-l4.test.mjs",
+    "census/ledger/field-dialog-l4.json",
+    "census/ledger/chart-dialog-l4.test.mjs",
+    "census/ledger/chart-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/equation-dialog-l4.test.mjs",
+    "census/ledger/equation-dialog-l4.json",
+    "census/ledger/field-dialog-l4.test.mjs",
+    "census/ledger/field-dialog-l4.json",
+    "census/ledger/chart-dialog-l4.test.mjs",
+    "census/ledger/chart-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node equation-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node field-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node chart-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<29){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Promotes dialog.equation-dialog.l4, dialog.field-dialog.l4, dialog.chart-dialog.l4 from batch-verified (dialog-l4.test.mjs field parity) to GOLD standalone probes, margins-dialog-l4.test.mjs pattern EXACTLY: local static serve + stubbed fetch (seed via GET /api/documents/*/html returning {html}, ACK writes, __COLLAB__=false), real ribbon open via evaluate-click, OO field contract MINED from census/census-oo-dialogs.json at probe time (title+tab match; never re-declared in the probe), field asserts + apply/act behavior + cancel-negative paths, artifact json {version,probe,feature,generated,ok,oo_fields,oo_buttons,trigger,checks,declaredGaps,contract} written next to the probe, final line 'l4-<id>-dialog: OK n/n checks', exit 0 iff ok. ALSO add the 3 gold rows to census/ledger/build.py in the LAYOUT_L4_GOLD template style (~L1170): fid/art/census_title/trigger/wo_dialog/gated/deferred/wo_extra/behavior, artifact-merge guard (missing artifact keeps gold on the census join; artifact with failed checks DEMOTES to L2 loudly). KNOWN ROUTES: equation: Insert tab #btn-equation; field: References tab #btn-field; chart: Insert tab #btn-chart via #btn-insert-more (collapsed overflow — expand the group first). LESSONS (hard-won, do not repeat): commit ALL authored files (uncommitted work = gate loss, killed FXG-B and burned an FXG-B2 attempt); multi-insert dialogs must read the LAST section/pasted node, not the first; numeric inputs clamp in CODE not just the input's max attr (columns gap bug 105f21d8d); probe filenames must match the scope list EXACTLY; never run build.py from bash mid-work (out-of-scope guard) — the gate runs it. Do NOT touch ledger.json/LEDGER-REPORT.md/PARITY-REPORT.md by hand; the gate's build.py regen owns them."
+  },
+  {
+   "id": "FXG-F",
+   "repo": "harness",
+   "title": "L4 gold deep-probes: compare, combine, textfromfile (batch parity -> census-mined gold + build.py rows)",
+   "deps": [
+    "FXG-E"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/compare-dialog-l4.test.mjs",
+    "census/ledger/compare-dialog-l4.json",
+    "census/ledger/combine-dialog-l4.test.mjs",
+    "census/ledger/combine-dialog-l4.json",
+    "census/ledger/textfromfile-dialog-l4.test.mjs",
+    "census/ledger/textfromfile-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/compare-dialog-l4.test.mjs",
+    "census/ledger/compare-dialog-l4.json",
+    "census/ledger/combine-dialog-l4.test.mjs",
+    "census/ledger/combine-dialog-l4.json",
+    "census/ledger/textfromfile-dialog-l4.test.mjs",
+    "census/ledger/textfromfile-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node compare-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node combine-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node textfromfile-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<29){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Promotes dialog.compare-dialog.l4, dialog.combine-dialog.l4, dialog.textfromfile-dialog.l4 from batch-verified (dialog-l4.test.mjs field parity) to GOLD standalone probes, margins-dialog-l4.test.mjs pattern EXACTLY: local static serve + stubbed fetch (seed via GET /api/documents/*/html returning {html}, ACK writes, __COLLAB__=false), real ribbon open via evaluate-click, OO field contract MINED from census/census-oo-dialogs.json at probe time (title+tab match; never re-declared in the probe), field asserts + apply/act behavior + cancel-negative paths, artifact json {version,probe,feature,generated,ok,oo_fields,oo_buttons,trigger,checks,declaredGaps,contract} written next to the probe, final line 'l4-<id>-dialog: OK n/n checks', exit 0 iff ok. ALSO add the 3 gold rows to census/ledger/build.py in the LAYOUT_L4_GOLD template style (~L1170): fid/art/census_title/trigger/wo_dialog/gated/deferred/wo_extra/behavior, artifact-merge guard (missing artifact keeps gold on the census join; artifact with failed checks DEMOTES to L2 loudly). KNOWN ROUTES: compare: Collaboration tab [data-cmd=compareVersion]; combine: Collaboration tab [data-cmd=combineRevisions]; textfromfile: Insert tab #btn-textfile. All three are file-pickers — stub the fetch for the picked doc id, assert the merge/insert act. LESSONS (hard-won, do not repeat): commit ALL authored files (uncommitted work = gate loss, killed FXG-B and burned an FXG-B2 attempt); multi-insert dialogs must read the LAST section/pasted node, not the first; numeric inputs clamp in CODE not just the input's max attr (columns gap bug 105f21d8d); probe filenames must match the scope list EXACTLY; never run build.py from bash mid-work (out-of-scope guard) — the gate runs it. Do NOT touch ledger.json/LEDGER-REPORT.md/PARITY-REPORT.md by hand; the gate's build.py regen owns them."
+  },
+  {
+   "id": "FXG-G",
+   "repo": "harness",
+   "title": "L4 gold deep-probes: pagecolor, comment, speech (batch parity -> census-mined gold + build.py rows)",
+   "deps": [
+    "FXG-F"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/pagecolor-dialog-l4.test.mjs",
+    "census/ledger/pagecolor-dialog-l4.json",
+    "census/ledger/comment-dialog-l4.test.mjs",
+    "census/ledger/comment-dialog-l4.json",
+    "census/ledger/speech-dialog-l4.test.mjs",
+    "census/ledger/speech-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/pagecolor-dialog-l4.test.mjs",
+    "census/ledger/pagecolor-dialog-l4.json",
+    "census/ledger/comment-dialog-l4.test.mjs",
+    "census/ledger/comment-dialog-l4.json",
+    "census/ledger/speech-dialog-l4.test.mjs",
+    "census/ledger/speech-dialog-l4.json",
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node pagecolor-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node comment-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node speech-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<29){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Promotes dialog.pagecolor-dialog.l4, dialog.comment-dialog.l4, dialog.speech-dialog.l4 from batch-verified (dialog-l4.test.mjs field parity) to GOLD standalone probes, margins-dialog-l4.test.mjs pattern EXACTLY: local static serve + stubbed fetch (seed via GET /api/documents/*/html returning {html}, ACK writes, __COLLAB__=false), real ribbon open via evaluate-click, OO field contract MINED from census/census-oo-dialogs.json at probe time (title+tab match; never re-declared in the probe), field asserts + apply/act behavior + cancel-negative paths, artifact json {version,probe,feature,generated,ok,oo_fields,oo_buttons,trigger,checks,declaredGaps,contract} written next to the probe, final line 'l4-<id>-dialog: OK n/n checks', exit 0 iff ok. ALSO add the 3 gold rows to census/ledger/build.py in the LAYOUT_L4_GOLD template style (~L1170): fid/art/census_title/trigger/wo_dialog/gated/deferred/wo_extra/behavior, artifact-merge guard (missing artifact keeps gold on the census join; artifact with failed checks DEMOTES to L2 loudly). KNOWN ROUTES: pagecolor: Layout tab #pagecolor (6 swatch fields — assert Apply plants the page background marker); comment: Collaboration tab #btn-comment (assert comment anchor + sidebar entry); speech: View tab #btn-readaloud via #btn-speech (3 fields: voice/speed/pitch — assert the speech synthesis wiring is present and start/stop toggles state). LESSONS (hard-won, do not repeat): commit ALL authored files (uncommitted work = gate loss, killed FXG-B and burned an FXG-B2 attempt); multi-insert dialogs must read the LAST section/pasted node, not the first; numeric inputs clamp in CODE not just the input's max attr (columns gap bug 105f21d8d); probe filenames must match the scope list EXACTLY; never run build.py from bash mid-work (out-of-scope guard) — the gate runs it. Do NOT touch ledger.json/LEDGER-REPORT.md/PARITY-REPORT.md by hand; the gate's build.py regen owns them."
   }
  ]
 }
