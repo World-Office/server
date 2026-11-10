@@ -1251,9 +1251,18 @@
     }
     if (cmd === "insertPageNumber") {
       // PAGE-field authoring (F-085): the span the converters map to
-      // w:fldSimple PAGE / text:page-number.
+      // w:fldSimple PAGE / text:page-number. Range-API insert (execCommand
+      // insertHTML silently no-ops when a dialog button stole editor focus).
       if (editBlocked()) return;
-      try { document.execCommand("insertHTML", false, '<span class="page-number"></span>'); } catch (err) {}
+      const span = document.createElement("span");
+      span.className = "page-number";
+      const sel = document.getSelection();
+      if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        sel.getRangeAt(0).insertNode(span);
+      } else {
+        const p0 = editor.querySelector("p");
+        if (p0) p0.insertBefore(span, p0.firstChild);
+      }
       markDirty();
       captureHistory();
       scheduleCollabSync();
@@ -4044,8 +4053,18 @@
     editor.focus();
     const sel = window.getSelection();
     const text = (sel && sel.toString()) || name;
-    const html = '<span class="bookmark" data-name="' + escapeAttr(name) + '">' + escapeAttr(text) + '</span>';
-    document.execCommand("insertHTML", false, html);
+    const span = document.createElement("span");
+    span.className = "bookmark";
+    span.setAttribute("data-name", name);
+    span.textContent = text;
+    if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      const r = sel.getRangeAt(0);
+      r.deleteContents();
+      r.insertNode(span);
+    } else {
+      const p0 = editor.querySelector("p");
+      if (p0) p0.insertBefore(span, p0.firstChild);
+    }
     captureHistory();
     markDirty();
     scheduleCollabSync();
@@ -8573,10 +8592,12 @@
     } else {
       m = document.createElement("div");
       m.className = klass;
-      attrs.split(/\s+/).forEach((kv) => {
-        const [k, v] = kv.split("=");
-        if (k && v) m.setAttribute(k, v.replace(/"/g, ""));
-      });
+      // quoted-attr parsing: values may contain spaces (e.g. watermark
+      // custom text "Internal eyes only") — a naive split(/\s+/) truncates
+      // at the first space.
+      for (const am of attrs.matchAll(/([A-Za-z_][\w-]*)="([^"]*)"/g)) {
+        m.setAttribute(am[1], am[2]);
+      }
       // Keep the body-start marker block in the canonical order the
       // converters strip in (page-setup, hyphenation, line-numbers,
       // watermark) — insert after the last marker already present.
@@ -10373,7 +10394,9 @@
       return;
     }
     emitCommand("insertPageNumber");
-    const span = editor.querySelector("span.page-number:last-of-type");
+    // style the fresh BODY span only — a bare `:last-of-type` grabs the
+    // header/footer spans planted by earlier runs (document order)
+    const span = editor.querySelector("p span.page-number:not([data-format])");
     if (span) { span.style.display = "block"; span.style.textAlign = align; span.setAttribute("data-format", fmt); }
   });
   const hfOk = document.getElementById("btn-headerfooter-ok");
@@ -10443,7 +10466,7 @@
       if (!p) return;
     }
     const existing = p.querySelector(":scope > span.dropcap");
-    if (existing) existing.remove();
+    if (existing) existing.replaceWith(document.createTextNode(existing.textContent || ""));
     const tn = firstTextNode(p);
     if (!tn) return;
     const ch = tn.data[0];
@@ -10482,7 +10505,8 @@
     if (!p) return;
     const existing = p.querySelector(":scope > span.dropcap");
     if (!existing) return;
-    existing.remove();
+    // unwrap: put the dropped character back as text before removing
+    existing.replaceWith(document.createTextNode(existing.textContent || ""));
     captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing"); updateActiveStates();
   }
 
