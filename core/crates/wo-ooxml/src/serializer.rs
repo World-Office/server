@@ -440,17 +440,36 @@ impl OoxmlSerializer {
 
     /// Serialize a PPTX slide to its XML part (flat shapes only).
     pub fn build_slide_xml(&self, slide: &Slide) -> String {
-        self.build_slide_xml_inner(slide, &[])
+        self.build_slide_xml_inner(slide, &[], &[])
     }
 
     /// Serialize a PPTX slide to its XML part, appending recursive
     /// `p:grpSp` group trees to the spTree after the flat shapes. Groups
     /// written here round-trip through `OoxmlParser::parse_pptx_groups`.
     pub fn build_slide_xml_with_groups(&self, slide: &Slide, groups: &[GroupShape]) -> String {
-        self.build_slide_xml_inner(slide, groups)
+        self.build_slide_xml_inner(slide, groups, &[])
     }
 
-    fn build_slide_xml_inner(&self, slide: &Slide, groups: &[GroupShape]) -> String {
+    /// Serialize a PPTX slide to its XML part, emitting the rich
+    /// `SlideTextBody` view (`a:bodyPr` layout + `a:buNone`/`a:buChar`/
+    /// `a:buAutoNum` bullets) for every shape matched by id (ORM-07 gaps
+    /// #4/#10). Bodies whose id matches no shape on the slide are ignored;
+    /// unmatched shapes fall back to their flat text body. Rich bodies
+    /// written here round-trip through `OoxmlParser::parse_pptx_text_bodies`.
+    pub fn build_slide_xml_with_text_bodies(
+        &self,
+        slide: &Slide,
+        bodies: &[SlideTextBody],
+    ) -> String {
+        self.build_slide_xml_inner(slide, &[], bodies)
+    }
+
+    fn build_slide_xml_inner(
+        &self,
+        slide: &Slide,
+        groups: &[GroupShape],
+        bodies: &[SlideTextBody],
+    ) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -485,10 +504,18 @@ impl OoxmlSerializer {
         for shape in &slide.shapes {
             match shape {
                 SlideShape::TextBox(tb) => {
-                    self.serialize_textbox_shape(&mut xml, tb);
+                    self.serialize_textbox_shape(
+                        &mut xml,
+                        tb,
+                        self.rich_text_body_for(bodies, &tb.id),
+                    );
                 }
                 SlideShape::Placeholder(ph) => {
-                    self.serialize_placeholder_shape(&mut xml, ph);
+                    self.serialize_placeholder_shape(
+                        &mut xml,
+                        ph,
+                        self.rich_text_body_for(bodies, &ph.id),
+                    );
                 }
                 SlideShape::Picture(pic) => {
                     self.serialize_picture_shape(&mut xml, pic);
@@ -784,7 +811,12 @@ impl OoxmlSerializer {
         }
     }
 
-    fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
+    fn serialize_textbox_shape(
+        &self,
+        xml: &mut String,
+        tb: &TextBoxShape,
+        rich_body: Option<&SlideTextBody>,
+    ) {
         xml.push_str(&format!(
             r#"
     <p:sp>
@@ -805,11 +837,19 @@ impl OoxmlSerializer {
             r#"
       </p:spPr>"#,
         );
-        self.serialize_text_body(xml, &tb.text_body);
+        match rich_body {
+            Some(body) => self.serialize_slide_text_body(xml, body),
+            None => self.serialize_text_body(xml, &tb.text_body),
+        }
         xml.push_str("\n    </p:sp>");
     }
 
-    fn serialize_placeholder_shape(&self, xml: &mut String, ph: &PlaceholderShape) {
+    fn serialize_placeholder_shape(
+        &self,
+        xml: &mut String,
+        ph: &PlaceholderShape,
+        rich_body: Option<&SlideTextBody>,
+    ) {
         xml.push_str(&format!(
             r#"
     <p:sp>
@@ -833,7 +873,10 @@ impl OoxmlSerializer {
       </p:spPr>"#,
         );
         if let Some(ref tb) = ph.text_body {
-            self.serialize_text_body(xml, tb);
+            match rich_body {
+                Some(body) => self.serialize_slide_text_body(xml, body),
+                None => self.serialize_text_body(xml, tb),
+            }
         }
         xml.push_str("\n    </p:sp>");
     }
@@ -1074,6 +1117,113 @@ impl OoxmlSerializer {
         self.serialize_group_shape_inner(group, 0)
     }
 
+    /// Serialize `ppt/tableStyles.xml` (the `a:tblStyleLst` catalog) from the
+    /// typed `PptxTableStyles` model (ORM-07 ranked gap #5). Output
+    /// round-trips through `OoxmlParser::parse_pptx_table_styles`.
+    pub fn serialize_pptx_table_styles(&self, styles: &PptxTableStyles) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main""#,
+        );
+        if let Some(ref def) = styles.default_style_id {
+            xml.push_str(&format!(" def=\"{}\"", escape_xml(def)));
+        }
+        xml.push('>');
+
+        for style in &styles.styles {
+            xml.push_str(&format!(
+                "\n  <a:tblStyle styleId=\"{}\"",
+                escape_xml(&style.style_id)
+            ));
+            if let Some(ref name) = style.style_name {
+                xml.push_str(&format!(" styleName=\"{}\"", escape_xml(name)));
+            }
+            xml.push('>');
+
+            if let Some(ref bg) = style.table_background {
+                xml.push_str(&format!(
+                    "\n    <a:tblBg><a:fill><a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill></a:fill></a:tblBg>",
+                    escape_xml(bg)
+                ));
+            }
+
+            // (element name, scope part) in schema order.
+            let scopes = [
+                ("a:wholeTbl", style.whole_table.as_ref()),
+                ("a:firstRow", style.first_row.as_ref()),
+                ("a:firstCol", style.first_col.as_ref()),
+                ("a:lastRow", style.last_row.as_ref()),
+                ("a:lastCol", style.last_col.as_ref()),
+                ("a:band1H", style.band1_h.as_ref()),
+                ("a:band1V", style.band1_v.as_ref()),
+                ("a:band2H", style.band2_h.as_ref()),
+                ("a:band2V", style.band2_v.as_ref()),
+            ];
+            for (name, part) in scopes {
+                let Some(part) = part else {
+                    continue;
+                };
+                xml.push_str(&format!("\n    <{}>", name));
+                if !part.borders.is_empty() {
+                    xml.push_str("\n      <a:tcBdr>");
+                    for border in &part.borders {
+                        xml.push_str(&format!("\n        <a:{}", escape_xml(&border.edge)));
+                        if let Some(w) = border.width {
+                            xml.push_str(&format!(" w=\"{}\"", w));
+                        }
+                        xml.push('>');
+                        let fill_color = match (&border.color, &border.scheme_color) {
+                            (Some(c), _) => format!("<a:srgbClr val=\"{}\"/>", escape_xml(c)),
+                            (None, Some(c)) => format!("<a:schemeClr val=\"{}\"/>", escape_xml(c)),
+                            (None, None) => String::new(),
+                        };
+                        if !fill_color.is_empty() {
+                            xml.push_str(&format!("\n          <a:solidFill>{}</a:solidFill>", fill_color));
+                        }
+                        if let Some(ref dash) = border.dash {
+                            xml.push_str(&format!(
+                                "\n          <a:prstDash val=\"{}\"/>",
+                                escape_xml(dash)
+                            ));
+                        }
+                        xml.push_str(&format!("\n        </a:{}>", escape_xml(&border.edge)));
+                    }
+                    xml.push_str("\n      </a:tcBdr>");
+                }
+                for (ref_name, style_ref) in [
+                    ("a:fillRef", part.fill_ref.as_ref()),
+                    ("a:fontRef", part.font_ref.as_ref()),
+                ] {
+                    let Some(style_ref) = style_ref else {
+                        continue;
+                    };
+                    xml.push_str(&format!(
+                        "\n      <{} idx=\"{}\">",
+                        ref_name,
+                        escape_xml(&style_ref.idx)
+                    ));
+                    match (&style_ref.color, &style_ref.scheme_color) {
+                        (Some(c), _) => xml.push_str(&format!(
+                            "<a:srgbClr val=\"{}\"/>",
+                            escape_xml(c)
+                        )),
+                        (None, Some(c)) => xml.push_str(&format!(
+                            "<a:schemeClr val=\"{}\"/>",
+                            escape_xml(c)
+                        )),
+                        (None, None) => {}
+                    }
+                    xml.push_str(&format!("</{}>", ref_name));
+                }
+                xml.push_str(&format!("\n    </{}>", name));
+            }
+            xml.push_str("\n  </a:tblStyle>");
+        }
+
+        xml.push_str("\n</a:tblStyleLst>");
+        xml
+    }
+
     fn serialize_group_shape_inner(&self, group: &GroupShape, depth: usize) -> String {
         let i = "    ".repeat(depth + 1); // shape-level indent (4 spaces at depth 0)
         let c = "    ".repeat(depth + 2); // child-element indent
@@ -1104,9 +1254,11 @@ impl OoxmlSerializer {
                 GroupChild::Shape(shape) => {
                     let mut frag = String::new();
                     match shape {
-                        SlideShape::TextBox(tb) => self.serialize_textbox_shape(&mut frag, tb),
+                        SlideShape::TextBox(tb) => {
+                            self.serialize_textbox_shape(&mut frag, tb, None)
+                        }
                         SlideShape::Placeholder(ph) => {
-                            self.serialize_placeholder_shape(&mut frag, ph)
+                            self.serialize_placeholder_shape(&mut frag, ph, None)
                         }
                         SlideShape::Picture(pic) => self.serialize_picture_shape(&mut frag, pic),
                         SlideShape::Table(table) => self.serialize_table_shape(&mut frag, table),
@@ -1128,17 +1280,109 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
-        xml.push_str("\n      <p:txBody>");
-        xml.push_str(
-            r#"
-        <a:bodyPr/>
-        <a:lstStyle/>"#,
-        );
+    /// Rich slide text body (`SlideTextBody`) matching a shape id, if any.
+    fn rich_text_body_for<'a>(
+        &self,
+        bodies: &'a [SlideTextBody],
+        id: &str,
+    ) -> Option<&'a SlideTextBody> {
+        bodies.iter().find(|b| b.shape_id == id)
+    }
 
-        for para in &tb.paragraphs {
+    fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
+        // Lift the flat word-model body into the rich slide view (no bodyPr,
+        // no bullets) so both paths emit identical DrawingML.
+        let body = SlideTextBody {
+            shape_id: String::new(),
+            body_pr: None,
+            paragraphs: tb
+                .paragraphs
+                .iter()
+                .map(|p| SlideParagraph {
+                    paragraph: p.clone(),
+                    bullet: None,
+                })
+                .collect(),
+        };
+        self.serialize_slide_text_body(xml, &body);
+    }
+
+    /// Emit a `p:txBody` from the rich slide model: `a:bodyPr` (layout +
+    /// autofit choice) and bullet-aware `a:p` paragraphs
+    /// (`a:buNone`/`a:buChar`/`a:buAutoNum` in `a:pPr`). The flat fallback
+    /// path produces the same output as before: empty `<a:bodyPr/>`, no
+    /// `a:pPr`.
+    fn serialize_slide_text_body(&self, xml: &mut String, body: &SlideTextBody) {
+        xml.push_str("\n      <p:txBody>");
+        match &body.body_pr {
+            Some(bp) => {
+                xml.push_str("\n        <a:bodyPr");
+                if bp.rtl_columns == Some(true) {
+                    xml.push_str(" rtlCol=\"1\"");
+                }
+                if bp.anchor_centered == Some(true) {
+                    xml.push_str(" anchorCtr=\"1\"");
+                }
+                if let Some(ref v) = bp.vert {
+                    xml.push_str(&format!(" vert=\"{}\"", escape_xml(v)));
+                }
+                if let Some(v) = bp.left_inset {
+                    xml.push_str(&format!(" lIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.top_inset {
+                    xml.push_str(&format!(" tIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.right_inset {
+                    xml.push_str(&format!(" rIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.bottom_inset {
+                    xml.push_str(&format!(" bIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.num_columns {
+                    xml.push_str(&format!(" numCol=\"{}\"", v));
+                }
+                if let Some(v) = bp.column_spacing {
+                    xml.push_str(&format!(" spcCol=\"{}\"", v));
+                }
+                if let Some(ref v) = bp.wrap {
+                    xml.push_str(&format!(" wrap=\"{}\"", escape_xml(v)));
+                }
+                if let Some(ref v) = bp.anchor {
+                    xml.push_str(&format!(" anchor=\"{}\"", escape_xml(v)));
+                }
+                match &bp.autofit {
+                    None => xml.push_str("/>"),
+                    Some(SlideTextFit::None) => {
+                        xml.push_str(">\n          <a:noAutofit/>\n        </a:bodyPr>");
+                    }
+                    Some(SlideTextFit::NormAutofit {
+                        font_scale,
+                        line_space_reduction,
+                    }) => {
+                        xml.push_str(">\n          <a:normAutofit");
+                        if let Some(v) = font_scale {
+                            xml.push_str(&format!(" fontScale=\"{}\"", v));
+                        }
+                        if let Some(v) = line_space_reduction {
+                            xml.push_str(&format!(" lnSpcReduction=\"{}\"", v));
+                        }
+                        xml.push_str("/>\n        </a:bodyPr>");
+                    }
+                    Some(SlideTextFit::ShapeAutofit) => {
+                        xml.push_str(">\n          <a:spAutoFit/>\n        </a:bodyPr>");
+                    }
+                }
+            }
+            None => xml.push_str("\n        <a:bodyPr/>"),
+        }
+        xml.push_str("\n        <a:lstStyle/>");
+
+        for para in &body.paragraphs {
             xml.push_str("\n        <a:p>");
-            for run in &para.runs {
+            if let Some(bullet) = &para.bullet {
+                self.serialize_bullet_ppr(xml, bullet);
+            }
+            for run in &para.paragraph.runs {
                 if run.text == "\n" {
                     xml.push_str("\n          <a:br/>");
                     continue;
@@ -1186,6 +1430,63 @@ impl OoxmlSerializer {
             xml.push_str("\n        </a:p>");
         }
         xml.push_str("\n      </p:txBody>");
+    }
+
+    /// Emit the `a:pPr` carrying a paragraph bullet. Helper elements come in
+    /// schema order (buClr → buSzPct → buFont) before the bullet choice.
+    fn serialize_bullet_ppr(&self, xml: &mut String, bullet: &TextBullet) {
+        xml.push_str("\n          <a:pPr>");
+        let color = match bullet {
+            TextBullet::None => None,
+            TextBullet::Char { color, scheme_color, .. }
+            | TextBullet::AutoNum { color, scheme_color, .. } => match (color, scheme_color) {
+                (Some(c), _) => Some(format!("<a:srgbClr val=\"{}\"/>", escape_xml(c))),
+                (None, Some(c)) => Some(format!("<a:schemeClr val=\"{}\"/>", escape_xml(c))),
+                (None, None) => None,
+            },
+        };
+        if let Some(c) = color {
+            xml.push_str(&format!("\n            <a:buClr>{}</a:buClr>", c));
+        }
+        let size_pct = match bullet {
+            TextBullet::Char { size_pct, .. } | TextBullet::AutoNum { size_pct, .. } => *size_pct,
+            TextBullet::None => None,
+        };
+        if let Some(v) = size_pct {
+            xml.push_str(&format!("\n            <a:buSzPct val=\"{}\"/>", v));
+        }
+        let font = match bullet {
+            TextBullet::Char { font, .. } | TextBullet::AutoNum { font, .. } => font,
+            TextBullet::None => &None,
+        };
+        if let Some(ref f) = font {
+            xml.push_str(&format!(
+                "\n            <a:buFont typeface=\"{}\"/>",
+                escape_xml(f)
+            ));
+        }
+        match bullet {
+            TextBullet::None => xml.push_str("\n            <a:buNone/>"),
+            TextBullet::Char { character, .. } => xml.push_str(&format!(
+                "\n            <a:buChar char=\"{}\"/>",
+                escape_xml(character)
+            )),
+            TextBullet::AutoNum {
+                auto_num_type,
+                start_at,
+                ..
+            } => {
+                xml.push_str(&format!(
+                    "\n            <a:buAutoNum type=\"{}\"",
+                    escape_xml(auto_num_type)
+                ));
+                if let Some(v) = start_at {
+                    xml.push_str(&format!(" startAt=\"{}\"", v));
+                }
+                xml.push_str("/>");
+            }
+        }
+        xml.push_str("\n          </a:pPr>");
     }
 
     fn build_content_types(&self, doc: &OoxmlDocument) -> String {
