@@ -45,8 +45,8 @@ function or markup region).
 | model | 3 | 1 | 1 | 1 | 0 |
 | collection | 3 | 2 | 1 | 0 | 0 |
 | template | 27 | 6 | 9 | 10 | 2 |
-| common-component | 34 | 8 | 15 | 7 | 4 |
-| **total** | **217** | **60** | **81** | **61** | **15** |
+| common-component | 34 | 8 | 17 | 5 | 4 |
+| **total** | **217** | **60** | **83** | **59** | **15** |
 
 Every row carries an extra `oo_layer` field (`documenteditor` 115 rows vs
 `common` 102 rows) so the documenteditor-app surface and the shared
@@ -86,13 +86,46 @@ no independent UI behavior.
 | `HintManager` | 829 | no onboarding hints | n/a (pure UI) |
 | `ShortcutsEditDialog` | 526 | shortcut re-binding absent | n/a |
 | `Calendar` (widget) | 503 | no custom date picker (native input only) | n/a |
-| `HSBColorPicker` + `ExtendedColorDialog` | — | no custom color wheel/RGB entry anywhere | `asc_putColor` |
-| `MultiSliderGradient` | 381 | gradient-stop editor absent | `asc_getGradientStops` |
+| `HSBColorPicker` + `ExtendedColorDialog` | — | picker widget ported (P3-U01 `wo-dialogs.js`); no consumer dialog spec yet | `asc_putColor` |
+| `MultiSliderGradient` | 381 | widget ported (P3-U01 `wo-dialogs.js`); shape/textart fill specs pending (P3-U03) | `asc_getGradientStops` |
 | forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | clustered absences (docxf forms, signing, external editors, ink, thumbnails) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails need paginated raster (ORM-04 severity-3) |
 
-61 of 217 rows are `missing`; the large-block backlog is the first table above
+61 of 217 rows were `missing` at ORM-09 time; 59 remain (the dialog engine
+below closed the two pure-widget absences). The large-block backlog is the
+first table above
 (`ImageSettingsAdvanced` → `TextArtSettings` ≈ 12.5k lines of OO view code
 without a WO counterpart, plus their 5 templates).
+
+## Dialog engine status (P3-U01, landed)
+
+Step 0 of the recommendation above is done: `wo-dialogs.js` (ES module,
+loaded from index.html) ships the data-driven `WoDialogEngine` —
+
+- `build(spec)` renders `{ id, title, titleKey, width, sections:
+  [{ title, titleKey, rows: [{ type: button|checkbox|number|select|text|
+  color|custom, key, label, labelKey, min, max, step, options, value, cmd,
+  widget }] }], okCmd }` as the same `.dialog-overlay`/`.dialog` DOM the
+  static dialogs use; every built id registers into `DIALOG_IDS` via the
+  `woRegisterDialogId()` seam (plus a `__WO_PENDING_DIALOG_IDS__` drain for
+  module-vs-editor boot order), so the modal Tab trap + global Esc close
+  apply unchanged.
+- Command rows emit `data-wo-cmd` + `wo-command` CustomEvents (OK applies
+  the whole value snapshot as one JSON ledger entry) — `runCommand()` /
+  `recordCommand()` / `replayCommands()` consume them without changes.
+- i18n via `data-i18n` + the real catalogs (engine chrome `Dialog.Ok/Title`
+  and all `Widget.*` strings exist in en + de in i18n.js); the engine also
+  seeds only-missing pairs using the `seedUiStrings()` pattern and resolves
+  the shared instance through the `window.__WO_I18N_T__` seam.
+- The three widget prerequisites are ported as custom row factories in the
+  same file: `tableStyler()` (24-segment border-painting grid with
+  style/width/color pen), `hsbColorPicker()` (H/S/B sliders + hex + preview),
+  `multiSliderGradient()` (draggable stops, track-click add, remove with a
+  ≥2-stop floor). All three are import-safe headless (pure value state) and
+  gated by `wo-dialogs.test.mjs` (`WO-DIALOGS-PASS`).
+
+Consumer dialog specs land next: `TableSettingsAdvanced` +
+`ImageSettingsAdvanced` (P3-U02), then `ShapeSettings`/`ReviewPopover`/
+`ExtendedColorDialog` (P3-U03).
 
 ## What WO already covers well (60 `full` rows)
 
@@ -178,9 +211,10 @@ Recommendation: declare dialogs as data and render them.
    (`recordCommand`/`replayCommands`, L4569/4585) for free.
 4. **Backbone not needed.** OO uses Backbone for view lifecycle and SDK event
    fan-out; WO's DOM-event + explicit function-call style is equivalent for
-   dialogs. Only three OO widgets would need real ports before the dialog
-   engine: `TableStyler` (border painting), `HSBColorPicker` (custom colors),
-   `MultiSliderGradient` (gradient stops).
+   dialogs. The three OO widgets that needed real ports before the dialog
+   engine — `TableStyler` (border painting), `HSBColorPicker` (custom
+   colors), `MultiSliderGradient` (gradient stops) — landed with P3-U01 in
+   `wo-dialogs.js` (see "Dialog engine status" above).
 
 ## Port order recommendation (wasm-contract-first)
 

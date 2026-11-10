@@ -1244,9 +1244,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/HSBColorPicker.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "No HSB/RGB custom color wheel anywhere in WO UI.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: hsbColorPicker() factory (P3-U01) — H/S/B sliders + hex + preview swatch; hosts a future ExtendedColorDialog spec",
+  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); no consumer dialog spec yet (P3-U03 hosts ExtendedColorDialog).",
   "oo_layer": "common"
  },
  {
@@ -1285,8 +1285,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/component/TableStyler.js",
   "oo_lines": 964,
   "wo_status": "partial",
-  "wo_anchor": "editor.js: applyTableBanded()/applyTableBandedCols()/applyTableBorder(); borders-dialog",
-  "notes": "Interactive border-painting grid replaced by preset select + banding toggles.",
+  "wo_anchor": "editor.js: applyTableBanded()/applyTableBandedCols()/applyTableBorder(); borders-dialog; wo-dialogs.js: tableStyler() painting-grid factory (P3-U01)",
+  "notes": "Preset select + banding toggles remain; the OO interactive border-painting grid is now ported as a P3-U01 engine widget (en+de) and gets a consumer with TableSettingsAdvanced (P3-U02).",
   "oo_layer": "common"
  },
  {
@@ -1344,9 +1344,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/MultiSliderGradient.js",
   "oo_lines": 381,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Gradient-stop editor absent (blocks shape/textart fills).",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: multiSliderGradient() factory (P3-U01) — draggable stops, track-click add, remove, per-stop color, >=2-stop floor",
+  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); shape/textart fill specs consume it from P3-U03.",
   "oo_layer": "common"
  },
  {

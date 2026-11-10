@@ -17,7 +17,7 @@ the exact commands.
 | ORM-06 | `ooxml-xlsx.md` / `ooxml-xlsx.json` | Can WO read/write XLSX like OO? | 118 families: 2 full / 42 partial / 74 missing; 9 core parts regenerated, the rest rides `extra_parts` passthrough; additive `wo-sheet::*` module plan |
 | ORM-07 | `ooxml-pptx.md` / `ooxml-pptx.json` | Can WO read/write PPTX like OO? | 134 rows: 26 full / 39 partial / 69 missing; inheritance chain, theme, group shapes, text body, tables, transitions; `PptxExtraPart` keeps untouched parts byte-identical |
 | ORM-08 | `legacy-binary.md` / `legacy-binary.json` | What about legacy `.doc`/`.xls`/`.ppt`? | 53 rows: 5 full / 9 partial / 1 stub / 38 missing; read-only policy, never-build writers; `.doc` is the honest gap (DocFile: 287 files / 330 classes, zero WO coverage) |
-| ORM-09 | `ui-webapp.md` / `ui-webapp.json` | Can editor.js host the OO UI surface? | 217 rows: 60 full / 81 partial / 61 missing / 15 merged-into-editor.js; data-driven dialog engine + 3 widget ports; dialog order is wasm-contract-first |
+| ORM-09 | `ui-webapp.md` / `ui-webapp.json` | Can editor.js host the OO UI surface? | 217 rows: 60 full / 83 partial / 59 missing / 15 merged-into-editor.js; data-driven dialog engine + 3 widget ports landed (P3-U01 `wo-dialogs.js`); dialog order is wasm-contract-first |
 | ORM-10 | `PORT-PLAN.md` (+ this index) | How do the nine maps become one plan? | architecture decision — WO's own boundary (push events, property blobs, typed ops) with `asc_*` served as a compatibility layer, not a 1:1 port; four phases; ten named risks |
 
 ## Reading order
