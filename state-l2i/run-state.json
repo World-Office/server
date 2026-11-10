@@ -1,0 +1,50 @@
+{
+  "L2I-04-PLUGINS-OTHER": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "agent_done",
+    "attempt_started_ts": 1793946603,
+    "attempt_worker": "l2i-w3"
+  },
+  "L2I-05-CTX-DIALOGS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793949024,
+    "attempt_worker": "l2i-w1"
+  },
+  "L2I-02-INSERT-IMG": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "agent_done",
+    "attempt_started_ts": 1793946603,
+    "attempt_worker": "l2i-w1"
+  },
+  "L2I-01-FILE-REVIEW": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793949023,
+    "attempt_worker": "l2i-w0"
+  },
+  "L2I-06-L4-DIALOGS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793949024,
+    "attempt_worker": "l2i-w3"
+  },
+  "L2I-03-INSERT-REF-TOF": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793946603,
+    "attempt_worker": "l2i-w2"
+  }
+}

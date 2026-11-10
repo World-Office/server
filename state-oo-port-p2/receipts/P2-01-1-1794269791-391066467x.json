@@ -1,0 +1,17 @@
+{
+  "task": "P2-01",
+  "attempt": 1,
+  "worker": "p2-tud0",
+  "model": "tud/mistral-medium-3.5-128b",
+  "wall_clock_s": 389.901960211,
+  "tokens": 1950160,
+  "turns": 64,
+  "prompt_tokens": 1938696,
+  "completion_tokens": 11464,
+  "ts": 1794269791,
+  "outcome": "failed",
+  "error": "harness: turn cap 64 reached; work kept on branch tf/P2-01-rejected-1-1794269790",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

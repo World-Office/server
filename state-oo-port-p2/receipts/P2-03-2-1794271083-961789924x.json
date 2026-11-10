@@ -1,0 +1,17 @@
+{
+  "task": "P2-03",
+  "attempt": 2,
+  "worker": "p2-w0",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 3.092513968,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794271083,
+  "outcome": "failed",
+  "error": "acceptance gate failed (exit 2): sh: -c: line 1: unexpected EOF while looking for matching `''; work kept on branch tf/P2-03-rejected-2-1794271083",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

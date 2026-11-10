@@ -1,0 +1,17 @@
+{
+  "task": "P1-04",
+  "attempt": 1,
+  "worker": "p1-w3",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 1095.182933958,
+  "tokens": 3554562,
+  "turns": 64,
+  "prompt_tokens": 3494647,
+  "completion_tokens": 59915,
+  "ts": 1794255210,
+  "outcome": "failed",
+  "error": "harness: turn cap 64 reached; work kept on branch tf/P1-04-rejected-1-1794255209",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

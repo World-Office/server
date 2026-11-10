@@ -1,0 +1,16 @@
+{
+  "task": "L2J-04-CTX-LIST-INPUTS",
+  "attempt": 1,
+  "worker": "l2j-w3",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1865.397478289,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793971364,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

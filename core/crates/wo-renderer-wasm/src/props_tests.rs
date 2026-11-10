@@ -22,6 +22,7 @@ fn run(text: &str) -> DocxRun {
 
 fn para(text: &str) -> DocxParagraph {
     DocxParagraph {
+        fields: Vec::new(),
         style_id: None,
         properties: DocxParagraphProperties::default(),
         runs: vec![run(text)],

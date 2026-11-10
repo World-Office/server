@@ -1,6 +1,6 @@
 {
  "defaults": {
-  "max_attempts": 2,
+  "max_attempts": 3,
   "accept_timeout_s": 7200,
   "agent_timeout_s": 9000,
   "retry_delay_s": 60
@@ -15,7 +15,7 @@
    "enabled": true,
    "cli": "builtin",
    "params_b": 400,
-   "max_turns": 64
+   "max_turns": 128
   },
   {
    "name": "p2-w1",
@@ -26,7 +26,7 @@
    "enabled": true,
    "cli": "builtin",
    "params_b": 400,
-   "max_turns": 64
+   "max_turns": 128
   },
   {
    "name": "p2-w2",
@@ -37,7 +37,7 @@
    "enabled": true,
    "cli": "builtin",
    "params_b": 400,
-   "max_turns": 64
+   "max_turns": 128
   },
   {
    "name": "p2-w3",
@@ -48,7 +48,7 @@
    "enabled": true,
    "cli": "builtin",
    "params_b": 400,
-   "max_turns": 64
+   "max_turns": 128
   },
   {
    "name": "p2-tud0",
@@ -58,7 +58,7 @@
    "api_key_env": "LITELLM_MASTER_KEY",
    "enabled": true,
    "cli": "builtin",
-   "max_turns": 64,
+   "max_turns": 128,
    "params_b": 27
   },
   {
@@ -69,7 +69,7 @@
    "api_key_env": "LITELLM_MASTER_KEY",
    "enabled": true,
    "cli": "builtin",
-   "max_turns": 64,
+   "max_turns": 128,
    "params_b": 27
   }
  ]

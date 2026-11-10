@@ -1,0 +1,16 @@
+{
+  "task": "L2I-02-INSERT-IMG",
+  "attempt": 1,
+  "worker": "l2i-w1",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1951.116833835,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793948554,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

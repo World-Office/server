@@ -1,0 +1,16 @@
+{
+  "task": "L2I-01-FILE-REVIEW",
+  "attempt": 1,
+  "worker": "l2i-w0",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1838.248196692,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793948441,
+  "outcome": "failed",
+  "error": "agent exited NonZero (code 1); work kept on branch tf/L2I-01-FILE-REVIEW-rejected-1-1793948440",
+  "cost_micros": null,
+  "contracts": null
+}

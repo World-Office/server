@@ -1,0 +1,50 @@
+{
+  "L2H-04-INSERT-STRUCT": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793888205,
+    "attempt_worker": "l2h-w3"
+  },
+  "L2H-03-FILE-FMT": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793888205,
+    "attempt_worker": "l2h-w2"
+  },
+  "L2H-05-LAYOUT-PROTECT": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793889591,
+    "attempt_worker": "l2h-w0"
+  },
+  "L2H-06-SHORTCUT-REAL": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793889680,
+    "attempt_worker": "l2h-w3"
+  },
+  "L2H-01-CTX-CHART": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793888205,
+    "attempt_worker": "l2h-w0"
+  },
+  "L2H-02-CTX-RESIDUAL": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793888205,
+    "attempt_worker": "l2h-w1"
+  }
+}

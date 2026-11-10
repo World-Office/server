@@ -1,0 +1,42 @@
+{
+  "P1-04": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794254115,
+    "attempt_worker": "p1-w3"
+  },
+  "P1-03": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794253370,
+    "attempt_worker": "p1-w2"
+  },
+  "P1-02": {
+    "state": "done",
+    "attempts": 0,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": null,
+    "attempt_worker": null
+  },
+  "P1-05": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794246482,
+    "attempt_worker": "p1-w0"
+  },
+  "P1-01": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794252386,
+    "attempt_worker": "p1-tud1"
+  }
+}

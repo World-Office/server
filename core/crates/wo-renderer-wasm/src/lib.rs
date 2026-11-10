@@ -2351,6 +2351,7 @@ fn insert_char_at_cursor(
     }
     // nothing to resolve into (no paragraphs anywhere) → create the first one
     body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+        fields: Vec::new(),
         style_id: None,
         properties: DocxParagraphProperties::default(),
         raw_flds: Vec::new(),
@@ -2375,6 +2376,7 @@ fn insert_paragraph_break(
     path: Option<BlockPath>,
 ) -> CursorPos {
     let new_para = DocxParagraph {
+        fields: Vec::new(),
         style_id: None,
         properties: DocxParagraphProperties::default(),
         raw_flds: Vec::new(),
@@ -3350,6 +3352,7 @@ pub fn apply_structure_op(
             use wo_ooxml::model::{DocxTable, DocxTableCell, DocxTableProperties, DocxTableRow};
             let make_cell = || DocxTableCell {
                 paragraphs: vec![DocxParagraph {
+                    fields: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     raw_flds: Vec::new(),
@@ -3386,6 +3389,7 @@ pub fn apply_structure_op(
         }
         "insert-section-break" | "insert-continuous-section-break" => {
             let new_para = DocxParagraph {
+                fields: Vec::new(),
                 style_id: None,
                 properties: DocxParagraphProperties {
                     page_break_before: true,
@@ -3406,6 +3410,7 @@ pub fn apply_structure_op(
             // block with a border marker paragraph (renderer draws text only,
             // so we insert a full-width run of box-drawing chars).
             let rule_para = DocxParagraph {
+                fields: Vec::new(),
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
                 raw_flds: Vec::new(),
@@ -3422,6 +3427,7 @@ pub fn apply_structure_op(
         }
         "page-break" => {
             let new_para = DocxParagraph {
+                fields: Vec::new(),
                 style_id: None,
                 properties: DocxParagraphProperties {
                     page_break_before: true,

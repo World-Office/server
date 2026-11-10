@@ -1,0 +1,17 @@
+{
+  "task": "P1-02",
+  "attempt": 2,
+  "worker": "p1-w1",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 26.15517564,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794248534,
+  "outcome": "failed",
+  "error": "acceptance gate failed (exit 1): ; work kept on branch tf/P1-02-rejected-2-1794248534",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

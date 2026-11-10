@@ -1,0 +1,16 @@
+{
+  "task": "L2H-04-INSERT-STRUCT",
+  "attempt": 1,
+  "worker": "l2h-w3",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1474.257161865,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793889680,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

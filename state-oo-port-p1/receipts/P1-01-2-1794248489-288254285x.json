@@ -1,0 +1,17 @@
+{
+  "task": "P1-01",
+  "attempt": 2,
+  "worker": "p1-tud0",
+  "model": "tud/Kimi-K2.6",
+  "wall_clock_s": 4.006013155,
+  "tokens": 0,
+  "turns": 1,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794248489,
+  "outcome": "failed",
+  "error": "harness: provider http 400: {\"error\":{\"message\":\"litellm.BadRequestError: OpenAIException - /chat/completions: Invalid model name passed in model=Kimi-K2.6. Call `/v1/models` to view available models ",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

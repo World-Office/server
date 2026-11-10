@@ -1,0 +1,17 @@
+{
+  "task": "P2-02",
+  "attempt": 1,
+  "worker": "p2-tud1",
+  "model": "tud/Qwen3.8-27B",
+  "wall_clock_s": 1691.486649042,
+  "tokens": 3761487,
+  "turns": 60,
+  "prompt_tokens": 3716584,
+  "completion_tokens": 44903,
+  "ts": 1794275045,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}

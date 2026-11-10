@@ -173,6 +173,7 @@ fn engine_layout_multiline_selection_rects_non_overlap() {
     // all of it must map to one non-overlapping rect per line.
     let mut body = DocxBody::default();
     body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+        fields: Vec::new(),
         style_id: None,
         properties: Default::default(),
         runs: vec![DocxRun {

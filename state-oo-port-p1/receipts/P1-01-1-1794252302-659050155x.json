@@ -1,0 +1,17 @@
+{
+  "task": "P1-01",
+  "attempt": 1,
+  "worker": "p1-tud0",
+  "model": "tud/mistral-medium-3.5-128b",
+  "wall_clock_s": 591.815928144,
+  "tokens": 1220796,
+  "turns": 60,
+  "prompt_tokens": 1206356,
+  "completion_tokens": 14440,
+  "ts": 1794252302,
+  "outcome": "failed",
+  "error": "merge of tf/P1-01 failed: Auto-merging core/crates/wo-renderer-wasm/src/lib.rs",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

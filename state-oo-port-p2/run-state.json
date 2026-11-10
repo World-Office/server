@@ -1,0 +1,26 @@
+{
+  "P2-02": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794273353,
+    "attempt_worker": "p2-tud1"
+  },
+  "P2-01": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794271079,
+    "attempt_worker": "p2-tud0"
+  },
+  "P2-03": {
+    "state": "failed",
+    "attempts": 2,
+    "last_error": "acceptance gate failed (exit 1): ; work kept on branch tf/P2-03-rejected-2-1794275102",
+    "phase": "agent_done",
+    "attempt_started_ts": 1794275073,
+    "attempt_worker": "p2-w1"
+  }
+}

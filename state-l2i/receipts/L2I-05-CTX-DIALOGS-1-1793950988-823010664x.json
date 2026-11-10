@@ -1,0 +1,16 @@
+{
+  "task": "L2I-05-CTX-DIALOGS",
+  "attempt": 1,
+  "worker": "l2i-w1",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1964.798293468,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793950988,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

@@ -1,0 +1,16 @@
+{
+  "task": "L2I-03-INSERT-REF-TOF",
+  "attempt": 1,
+  "worker": "l2i-w2",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 2791.478224662,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793949394,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

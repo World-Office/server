@@ -1,0 +1,17 @@
+{
+  "task": "P2-03",
+  "attempt": 1,
+  "worker": "p2-tud1",
+  "model": "tud/Qwen3.8-27B",
+  "wall_clock_s": 1615.609075478,
+  "tokens": 3419491,
+  "turns": 64,
+  "prompt_tokens": 3375431,
+  "completion_tokens": 44060,
+  "ts": 1794271017,
+  "outcome": "failed",
+  "error": "harness: turn cap 64 reached; work kept on branch tf/P2-03-rejected-1-1794271016",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

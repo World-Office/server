@@ -1,0 +1,17 @@
+{
+  "task": "P1-03",
+  "attempt": 1,
+  "worker": "p1-w2",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 0.0,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794254114,
+  "outcome": "recovered",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}

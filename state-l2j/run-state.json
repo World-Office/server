@@ -1,0 +1,34 @@
+{
+  "L2J-03-REF-REVIEW-INPUTS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793969498,
+    "attempt_worker": "l2j-w2"
+  },
+  "L2J-04-CTX-LIST-INPUTS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793969498,
+    "attempt_worker": "l2j-w3"
+  },
+  "L2J-01-PAGE-INPUTS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793969498,
+    "attempt_worker": "l2j-w0"
+  },
+  "L2J-02-INSERT-INPUTS": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793969498,
+    "attempt_worker": "l2j-w1"
+  }
+}

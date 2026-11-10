@@ -7,6 +7,7 @@ fn body_with(texts: &[&str]) -> DocxBody {
     let mut body = DocxBody::default();
     for t in texts {
         body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            fields: Vec::new(),
             style_id: None,
             properties: DocxParagraphProperties::default(),
             runs: vec![DocxRun {
