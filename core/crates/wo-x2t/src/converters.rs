@@ -3267,6 +3267,39 @@ fn css_for_num_id(num_id: Option<u32>) -> Option<(&'static str, bool)> {
     }
 }
 
+/// P2-05: a foreign numbering definition's `w:numFmt` (typed DocxNumLevel)
+/// -> css list-style-type + ordered flag, so numIds outside the fixed
+/// 1..8 registry still render as the right list kind/style. `None` means
+/// "unknown format — let the registry/heuristic decide". Bullet formats
+/// pick the css marker from the lvlText glyph where it is one of ours.
+fn css_for_num_fmt(
+    num_fmt: Option<&str>,
+    lvl_text: Option<&str>,
+) -> Option<(Option<&'static str>, bool)> {
+    match num_fmt? {
+        "bullet" => {
+            let css = match lvl_text {
+                Some("\u{25E6}") => "circle",
+                Some("\u{25AA}") => "square",
+                _ => "disc",
+            };
+            Some((Some(css), false))
+        }
+        "none" => Some((Some("none"), false)),
+        "decimal" => Some((Some("decimal"), true)),
+        "lowerLetter" => Some((Some("lower-alpha"), true)),
+        "upperLetter" => Some((Some("upper-alpha"), true)),
+        "lowerRoman" => Some((Some("lower-roman"), true)),
+        "upperRoman" => Some((Some("upper-roman"), true)),
+        // Counting formats without a css equivalent still order the list.
+        "ordinal" | "cardinalText" | "ordinalText" | "hex" | "chicago"
+        | "decimalZero" | "decimalEnclosedCircle" | "decimalEnclosedFullstop"
+        | "decimalEnclosedParen" | "arabicFullStop" | "aiueo" | "iroha"
+        | "koreanDigital" | "japaneseCounting" => Some((None, true)),
+        _ => None,
+    }
+}
+
 /// C2-2b: fold a known w:numFmt (via css list-style-type) into the list's
 /// inline style attr alongside any indent declarations.
 fn merge_list_style(base: Option<String>, style_type: Option<&str>) -> Option<String> {
@@ -4189,16 +4222,29 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
     for para in body.paragraphs() {
         // LEDGER2: list paragraphs (numPr) group into consecutive <ul>/<ol>
         // blocks — numbered when the style says ListNumber, else bulleted.
-        // ponytail: list-type is style-name-based; a numbering.xml-aware
-        // mapping can refine later.
         if para.properties.num_id.is_some() {
+            // P2-05: resolve numId through the typed numbering part first —
+            // a foreign document carries its own abstractNum/numFmt
+            // definitions (lowerLetter, upperRoman, ordinal, ...), which the
+            // fixed numId 1..8 registry below cannot know about.
+            let ilvl = para.properties.ilvl.unwrap_or(0) as u32;
+            let numbering_match = doc
+                .docx_body
+                .as_ref()
+                .and_then(|b| b.numbering.as_ref())
+                .and_then(|n| n.level_for(para.properties.num_id.unwrap_or(0), ilvl))
+                .and_then(|lvl| {
+                    css_for_num_fmt(lvl.num_fmt.as_deref(), lvl.lvl_text.as_deref())
+                });
             // Known numIds (1..8) keep their css list-style-type + ordered
             // flag; hand-authored docx falls back to the ListNumber style
             // heuristic (pre C2-2b convention).
-            let style_match = css_for_num_id(para.properties.num_id);
-            let (style_type, known_ordered) = match style_match {
-                Some((css, ord)) => (Some(css), Some(ord)),
-                None => (None, None),
+            let (style_type, known_ordered) = match numbering_match {
+                Some((css, ord)) => (css, Some(ord)),
+                None => match css_for_num_id(para.properties.num_id) {
+                    Some((css, ord)) => (Some(css), Some(ord)),
+                    None => (None, None),
+                },
             };
             let ordered = known_ordered.unwrap_or_else(|| {
                 para.style_id
@@ -4214,7 +4260,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 (Some(css), _) => Some(css),
                 (None, _) => None,
             };
-            let ilvl = para.properties.ilvl.unwrap_or(0) as usize;
+            let ilvl = ilvl as usize;
             let inlines = docx_runs_to_html_inlines(body, &para.runs);
             let item = ListItem { content: inlines };
             // Flatten nesting: deep levels become items of the same list
