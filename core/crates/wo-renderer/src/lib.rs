@@ -20,6 +20,9 @@ pub mod transform;
 #[cfg(test)]
 mod shaping_tests;
 
+#[cfg(test)]
+mod raster_tests;
+
 pub use canvas::Canvas;
 pub use color::{Color, Paint, StrokeStyle};
 pub use fonts::FontLibrary;

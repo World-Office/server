@@ -178,6 +178,8 @@ pub struct XlsxSheetProperties {
     pub print: XlsxPrintSettings,
     /// Cell hyperlinks (`<hyperlinks><hyperlink ref="A1" .../>`).
     pub hyperlinks: Vec<XlsxHyperlink>,
+    /// Conditional formatting (`<conditionalFormatting sqref=...>` blocks).
+    pub conditional_formatting: Vec<XlsxConditionalFormatting>,
 }
 
 /// Worksheet print model (ORM-06 print/PDF parity): page margins, page
@@ -303,6 +305,153 @@ pub struct XlsxHyperlink {
     pub tooltip: Option<String>,
 }
 
+/// A conditional-formatting block (CT_ConditionalFormatting): one or more
+/// rules sharing a `sqref` range list.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxConditionalFormatting {
+    /// Sequence of range references (e.g. "A1:A10" or "A1:A10 C3 E5:E9").
+    pub sqref: String,
+    /// Rules in priority order.
+    pub rules: Vec<XlsxConditionalFormatRule>,
+}
+
+/// A single conditional-format rule (CT_CfRule). Type-specific payloads
+/// (colorScale / dataBar / iconSet) live in `kind`; everything else stays
+/// as optional attributes so the remaining rule kinds round-trip too.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxConditionalFormatRule {
+    /// "cellIs" | "expression" | "colorScale" | "dataBar" | "iconSet" |
+    /// "top10" | "aboveAverage" | "uniqueValues" | "duplicateValues" |
+    /// "containsText" | "notContainsText" | "beginsWith" | "endsWith" |
+    /// "timePeriod" | "containsBlanks" | "notContainsBlanks" |
+    /// "containsErrors" | "notContainsErrors".
+    pub rule_type: String,
+    /// Rule priority; lower numbers evaluate first.
+    pub priority: Option<u32>,
+    /// Stop evaluating further rules for cells this rule matches.
+    pub stop_if_true: bool,
+    /// Index into the styles part `dxfs` collection.
+    pub dxf_id: Option<u32>,
+    /// Comparison operator (cellIs): "greaterThan", "between", ...
+    pub operator: Option<String>,
+    /// Matched text (containsText/beginsWith/...).
+    pub text: Option<String>,
+    /// Date period (timePeriod): "yesterday", "last7Days", ...
+    pub time_period: Option<String>,
+    /// Top/bottom-N rank (top10).
+    pub rank: Option<u32>,
+    /// Top/bottom percentage instead of count (top10).
+    pub percent: Option<bool>,
+    /// Bottom-N instead of top-N (top10).
+    pub bottom: Option<bool>,
+    /// Above (default) or below average (aboveAverage).
+    pub above_average: Option<bool>,
+    /// Formula/threshold texts in document order.
+    pub formulas: Vec<String>,
+    /// Typed payload for the three visual rule kinds.
+    pub kind: XlsxConditionalFormatKind,
+}
+
+/// Type-specific payload of a CF rule.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum XlsxConditionalFormatKind {
+    /// Rule kinds that carry only attributes + formulas.
+    #[default]
+    Plain,
+    /// Three-color (or two-color) gradient scale.
+    ColorScale(XlsxColorScale),
+    /// In-cell bar chart.
+    DataBar(XlsxDataBar),
+    /// Icon overlay per threshold bucket.
+    IconSet(XlsxIconSet),
+}
+
+/// A rule threshold (CT_Cfvo): minimum/maximum/percent/number/formula.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxCfvo {
+    /// "num" | "percent" | "max" | "min" | "formula" | "percentile".
+    pub cfvo_type: String,
+    /// Threshold value/formula (empty for min/max).
+    pub val: Option<String>,
+    /// Greater-than-or-equal (iconSet buckets, default true).
+    pub gte: bool,
+}
+
+/// Color scale (CT_ColorScale): `cfvo` thresholds + one color per step.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxColorScale {
+    /// 2..=3 thresholds (defaults: min → max).
+    pub cfvos: Vec<XlsxCfvo>,
+    /// One color per threshold, same length.
+    pub colors: Vec<XlsxCfColor>,
+}
+
+/// Data bar (CT_DataBar).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxDataBar {
+    /// min + max thresholds.
+    pub cfvos: Vec<XlsxCfvo>,
+    /// Bar color.
+    pub color: Option<XlsxCfColor>,
+    /// Shortest bar as percent of the cell width (default 10).
+    pub min_length: Option<u32>,
+    /// Longest bar as percent of the cell width (default 90).
+    pub max_length: Option<u32>,
+    /// Show the cell value next to the bar (default true).
+    pub show_value: bool,
+}
+
+/// Icon set (CT_IconSet).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxIconSet {
+    /// Built-in set id (default "3TrafficLights1"): 3Arrows, 4RedToBlack,
+    /// 5Quarters, ...
+    pub icon_set: Option<String>,
+    /// Show the cell value next to the icon (default true).
+    pub show_value: bool,
+    /// Interpret thresholds as percent instead of percentiles.
+    pub percent: bool,
+    /// Reverse icon order.
+    pub reverse: bool,
+    /// n thresholds for an n-icon set.
+    pub cfvos: Vec<XlsxCfvo>,
+}
+
+/// A color reference in CF payloads: ARGB hex (`rgb`), a theme palette
+/// entry (+ optional tint) or a legacy indexed palette entry.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxCfColor {
+    /// "RRGGBB" or "AARRGGBB".
+    pub rgb: Option<String>,
+    /// Theme color index.
+    pub theme: Option<u32>,
+    /// Legacy indexed palette entry.
+    pub indexed: Option<u32>,
+    /// Tint applied over the theme/indexed base color.
+    pub tint: Option<f64>,
+}
+
+/// Differential formatting record (CT_Dxf): the style delta a CF rule
+/// applies when it matches, referenced via its index in `dxfs`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxDxf {
+    pub font: Option<XlsxFont>,
+    pub num_fmt: Option<XlsxNumFmt>,
+    pub fill: Option<XlsxFill>,
+    pub alignment: Option<XlsxAlignment>,
+    pub border: Option<XlsxBorder>,
+    pub protection: Option<XlsxProtection>,
+}
+
 /// A row in a worksheet.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxRow {
@@ -396,10 +545,12 @@ pub struct XlsxStyles {
     pub cell_style_xfs: Vec<XlsxCellStyleXf>,
     /// Cell formats.
     pub cell_xfs: Vec<XlsxCellXf>,
+    /// Differential formats (CF rule styles), indexed by dxfId.
+    pub dxfs: Vec<XlsxDxf>,
 }
 
 /// Number format.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxNumFmt {
     /// Format code.
     pub format_code: String,
@@ -408,7 +559,7 @@ pub struct XlsxNumFmt {
 }
 
 /// Font definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxFont {
     /// Font name.
     pub name: Option<String>,
@@ -427,7 +578,7 @@ pub struct XlsxFont {
 }
 
 /// Fill definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxFill {
     /// Pattern type.
     pub pattern_type: Option<String>,
@@ -438,7 +589,7 @@ pub struct XlsxFill {
 }
 
 /// Border definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxBorder {
     /// Left border.
     pub left: Option<XlsxBorderSide>,
@@ -453,7 +604,7 @@ pub struct XlsxBorder {
 }
 
 /// Border side definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxBorderSide {
     /// Style.
     pub style: Option<String>,
@@ -504,7 +655,7 @@ pub struct XlsxCellXf {
 }
 
 /// Cell alignment.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxAlignment {
     /// Horizontal alignment.
     pub horizontal: Option<String>,
@@ -521,7 +672,7 @@ pub struct XlsxAlignment {
 }
 
 /// Cell protection.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxProtection {
     /// Locked.
     pub locked: bool,
@@ -2216,6 +2367,389 @@ pub struct SmartArtShape {
     pub data_layout: String,
 }
 
+/// Transform of a `p:grpSp` group (`p:grpSpPr/a:xfrm`): the group's outer
+/// bounds in the parent coordinate space plus the child coordinate-space
+/// mapping (`a:chOff`/`a:chExt`) that places/scales the group's children.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupTransform {
+    /// Group bounding box in the parent coordinate space (`a:off`/`a:ext`).
+    pub bounds: Bounds,
+    /// Child coordinate-space origin (`a:chOff`), when written explicitly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_offset: Option<(i64, i64)>,
+    /// Child coordinate-space extent (`a:chExt`), when written explicitly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_extent: Option<(i64, i64)>,
+}
+
+/// A group shape (`p:grpSp`) — a recursive container of slide shapes with its
+/// own `p:grpSpPr` transform. Grouped shapes were previously dropped at parse
+/// by the direct-children spTree scan (ORM-07 ranked gap #1).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupShape {
+    pub id: String,
+    pub name: String,
+    /// Group transform (outer bounds + child-space `chOff`/`chExt`).
+    pub transform: GroupTransform,
+    /// Child shapes in document order; may contain nested groups.
+    pub children: Vec<GroupChild>,
+    /// Union bounding box of all direct children expressed in this group's
+    /// child coordinate space (computed at parse; used as the effective
+    /// child space when the group carries no explicit chOff/chExt).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_bounds: Option<Bounds>,
+}
+
+/// One entry of a group's child list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum GroupChild {
+    /// A leaf slide shape (`p:sp`, `p:pic`, `p:cxnSp`, ...).
+    Shape(SlideShape),
+    /// A nested `p:grpSp` (recursive SpTree member).
+    Group(Box<GroupShape>),
+}
+
+impl SlideShape {
+    /// Bounding box of any slide shape variant.
+    pub fn bounds(&self) -> Bounds {
+        match self {
+            SlideShape::TextBox(s) => s.bounds,
+            SlideShape::Picture(s) => s.bounds,
+            SlideShape::Placeholder(s) => s.bounds,
+            SlideShape::Table(s) => s.bounds,
+            SlideShape::Connector(s) => s.bounds,
+            SlideShape::Chart(s) => s.bounds,
+            SlideShape::SmartArt(s) => s.bounds,
+        }
+    }
+}
+
+impl GroupShape {
+    /// Union (`min`/`max`) bounding box of all direct children in this group's
+    /// child coordinate space. Nested groups contribute their outer bounds
+    /// (which live in the enclosing child space).
+    pub fn child_bounds_union(&self) -> Option<Bounds> {
+        let mut acc: Option<Bounds> = None;
+        for child in &self.children {
+            let b = match child {
+                GroupChild::Shape(s) => s.bounds(),
+                GroupChild::Group(g) => g.transform.bounds,
+            };
+            acc = Some(match acc {
+                None => b,
+                Some(a) => {
+                    let x = a.x.min(b.x);
+                    let y = a.y.min(b.y);
+                    Bounds {
+                        x,
+                        y,
+                        cx: (a.x + a.cx).max(b.x + b.cx) - x,
+                        cy: (a.y + a.cy).max(b.y + b.cy) - y,
+                    }
+                }
+            });
+        }
+        acc
+    }
+
+    /// Effective child coordinate space: the explicit `chOff`/`chExt` when
+    /// present, otherwise the parsed child bounds union, otherwise the group's
+    /// own bounds (OOXML defaults chOff/chExt to off/ext when absent).
+    pub fn effective_child_space(&self) -> ((i64, i64), (i64, i64)) {
+        if let (Some(off), Some(ext)) =
+            (self.transform.child_offset, self.transform.child_extent)
+        {
+            return (off, ext);
+        }
+        if let Some(cb) = self.child_bounds {
+            return ((cb.x, cb.y), (cb.cx, cb.cy));
+        }
+        (
+            (self.transform.bounds.x, self.transform.bounds.y),
+            (self.transform.bounds.cx, self.transform.bounds.cy),
+        )
+    }
+
+    /// Affine map (sx, sy, tx, ty) from this group's child coordinate space
+    /// into the parent space: `x' = sx*x + tx`, `y' = sy*y + ty`.
+    pub fn child_to_parent_affine(&self) -> (f64, f64, f64, f64) {
+        let (off, ext) = self.effective_child_space();
+        let b = &self.transform.bounds;
+        let sx = if ext.0 != 0 {
+            b.cx as f64 / ext.0 as f64
+        } else {
+            1.0
+        };
+        let sy = if ext.1 != 0 {
+            b.cy as f64 / ext.1 as f64
+        } else {
+            1.0
+        };
+        (
+            sx,
+            sy,
+            b.x as f64 - off.0 as f64 * sx,
+            b.y as f64 - off.1 as f64 * sy,
+        )
+    }
+}
+
+// --- PPTX slide text bodies (ORM-07 ranked gaps #4/#10) ---
+
+/// DrawingML bullet definition for a slide paragraph (`CT_TextBullet*`):
+/// the `a:buNone` / `a:buChar` / `a:buAutoNum` children of `a:pPr`. Parsed
+/// decks previously lost every bullet — paragraphs collapsed to plain text
+/// (ORM-07 ranked gap #4).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum TextBullet {
+    /// `a:buNone` — bullet explicitly suppressed for this paragraph.
+    None,
+    /// `a:buChar` — literal character bullet (e.g. "•", "–", "➔").
+    Char {
+        /// Bullet glyph (`char` attribute).
+        character: String,
+        /// Bullet typeface (`a:buFont typeface`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font: Option<String>,
+        /// Bullet color (`a:buClr`), hex when `a:srgbClr`, else `None` with
+        /// `scheme_color` set.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        /// Theme color token (`a:schemeClr val`) when the bullet color is
+        /// theme-referenced rather than literal.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        scheme_color: Option<String>,
+        /// Bullet size as thousandths of a percent (`a:buSzPct val`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        size_pct: Option<i64>,
+    },
+    /// `a:buAutoNum` — automatic numbered bullet.
+    AutoNum {
+        /// Numbering scheme (`type` attribute: arabicPeriod, alphaLcPeriod,
+        /// romanUcParenR, ...).
+        auto_num_type: String,
+        /// First number (`startAt` attribute); `None` = continue at 1.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        start_at: Option<i64>,
+        /// Numbering typeface (`a:buFont typeface`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font: Option<String>,
+        /// Number color (`a:buClr`), hex when `a:srgbClr`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        /// Theme color token (`a:schemeClr val`) when theme-referenced.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        scheme_color: Option<String>,
+        /// Number size as thousandths of a percent (`a:buSzPct val`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        size_pct: Option<i64>,
+    },
+}
+
+/// Text autofit mode (`CT_TextBodyProperties` autofit choice): the
+/// `a:noAutofit` / `a:normAutofit` / `a:spAutoFit` child of `a:bodyPr`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SlideTextFit {
+    /// `a:noAutofit` — text stays at its authored size and may overflow.
+    None,
+    /// `a:normAutofit` — shrink text on overflow (and the scale applied).
+    NormAutofit {
+        /// Font scale in thousandths of a percent (`fontScale`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        font_scale: Option<i64>,
+        /// Line-spacing reduction in thousandths of a percent
+        /// (`lnSpcReduction`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        line_space_reduction: Option<i64>,
+    },
+    /// `a:spAutoFit` — resize the shape to fit its text.
+    ShapeAutofit,
+}
+
+/// `a:bodyPr` (`CT_TextBodyProperties`) — slide text body layout: vertical
+/// anchoring, insets, wrap mode and autofit. Dropped at parse before, so
+/// dense text boxes overflow differently than in OO (ORM-07 gap #10).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SlideBodyProperties {
+    /// Vertical anchor (`anchor`): "t" | "ctr" | "b".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<String>,
+    /// Center the text box regardless of anchoring (`anchorCtr="1"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor_centered: Option<bool>,
+    /// Word-wrap mode (`wrap`): "none" | "square".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wrap: Option<String>,
+    /// Text direction (`vert`): "horz" | "vert" | "vert270" | "eaVert" | ...
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vert: Option<String>,
+    /// Left inset in EMU (`lIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub left_inset: Option<i64>,
+    /// Top inset in EMU (`tIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top_inset: Option<i64>,
+    /// Right inset in EMU (`rIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub right_inset: Option<i64>,
+    /// Bottom inset in EMU (`bIns`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bottom_inset: Option<i64>,
+    /// Autofit behavior (the `a:bodyPr` autofit choice).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub autofit: Option<SlideTextFit>,
+    /// Number of text columns (`numCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub num_columns: Option<i64>,
+    /// Column spacing in EMU (`spcCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column_spacing: Option<i64>,
+    /// Right-to-left columns (`rtlCol="1"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rtl_columns: Option<bool>,
+}
+
+/// One slide paragraph: the shared word-model paragraph (runs) plus the
+/// DrawingML-only bullet from its `a:pPr`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SlideParagraph {
+    /// Runs + shared paragraph properties (reuses the word model, exactly
+    /// like `TextBody` does).
+    pub paragraph: DocxParagraph,
+    /// Bullet definition; `None` when the paragraph declares no bullet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bullet: Option<TextBullet>,
+}
+
+/// Rich text body of a slide shape: `a:bodyPr` layout plus bullet-aware
+/// paragraphs. The flat `TextBody` shared with the word model cannot carry
+/// these, so the typed view is exposed alongside via
+/// `OoxmlParser::parse_pptx_text_bodies` and re-emitted by
+/// `OoxmlSerializer::build_slide_xml_with_text_bodies` (ORM-07).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SlideTextBody {
+    /// Owning shape's `p:cNvPr/@id` (lets writers map a body back to its
+    /// shape; bodies are otherwise in slide document order).
+    #[serde(default)]
+    pub shape_id: String,
+    /// `a:bodyPr` layout properties, when the element is present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub body_pr: Option<SlideBodyProperties>,
+    /// Paragraphs in document order.
+    #[serde(default)]
+    pub paragraphs: Vec<SlideParagraph>,
+}
+
+// --- PPTX table styles (ORM-07 ranked gap #5) ---
+
+/// `ppt/tableStyles.xml` root (`a:tblStyleLst`) — the named table-style
+/// catalog that a deck's tables reference through `a:tableStyleId`
+/// (ORM-07: the whole pipeline was absent, so tables lost every rule).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyles {
+    /// Style id applied when a table names no explicit style (`def`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_style_id: Option<String>,
+    /// Declared table styles in document order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub styles: Vec<PptxTableStyle>,
+}
+
+/// One `a:tblStyle` entry: per-scope formatting parts over the
+/// whole-table/banding/first-last axes.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyle {
+    /// Style GUID (`styleId`).
+    #[serde(default)]
+    pub style_id: String,
+    /// Human-readable name (`styleName`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub style_name: Option<String>,
+    /// Table background fill color (`a:tblBg`, resolved hex when `srgbClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub table_background: Option<String>,
+    /// Whole-table defaults (`a:wholeTbl`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub whole_table: Option<PptxTableStylePart>,
+    /// First-row special formatting (`a:firstRow`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_row: Option<PptxTableStylePart>,
+    /// First-column special formatting (`a:firstCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_col: Option<PptxTableStylePart>,
+    /// Last-row special formatting (`a:lastRow`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_row: Option<PptxTableStylePart>,
+    /// Last-column special formatting (`a:lastCol`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_col: Option<PptxTableStylePart>,
+    /// First horizontal band style (`a:band1H`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band1_h: Option<PptxTableStylePart>,
+    /// First vertical band style (`a:band1V`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band1_v: Option<PptxTableStylePart>,
+    /// Second horizontal band style (`a:band2H`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band2_h: Option<PptxTableStylePart>,
+    /// Second vertical band style (`a:band2V`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub band2_v: Option<PptxTableStylePart>,
+}
+
+/// One named scope of a table style: borders + fill/font style references.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStylePart {
+    /// Cell borders (`a:tcBdr` children, in document order).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub borders: Vec<PptxTableStyleBorder>,
+    /// Fill reference (`a:fillRef idx` + color).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_ref: Option<PptxStyleReference>,
+    /// Text style reference (`a:fontRef idx` + color).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_ref: Option<PptxStyleReference>,
+}
+
+/// One `a:tcBdr` border line (`a:lnL`/`a:lnR`/`a:lnT`/`a:lnB`/
+/// `a:lnTlToBr`/`a:lnBlToTr`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxTableStyleBorder {
+    /// Border edge element name (lnL/lnR/lnT/lnB/lnTlToBr/lnBlToTr).
+    #[serde(default)]
+    pub edge: String,
+    /// Line width in EMU (`w`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<i64>,
+    /// Dash style (`a:prstDash val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash: Option<String>,
+    /// Literal color (`a:solidFill/a:srgbClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Theme color token (`a:solidFill/a:schemeClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme_color: Option<String>,
+}
+
+/// `a:fillRef` / `a:fontRef` style reference: an index into the theme's
+/// fill/font style table plus the referenced color.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PptxStyleReference {
+    /// Index token (`idx`): numeric for `fillRef`, "major"/"minor" for
+    /// `fontRef`.
+    #[serde(default)]
+    pub idx: String,
+    /// Literal color (`a:srgbClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Theme color token (`a:schemeClr val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme_color: Option<String>,
+}
+
 impl ConnectorShapeType {
     pub fn from_name(s: &str) -> Self {
         match s {
@@ -2381,7 +2915,10 @@ pub struct Theme {
     pub name: String,
     pub color_scheme: ColorScheme,
     pub font_scheme: FontScheme,
-    pub format_scheme: Option<String>,
+    /// Format scheme (`a:fmtScheme`): the fill/line/effect style tables
+    /// referenced by every `a:styleRef`/`a:fillRef`/`a:lnRef`/`a:effectRef`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format_scheme: Option<FmtScheme>,
 }
 
 impl Default for Theme {
@@ -2502,11 +3039,468 @@ pub struct ThemeFont {
     pub complex_script: Option<String>,
 }
 
+/// A themed color reference (`a:schemeClr`): a scheme color token plus the
+/// color transforms applied to it, in document order.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SchemeClr {
+    /// Scheme color token (`val`): dk1/lt1/dk2/lt2/accent1-6/hlink/folHlink
+    /// or the placeholder token `phClr` inside style-table entries.
+    #[serde(default)]
+    pub val: String,
+    /// Color transforms (`a:lumMod`, `a:tint`, `a:shade`, ...).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub modifiers: Vec<SchemeClrTransform>,
+}
+
+/// One color-transform child of `a:schemeClr`/`a:srgbClr`/`a:sysClr`.
+/// Values are stored in 1000ths of a percent, exactly as serialized
+/// (`val="50000"` = 50%).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum SchemeClrTransform {
+    /// `a:tint` — lighten toward white.
+    Tint(i64),
+    /// `a:shade` — darken toward black.
+    Shade(i64),
+    /// `a:lumMod` — scale luminance.
+    LumMod(i64),
+    /// `a:lumOff` — shift luminance toward white.
+    LumOff(i64),
+    /// `a:alpha` — opacity.
+    Alpha(i64),
+    /// `a:alphaMod` — opacity scale.
+    AlphaMod(i64),
+    /// `a:alphaOff` — opacity shift.
+    AlphaOff(i64),
+    /// `a:satMod` — saturation scale.
+    SatMod(i64),
+    /// `a:satOff` — saturation shift.
+    SatOff(i64),
+    /// `a:hueMod` — hue scale.
+    HueMod(i64),
+    /// `a:comp` — complement color (no value).
+    Complement,
+    /// `a:gray` — grayscale conversion (no value).
+    Gray,
+}
+
+/// A concrete color inside a theme style-table entry: either a literal
+/// (`a:srgbClr`), a theme reference (`a:schemeClr`), a system color
+/// (`a:sysClr`), or a preset color (`a:prstClr`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeColorRef {
+    /// `a:srgbClr val` hex color.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rgb: Option<String>,
+    /// `a:schemeClr` themed reference (may itself carry transforms).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheme: Option<SchemeClr>,
+    /// `a:sysClr` system color (`val` + `lastClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system: Option<ThemeSystemColor>,
+    /// `a:prstClr val` preset color name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
+}
+
+impl ThemeColorRef {
+    /// Resolve to a concrete hex color using `theme` for scheme lookups and
+    /// `clr_map` for slot remapping. Returns `None` when nothing is set or
+    /// the scheme token is unknown (`phClr` stays unresolved until placed
+    /// against a real color context).
+    pub fn resolve(&self, theme: &Theme, clr_map: &ClrMap) -> Option<String> {
+        if let Some(ref rgb) = self.rgb {
+            return Some(rgb.clone());
+        }
+        if let Some(ref sys) = self.system {
+            return sys.last_clr.clone().or_else(|| Some(sys.val.clone()));
+        }
+        if let Some(ref prst) = self.preset {
+            return preset_color(prst);
+        }
+        self.scheme.as_ref().and_then(|s| {
+            let token = clr_map.map(&s.val);
+            theme.resolve_scheme_color_with_clr_map(clr_map, &token, &s.modifiers)
+        })
+    }
+}
+
+/// `a:sysClr` — an OS-defined color with the last concrete value recorded.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeSystemColor {
+    /// System color name (`window`, `windowText`, ...).
+    #[serde(default)]
+    pub val: String,
+    /// Cached concrete color (`lastClr`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_clr: Option<String>,
+}
+
+/// A gradient stop inside a theme gradient fill (`a:gs pos` + color).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ThemeGradientStop {
+    /// Stop position as a fraction (0.0–1.0).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<f64>,
+    /// Stop color.
+    pub color: ThemeColorRef,
+}
+
+/// One entry of `a:fillStyleLst` / `a:bgFillStyleLst`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub enum ThemeFillStyle {
+    /// Unrecognized / unparsed fill — kept as a marker so the style index
+    /// stays aligned with the document order.
+    #[default]
+    Unknown,
+    /// `a:noFill`.
+    NoFill,
+    /// `a:grpFill` — inherit from the group.
+    GroupFill,
+    /// `a:blipFill` — image fill (image data lives outside the theme).
+    Blip,
+    /// `a:solidFill`.
+    Solid(ThemeColorRef),
+    /// `a:gradFill` with its `a:gs` stops.
+    Gradient(Vec<ThemeGradientStop>),
+    /// `a:pattFill` with preset pattern + foreground/background colors.
+    Pattern {
+        /// Pattern preset name (`prst`).
+        preset: Option<String>,
+        /// `a:fgClr`.
+        foreground: Option<ThemeColorRef>,
+        /// `a:bgClr`.
+        background: Option<ThemeColorRef>,
+    },
+}
+
+/// One entry of `a:lnStyleLst` — a themed line style.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeLineStyle {
+    /// Line width in EMU (`w`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<i64>,
+    /// Line cap (`cap`): flat/rnd/sys.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cap: Option<String>,
+    /// Compound line type (`cmpd`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compound: Option<String>,
+    /// Line alignment (`algn`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub alignment: Option<String>,
+    /// The line's fill (solid/gradient/...).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<ThemeFillStyle>,
+    /// Dash preset (`a:prstDash val`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dash: Option<String>,
+    /// Head end type (`a:headEnd type`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub head_end: Option<String>,
+    /// Tail end type (`a:tailEnd type`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tail_end: Option<String>,
+}
+
+/// One entry of `a:effectStyleLst`. Effects are modeled shallowly: presence
+/// of a non-empty `a:effectLst` is what `effectRef idx` consumers need. The
+/// raw effect-list XML is kept so serialization stays lossless.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ThemeEffectStyle {
+    /// Whether the style carries a non-empty effect list.
+    #[serde(default)]
+    pub has_effects: bool,
+    /// Raw `a:effectLst` XML (captured verbatim at parse time).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw: Option<String>,
+}
+
+/// `a:fmtScheme` — the theme's style tables: exactly three entries each for
+/// fills, lines, effects and background fills, looked up by `idx` on every
+/// `a:styleRef`/`a:fillRef`/`a:lnRef`/`a:effectRef` (1-based).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct FmtScheme {
+    /// Scheme name (`name`).
+    #[serde(default)]
+    pub name: String,
+    /// `a:fillStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fill_styles: Vec<ThemeFillStyle>,
+    /// `a:lnStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub line_styles: Vec<ThemeLineStyle>,
+    /// `a:effectStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub effect_styles: Vec<ThemeEffectStyle>,
+    /// `a:bgFillStyleLst`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bg_fill_styles: Vec<ThemeFillStyle>,
+}
+
+/// `p:clrMap` — the slide master's color map: remaps scheme slots for the
+/// slides that follow the master (`bg1`→`lt1` etc. by default). A slide
+/// `a:clrMapOvr` can replace it per slide.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClrMap {
+    pub bg1: String,
+    pub tx1: String,
+    pub bg2: String,
+    pub tx2: String,
+    pub accent1: String,
+    pub accent2: String,
+    pub accent3: String,
+    pub accent4: String,
+    pub accent5: String,
+    pub accent6: String,
+    pub hlink: String,
+    pub fol_hlink: String,
+}
+
+impl Default for ClrMap {
+    fn default() -> Self {
+        Self {
+            bg1: "lt1".to_string(),
+            tx1: "dk1".to_string(),
+            bg2: "lt2".to_string(),
+            tx2: "dk2".to_string(),
+            accent1: "accent1".to_string(),
+            accent2: "accent2".to_string(),
+            accent3: "accent3".to_string(),
+            accent4: "accent4".to_string(),
+            accent5: "accent5".to_string(),
+            accent6: "accent6".to_string(),
+            hlink: "hlink".to_string(),
+            fol_hlink: "folHlink".to_string(),
+        }
+    }
+}
+
+impl ClrMap {
+    /// Map a scheme token through the color map (identity for unknown
+    /// tokens such as `phClr`).
+    pub fn map(&self, token: &str) -> String {
+        match token {
+            "bg1" => self.bg1.clone(),
+            "tx1" => self.tx1.clone(),
+            "bg2" => self.bg2.clone(),
+            "tx2" => self.tx2.clone(),
+            "accent1" => self.accent1.clone(),
+            "accent2" => self.accent2.clone(),
+            "accent3" => self.accent3.clone(),
+            "accent4" => self.accent4.clone(),
+            "accent5" => self.accent5.clone(),
+            "accent6" => self.accent6.clone(),
+            "hlink" => self.hlink.clone(),
+            "folHlink" => self.fol_hlink.clone(),
+            other => other.to_string(),
+        }
+    }
+
+    /// Set one slot from a `p:clrMap` attribute pair.
+    pub fn set_slot(&mut self, slot: &str, value: &str) {
+        if value.is_empty() {
+            return;
+        }
+        match slot {
+            "bg1" => self.bg1 = value.to_string(),
+            "tx1" => self.tx1 = value.to_string(),
+            "bg2" => self.bg2 = value.to_string(),
+            "tx2" => self.tx2 = value.to_string(),
+            "accent1" => self.accent1 = value.to_string(),
+            "accent2" => self.accent2 = value.to_string(),
+            "accent3" => self.accent3 = value.to_string(),
+            "accent4" => self.accent4 = value.to_string(),
+            "accent5" => self.accent5 = value.to_string(),
+            "accent6" => self.accent6 = value.to_string(),
+            "hlink" => self.hlink = value.to_string(),
+            "folHlink" => self.fol_hlink = value.to_string(),
+            _ => {}
+        }
+    }
+}
+
+/// Built-in preset color names for `a:prstClr` (subset covering the common
+/// black/white/gray tokens; unknown names resolve to `None`).
+pub fn preset_color(name: &str) -> Option<String> {
+    let color = match name {
+        "black" => "000000",
+        "white" => "FFFFFF",
+        "darkGray" => "404040",
+        "gray" => "808080",
+        "lightGray" => "C0C0C0",
+        "red" => "FF0000",
+        "green" => "008000",
+        "blue" => "0000FF",
+        "yellow" => "FFFF00",
+        "cyan" => "00FFFF",
+        "magenta" => "FF00FF",
+        _ => return None,
+    };
+    Some(color.to_string())
+}
+
+impl Theme {
+    /// Resolve a scheme color token (already clrMap-normalized) to a concrete
+    /// 6-digit hex color, applying the reference's transforms.
+    pub fn resolve_scheme_color(
+        &self,
+        token: &str,
+        modifiers: &[SchemeClrTransform],
+    ) -> Option<String> {
+        self.resolve_scheme_color_with_clr_map(&ClrMap::default(), token, modifiers)
+    }
+
+    /// Resolve a scheme color token through a master/slide color map
+    /// (`p:clrMap` remaps dk1/lt1/dk2/lt2 before the palette lookup).
+    pub fn resolve_scheme_color_with_clr_map(
+        &self,
+        clr_map: &ClrMap,
+        token: &str,
+        modifiers: &[SchemeClrTransform],
+    ) -> Option<String> {
+        let mapped = clr_map.map(token);
+        let base = self
+            .color_scheme
+            .colors
+            .iter()
+            .find(|c| c.name == mapped || c.name == token)
+            .map(|c| c.color.clone())?;
+        Some(apply_scheme_color_transforms(&base, modifiers))
+    }
+
+    /// Look up a theme font slot by `a:fontRef idx` token ("major"/"minor").
+    pub fn resolve_font(&self, slot: &str) -> Option<&ThemeFont> {
+        match slot {
+            "major" => Some(&self.font_scheme.major_font),
+            "minor" => Some(&self.font_scheme.minor_font),
+            _ => None,
+        }
+    }
+
+    /// Resolve the major (headings) latin typeface.
+    pub fn major_latin_font(&self) -> Option<&str> {
+        self.font_scheme.major_font.latin.as_deref()
+    }
+
+    /// Resolve the minor (body) latin typeface.
+    pub fn minor_latin_font(&self) -> Option<&str> {
+        self.font_scheme.minor_font.latin.as_deref()
+    }
+}
+
+/// Apply `a:schemeClr` color transforms to a 6-digit hex color, returning the
+/// transformed hex. `tint`/`shade` work per channel
+/// (`c·t + 255·(1−t)` / `c·s`); `lumMod`/`lumOff` scale and shift the HSL
+/// luminance; `alpha*`/`sat*`/`hue*` and the value-less `comp`/`gray` are
+/// recorded on the reference but do not change the returned RGB.
+pub fn apply_scheme_color_transforms(hex: &str, modifiers: &[SchemeClrTransform]) -> String {
+    let mut rgb = parse_hex_rgb(hex);
+    for m in modifiers {
+        match *m {
+            SchemeClrTransform::Tint(v) => {
+                let t = pct(v);
+                for c in rgb.iter_mut() {
+                    *c = (*c as f64 * t + 255.0 * (1.0 - t)).round();
+                }
+            }
+            SchemeClrTransform::Shade(v) => {
+                let s = pct(v);
+                for c in rgb.iter_mut() {
+                    let v = (*c as f64 * s).round();
+                    *c = v.clamp(0.0, 255.0);
+                }
+            }
+            SchemeClrTransform::LumMod(v) => {
+                let (h, s, l) = rgb_to_hsl(rgb);
+                rgb = hsl_to_rgb(h, s, (l * pct(v)).clamp(0.0, 1.0));
+            }
+            SchemeClrTransform::LumOff(v) => {
+                let (h, s, l) = rgb_to_hsl(rgb);
+                rgb = hsl_to_rgb(h, s, (l + pct(v)).clamp(0.0, 1.0));
+            }
+            _ => {}
+        }
+    }
+    format!(
+        "{:02X}{:02X}{:02X}",
+        rgb[0].round() as i32, rgb[1].round() as i32, rgb[2].round() as i32
+    )
+}
+
+/// Parse a hex color (6 or 8 digits, optional `#`) to RGB; unknown input
+/// yields black so transforms keep a defined base.
+fn parse_hex_rgb(hex: &str) -> [f64; 3] {
+    let cleaned = hex.trim_start_matches('#');
+    let take = |i: usize| -> f64 {
+        cleaned
+            .get(i..i + 2)
+            .and_then(|s| u8::from_str_radix(s, 16).ok())
+            .map(|v| v as f64)
+            .unwrap_or(0.0)
+    };
+    if cleaned.len() >= 6 {
+        [take(0), take(2), take(4)]
+    } else {
+        [0.0; 3]
+    }
+}
+
+/// 1000ths-of-a-percent value to a 0.0–1.0 fraction.
+fn pct(v: i64) -> f64 {
+    v as f64 / 100_000.0
+}
+
+fn rgb_to_hsl(rgb: [f64; 3]) -> (f64, f64, f64) {
+    let r = rgb[0] / 255.0;
+    let g = rgb[1] / 255.0;
+    let b = rgb[2] / 255.0;
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let l = (max + min) / 2.0;
+    if (max - min).abs() < f64::EPSILON {
+        return (0.0, 0.0, l);
+    }
+    let d = max - min;
+    let s = d / (1.0 - (2.0 * l - 1.0).abs());
+    let h = if (max - r).abs() < f64::EPSILON {
+        ((g - b) / d) % 6.0
+    } else if (max - g).abs() < f64::EPSILON {
+        (b - r) / d + 2.0
+    } else {
+        (r - g) / d + 4.0
+    };
+    ((h * 60.0 + 360.0) % 360.0, s, l)
+}
+
+fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [f64; 3] {
+    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let hp = h / 60.0;
+    let x = c * (1.0 - (hp % 2.0 - 1.0).abs());
+    let (r1, g1, b1) = if hp < 1.0 {
+        (c, x, 0.0)
+    } else if hp < 2.0 {
+        (x, c, 0.0)
+    } else if hp < 3.0 {
+        (0.0, c, x)
+    } else if hp < 4.0 {
+        (0.0, x, c)
+    } else if hp < 5.0 {
+        (x, 0.0, c)
+    } else {
+        (c, 0.0, x)
+    };
+    let m = l - c / 2.0;
+    [(r1 + m) * 255.0, (g1 + m) * 255.0, (b1 + m) * 255.0]
+}
+
 /// A slide master (from ppt/slideMasters/slideMaster*.xml).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SlideMaster {
     pub id: u32,
     pub name: String,
+    /// Master color map (`p:clrMap`): remaps scheme slots for its slides.
+    #[serde(default)]
+    pub clr_map: ClrMap,
     pub slide_layouts: Vec<SlideLayout>,
 }
 

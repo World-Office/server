@@ -137,9 +137,11 @@ text defaults missing unless each slide carries explicit values.
    `styleRef` — themed fills/lines/effects unresolved; `inheritance.rs` cannot provide them.
 3. **Master background chain** — `inheritance.rs` returns `background: None` by construction;
    template backgrounds (often gradient/pattern) don't render.
-4. **Slide text bullets** (`BuChar/BuAutoNum/...`) — 0 reads in the pptx path; parsed bullets
-   collapse to plain paragraphs.
-5. **Table borders/styles** (`TcBdr`, `tableStyles.xml`, `TableProperties`) — tables lose all rules.
+4. **Slide text bullets** (`BuChar/BuAutoNum/...`) — CLOSED (P2B-P03):
+   typed `TextBullet` on `SlideParagraph` via `parse_pptx_text_bodies`.
+5. **Table borders/styles** (`TcBdr`, `tableStyles.xml`, `TableProperties`) —
+   `tableStyles.xml` CLOSED (P2B-P03, `PptxTableStyles`); `TcBdr` inside
+   table cells and `TableProperties` still unwired on `TableShape`.
 6. **chart graphicFrame parsing** — `wo-slide::ChartRef` + x2t `WoShapeData.chart` exist as target
    models but `parse_pptx_shapes` never emits chart frames; charts on slides are lost on import
    (wo-x2t keeps chart part bytes via extra-parts, so round-trip survives, editing does not).
@@ -149,8 +151,9 @@ text defaults missing unless each slide carries explicit values.
    `AnimationData` + `animation.rs` single-sequence runtime; parallel/interactive/step builds lost.
    `timing_raw` keeps bytes for round-trip only.
 9. **Notes system** (`NotesMaster`, notes shapes/inheritance, `NotesSz`) — notes are a plain string.
-10. **Fields & body layout** (`Fld`, `BodyPr`, `TextFit`) — no slide numbers, no autofit; dense text
-    boxes overflow differently than OO.
+10. **Fields & body layout** (`Fld`, `BodyPr`, `TextFit`) — `BodyPr`/autofit
+    CLOSED (P2B-P03, `SlideBodyProperties`/`SlideTextFit`); no slide-number
+    fields (`Fld`) yet.
 11. **Modern threaded comments** (`Comment*` + monikers) — unmodeled; bytes-only pass-through.
 12. **Legacy .ppt binary** (`CBinaryFileReader/Writer`) — no .ppt import at all; x2t-class effort.
 13. **Color effects / 3-D stack** — 21 effect classes + `Scene3d/Sp3d/Bevel/Camera/LightRig` absent.
@@ -191,6 +194,42 @@ OO's `CDrawingConverter` (35 classes: `CShape/CPPTShape`, `CXmlWriter`, `CImageM
 (`collect_pptx_extra_parts` + `rewrite_pptx_with_extra_parts`). This is why round-trip tests pass
 even though 69/134 mapped concepts are unmodeled: fidelity is byte-level for untouched parts and
 lossy only for the parts WO re-serializes from the model.
+
+## Closed since the map was written
+
+### P2B-P03 — slide text bodies (`a:bodyPr` + bullets) and the `tableStyles.xml` reader
+
+Ranked gaps #4 (slide text bullets), #10 (BodyPr/body layout) and #5
+(tableStyles.xml) are closed in `wo-ooxml` — as typed views next to, not
+inside, the flat word-model `TextBody` (whose fields `wo-x2t/src/converters.rs`
+constructs literally, so the shared struct cannot gain fields):
+
+- `SlideTextBody` (`shape_id` + `SlideBodyProperties` from `a:bodyPr` +
+  `SlideParagraph` = word-model paragraph + `TextBullet`) — read by
+  `OoxmlParser::parse_pptx_text_bodies` (one entry per slide, depth-first
+  document order, recursing into `p:grpSp` like `parse_pptx_groups`) and
+  written by `OoxmlSerializer::build_slide_xml_with_text_bodies` (rich bodies
+  matched to shapes by `p:cNvPr/@id`, unmatched shapes keep the flat body).
+  Bullets model `a:buNone`/`a:buChar`/`a:buAutoNum` with the `a:buClr`/
+  `a:buSzPct`/`a:buFont` helpers; bodyPr carries anchor/anchorCtr/wrap/vert/
+  lIns/tIns/rIns/bIns/numCol/spcCol/rtlCol and the `noAutofit`/`normAutofit`
+  (fontScale/lnSpcReduction)/`spAutoFit` choice (`SlideTextFit`).
+- `PptxTableStyles` (`a:tblStyleLst`: root `def` + per-style `tblBg` and
+  `wholeTbl`/`firstRow`/`firstCol`/`lastRow`/`lastCol`/`band1H`/`band1V`/
+  `band2H`/`band2V` parts, each carrying `a:tcBdr` borders — edge, width,
+  `prstDash`, srgb/scheme color — plus `a:fillRef`/`a:fontRef` style refs)
+  read by `OoxmlParser::parse_pptx_table_styles` (missing part → empty
+  default) and written by `OoxmlSerializer::serialize_pptx_table_styles`.
+- Two parse-side fixes landed with it: slide shape ids now come from
+  `p:cNvPr/@id` (they were read off the `p:sp` element and were always "0",
+  which also blocked body→shape matching), and `a:r` run text no longer
+  collects pretty-print indentation between run children (text comes only
+  from `a:t`).
+
+Still open on the text stack: `a:Fld` (slide numbers/fields), field-level
+`TextFit`, master `TxStyles`/`TextListStyle` inheritance, `buSzPts` bullet
+sizing, and table→styleId linking (`a:tableStyleId` on `p:tblPr` is still not
+carried by the flat `TableShape`).
 
 ## Appendix: counts
 

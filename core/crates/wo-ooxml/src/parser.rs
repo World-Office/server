@@ -28,6 +28,36 @@ struct OpenField {
 /// OOXML parser.
 pub struct OoxmlParser;
 
+/// Rebuild a slide shape with its bounds mapped through an affine transform
+/// `(sx, sy, tx, ty)` (`x' = sx*x + tx`) — used when flattening `p:grpSp`
+/// groups into the flat slide model.
+fn map_shape_bounds(
+    shape: &SlideShape,
+    (sx, sy, tx, ty): (f64, f64, f64, f64),
+) -> SlideShape {
+    let mx = |v: i64| (v as f64 * sx + tx).round() as i64;
+    let my = |v: i64| (v as f64 * sy + ty).round() as i64;
+    let cx = (shape.bounds().cx as f64 * sx).round() as i64;
+    let cy = (shape.bounds().cy as f64 * sy).round() as i64;
+    let bounds = Bounds {
+        x: mx(shape.bounds().x),
+        y: my(shape.bounds().y),
+        cx,
+        cy,
+    };
+    let mut mapped = shape.clone();
+    match &mut mapped {
+        SlideShape::TextBox(s) => s.bounds = bounds,
+        SlideShape::Picture(s) => s.bounds = bounds,
+        SlideShape::Placeholder(s) => s.bounds = bounds,
+        SlideShape::Table(s) => s.bounds = bounds,
+        SlideShape::Connector(s) => s.bounds = bounds,
+        SlideShape::Chart(s) => s.bounds = bounds,
+        SlideShape::SmartArt(s) => s.bounds = bounds,
+    }
+    mapped
+}
+
 impl OoxmlParser {
     pub fn new() -> Self {
         Self
@@ -555,11 +585,631 @@ impl OoxmlParser {
                             shapes.push(SlideShape::Connector(conn));
                         }
                     }
+                    (Some(ns), "grpSp") if ns == Self::P_NS => {
+                        // ORM-07 ranked gap #1: p:grpSp groups were dropped by
+                        // this direct-children scan. The recursive group tree
+                        // is parsed below; because the flat SlideShape model
+                        // has no Group variant yet (adding one would break
+                        // downstream exhaustive matches), grouped shapes are
+                        // flattened into `shapes` with their bounds mapped
+                        // through the (nested) GrpSpPr transforms. The typed
+                        // tree stays available via `parse_pptx_groups`.
+                        if let Some(group) = self.parse_pptx_group(&child) {
+                            self.flatten_group_shapes(&group, None, &mut shapes);
+                        }
+                    }
                     _ => {}
                 }
             }
         }
         shapes
+    }
+
+    /// Parse a `<p:grpSp>` group shape: `nvGrpSpPr` id/name, the `GrpSpPr`
+    /// transform (outer `off`/`ext` + child-space `chOff`/`chExt`), and the
+    /// recursive child shape tree (`p:sp`, `p:pic`, `p:cxnSp`, nested
+    /// `p:grpSp`). Also computes the child bounding box union.
+    fn parse_pptx_group(&self, grp: &roxmltree::Node) -> Option<GroupShape> {
+        let nv_pr = grp.children().find(|c| {
+            c.is_element()
+                && c.has_tag_name("nvGrpSpPr")
+                && c.tag_name().namespace() == Some(Self::P_NS)
+        });
+        let c_nv_pr = nv_pr.and_then(|nv| {
+            nv.children().find(|c| {
+                c.is_element()
+                    && c.has_tag_name("cNvPr")
+                    && c.tag_name().namespace() == Some(Self::P_NS)
+            })
+        });
+        let id = c_nv_pr
+            .and_then(|n| n.attribute("id"))
+            .unwrap_or("0")
+            .to_string();
+        let name = c_nv_pr
+            .and_then(|n| n.attribute("name"))
+            .unwrap_or("")
+            .to_string();
+
+        let transform = self.parse_pptx_group_transform(grp);
+
+        let mut children = Vec::new();
+        for child in grp.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let local = child.tag_name().name();
+            let ns = child.tag_name().namespace();
+            match (ns, local) {
+                (Some(ns), "sp") if ns == Self::P_NS => {
+                    if let Some(shape) = self.parse_pptx_shape_from_sp(&child) {
+                        children.push(GroupChild::Shape(shape));
+                    }
+                }
+                (Some(ns), "pic") if ns == Self::P_NS => {
+                    if let Some(pic) = self.parse_pptx_picture(&child) {
+                        children.push(GroupChild::Shape(SlideShape::Picture(pic)));
+                    }
+                }
+                (Some(ns), "cxnSp") if ns == Self::P_NS => {
+                    if let Some(conn) = self.parse_pptx_connector(&child) {
+                        children.push(GroupChild::Shape(SlideShape::Connector(conn)));
+                    }
+                }
+                (Some(ns), "grpSp") if ns == Self::P_NS => {
+                    // Recursive SpTree member: nested groups become
+                    // GroupChild::Group and recurse through this same fn.
+                    if let Some(nested) = self.parse_pptx_group(&child) {
+                        children.push(GroupChild::Group(Box::new(nested)));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let mut group = GroupShape {
+            id,
+            name,
+            transform,
+            children,
+            child_bounds: None,
+        };
+        group.child_bounds = group.child_bounds_union();
+        Some(group)
+    }
+
+    /// Parse the group's own `p:grpSpPr/a:xfrm`: outer `a:off`/`a:ext` plus
+    /// the child coordinate-space `a:chOff`/`a:chExt` when written.
+    fn parse_pptx_group_transform(&self, grp: &roxmltree::Node) -> GroupTransform {
+        // The group's own xfrm lives in its direct <p:grpSpPr> child — do not
+        // descend into child shapes (their xfrms would shadow it).
+        let xfrm = grp
+            .children()
+            .find(|c| {
+                c.is_element()
+                    && c.has_tag_name("grpSpPr")
+                    && c.tag_name().namespace() == Some(Self::P_NS)
+            })
+            .and_then(|g| {
+                g.descendants()
+                    .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS))
+            });
+
+        let (mut off, mut ext, mut ch_off, mut ch_ext) = (
+            (0i64, 0i64),
+            (0i64, 0i64),
+            None,
+            None,
+        );
+        if let Some(xfrm) = xfrm {
+            for child in xfrm.children() {
+                if !child.is_element() {
+                    continue;
+                }
+                let local = child.tag_name().name();
+                let attr = |a: &str| child.attribute(a).and_then(|v| v.parse().ok());
+                match local {
+                    "off" => off = (attr("x").unwrap_or(0), attr("y").unwrap_or(0)),
+                    "ext" => ext = (attr("cx").unwrap_or(0), attr("cy").unwrap_or(0)),
+                    "chOff" => ch_off = Some((attr("x").unwrap_or(0), attr("y").unwrap_or(0))),
+                    "chExt" => ch_ext = Some((attr("cx").unwrap_or(0), attr("cy").unwrap_or(0))),
+                    _ => {}
+                }
+            }
+        }
+        GroupTransform {
+            bounds: Bounds {
+                x: off.0,
+                y: off.1,
+                cx: ext.0,
+                cy: ext.1,
+            },
+            child_offset: ch_off,
+            child_extent: ch_ext,
+        }
+    }
+
+    /// Flatten a group tree into leaf `SlideShape`s, mapping every child's
+    /// bounds through the nested group transforms (child space → slide space)
+    /// so grouped shapes survive into the flat slide model instead of
+    /// vanishing at parse.
+    fn flatten_group_shapes(
+        &self,
+        group: &GroupShape,
+        outer: Option<(f64, f64, f64, f64)>,
+        out: &mut Vec<SlideShape>,
+    ) {
+        let inner = group.child_to_parent_affine();
+        let aff = match outer {
+            None => inner,
+            Some((osx, osy, otx, oty)) => (
+                osx * inner.0,
+                osy * inner.1,
+                osx * inner.2 + otx,
+                osy * inner.3 + oty,
+            ),
+        };
+        for child in &group.children {
+            match child {
+                GroupChild::Shape(shape) => out.push(map_shape_bounds(shape, aff)),
+                GroupChild::Group(nested) => self.flatten_group_shapes(nested, Some(aff), out),
+            }
+        }
+    }
+
+    /// Parse the recursive `<p:grpSp>` group tree of every slide of a PPTX
+    /// package (ORM-07 gap #1). Returns one entry per slide, in slide order;
+    /// each entry holds the top-level groups of that slide's spTree in
+    /// document order (nested groups hang off `GroupChild::Group`).
+    pub fn parse_pptx_groups(&self, data: &[u8]) -> Result<Vec<Vec<GroupShape>>> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP archive: {}", e),
+        })?;
+
+        // Collect ppt/slides/slideN.xml entries sorted by N (mirrors parse_pptx_slides).
+        let mut slide_entries: Vec<(u32, String)> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name().to_string();
+                if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") {
+                    let idx: u32 = name
+                        .trim_start_matches("ppt/slides/slide")
+                        .trim_end_matches(".xml")
+                        .parse()
+                        .unwrap_or(0);
+                    slide_entries.push((idx, name));
+                }
+            }
+        }
+        slide_entries.sort_by_key(|(idx, _)| *idx);
+
+        let mut per_slide = Vec::new();
+        for (_, entry_name) in &slide_entries {
+            let xml = self.read_zip_entry(&mut archive, entry_name)?;
+            let mut groups = Vec::new();
+            if let Ok(doc) = XmlDoc::parse(&xml) {
+                if let Some(sp_tree) = doc.descendants().find(|n| {
+                    n.has_tag_name("spTree") && n.tag_name().namespace() == Some(Self::P_NS)
+                }) {
+                    for child in sp_tree.children() {
+                        if !child.is_element() {
+                            continue;
+                        }
+                        if child.has_tag_name("grpSp")
+                            && child.tag_name().namespace() == Some(Self::P_NS)
+                        {
+                            if let Some(group) = self.parse_pptx_group(&child) {
+                                groups.push(group);
+                            }
+                        }
+                    }
+                }
+            }
+            per_slide.push(groups);
+        }
+        Ok(per_slide)
+    }
+
+    /// Parse the rich `a:txBody` (bodyPr + bullets) of every slide shape of a
+    /// PPTX package (ORM-07 ranked gaps #4/#10). Returns one entry per slide,
+    /// in slide order; each entry holds one `SlideTextBody` per text-bearing
+    /// shape (`p:sp`, including shapes nested in `p:grpSp` groups) in
+    /// document order. The flat `parse_pptx` view keeps the plain-paragraph
+    /// word model; this typed view adds `a:bodyPr` layout and the
+    /// `a:buNone`/`a:buChar`/`a:buAutoNum` definitions.
+    pub fn parse_pptx_text_bodies(&self, data: &[u8]) -> Result<Vec<Vec<SlideTextBody>>> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP archive: {}", e),
+        })?;
+
+        // Collect ppt/slides/slideN.xml entries sorted by N (mirrors parse_pptx_slides).
+        let mut slide_entries: Vec<(u32, String)> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name().to_string();
+                if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") {
+                    let idx: u32 = name
+                        .trim_start_matches("ppt/slides/slide")
+                        .trim_end_matches(".xml")
+                        .parse()
+                        .unwrap_or(0);
+                    slide_entries.push((idx, name));
+                }
+            }
+        }
+        slide_entries.sort_by_key(|(idx, _)| *idx);
+
+        let mut per_slide = Vec::new();
+        for (_, entry_name) in &slide_entries {
+            let xml = self.read_zip_entry(&mut archive, entry_name)?;
+            let mut bodies = Vec::new();
+            if let Ok(doc) = XmlDoc::parse(&xml) {
+                if let Some(sp_tree) = doc.descendants().find(|n| {
+                    n.has_tag_name("spTree") && n.tag_name().namespace() == Some(Self::P_NS)
+                }) {
+                    self.collect_pptx_text_bodies(&sp_tree, &mut bodies);
+                }
+            }
+            per_slide.push(bodies);
+        }
+        Ok(per_slide)
+    }
+
+    /// Depth-first, document-order collection of shape text bodies across
+    /// `p:sp` and (recursively) `p:grpSp` members of a spTree/group.
+    fn collect_pptx_text_bodies(&self, node: &roxmltree::Node, out: &mut Vec<SlideTextBody>) {
+        for child in node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let local = child.tag_name().name();
+            if local == "sp" {
+                if let Some(body) = self.parse_pptx_rich_text_body(&child) {
+                    out.push(body);
+                }
+            } else if local == "grpSp" {
+                self.collect_pptx_text_bodies(&child, out);
+            }
+        }
+    }
+
+    /// Parse one shape's `a:txBody` into a `SlideTextBody` (shape id from its
+    /// `p:cNvPr/@id`, layout from `a:bodyPr`, bullets from each `a:pPr`).
+    fn parse_pptx_rich_text_body(&self, sp: &roxmltree::Node) -> Option<SlideTextBody> {
+        let tx_body = sp
+            .children()
+            .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::P_NS))
+            .or_else(|| {
+                sp.children()
+                    .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS))
+            })?;
+
+        let shape_id = sp
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr"))
+            .and_then(|n| n.attribute("id"))
+            .unwrap_or("0")
+            .to_string();
+
+        let mut paragraphs = Vec::new();
+        for p_node in tx_body.children() {
+            if !p_node.is_element() {
+                continue;
+            }
+            if !(p_node.has_tag_name("p") && p_node.tag_name().namespace() == Some(Self::A_NS)) {
+                continue;
+            }
+
+            let bullet = self.parse_pptx_bullet(&p_node);
+
+            let mut runs = Vec::new();
+            for r_node in p_node.children() {
+                if !r_node.is_element() {
+                    continue;
+                }
+                if r_node.has_tag_name("r") && r_node.tag_name().namespace() == Some(Self::A_NS) {
+                    if let Some(run) = self.parse_pptx_run(r_node) {
+                        runs.push(run);
+                    }
+                }
+            }
+
+            // Handle <a:br> (line break) as an empty run
+            for r_node in p_node.children() {
+                if !r_node.is_element() {
+                    continue;
+                }
+                if r_node.has_tag_name("br") && r_node.tag_name().namespace() == Some(Self::A_NS) {
+                    if runs.iter().any(|r: &DocxRun| r.text == "\n") {
+                        continue;
+                    }
+                    runs.push(DocxRun {
+                        footnote_rid: None,
+                        image_rid: None,
+                        image_width_emu: None,
+                        image_height_emu: None,
+                        text: "\n".to_string(),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            paragraphs.push(SlideParagraph {
+                paragraph: DocxParagraph {
+                    raw_flds: Vec::new(),
+                    fields: Vec::new(),
+                    style_id: None,
+                    properties: DocxParagraphProperties::default(),
+                    runs,
+                    section_properties: None,
+                    raw_ppr: None,
+                },
+                bullet,
+            });
+        }
+
+        Some(SlideTextBody {
+            shape_id,
+            body_pr: self.parse_pptx_body_pr(&tx_body),
+            paragraphs,
+        })
+    }
+
+    /// Parse the `a:bodyPr` child of an `a:txBody` (None when absent).
+    fn parse_pptx_body_pr(&self, tx_body: &roxmltree::Node) -> Option<SlideBodyProperties> {
+        let body_pr = tx_body
+            .children()
+            .find(|n| n.has_tag_name("bodyPr"))
+            .filter(|n| {
+                n.tag_name().namespace() == Some(Self::A_NS)
+                    || n.tag_name().namespace() == Some(Self::P_NS)
+            })?;
+
+        let autofit = body_pr.children().find_map(|child| {
+            if !child.is_element() {
+                return None;
+            }
+            match child.tag_name().name() {
+                "noAutofit" => Some(SlideTextFit::None),
+                "normAutofit" => Some(SlideTextFit::NormAutofit {
+                    font_scale: child
+                        .attribute("fontScale")
+                        .and_then(|v| v.parse().ok()),
+                    line_space_reduction: child
+                        .attribute("lnSpcReduction")
+                        .and_then(|v| v.parse().ok()),
+                }),
+                "spAutoFit" => Some(SlideTextFit::ShapeAutofit),
+                _ => None,
+            }
+        });
+
+        Some(SlideBodyProperties {
+            anchor: body_pr.attribute("anchor").map(|s| s.to_string()),
+            anchor_centered: body_pr
+                .attribute("anchorCtr")
+                .map(|v| v == "1" || v == "true"),
+            wrap: body_pr.attribute("wrap").map(|s| s.to_string()),
+            vert: body_pr.attribute("vert").map(|s| s.to_string()),
+            left_inset: body_pr.attribute("lIns").and_then(|v| v.parse().ok()),
+            top_inset: body_pr.attribute("tIns").and_then(|v| v.parse().ok()),
+            right_inset: body_pr.attribute("rIns").and_then(|v| v.parse().ok()),
+            bottom_inset: body_pr.attribute("bIns").and_then(|v| v.parse().ok()),
+            autofit,
+            num_columns: body_pr.attribute("numCol").and_then(|v| v.parse().ok()),
+            column_spacing: body_pr.attribute("spcCol").and_then(|v| v.parse().ok()),
+            rtl_columns: body_pr.attribute("rtlCol").map(|v| v == "1" || v == "true"),
+        })
+    }
+
+    /// Parse the bullet definition (`a:buNone`/`a:buChar`/`a:buAutoNum`) of
+    /// an `a:p`, reading the shared `a:buClr`/`a:buSzPct`/`a:buFont` helpers.
+    fn parse_pptx_bullet(&self, p_node: &roxmltree::Node) -> Option<TextBullet> {
+        let ppr = p_node
+            .children()
+            .find(|n| n.has_tag_name("pPr") && n.tag_name().namespace() == Some(Self::A_NS))?;
+
+        // Shared helpers come before the bullet element in pPr, but scan the
+        // whole pPr so odd authoring order still resolves.
+        let font = ppr
+            .children()
+            .find(|n| n.has_tag_name("buFont"))
+            .and_then(|n| n.attribute("typeface"))
+            .map(|s| s.to_string());
+        let color_node = ppr.children().find(|n| n.has_tag_name("buClr"));
+        let color = color_node.and_then(|n| {
+            n.descendants()
+                .find(|m| m.has_tag_name("srgbClr"))
+                .and_then(|m| m.attribute("val"))
+                .map(|s| s.to_string())
+        });
+        let scheme_color = color_node.and_then(|n| {
+            n.descendants()
+                .find(|m| m.has_tag_name("schemeClr"))
+                .and_then(|m| m.attribute("val"))
+                .map(|s| s.to_string())
+        });
+        let size_pct = ppr
+            .children()
+            .find(|n| n.has_tag_name("buSzPct"))
+            .and_then(|n| n.attribute("val"))
+            .and_then(|v| v.parse().ok());
+
+        let bullet_elem = ppr.children().find(|n| {
+            n.is_element()
+                && n.tag_name().namespace() == Some(Self::A_NS)
+                && matches!(n.tag_name().name(), "buNone" | "buChar" | "buAutoNum")
+        })?;
+
+        match bullet_elem.tag_name().name() {
+            "buNone" => Some(TextBullet::None),
+            "buChar" => Some(TextBullet::Char {
+                character: bullet_elem.attribute("char").unwrap_or("").to_string(),
+                font,
+                color,
+                scheme_color,
+                size_pct,
+            }),
+            "buAutoNum" => Some(TextBullet::AutoNum {
+                auto_num_type: bullet_elem.attribute("type").unwrap_or("").to_string(),
+                start_at: bullet_elem.attribute("startAt").and_then(|v| v.parse().ok()),
+                font,
+                color,
+                scheme_color,
+                size_pct,
+            }),
+            _ => None,
+        }
+    }
+
+    /// Read and parse `ppt/tableStyles.xml` — the `a:tblStyleLst` catalog
+    /// slide tables reference through `a:tableStyleId` (ORM-07 ranked gap
+    /// #5). A package without the part yields the empty default.
+    pub fn parse_pptx_table_styles(&self, data: &[u8]) -> Result<PptxTableStyles> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP archive: {}", e),
+        })?;
+
+        let xml = match archive.by_name("ppt/tableStyles.xml") {
+            Ok(mut file) => {
+                let mut buf = String::new();
+                Read::read_to_string(&mut file, &mut buf).map_err(|e| CoreError::Parse {
+                    format: "ooxml".into(),
+                    message: format!("Cannot read ppt/tableStyles.xml: {}", e),
+                })?;
+                buf
+            }
+            Err(_) => return Ok(PptxTableStyles::default()),
+        };
+
+        let doc = XmlDoc::parse(&xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid tableStyles.xml: {}", e),
+        })?;
+
+        let root = match doc
+            .descendants()
+            .find(|n| n.has_tag_name("tblStyleLst") && n.tag_name().namespace() == Some(Self::A_NS))
+        {
+            Some(root) => root,
+            None => return Ok(PptxTableStyles::default()),
+        };
+
+        let mut styles = Vec::new();
+        for style_node in root
+            .children()
+            .filter(|n| n.is_element() && n.has_tag_name("tblStyle"))
+        {
+            let part_of = |name: &str| -> Option<PptxTableStylePart> {
+                style_node
+                    .children()
+                    .find(|n| n.is_element() && n.has_tag_name(name))
+                    .map(|part| self.parse_pptx_table_style_part(&part))
+            };
+
+            styles.push(PptxTableStyle {
+                style_id: style_node
+                    .attribute("styleId")
+                    .unwrap_or("")
+                    .to_string(),
+                style_name: style_node.attribute("styleName").map(|s| s.to_string()),
+                table_background: style_node
+                    .children()
+                    .find(|n| n.is_element() && n.has_tag_name("tblBg"))
+                    .and_then(|bg| {
+                        bg.descendants()
+                            .find(|m| m.has_tag_name("srgbClr"))
+                            .and_then(|m| m.attribute("val"))
+                            .map(|s| s.to_string())
+                    }),
+                whole_table: part_of("wholeTbl"),
+                first_row: part_of("firstRow"),
+                first_col: part_of("firstCol"),
+                last_row: part_of("lastRow"),
+                last_col: part_of("lastCol"),
+                band1_h: part_of("band1H"),
+                band1_v: part_of("band1V"),
+                band2_h: part_of("band2H"),
+                band2_v: part_of("band2V"),
+            });
+        }
+
+        Ok(PptxTableStyles {
+            default_style_id: root.attribute("def").map(|s| s.to_string()),
+            styles,
+        })
+    }
+
+    /// Parse one named scope of a table style (`a:wholeTbl`, `a:firstRow`,
+    /// `a:band1H`, ...): `a:tcBdr` borders + `a:fillRef`/`a:fontRef`.
+    fn parse_pptx_table_style_part(&self, part: &roxmltree::Node) -> PptxTableStylePart {
+        let mut borders = Vec::new();
+        if let Some(tc_bdr) = part.children().find(|n| n.is_element() && n.has_tag_name("tcBdr")) {
+            for line in tc_bdr.children() {
+                if !line.is_element() {
+                    continue;
+                }
+                let name = line.tag_name().name().to_string();
+                if !matches!(
+                    name.as_str(),
+                    "lnL" | "lnR" | "lnT" | "lnB" | "lnTlToBr" | "lnBlToTr"
+                ) {
+                    continue;
+                }
+                let fill = line.children().find(|n| n.has_tag_name("solidFill"));
+                borders.push(PptxTableStyleBorder {
+                    edge: name,
+                    width: line.attribute("w").and_then(|v| v.parse().ok()),
+                    dash: line
+                        .children()
+                        .find(|n| n.has_tag_name("prstDash"))
+                        .and_then(|n| n.attribute("val"))
+                        .map(|s| s.to_string()),
+                    color: fill.and_then(|n| {
+                        n.descendants()
+                            .find(|m| m.has_tag_name("srgbClr"))
+                            .and_then(|m| m.attribute("val"))
+                            .map(|s| s.to_string())
+                    }),
+                    scheme_color: fill.and_then(|n| {
+                        n.descendants()
+                            .find(|m| m.has_tag_name("schemeClr"))
+                            .and_then(|m| m.attribute("val"))
+                            .map(|s| s.to_string())
+                    }),
+                });
+            }
+        }
+
+        let style_ref_of = |name: &str| -> Option<PptxStyleReference> {
+            part.children()
+                .find(|n| n.is_element() && n.has_tag_name(name))
+                .map(|ref_node| PptxStyleReference {
+                    idx: ref_node.attribute("idx").unwrap_or("").to_string(),
+                    color: ref_node
+                        .descendants()
+                        .find(|m| m.has_tag_name("srgbClr"))
+                        .and_then(|m| m.attribute("val"))
+                        .map(|s| s.to_string()),
+                    scheme_color: ref_node
+                        .descendants()
+                        .find(|m| m.has_tag_name("schemeClr"))
+                        .and_then(|m| m.attribute("val"))
+                        .map(|s| s.to_string()),
+                })
+        };
+
+        PptxTableStylePart {
+            borders,
+            fill_ref: style_ref_of("fillRef"),
+            font_ref: style_ref_of("fontRef"),
+        }
     }
 
     fn parse_pptx_transition(&self, slide_elem: roxmltree::Node) -> Option<SlideTransition> {
@@ -764,7 +1414,16 @@ impl OoxmlParser {
     }
 
     fn parse_pptx_shape_from_sp(&self, sp: &roxmltree::Node) -> Option<SlideShape> {
-        let id = sp.attribute("id").unwrap_or("0").to_string();
+        // The shape id lives on its `p:cNvPr` child (ST_DrawingElementId);
+        // fall back to an id attribute on the sp element itself for
+        // hand-written XML.
+        let id = sp
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr"))
+            .and_then(|n| n.attribute("id"))
+            .or_else(|| sp.attribute("id"))
+            .unwrap_or("0")
+            .to_string();
 
         // Detect shape type: ph (placeholder), sp (auto-shape/textbox)
         let is_placeholder = sp
@@ -1033,9 +1692,8 @@ impl OoxmlParser {
 
         for child in r_node.children() {
             if !child.is_element() {
-                if let Some(t) = child.text() {
-                    text.push_str(t);
-                }
+                // Run text comes only from <a:t> elements; stray text nodes
+                // are just pretty-print indentation between children.
                 continue;
             }
             match child.tag_name().name() {
@@ -3036,6 +3694,28 @@ impl OoxmlParser {
             }
         }
 
+        let mut color_scheme = ColorScheme::default();
+        let mut font_scheme = FontScheme::default();
+        let mut format_scheme: Option<FmtScheme> = None;
+
+        for child in root.descendants() {
+            let local = child.tag_name().name();
+            let ns = child.tag_name().namespace();
+
+            match (ns, local) {
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "clrScheme") => {
+                    color_scheme = self.parse_color_scheme(&child);
+                }
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fontScheme") => {
+                    font_scheme = self.parse_font_scheme(&child);
+                }
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fmtScheme") => {
+                    format_scheme = Some(self.parse_fmt_scheme(&child, xml));
+                }
+                _ => {}
+            }
+        }
+
         Some(Theme {
             name: if name.is_empty() {
                 "Theme".to_string()
@@ -3044,7 +3724,194 @@ impl OoxmlParser {
             },
             color_scheme,
             font_scheme,
-            format_scheme: None,
+            format_scheme,
+        })
+    }
+
+    // --- FmtScheme / schemeClr parsing (ORM-07 theme style tables) ---
+
+    /// Parse `a:fmtScheme`: the fill/line/effect/bg-fill style tables that
+    /// every `a:styleRef` `idx` points into.
+    fn parse_fmt_scheme(&self, node: &roxmltree::Node, doc_xml: &str) -> FmtScheme {
+        let mut scheme = FmtScheme {
+            name: node.attribute("name").unwrap_or("").to_string(),
+            ..Default::default()
+        };
+        for child in node.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "fillStyleLst" => scheme.fill_styles = self.parse_fill_style_list(&child),
+                "lnStyleLst" => scheme.line_styles = self.parse_line_style_list(&child),
+                "effectStyleLst" => {
+                    scheme.effect_styles = child
+                        .children()
+                        .filter(|c| c.is_element() && c.tag_name().name() == "effectStyle")
+                        .map(|c| self.parse_effect_style(&c, doc_xml))
+                        .collect();
+                }
+                "bgFillStyleLst" => scheme.bg_fill_styles = self.parse_fill_style_list(&child),
+                _ => {}
+            }
+        }
+        scheme
+    }
+
+    fn parse_fill_style_list(&self, node: &roxmltree::Node) -> Vec<ThemeFillStyle> {
+        node.children()
+            .filter(|c| c.is_element())
+            .map(|c| self.parse_fill_style(&c))
+            .collect()
+    }
+
+    fn parse_fill_style(&self, node: &roxmltree::Node) -> ThemeFillStyle {
+        match node.tag_name().name() {
+            "noFill" => ThemeFillStyle::NoFill,
+            "grpFill" => ThemeFillStyle::GroupFill,
+            "blipFill" => ThemeFillStyle::Blip,
+            "solidFill" => ThemeFillStyle::Solid(self.parse_theme_color_ref(node)),
+            "gradFill" => ThemeFillStyle::Gradient(
+                node.children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "gsLst")
+                    .map(|gs_lst| {
+                        gs_lst
+                            .children()
+                            .filter(|c| c.is_element() && c.tag_name().name() == "gs")
+                            .map(|gs| ThemeGradientStop {
+                                position: gs.attribute("pos").and_then(|v| v.parse::<i64>().ok())
+                                    .map(|v| v as f64 / 100_000.0),
+                                color: self.parse_theme_color_ref(&gs),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            ),
+            "pattFill" => ThemeFillStyle::Pattern {
+                preset: node.attribute("prst").map(|v| v.to_string()),
+                foreground: node
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "fgClr")
+                    .map(|c| self.parse_theme_color_ref(&c)),
+                background: node
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "bgClr")
+                    .map(|c| self.parse_theme_color_ref(&c)),
+            },
+            _ => ThemeFillStyle::Unknown,
+        }
+    }
+
+    fn parse_line_style_list(&self, node: &roxmltree::Node) -> Vec<ThemeLineStyle> {
+        node.children()
+            .filter(|c| c.is_element())
+            .map(|c| self.parse_line_style(&c))
+            .collect()
+    }
+
+    fn parse_line_style(&self, node: &roxmltree::Node) -> ThemeLineStyle {
+        let mut style = ThemeLineStyle {
+            width: node.attribute("w").and_then(|v| v.parse().ok()),
+            cap: node.attribute("cap").map(|v| v.to_string()),
+            compound: node.attribute("cmpd").map(|v| v.to_string()),
+            alignment: node.attribute("algn").map(|v| v.to_string()),
+            ..Default::default()
+        };
+        for child in node.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "solidFill" => style.fill = Some(self.parse_fill_style(&child)),
+                "gradFill" => style.fill = Some(self.parse_fill_style(&child)),
+                "noFill" => style.fill = Some(ThemeFillStyle::NoFill),
+                "prstDash" => style.dash = child.attribute("val").map(|v| v.to_string()),
+                "headEnd" => style.head_end = child.attribute("type").map(|v| v.to_string()),
+                "tailEnd" => style.tail_end = child.attribute("type").map(|v| v.to_string()),
+                _ => {}
+            }
+        }
+        style
+    }
+
+    fn parse_effect_style(&self, node: &roxmltree::Node, doc_xml: &str) -> ThemeEffectStyle {
+        let effect_lst = node
+            .children()
+            .find(|c| c.is_element() && c.tag_name().name() == "effectLst");
+        let has_effects = effect_lst
+            .map(|e| e.children().any(|gc| gc.is_element()))
+            .unwrap_or(false);
+        // Keep the verbatim effect list XML so the style re-serializes
+        // losslessly (the typed model only records presence).
+        let raw = if has_effects {
+            let range = effect_lst.map(|e| e.range()).unwrap_or(0..0);
+            doc_xml.get(range.start..range.end).map(|s| s.to_string())
+        } else {
+            None
+        };
+        ThemeEffectStyle { has_effects, raw }
+    }
+
+    /// Parse the single color child of a container element (`a:solidFill`,
+    /// `a:gs`, `a:fgClr`, ...): srgbClr / schemeClr / sysClr / prstClr.
+    fn parse_theme_color_ref(&self, container: &roxmltree::Node) -> ThemeColorRef {
+        for child in container.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "srgbClr" => {
+                    return ThemeColorRef {
+                        rgb: child.attribute("val").map(|v| v.to_string()),
+                        ..Default::default()
+                    };
+                }
+                "schemeClr" => {
+                    return ThemeColorRef {
+                        scheme: Some(self.parse_scheme_clr(&child)),
+                        ..Default::default()
+                    };
+                }
+                "sysClr" => {
+                    return ThemeColorRef {
+                        system: Some(ThemeSystemColor {
+                            val: child.attribute("val").unwrap_or("").to_string(),
+                            last_clr: child.attribute("lastClr").map(|v| v.to_string()),
+                        }),
+                        ..Default::default()
+                    };
+                }
+                "prstClr" => {
+                    return ThemeColorRef {
+                        preset: child.attribute("val").map(|v| v.to_string()),
+                        ..Default::default()
+                    };
+                }
+                _ => {}
+            }
+        }
+        ThemeColorRef::default()
+    }
+
+    /// Parse `a:schemeClr` with its color-transform children.
+    fn parse_scheme_clr(&self, node: &roxmltree::Node) -> SchemeClr {
+        SchemeClr {
+            val: node.attribute("val").unwrap_or("").to_string(),
+            modifiers: node
+                .children()
+                .filter(|c| c.is_element())
+                .filter_map(|c| self.parse_scheme_clr_transform(&c))
+                .collect(),
+        }
+    }
+
+    fn parse_scheme_clr_transform(&self, node: &roxmltree::Node) -> Option<SchemeClrTransform> {
+        let val = || node.attribute("val").and_then(|v| v.parse::<i64>().ok());
+        Some(match node.tag_name().name() {
+            "tint" => SchemeClrTransform::Tint(val()?),
+            "shade" => SchemeClrTransform::Shade(val()?),
+            "lumMod" => SchemeClrTransform::LumMod(val()?),
+            "lumOff" => SchemeClrTransform::LumOff(val()?),
+            "alpha" => SchemeClrTransform::Alpha(val()?),
+            "alphaMod" => SchemeClrTransform::AlphaMod(val()?),
+            "alphaOff" => SchemeClrTransform::AlphaOff(val()?),
+            "satMod" => SchemeClrTransform::SatMod(val()?),
+            "satOff" => SchemeClrTransform::SatOff(val()?),
+            "hueMod" => SchemeClrTransform::HueMod(val()?),
+            "comp" => SchemeClrTransform::Complement,
+            "gray" => SchemeClrTransform::Gray,
+            _ => return None,
         })
     }
 
@@ -3061,8 +3928,18 @@ impl OoxmlParser {
             let color = child
                 .descendants()
                 .find(|n| n.has_tag_name("srgbClr") || n.has_tag_name("sysClr"))
-                .and_then(|n| n.attribute("val"))
-                .map(|v| v.to_string())
+                .map(|n| {
+                    // sysClr carries the concrete color in lastClr; `val`
+                    // is the system color name (window, windowText, ...).
+                    if n.has_tag_name("sysClr") {
+                        n.attribute("lastClr")
+                            .or_else(|| n.attribute("val"))
+                            .unwrap_or("")
+                            .to_string()
+                    } else {
+                        n.attribute("val").unwrap_or("").to_string()
+                    }
+                })
                 .unwrap_or_default();
 
             if !local.is_empty() && !color.is_empty() {
@@ -3171,15 +4048,40 @@ impl OoxmlParser {
     fn parse_single_slide_master(&self, xml: &str, _path: &str) -> Option<SlideMaster> {
         let doc = XmlDoc::parse(xml).ok()?;
 
-        let name = doc
-            .root_element()
-            .attribute("name")
-            .unwrap_or("Slide Master")
-            .to_string();
+        let root = doc.root_element();
+        let name = root.attribute("name").unwrap_or("Slide Master").to_string();
+
+        // p:clrMap: remaps scheme slots for the slides following this master.
+        let mut clr_map = ClrMap::default();
+        for child in root.children().filter(|c| c.is_element()) {
+            if child.tag_name().name() == "clrMap"
+                && child.tag_name().namespace() == Some(Self::P_NS)
+            {
+                for slot in [
+                    "bg1",
+                    "tx1",
+                    "bg2",
+                    "tx2",
+                    "accent1",
+                    "accent2",
+                    "accent3",
+                    "accent4",
+                    "accent5",
+                    "accent6",
+                    "hlink",
+                    "folHlink",
+                ] {
+                    if let Some(v) = child.attribute(slot) {
+                        clr_map.set_slot(slot, v);
+                    }
+                }
+            }
+        }
 
         Some(SlideMaster {
             id: 1,
             name,
+            clr_map,
             slide_layouts: Vec::new(), // Layouts resolved via relationships
         })
     }
@@ -4156,6 +5058,31 @@ impl OoxmlParser {
                 }
             }
 
+            // ORM-06: conditional formatting — the visual rule kinds
+            // (colorScale / dataBar / iconSet) plus the attribute-only
+            // kinds (cellIs / expression / top10 / ...) so dashboards keep
+            // their exact visuals across a round trip.
+            for cf_elem in worksheet_elem.descendants() {
+                if cf_elem.has_tag_name("conditionalFormatting")
+                    && cf_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let mut block = XlsxConditionalFormatting {
+                        sqref: cf_elem
+                            .attribute("sqref")
+                            .unwrap_or_default()
+                            .to_string(),
+                        rules: Vec::new(),
+                    };
+                    for rule_elem in cf_elem.children().filter(|n| n.is_element()) {
+                        if !rule_elem.has_tag_name("cfRule") {
+                            continue;
+                        }
+                        block.rules.push(Self::parse_xlsx_cf_rule(rule_elem));
+                    }
+                    sheet_properties.conditional_formatting.push(block);
+                }
+            }
+
             // Parse columns
             for col_elem in worksheet_elem.descendants() {
                 if col_elem.has_tag_name("col")
@@ -4256,6 +5183,112 @@ impl OoxmlParser {
         }
     }
 
+    /// One `<cfRule>`: attributes + optional type-specific element.
+    fn parse_xlsx_cf_rule(elem: roxmltree::Node) -> XlsxConditionalFormatRule {
+        let mut rule = XlsxConditionalFormatRule {
+            rule_type: elem.attribute("type").unwrap_or_default().to_string(),
+            priority: elem.attribute("priority").and_then(|v| v.parse().ok()),
+            stop_if_true: elem.attribute("stopIfTrue") == Some("1"),
+            dxf_id: elem.attribute("dxfId").and_then(|v| v.parse().ok()),
+            operator: elem.attribute("operator").map(|v| v.to_string()),
+            text: elem.attribute("text").map(|v| v.to_string()),
+            time_period: elem.attribute("timePeriod").map(|v| v.to_string()),
+            rank: elem.attribute("rank").and_then(|v| v.parse().ok()),
+            percent: elem.attribute("percent").map(|v| v == "1"),
+            bottom: elem.attribute("bottom").map(|v| v == "1"),
+            above_average: elem.attribute("aboveAverage").map(|v| v == "1"),
+            formulas: Vec::new(),
+            kind: XlsxConditionalFormatKind::Plain,
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            match child.tag_name().name() {
+                "formula" => {
+                    rule.formulas.push(child.text().unwrap_or_default().to_string())
+                }
+                "colorScale" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::ColorScale(Self::parse_xlsx_color_scale(child));
+                }
+                "dataBar" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::DataBar(Self::parse_xlsx_data_bar(child));
+                }
+                "iconSet" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::IconSet(Self::parse_xlsx_icon_set(child));
+                }
+                _ => {}
+            }
+        }
+        rule
+    }
+
+    /// A CF/dxf color reference: rgb hex, theme index (+tint) or legacy
+    /// indexed palette entry.
+    fn parse_xlsx_cf_color(elem: roxmltree::Node) -> Option<XlsxCfColor> {
+        Some(XlsxCfColor {
+            rgb: elem.attribute("rgb").map(|v| v.to_string()),
+            theme: elem.attribute("theme").and_then(|v| v.parse().ok()),
+            indexed: elem.attribute("indexed").and_then(|v| v.parse().ok()),
+            tint: elem.attribute("tint").and_then(|v| v.parse().ok()),
+        })
+    }
+
+    fn parse_xlsx_cfvo(elem: roxmltree::Node) -> XlsxCfvo {
+        XlsxCfvo {
+            cfvo_type: elem.attribute("type").unwrap_or("num").to_string(),
+            val: elem.attribute("val").map(|v| v.to_string()),
+            gte: elem.attribute("gte") != Some("0"),
+        }
+    }
+
+    fn parse_xlsx_color_scale(elem: roxmltree::Node) -> XlsxColorScale {
+        let mut scale = XlsxColorScale::default();
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                scale.cfvos.push(Self::parse_xlsx_cfvo(child));
+            } else if child.has_tag_name("color") {
+                if let Some(color) = Self::parse_xlsx_cf_color(child) {
+                    scale.colors.push(color);
+                }
+            }
+        }
+        scale
+    }
+
+    fn parse_xlsx_data_bar(elem: roxmltree::Node) -> XlsxDataBar {
+        let mut bar = XlsxDataBar {
+            min_length: elem.attribute("minLength").and_then(|v| v.parse().ok()),
+            max_length: elem.attribute("maxLength").and_then(|v| v.parse().ok()),
+            show_value: elem.attribute("showValue") != Some("0"),
+            ..Default::default()
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                bar.cfvos.push(Self::parse_xlsx_cfvo(child));
+            } else if child.has_tag_name("color") {
+                bar.color = Self::parse_xlsx_cf_color(child);
+            }
+        }
+        bar
+    }
+
+    fn parse_xlsx_icon_set(elem: roxmltree::Node) -> XlsxIconSet {
+        let mut set = XlsxIconSet {
+            icon_set: elem.attribute("iconSet").map(|v| v.to_string()),
+            show_value: elem.attribute("showValue") != Some("0"),
+            percent: elem.attribute("percent") == Some("1"),
+            reverse: elem.attribute("reverse") == Some("1"),
+            ..Default::default()
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                set.cfvos.push(Self::parse_xlsx_cfvo(child));
+            }
+        }
+        set
+    }
+
     fn parse_xlsx_cell(
         &self,
         cell_elem: roxmltree::Node,
@@ -4334,101 +5367,72 @@ impl OoxmlParser {
 
         let mut styles = XlsxStyles::default();
 
-        // Parse number formats
-        for num_fmt_elem in doc.descendants() {
-            if num_fmt_elem.has_tag_name("numFmt")
-                && num_fmt_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                if let (Some(num_fmt_id), Some(format_code)) = (
-                    num_fmt_elem.attribute("numFmtId"),
-                    num_fmt_elem.attribute("formatCode"),
-                ) {
-                    if let Ok(num_fmt_id_parsed) = num_fmt_id.parse::<u32>() {
-                        styles.num_fmts.push(XlsxNumFmt {
-                            num_fmt_id: num_fmt_id_parsed,
-                            format_code: format_code.to_string(),
-                        });
-                    }
-                }
-            }
-        }
-
-        // Parse fonts
-        for font_elem in doc.descendants() {
-            if font_elem.has_tag_name("font")
-                && font_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut font = XlsxFont::default();
-
-                for child in font_elem.children() {
-                    if child.has_tag_name("name") {
-                        font.name = child.text().map(|t| t.to_string());
-                    } else if child.has_tag_name("sz") {
-                        font.sz = child.text().and_then(|t| t.parse::<f64>().ok());
-                    } else if child.has_tag_name("b") {
-                        font.b = true;
-                    } else if child.has_tag_name("i") {
-                        font.i = true;
-                    } else if child.has_tag_name("u") {
-                        font.u = child.text().map(|t| t.to_string());
-                    } else if child.has_tag_name("strike") {
-                        font.strike = true;
-                    } else if child.has_tag_name("color") {
-                        font.color = child.attribute("rgb").map(|c| c.to_string());
-                    }
-                }
-
-                styles.fonts.push(font);
-            }
-        }
-
-        // Parse fills
-        for fill_elem in doc.descendants() {
-            if fill_elem.has_tag_name("fill")
-                && fill_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut fill = XlsxFill::default();
-
-                for child in fill_elem.children() {
-                    if child.has_tag_name("patternFill") {
-                        fill.pattern_type = child.attribute("patternType").map(|p| p.to_string());
-                        if let Some(fg_color) = child.children().find(|c| c.has_tag_name("fgColor"))
-                        {
-                            fill.fg_color = fg_color.attribute("rgb").map(|c| c.to_string());
-                        }
-                        if let Some(bg_color) = child.children().find(|c| c.has_tag_name("bgColor"))
-                        {
-                            fill.bg_color = bg_color.attribute("rgb").map(|c| c.to_string());
+        // Parse number formats (scoped to <numFmts>: the <numFmt> entries
+        // inside <dxf> differential formats must not leak into the shared
+        // numFmt table).
+        if let Some(num_fmts_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("numFmts") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for num_fmt_elem in num_fmts_elem.children() {
+                if num_fmt_elem.has_tag_name("numFmt")
+                    && num_fmt_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let (Some(num_fmt_id), Some(format_code)) = (
+                        num_fmt_elem.attribute("numFmtId"),
+                        num_fmt_elem.attribute("formatCode"),
+                    ) {
+                        if let Ok(num_fmt_id_parsed) = num_fmt_id.parse::<u32>() {
+                            styles.num_fmts.push(XlsxNumFmt {
+                                num_fmt_id: num_fmt_id_parsed,
+                                format_code: format_code.to_string(),
+                            });
                         }
                     }
                 }
-
-                styles.fills.push(fill);
             }
         }
 
-        // Parse borders (simplified)
-        for border_elem in doc.descendants() {
-            if border_elem.has_tag_name("border")
-                && border_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut border = XlsxBorder::default();
-
-                for child in border_elem.children() {
-                    if child.has_tag_name("left") {
-                        border.left = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("right") {
-                        border.right = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("top") {
-                        border.top = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("bottom") {
-                        border.bottom = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("diagonal") {
-                        border.diagonal = Some(self.parse_xlsx_border_side(child));
-                    }
+        // Parse fonts (scoped to <fonts>; fonts inside <dxf> differential
+        // formats belong to the dxf table below).
+        if let Some(fonts_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("fonts") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for font_elem in fonts_elem.children() {
+                if font_elem.has_tag_name("font")
+                    && font_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.fonts.push(Self::parse_xlsx_font(font_elem));
                 }
+            }
+        }
 
-                styles.borders.push(border);
+        // Parse fills (scoped to <fills> for the same dxf reason).
+        if let Some(fills_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("fills") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for fill_elem in fills_elem.children() {
+                if fill_elem.has_tag_name("fill")
+                    && fill_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.fills.push(Self::parse_xlsx_fill(fill_elem));
+                }
+            }
+        }
+
+        // Parse borders (scoped to <borders> for the same dxf reason).
+        if let Some(borders_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("borders") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for border_elem in borders_elem.children() {
+                if border_elem.has_tag_name("border")
+                    && border_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.borders.push(self.parse_xlsx_border(border_elem));
+                }
             }
         }
 
@@ -4508,7 +5512,106 @@ impl OoxmlParser {
             }
         }
 
+        // Parse dxfs (CT_Dxfs): differential formats referenced by
+        // conditional-format rules via dxfId. Each record is a style delta
+        // (font / numFmt / fill / alignment / border / protection).
+        if let Some(dxfs_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("dxfs") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for dxf_elem in dxfs_elem.children() {
+                if !dxf_elem.has_tag_name("dxf")
+                    || dxf_elem.tag_name().namespace() != Some(Self::S_NS)
+                {
+                    continue;
+                }
+                let mut dxf = XlsxDxf::default();
+                for child in dxf_elem.children().filter(|n| n.is_element()) {
+                    match child.tag_name().name() {
+                        "font" => dxf.font = Some(Self::parse_xlsx_font(child)),
+                        "numFmt" => {
+                            dxf.num_fmt = Some(XlsxNumFmt {
+                                num_fmt_id: child
+                                    .attribute("numFmtId")
+                                    .and_then(|v| v.parse().ok())
+                                    .unwrap_or(0),
+                                format_code: child
+                                    .attribute("formatCode")
+                                    .unwrap_or_default()
+                                    .to_string(),
+                            });
+                        }
+                        "fill" => dxf.fill = Some(Self::parse_xlsx_fill(child)),
+                        "alignment" => dxf.alignment = Some(self.parse_xlsx_alignment(child)),
+                        "border" => dxf.border = Some(self.parse_xlsx_border(child)),
+                        "protection" => dxf.protection = Some(self.parse_xlsx_protection(child)),
+                        _ => {}
+                    }
+                }
+                styles.dxfs.push(dxf);
+            }
+        }
+
         Ok(styles)
+    }
+
+    /// A `<font>` record (shared font table and dxf deltas share the shape).
+    fn parse_xlsx_font(elem: roxmltree::Node) -> XlsxFont {
+        let mut font = XlsxFont::default();
+        for child in elem.children() {
+            if child.has_tag_name("name") {
+                font.name = child.text().map(|t| t.to_string());
+            } else if child.has_tag_name("sz") {
+                font.sz = child.text().and_then(|t| t.parse::<f64>().ok());
+            } else if child.has_tag_name("b") {
+                font.b = true;
+            } else if child.has_tag_name("i") {
+                font.i = true;
+            } else if child.has_tag_name("u") {
+                font.u = child.text().map(|t| t.to_string());
+            } else if child.has_tag_name("strike") {
+                font.strike = true;
+            } else if child.has_tag_name("color") {
+                font.color = child.attribute("rgb").map(|c| c.to_string());
+            }
+        }
+        font
+    }
+
+    /// A `<fill>` record (pattern fill with fg/bg color children).
+    fn parse_xlsx_fill(elem: roxmltree::Node) -> XlsxFill {
+        let mut fill = XlsxFill::default();
+        for child in elem.children() {
+            if child.has_tag_name("patternFill") {
+                fill.pattern_type = child.attribute("patternType").map(|p| p.to_string());
+                if let Some(fg_color) = child.children().find(|c| c.has_tag_name("fgColor")) {
+                    fill.fg_color = fg_color.attribute("rgb").map(|c| c.to_string());
+                }
+                if let Some(bg_color) = child.children().find(|c| c.has_tag_name("bgColor")) {
+                    fill.bg_color = bg_color.attribute("rgb").map(|c| c.to_string());
+                }
+            }
+        }
+        fill
+    }
+
+    /// A `<border>` record.
+    fn parse_xlsx_border(&self, elem: roxmltree::Node) -> XlsxBorder {
+        let mut border = XlsxBorder::default();
+        for child in elem.children() {
+            if child.has_tag_name("left") {
+                border.left = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("right") {
+                border.right = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("top") {
+                border.top = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("bottom") {
+                border.bottom = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("diagonal") {
+                border.diagonal = Some(self.parse_xlsx_border_side(child));
+            }
+        }
+        border
     }
 
     fn parse_xlsx_border_side(&self, elem: roxmltree::Node) -> XlsxBorderSide {

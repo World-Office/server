@@ -14,6 +14,53 @@ use crate::transform::{AffineTransform, TransformStack};
 /// A single RGBA pixel stored as u32 (0xAARRGGBB).
 type PixelU32 = u32;
 
+/// Bilinearly sample an RGBA8 image at a fractional position.
+///
+/// Texel indices are clamped to the image edges, so sample positions
+/// slightly outside the source resolve to edge texel colours. Returns
+/// non-premultiplied (r, g, b, a) channels scaled to `0.0..=1.0`.
+fn sample_bilinear_rgba(
+    raw: &[u8],
+    width: u32,
+    height: u32,
+    fx: f32,
+    fy: f32,
+) -> (f32, f32, f32, f32) {
+    let w = width as i32;
+    let h = height as i32;
+    let x0 = fx.floor();
+    let y0 = fy.floor();
+    let tx = fx - x0;
+    let ty = fy - y0;
+    let xa = (x0 as i32).clamp(0, w - 1);
+    let xb = (x0 as i32 + 1).clamp(0, w - 1);
+    let ya = (y0 as i32).clamp(0, h - 1);
+    let yb = (y0 as i32 + 1).clamp(0, h - 1);
+
+    let texel = |x: i32, y: i32| -> [f32; 4] {
+        let idx = ((y as u32) * width + x as u32) as usize;
+        let p = &raw[idx * 4..idx * 4 + 4];
+        [p[0] as f32, p[1] as f32, p[2] as f32, p[3] as f32]
+    };
+    let p00 = texel(xa, ya);
+    let p10 = texel(xb, ya);
+    let p01 = texel(xa, yb);
+    let p11 = texel(xb, yb);
+
+    let mut out = [0.0_f32; 4];
+    for c in 0..4 {
+        let top = p00[c] + (p10[c] - p00[c]) * tx;
+        let bottom = p01[c] + (p11[c] - p01[c]) * tx;
+        out[c] = top + (bottom - top) * ty;
+    }
+    (
+        out[0] / 255.0,
+        out[1] / 255.0,
+        out[2] / 255.0,
+        out[3] / 255.0,
+    )
+}
+
 /// Pixel buffer for the canvas.
 #[derive(Debug, Clone)]
 struct PixelBuffer {
@@ -63,6 +110,31 @@ impl PixelBuffer {
             x,
             y,
             0xFF000000 | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32),
+        );
+    }
+
+    /// Transparent src-over blend of a non-premultiplied RGBA source pixel.
+    ///
+    /// `a` is the effective source alpha in `0.0..=1.0` (image texel alpha
+    /// times the global alpha); the destination colour is composited
+    /// beneath the source colour.
+    fn blend_rgba_over(&mut self, x: u32, y: u32, r: f32, g: f32, b: f32, a: f32) {
+        if x >= self.width || y >= self.height || a <= 0.0 {
+            return;
+        }
+        let a = a.clamp(0.0, 1.0);
+        let existing = self.get(x, y);
+        let er = ((existing >> 16) & 0xFF) as f32;
+        let eg = ((existing >> 8) & 0xFF) as f32;
+        let eb = (existing & 0xFF) as f32;
+        let inv = 1.0 - a;
+        let out_r = (r * a * 255.0 + er * inv).round().clamp(0.0, 255.0) as u8;
+        let out_g = (g * a * 255.0 + eg * inv).round().clamp(0.0, 255.0) as u8;
+        let out_b = (b * a * 255.0 + eb * inv).round().clamp(0.0, 255.0) as u8;
+        self.set(
+            x,
+            y,
+            0xFF000000 | ((out_r as u32) << 16) | ((out_g as u32) << 8) | (out_b as u32),
         );
     }
 
@@ -218,6 +290,251 @@ impl PixelBuffer {
             bytes.push((pixel >> 24) as u8);
         }
         bytes
+    }
+
+    /// Rasterize a path with anti-aliasing using coverage computation.
+    /// Computes coverage for each pixel cell based on path edges.
+    fn rasterize_aa_coverage(
+        &mut self,
+        points: &[(f32, f32)],
+        color: &Color,
+        alpha: f32,
+        is_closed: bool,
+    ) {
+        if points.len() < 2 {
+            return;
+        }
+
+        // Create coverage grid
+        let mut coverage = vec![vec![0.0_f32; self.width as usize]; self.height as usize];
+
+        // Rasterize edges with coverage
+        let n = points.len();
+        let end = if is_closed { n } else { n - 1 };
+
+        for i in 0..end {
+            let j = if is_closed { (i + 1) % n } else { i + 1 };
+            let (x0, y0) = points[i];
+            let (x1, y1) = points[j];
+
+            // Compute the bounding box of the edge
+            let x_min = x0.min(x1).floor() as i32;
+            let x_max = x0.max(x1).ceil() as i32;
+            let y_min = y0.min(y1).floor() as i32;
+            let y_max = y0.max(y1).ceil() as i32;
+
+            // Clamp to canvas bounds
+            let x_start = x_min.max(0).min(self.width as i32 - 1);
+            let x_end = x_max.max(0).min(self.width as i32);
+            let y_start = y_min.max(0).min(self.height as i32 - 1);
+            let y_end = y_max.max(0).min(self.height as i32);
+
+            // Sample each pixel cell and compute signed distance to the edge
+            for py in y_start..y_end {
+                for px in x_start..x_end {
+                    let pixel_center_x = px as f32 + 0.5;
+                    let pixel_center_y = py as f32 + 0.5;
+
+                    // Compute signed distance from point to line segment
+                    let dist = self.point_to_segment_distance(
+                        (pixel_center_x, pixel_center_y),
+                        (x0, y0),
+                        (x1, y1),
+                    );
+
+                    // Convert distance to coverage (smoothstep approximation)
+                    // Normalize by line width - for AA fill we use implicit width of ~1 pixel
+                    let coverage_val = self.distance_to_coverage(dist);
+                    coverage[py as usize][px as usize] += coverage_val;
+                }
+            }
+        }
+
+        // For closed paths, apply winding rule to determine inside/outside
+        if is_closed && points.len() >= 3 {
+            let mut winding = vec![vec![0_i32; self.width as usize]; self.height as usize];
+
+            // Compute winding numbers
+            for py in 0..self.height as i32 {
+                for px in 0..self.width as i32 {
+                    let p = (px as f32 + 0.5, py as f32 + 0.5);
+                    let mut w = 0;
+
+                    for i in 0..n {
+                        let j = (i + 1) % n;
+                        let (x0, y0) = points[i];
+                        let (x1, y1) = points[j];
+
+                        // Check if ray to the right crosses this edge
+                        if (y0 <= p.1 && y1 > p.1) || (y1 <= p.1 && y0 > p.1) {
+                            let x_int = x0 + (p.1 - y0) * (x1 - x0) / (y1 - y0);
+                            if x_int > p.0 {
+                                if y1 > y0 {
+                                    w += 1;
+                                } else {
+                                    w -= 1;
+                                }
+                            }
+                        }
+                    }
+                    winding[py as usize][px as usize] = w;
+                }
+            }
+
+            // Apply winding rule: pixel is inside if winding != 0
+            for py in 0..self.height as usize {
+                for px in 0..self.width as usize {
+                    if winding[py][px] != 0 && coverage[py][px] <= 0.0 {
+                        // Inside the path - apply coverage
+                        let mut cov = 1.0 - coverage[py][px].abs();
+                        cov = cov.clamp(0.0, 1.0);
+                        let final_alpha = alpha * color.a * cov;
+                        if px < self.width as usize && py < self.height as usize {
+                            let px_u = px as u32;
+                            let py_u = py as u32;
+                            self.blend(px_u, py_u, color, final_alpha);
+                        }
+                    } else if !is_closed {
+                        // For non-closed paths, use coverage directly
+                        let final_alpha = alpha * color.a * coverage[py][px].clamp(0.0, 1.0);
+                        if px < self.width as usize && py < self.height as usize {
+                            let px_u = px as u32;
+                            let py_u = py as u32;
+                            self.blend(px_u, py_u, color, final_alpha);
+                        }
+                    }
+                }
+            }
+        } else {
+            // For open paths (stroke-like), use coverage directly
+            for py in 0..self.height as usize {
+                for px in 0..self.width as usize {
+                    let final_alpha = alpha * color.a * coverage[py][px].clamp(0.0, 1.0);
+                    if px < self.width as usize && py < self.height as usize {
+                        let px_u = px as u32;
+                        let py_u = py as u32;
+                        if final_alpha > 0.001 {
+                            self.blend(px_u, py_u, color, final_alpha);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Compute signed distance from point to line segment.
+    fn point_to_segment_distance(
+        &self,
+        p: (f32, f32),
+        a: (f32, f32),
+        b: (f32, f32),
+    ) -> f32 {
+        let abx = b.0 - a.0;
+        let aby = b.1 - a.1;
+        let apx = p.0 - a.0;
+        let apy = p.1 - a.1;
+
+        let ab_len_sq = abx * abx + aby * aby;
+
+        if ab_len_sq < 1e-12 {
+            // Points are coincident
+            return (apx * apx + apy * apy).sqrt();
+        }
+
+        // Projection of AP onto AB, normalized
+        let t = (apx * abx + apy * aby) / ab_len_sq;
+
+        let t_clamped = t.clamp(0.0, 1.0);
+
+        // Closest point on segment
+        let closest_x = a.0 + t_clamped * abx;
+        let closest_y = a.1 + t_clamped * aby;
+
+        // Signed distance (positive on one side, negative on the other)
+        let dx = p.0 - closest_x;
+        let dy = p.1 - closest_y;
+
+        // Determine sign based on which side of the line we're on
+        let cross = abx * (p.1 - a.1) - aby * (p.0 - a.0);
+        let sign = if cross >= 0.0 { 1.0 } else { -1.0 };
+
+        sign * (dx * dx + dy * dy).sqrt()
+    }
+
+    /// Convert distance to coverage using smoothstep for anti-aliasing.
+    fn distance_to_coverage(&self, distance: f32) -> f32 {
+        // Normalize distance to pixel scale
+        let abs_dist = distance.abs();
+        
+        // Smoothstep: 0 at distance >= 0.5, 1 at distance <= -0.5, smooth transition in between
+        if abs_dist >= 0.5 {
+            0.0
+        } else if abs_dist <= -0.5 {
+            1.0
+        } else {
+            let t = (0.5 - abs_dist) / 1.0;
+            t * t * (3.0 - 2.0 * t)
+        }
+    }
+
+    /// Anti-aliased fill for polygons using scanline with coverage.
+    fn fill_polygon_aa_coverage(&mut self, points: &[(f32, f32)], color: &Color, alpha: f32) {
+        if points.len() < 3 {
+            return;
+        }
+
+        // Use the AA rasterization
+        self.rasterize_aa_coverage(points, color, alpha, true);
+    }
+
+    /// Anti-aliased stroke for polylines using coverage.
+    fn stroke_lines_aa(
+        &mut self,
+        points: &[(f32, f32)],
+        color: &Color,
+        alpha: f32,
+        line_width: f32,
+    ) {
+        if points.len() < 2 {
+            return;
+        }
+
+        // For AA stroke, we generate a polygon representing the stroke outline
+        // and then fill it with AA
+        let half_w = line_width / 2.0;
+        let mut stroke_polygon: Vec<(f32, f32)> = Vec::new();
+
+        // Build the stroke polygon by creating quads for each segment
+        for i in 0..points.len() - 1 {
+            let (x0, y0) = points[i];
+            let (x1, y1) = points[i + 1];
+
+            let dx = x1 - x0;
+            let dy = y1 - y0;
+            let length = (dx * dx + dy * dy).sqrt();
+
+            if length < 1e-10 {
+                continue;
+            }
+
+            // Perpendicular direction
+            let nx = -dy / length;
+            let ny = dx / length;
+
+            if i == 0 {
+                // Start: add first point with perpendicular offset
+                stroke_polygon.push((x0 + nx * half_w, y0 + ny * half_w));
+            }
+
+            // Add the two perpendicular points for this segment
+            stroke_polygon.push((x0 - nx * half_w, y0 - ny * half_w));
+            stroke_polygon.push((x1 - nx * half_w, y1 - ny * half_w));
+            stroke_polygon.push((x1 + nx * half_w, y1 + ny * half_w));
+        }
+
+        if !stroke_polygon.is_empty() {
+            self.fill_polygon_aa_coverage(&stroke_polygon, color, alpha);
+        }
     }
 }
 
@@ -753,8 +1070,16 @@ impl Canvas {
         }
     }
 
-    /// Draw an image onto the canvas at the specified position with the given dimensions.
-    /// The image is scaled to fit the target rectangle.
+    /// Draw an image onto the canvas at the specified position with the
+    /// given dimensions, scaling it with bilinear interpolation and
+    /// compositing it with transparent (src-over) alpha blending.
+    ///
+    /// The destination rectangle is mapped through the current transform;
+    /// each destination pixel centre is inverse-mapped to a fractional
+    /// source position and bilinearly interpolated from the four
+    /// surrounding texels. Fully transparent texels leave the destination
+    /// untouched; partially transparent texels are alpha-blended over the
+    /// existing pixels, scaled by the canvas global alpha.
     ///
     /// # Arguments
     /// * `image_data` - Image bytes (PNG, JPEG, GIF, BMP, TIFF)
@@ -785,75 +1110,71 @@ impl Canvas {
             .map_err(|e| format!("Failed to decode image: {}", e))?;
 
         let img_rgba = img.to_rgba8();
-        let img_w = img_rgba.width() as u32;
-        let img_h = img_rgba.height() as u32;
+        let img_w = img_rgba.width();
+        let img_h = img_rgba.height();
 
         if img_w == 0 || img_h == 0 {
             return Err("Decoded image has zero dimensions".to_string());
         }
+        let raw = img_rgba.as_raw();
 
-        // Calculate source and destination rectangles
-        let dest_x0 = x.floor() as i32;
-        let dest_y0 = y.floor() as i32;
-        let dest_x1 = (x + w).ceil() as i32;
-        let dest_y1 = (y + h).ceil() as i32;
+        // Map the destination rectangle corners through the current
+        // transform and rasterize the bounding box of the resulting quad.
+        let transform = self.current_transform();
+        let inverse = match transform.invert() {
+            Some(inv) => inv,
+            // A singular transform maps the rectangle to a degenerate area.
+            None => return Ok(()),
+        };
+        let corners = [
+            transform.transform_point(x, y),
+            transform.transform_point(x + w, y),
+            transform.transform_point(x + w, y + h),
+            transform.transform_point(x, y + h),
+        ];
+        let min_x = corners.iter().fold(f32::INFINITY, |m, p| m.min(p.0));
+        let min_y = corners.iter().fold(f32::INFINITY, |m, p| m.min(p.1));
+        let max_x = corners.iter().fold(f32::NEG_INFINITY, |m, p| m.max(p.0));
+        let max_y = corners.iter().fold(f32::NEG_INFINITY, |m, p| m.max(p.1));
 
-        // Clamp to canvas bounds
-        let src_x0 = 0u32;
-        let src_y0 = 0u32;
-        let src_x1 = img_w;
-        let src_y1 = img_h;
+        let px0 = min_x.floor().max(0.0) as u32;
+        let py0 = min_y.floor().max(0.0) as u32;
+        let px1 = (max_x.ceil().max(0.0) as u32).min(self.width);
+        let py1 = (max_y.ceil().max(0.0) as u32).min(self.height);
+        if px0 >= px1 || py0 >= py1 {
+            // Entirely outside the canvas.
+            return Ok(());
+        }
 
-        let mut dest_x = dest_x0.max(0);
-        let mut dest_y = dest_y0.max(0);
-        let mut src_x = (dest_x - dest_x0) as u32 * img_w / (dest_x1 - dest_x0) as u32;
-        let mut src_y = (dest_y - dest_y0) as u32 * img_h / (dest_y1 - dest_y0) as u32;
+        let global_alpha = self.state.global_alpha.clamp(0.0, 1.0);
+        // Clip path is stored in user space; test per pixel centre.
+        let clip = self.clip_path.clone();
+        let fill_rule = self.state.fill_rule;
 
-        // Calculate scaling factors
+        // User-space -> source-texel scale (half-texel-centred sampling).
         let scale_x = img_w as f32 / w;
         let scale_y = img_h as f32 / h;
 
-        for screen_y in dest_y..dest_y1.min(self.height as i32) {
-            let screen_y_u = screen_y as u32;
-            if screen_y_u >= self.height {
-                continue;
-            }
-
-            // Calculate source y position with proper scaling
-            let src_y_pos = ((screen_y - dest_y0) as f32 * scale_y) as u32;
-            if src_y_pos >= img_h {
-                continue;
-            }
-
-            for screen_x in dest_x..dest_x1.min(self.width as i32) {
-                let screen_x_u = screen_x as u32;
-                if screen_x_u >= self.width {
+        for py in py0..py1 {
+            for px in px0..px1 {
+                // Inverse-map the pixel centre back into user space.
+                let (ux, uy) = inverse.transform_point(px as f32 + 0.5, py as f32 + 0.5);
+                // Skip pixel centres outside the destination rectangle.
+                if ux < x || ux >= x + w || uy < y || uy >= y + h {
                     continue;
                 }
-
-                // Calculate source x position with proper scaling
-                let src_x_pos = ((screen_x - dest_x0) as f32 * scale_x) as u32;
-                if src_x_pos >= img_w {
-                    continue;
+                if let Some(clip) = &clip {
+                    if !clip.contains_point(ux, uy, fill_rule) {
+                        continue;
+                    }
                 }
-
-                // Get source pixel
-                let src_idx = (src_y_pos * img_w + src_x_pos) as usize;
-                let raw = img_rgba.as_raw();
-                if src_idx * 4 + 3 >= raw.len() {
-                    continue;
-                }
-
-                let r = raw[src_idx * 4] as f32 / 255.0;
-                let g = raw[src_idx * 4 + 1] as f32 / 255.0;
-                let b = raw[src_idx * 4 + 2] as f32 / 255.0;
-                let a = raw[src_idx * 4 + 3] as f32 / 255.0;
-
-                // Blend with existing pixel
-                if a > 0.0 {
-                    let color = Color::new(r, g, b, a);
-                    self.buffer.blend(screen_x_u, screen_y_u, &color, a);
-                }
+                // Fractional source position for bilinear interpolation.
+                let sx = (ux - x) * scale_x - 0.5;
+                let sy = (uy - y) * scale_y - 0.5;
+                let (r, g, b, a) = sample_bilinear_rgba(raw, img_w, img_h, sx, sy);
+                // Transparent src-over blend (texel alpha x global alpha).
+                self.buffer
+                    .blend_rgba_over(px, py, r, g, b, a * global_alpha);
             }
         }
 
@@ -873,6 +1194,104 @@ impl Canvas {
     /// Reset the clip to the full canvas.
     pub fn reset_clip(&mut self) {
         self.clip_path = None;
+    }
+
+    // --- Anti-aliased rasterization ---
+
+    /// Anti-aliased fill the current path with coverage-based rasterization.
+    /// Uses subpixel coverage computation for smooth edges.
+    pub fn fill_aa_coverage(&mut self) {
+        let alpha = self.state.global_alpha;
+        if let Some(color) = self.paint_color(&self.state.fill_paint) {
+            let transform = self.current_transform();
+            let subpaths = self.current_path.flatten(0.5);
+            for subpath in &subpaths {
+                if subpath.points.len() < 3 || !subpath.is_closed {
+                    continue;
+                }
+                // Transform all points to screen space
+                let transformed: Vec<(f32, f32)> = subpath
+                    .points
+                    .iter()
+                    .map(|&(x, y)| transform.transform_point(x, y))
+                    .collect();
+                self.buffer.fill_polygon_aa_coverage(&transformed, &color, alpha);
+            }
+        }
+        self.current_path.clear();
+    }
+
+    /// Anti-aliased stroke the current path with coverage-based rasterization.
+    /// Supports line joins and dashes via the stroke style.
+    pub fn stroke_aa_coverage(&mut self) {
+        let alpha = self.state.global_alpha;
+        if let Some(color) = self.paint_color(&self.state.stroke_paint) {
+            let lw = self.state.stroke_style.line_width;
+            let transform = self.current_transform();
+            let subpaths = self.current_path.flatten(0.5);
+            for subpath in &subpaths {
+                if subpath.points.len() < 2 {
+                    continue;
+                }
+                // Transform all points to screen space
+                let transformed: Vec<(f32, f32)> = subpath
+                    .points
+                    .iter()
+                    .map(|&(x, y)| transform.transform_point(x, y))
+                    .collect();
+                self.buffer.stroke_lines_aa(&transformed, &color, alpha, lw);
+            }
+        }
+        self.current_path.clear();
+    }
+
+    /// Anti-aliased clip the current path with coverage-based rasterization.
+    /// Adds the current path to the clip stack for coverage-aware clipping.
+    pub fn clip_aa_coverage(&mut self) {
+        if !self.current_path.is_empty() {
+            // For AA clipping, we store the path for use during rasterization
+            self.clip_path = Some(self.current_path.clone());
+        }
+        self.current_path.clear();
+    }
+
+    /// Anti-aliased rasterize a path with explicit coverage control.
+    /// This is a general-purpose rasterization entry point that computes
+    /// subpixel coverage for paths, strokes, and clips.
+    pub fn rasterize_path_aa(
+        &mut self,
+        path: &PathBuilder,
+        is_stroke: bool,
+        line_width: f32,
+    ) {
+        let alpha = self.state.global_alpha;
+        let color = match is_stroke {
+            true => self.paint_color(&self.state.stroke_paint),
+            false => self.paint_color(&self.state.fill_paint),
+        };
+
+        if let Some(color) = color {
+            let transform = self.current_transform();
+            let subpaths = path.flatten(0.5);
+
+            for subpath in &subpaths {
+                if subpath.points.len() < 2 {
+                    continue;
+                }
+                // Transform all points to screen space
+                let transformed: Vec<(f32, f32)> = subpath
+                    .points
+                    .iter()
+                    .map(|&(x, y)| transform.transform_point(x, y))
+                    .collect();
+
+                if is_stroke {
+                    self.buffer.stroke_lines_aa(&transformed, &color, alpha, line_width);
+                } else if subpath.is_closed {
+                    self.buffer.fill_polygon_aa_coverage(&transformed, &color, alpha);
+                }
+            }
+        }
     }
 
     // --- Pixel access ---

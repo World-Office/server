@@ -475,7 +475,38 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_slide_xml(&self, slide: &Slide) -> String {
+    /// Serialize a PPTX slide to its XML part (flat shapes only).
+    pub fn build_slide_xml(&self, slide: &Slide) -> String {
+        self.build_slide_xml_inner(slide, &[], &[])
+    }
+
+    /// Serialize a PPTX slide to its XML part, appending recursive
+    /// `p:grpSp` group trees to the spTree after the flat shapes. Groups
+    /// written here round-trip through `OoxmlParser::parse_pptx_groups`.
+    pub fn build_slide_xml_with_groups(&self, slide: &Slide, groups: &[GroupShape]) -> String {
+        self.build_slide_xml_inner(slide, groups, &[])
+    }
+
+    /// Serialize a PPTX slide to its XML part, emitting the rich
+    /// `SlideTextBody` view (`a:bodyPr` layout + `a:buNone`/`a:buChar`/
+    /// `a:buAutoNum` bullets) for every shape matched by id (ORM-07 gaps
+    /// #4/#10). Bodies whose id matches no shape on the slide are ignored;
+    /// unmatched shapes fall back to their flat text body. Rich bodies
+    /// written here round-trip through `OoxmlParser::parse_pptx_text_bodies`.
+    pub fn build_slide_xml_with_text_bodies(
+        &self,
+        slide: &Slide,
+        bodies: &[SlideTextBody],
+    ) -> String {
+        self.build_slide_xml_inner(slide, &[], bodies)
+    }
+
+    fn build_slide_xml_inner(
+        &self,
+        slide: &Slide,
+        groups: &[GroupShape],
+        bodies: &[SlideTextBody],
+    ) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -510,10 +541,18 @@ impl OoxmlSerializer {
         for shape in &slide.shapes {
             match shape {
                 SlideShape::TextBox(tb) => {
-                    self.serialize_textbox_shape(&mut xml, tb);
+                    self.serialize_textbox_shape(
+                        &mut xml,
+                        tb,
+                        self.rich_text_body_for(bodies, &tb.id),
+                    );
                 }
                 SlideShape::Placeholder(ph) => {
-                    self.serialize_placeholder_shape(&mut xml, ph);
+                    self.serialize_placeholder_shape(
+                        &mut xml,
+                        ph,
+                        self.rich_text_body_for(bodies, &ph.id),
+                    );
                 }
                 SlideShape::Picture(pic) => {
                     self.serialize_picture_shape(&mut xml, pic);
@@ -569,6 +608,13 @@ impl OoxmlSerializer {
                     );
                 }
             }
+        }
+
+        // Recursive p:grpSp group trees (ORM-07 gap #1) — after the flat
+        // shapes, in document order.
+        for group in groups {
+            let frag = self.serialize_group_shape_inner(group, 0);
+            xml.push_str(&frag);
         }
 
         xml.push_str("\n  </p:spTree>");
@@ -802,7 +848,12 @@ impl OoxmlSerializer {
         }
     }
 
-    fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
+    fn serialize_textbox_shape(
+        &self,
+        xml: &mut String,
+        tb: &TextBoxShape,
+        rich_body: Option<&SlideTextBody>,
+    ) {
         xml.push_str(&format!(
             r#"
     <p:sp>
@@ -823,11 +874,19 @@ impl OoxmlSerializer {
             r#"
       </p:spPr>"#,
         );
-        self.serialize_text_body(xml, &tb.text_body);
+        match rich_body {
+            Some(body) => self.serialize_slide_text_body(xml, body),
+            None => self.serialize_text_body(xml, &tb.text_body),
+        }
         xml.push_str("\n    </p:sp>");
     }
 
-    fn serialize_placeholder_shape(&self, xml: &mut String, ph: &PlaceholderShape) {
+    fn serialize_placeholder_shape(
+        &self,
+        xml: &mut String,
+        ph: &PlaceholderShape,
+        rich_body: Option<&SlideTextBody>,
+    ) {
         xml.push_str(&format!(
             r#"
     <p:sp>
@@ -851,7 +910,10 @@ impl OoxmlSerializer {
       </p:spPr>"#,
         );
         if let Some(ref tb) = ph.text_body {
-            self.serialize_text_body(xml, tb);
+            match rich_body {
+                Some(body) => self.serialize_slide_text_body(xml, body),
+                None => self.serialize_text_body(xml, tb),
+            }
         }
         xml.push_str("\n    </p:sp>");
     }
@@ -1085,17 +1147,279 @@ impl OoxmlSerializer {
         );
     }
 
-    fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
-        xml.push_str("\n      <p:txBody>");
-        xml.push_str(
-            r#"
-        <a:bodyPr/>
-        <a:lstStyle/>"#,
-        );
+    /// Serialize a recursive group shape (`p:grpSp` with `nvGrpSpPr` +
+    /// `p:grpSpPr` carrying the `a:xfrm` child-space mapping) to an spTree
+    /// fragment. Nested groups recurse with deeper indentation.
+    pub fn serialize_group_shape_xml(&self, group: &GroupShape) -> String {
+        self.serialize_group_shape_inner(group, 0)
+    }
 
-        for para in &tb.paragraphs {
+    /// Serialize `ppt/tableStyles.xml` (the `a:tblStyleLst` catalog) from the
+    /// typed `PptxTableStyles` model (ORM-07 ranked gap #5). Output
+    /// round-trips through `OoxmlParser::parse_pptx_table_styles`.
+    pub fn serialize_pptx_table_styles(&self, styles: &PptxTableStyles) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main""#,
+        );
+        if let Some(ref def) = styles.default_style_id {
+            xml.push_str(&format!(" def=\"{}\"", escape_xml(def)));
+        }
+        xml.push('>');
+
+        for style in &styles.styles {
+            xml.push_str(&format!(
+                "\n  <a:tblStyle styleId=\"{}\"",
+                escape_xml(&style.style_id)
+            ));
+            if let Some(ref name) = style.style_name {
+                xml.push_str(&format!(" styleName=\"{}\"", escape_xml(name)));
+            }
+            xml.push('>');
+
+            if let Some(ref bg) = style.table_background {
+                xml.push_str(&format!(
+                    "\n    <a:tblBg><a:fill><a:solidFill><a:srgbClr val=\"{}\"/></a:solidFill></a:fill></a:tblBg>",
+                    escape_xml(bg)
+                ));
+            }
+
+            // (element name, scope part) in schema order.
+            let scopes = [
+                ("a:wholeTbl", style.whole_table.as_ref()),
+                ("a:firstRow", style.first_row.as_ref()),
+                ("a:firstCol", style.first_col.as_ref()),
+                ("a:lastRow", style.last_row.as_ref()),
+                ("a:lastCol", style.last_col.as_ref()),
+                ("a:band1H", style.band1_h.as_ref()),
+                ("a:band1V", style.band1_v.as_ref()),
+                ("a:band2H", style.band2_h.as_ref()),
+                ("a:band2V", style.band2_v.as_ref()),
+            ];
+            for (name, part) in scopes {
+                let Some(part) = part else {
+                    continue;
+                };
+                xml.push_str(&format!("\n    <{}>", name));
+                if !part.borders.is_empty() {
+                    xml.push_str("\n      <a:tcBdr>");
+                    for border in &part.borders {
+                        xml.push_str(&format!("\n        <a:{}", escape_xml(&border.edge)));
+                        if let Some(w) = border.width {
+                            xml.push_str(&format!(" w=\"{}\"", w));
+                        }
+                        xml.push('>');
+                        let fill_color = match (&border.color, &border.scheme_color) {
+                            (Some(c), _) => format!("<a:srgbClr val=\"{}\"/>", escape_xml(c)),
+                            (None, Some(c)) => format!("<a:schemeClr val=\"{}\"/>", escape_xml(c)),
+                            (None, None) => String::new(),
+                        };
+                        if !fill_color.is_empty() {
+                            xml.push_str(&format!("\n          <a:solidFill>{}</a:solidFill>", fill_color));
+                        }
+                        if let Some(ref dash) = border.dash {
+                            xml.push_str(&format!(
+                                "\n          <a:prstDash val=\"{}\"/>",
+                                escape_xml(dash)
+                            ));
+                        }
+                        xml.push_str(&format!("\n        </a:{}>", escape_xml(&border.edge)));
+                    }
+                    xml.push_str("\n      </a:tcBdr>");
+                }
+                for (ref_name, style_ref) in [
+                    ("a:fillRef", part.fill_ref.as_ref()),
+                    ("a:fontRef", part.font_ref.as_ref()),
+                ] {
+                    let Some(style_ref) = style_ref else {
+                        continue;
+                    };
+                    xml.push_str(&format!(
+                        "\n      <{} idx=\"{}\">",
+                        ref_name,
+                        escape_xml(&style_ref.idx)
+                    ));
+                    match (&style_ref.color, &style_ref.scheme_color) {
+                        (Some(c), _) => xml.push_str(&format!(
+                            "<a:srgbClr val=\"{}\"/>",
+                            escape_xml(c)
+                        )),
+                        (None, Some(c)) => xml.push_str(&format!(
+                            "<a:schemeClr val=\"{}\"/>",
+                            escape_xml(c)
+                        )),
+                        (None, None) => {}
+                    }
+                    xml.push_str(&format!("</{}>", ref_name));
+                }
+                xml.push_str(&format!("\n    </{}>", name));
+            }
+            xml.push_str("\n  </a:tblStyle>");
+        }
+
+        xml.push_str("\n</a:tblStyleLst>");
+        xml
+    }
+
+    fn serialize_group_shape_inner(&self, group: &GroupShape, depth: usize) -> String {
+        let i = "    ".repeat(depth + 1); // shape-level indent (4 spaces at depth 0)
+        let c = "    ".repeat(depth + 2); // child-element indent
+        let t = &group.transform;
+        let mut xml = String::new();
+        xml.push_str(&format!(
+            "\n{i}<p:grpSp>\n{i}  <p:nvGrpSpPr>\n{c}  <p:cNvPr id=\"{}\" name=\"{}\"/>\n{c}  <p:cNvGrpSpPr/>\n{c}  <p:nvPr/>\n{i}  </p:nvGrpSpPr>\n{i}  <p:grpSpPr>\n{i}    <a:xfrm>\n{c}    <a:off x=\"{}\" y=\"{}\"/>\n{c}    <a:ext cx=\"{}\" cy=\"{}\"/>",
+            group.id,
+            escape_xml(&group.name),
+            t.bounds.x,
+            t.bounds.y,
+            t.bounds.cx,
+            t.bounds.cy,
+        ));
+        // Keep the child coordinate space explicit so children keep their
+        // geometry on re-parse: explicit chOff/chExt when parsed, else the
+        // computed child bounds union, else the group bounds (OOXML default).
+        let ((chx, chy), (chcx, chcy)) = group.effective_child_space();
+        xml.push_str(&format!(
+            "\n{c}    <a:chOff x=\"{chx}\" y=\"{chy}\"/>\n{c}    <a:chExt cx=\"{chcx}\" cy=\"{chcy}\"/>"
+        ));
+        xml.push_str(&format!(
+            "\n{i}    </a:xfrm>\n{i}  </p:grpSpPr>"
+        ));
+
+        for child in &group.children {
+            match child {
+                GroupChild::Shape(shape) => {
+                    let mut frag = String::new();
+                    match shape {
+                        SlideShape::TextBox(tb) => {
+                            self.serialize_textbox_shape(&mut frag, tb, None)
+                        }
+                        SlideShape::Placeholder(ph) => {
+                            self.serialize_placeholder_shape(&mut frag, ph, None)
+                        }
+                        SlideShape::Picture(pic) => self.serialize_picture_shape(&mut frag, pic),
+                        SlideShape::Table(table) => self.serialize_table_shape(&mut frag, table),
+                        SlideShape::Connector(conn) => {
+                            self.serialize_connector_shape(&mut frag, conn)
+                        }
+                        SlideShape::Chart(_) | SlideShape::SmartArt(_) => {
+                            // graphicFrame stubs are not modeled inside groups yet.
+                        }
+                    }
+                    xml.push_str(&indent_fragment(&frag, &i));
+                }
+                GroupChild::Group(nested) => {
+                    xml.push_str(&self.serialize_group_shape_inner(nested, depth + 1));
+                }
+            }
+        }
+        xml.push_str(&format!("\n{i}</p:grpSp>"));
+        xml
+    }
+
+    /// Rich slide text body (`SlideTextBody`) matching a shape id, if any.
+    fn rich_text_body_for<'a>(
+        &self,
+        bodies: &'a [SlideTextBody],
+        id: &str,
+    ) -> Option<&'a SlideTextBody> {
+        bodies.iter().find(|b| b.shape_id == id)
+    }
+
+    fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
+        // Lift the flat word-model body into the rich slide view (no bodyPr,
+        // no bullets) so both paths emit identical DrawingML.
+        let body = SlideTextBody {
+            shape_id: String::new(),
+            body_pr: None,
+            paragraphs: tb
+                .paragraphs
+                .iter()
+                .map(|p| SlideParagraph {
+                    paragraph: p.clone(),
+                    bullet: None,
+                })
+                .collect(),
+        };
+        self.serialize_slide_text_body(xml, &body);
+    }
+
+    /// Emit a `p:txBody` from the rich slide model: `a:bodyPr` (layout +
+    /// autofit choice) and bullet-aware `a:p` paragraphs
+    /// (`a:buNone`/`a:buChar`/`a:buAutoNum` in `a:pPr`). The flat fallback
+    /// path produces the same output as before: empty `<a:bodyPr/>`, no
+    /// `a:pPr`.
+    fn serialize_slide_text_body(&self, xml: &mut String, body: &SlideTextBody) {
+        xml.push_str("\n      <p:txBody>");
+        match &body.body_pr {
+            Some(bp) => {
+                xml.push_str("\n        <a:bodyPr");
+                if bp.rtl_columns == Some(true) {
+                    xml.push_str(" rtlCol=\"1\"");
+                }
+                if bp.anchor_centered == Some(true) {
+                    xml.push_str(" anchorCtr=\"1\"");
+                }
+                if let Some(ref v) = bp.vert {
+                    xml.push_str(&format!(" vert=\"{}\"", escape_xml(v)));
+                }
+                if let Some(v) = bp.left_inset {
+                    xml.push_str(&format!(" lIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.top_inset {
+                    xml.push_str(&format!(" tIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.right_inset {
+                    xml.push_str(&format!(" rIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.bottom_inset {
+                    xml.push_str(&format!(" bIns=\"{}\"", v));
+                }
+                if let Some(v) = bp.num_columns {
+                    xml.push_str(&format!(" numCol=\"{}\"", v));
+                }
+                if let Some(v) = bp.column_spacing {
+                    xml.push_str(&format!(" spcCol=\"{}\"", v));
+                }
+                if let Some(ref v) = bp.wrap {
+                    xml.push_str(&format!(" wrap=\"{}\"", escape_xml(v)));
+                }
+                if let Some(ref v) = bp.anchor {
+                    xml.push_str(&format!(" anchor=\"{}\"", escape_xml(v)));
+                }
+                match &bp.autofit {
+                    None => xml.push_str("/>"),
+                    Some(SlideTextFit::None) => {
+                        xml.push_str(">\n          <a:noAutofit/>\n        </a:bodyPr>");
+                    }
+                    Some(SlideTextFit::NormAutofit {
+                        font_scale,
+                        line_space_reduction,
+                    }) => {
+                        xml.push_str(">\n          <a:normAutofit");
+                        if let Some(v) = font_scale {
+                            xml.push_str(&format!(" fontScale=\"{}\"", v));
+                        }
+                        if let Some(v) = line_space_reduction {
+                            xml.push_str(&format!(" lnSpcReduction=\"{}\"", v));
+                        }
+                        xml.push_str("/>\n        </a:bodyPr>");
+                    }
+                    Some(SlideTextFit::ShapeAutofit) => {
+                        xml.push_str(">\n          <a:spAutoFit/>\n        </a:bodyPr>");
+                    }
+                }
+            }
+            None => xml.push_str("\n        <a:bodyPr/>"),
+        }
+        xml.push_str("\n        <a:lstStyle/>");
+
+        for para in &body.paragraphs {
             xml.push_str("\n        <a:p>");
-            for run in &para.runs {
+            if let Some(bullet) = &para.bullet {
+                self.serialize_bullet_ppr(xml, bullet);
+            }
+            for run in &para.paragraph.runs {
                 if run.text == "\n" {
                     xml.push_str("\n          <a:br/>");
                     continue;
@@ -1143,6 +1467,63 @@ impl OoxmlSerializer {
             xml.push_str("\n        </a:p>");
         }
         xml.push_str("\n      </p:txBody>");
+    }
+
+    /// Emit the `a:pPr` carrying a paragraph bullet. Helper elements come in
+    /// schema order (buClr → buSzPct → buFont) before the bullet choice.
+    fn serialize_bullet_ppr(&self, xml: &mut String, bullet: &TextBullet) {
+        xml.push_str("\n          <a:pPr>");
+        let color = match bullet {
+            TextBullet::None => None,
+            TextBullet::Char { color, scheme_color, .. }
+            | TextBullet::AutoNum { color, scheme_color, .. } => match (color, scheme_color) {
+                (Some(c), _) => Some(format!("<a:srgbClr val=\"{}\"/>", escape_xml(c))),
+                (None, Some(c)) => Some(format!("<a:schemeClr val=\"{}\"/>", escape_xml(c))),
+                (None, None) => None,
+            },
+        };
+        if let Some(c) = color {
+            xml.push_str(&format!("\n            <a:buClr>{}</a:buClr>", c));
+        }
+        let size_pct = match bullet {
+            TextBullet::Char { size_pct, .. } | TextBullet::AutoNum { size_pct, .. } => *size_pct,
+            TextBullet::None => None,
+        };
+        if let Some(v) = size_pct {
+            xml.push_str(&format!("\n            <a:buSzPct val=\"{}\"/>", v));
+        }
+        let font = match bullet {
+            TextBullet::Char { font, .. } | TextBullet::AutoNum { font, .. } => font,
+            TextBullet::None => &None,
+        };
+        if let Some(ref f) = font {
+            xml.push_str(&format!(
+                "\n            <a:buFont typeface=\"{}\"/>",
+                escape_xml(f)
+            ));
+        }
+        match bullet {
+            TextBullet::None => xml.push_str("\n            <a:buNone/>"),
+            TextBullet::Char { character, .. } => xml.push_str(&format!(
+                "\n            <a:buChar char=\"{}\"/>",
+                escape_xml(character)
+            )),
+            TextBullet::AutoNum {
+                auto_num_type,
+                start_at,
+                ..
+            } => {
+                xml.push_str(&format!(
+                    "\n            <a:buAutoNum type=\"{}\"",
+                    escape_xml(auto_num_type)
+                ));
+                if let Some(v) = start_at {
+                    xml.push_str(&format!(" startAt=\"{}\"", v));
+                }
+                xml.push_str("/>");
+            }
+        }
+        xml.push_str("\n          </a:pPr>");
     }
 
     fn build_content_types(&self, doc: &OoxmlDocument) -> String {
@@ -2732,9 +3113,12 @@ impl OoxmlSerializer {
         xml.push_str(&self.build_theme_font_xml("minorFont", &theme.font_scheme.minor_font));
         xml.push_str("\n    </a:fontScheme>");
 
-        // Format scheme (placeholder)
-        xml.push_str(
-            r#"
+        // Format scheme: emit the parsed style tables when present, else the
+        // minimal placeholder (a:fmtScheme is schema-required for a:theme).
+        match &theme.format_scheme {
+            Some(fs) => xml.push_str(&self.build_fmt_scheme_xml(fs)),
+            None => xml.push_str(
+                r#"
     <a:fmtScheme name="none">
       <a:fillStyleLst>
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
@@ -2757,10 +3141,236 @@ impl OoxmlSerializer {
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
       </a:bgFillStyleLst>
     </a:fmtScheme>"#,
-        );
+            ),
+        }
 
         xml.push_str("\n  </a:themeElements>\n</a:theme>");
         xml
+    }
+
+    /// Serialize a parsed `a:fmtScheme` (fill/line/effect/bg-fill tables).
+    fn build_fmt_scheme_xml(&self, fs: &FmtScheme) -> String {
+        let mut xml = format!(
+            "\n    <a:fmtScheme name=\"{}\">",
+            escape_xml(&fs.name)
+        );
+        // The schema requires exactly three entries per table; empty tables
+        // fall back to the minimal solid-white placeholder triple so the
+        // output stays schema-valid.
+        xml.push_str("\n      <a:fillStyleLst>");
+        for style in fs.fill_styles.iter() {
+            xml.push_str(&self.build_fill_style_xml(style, 6));
+        }
+        for _ in fs.fill_styles.len()..3 {
+            xml.push_str(&self.build_fill_style_xml(&ThemeFillStyle::default(), 6));
+        }
+        xml.push_str("\n      </a:fillStyleLst>");
+
+        xml.push_str("\n      <a:lnStyleLst>");
+        for style in fs.line_styles.iter() {
+            xml.push_str(&self.build_line_style_xml(style, 6));
+        }
+        for _ in fs.line_styles.len()..3 {
+            xml.push_str(&self.build_line_style_xml(&ThemeLineStyle::default(), 6));
+        }
+        xml.push_str("\n      </a:lnStyleLst>");
+
+        xml.push_str("\n      <a:effectStyleLst>");
+        for style in fs.effect_styles.iter() {
+            match &style.raw {
+                // Verbatim capture from the source document: lossless.
+                Some(raw) => xml.push_str(&format!("\n        <a:effectStyle>{}</a:effectStyle>", raw)),
+                // Effects are modeled shallowly (presence only), so styles
+                // without a capture re-emit an empty a:effectLst marker.
+                None => xml.push_str("\n        <a:effectStyle><a:effectLst/> </a:effectStyle>"),
+            }
+        }
+        for _ in fs.effect_styles.len().max(3)..3 {
+            xml.push_str("\n        <a:effectStyle><a:effectLst/> </a:effectStyle>");
+        }
+        xml.push_str("\n      </a:effectStyleLst>");
+
+        xml.push_str("\n      <a:bgFillStyleLst>");
+        for style in fs.bg_fill_styles.iter() {
+            xml.push_str(&self.build_fill_style_xml(style, 8));
+        }
+        for _ in fs.bg_fill_styles.len()..3 {
+            xml.push_str(&self.build_fill_style_xml(&ThemeFillStyle::default(), 8));
+        }
+        xml.push_str("\n      </a:bgFillStyleLst>");
+
+        xml.push_str("\n    </a:fmtScheme>");
+        xml
+    }
+
+    /// One entry of a fill style list (`indent` = leading spaces).
+    fn build_fill_style_xml(&self, style: &ThemeFillStyle, indent: usize) -> String {
+        let pad = " ".repeat(indent);
+        match style {
+            ThemeFillStyle::NoFill => format!("\n{}<a:noFill/>", pad),
+            ThemeFillStyle::GroupFill => format!("\n{}<a:grpFill/>", pad),
+            ThemeFillStyle::Blip => format!("\n{}<a:blipFill/>", pad),
+            ThemeFillStyle::Solid(color) => format!(
+                "\n{}<a:solidFill>{} </a:solidFill>",
+                pad,
+                self.build_theme_color_ref_xml(color)
+            ),
+            ThemeFillStyle::Gradient(stops) => {
+                let mut xml = format!("\n{}<a:gradFill>\n{}  <a:gsLst>", pad, pad);
+                for stop in stops {
+                    let pos = stop
+                        .position
+                        .map(|p| (p * 100_000.0).round() as i64)
+                        .unwrap_or(0);
+                    xml.push_str(&format!(
+                        "\n{}    <a:gs pos=\"{}\">{} </a:gs>",
+                        pad,
+                        pos,
+                        self.build_theme_color_ref_xml(&stop.color)
+                    ));
+                }
+                xml.push_str(&format!("\n{}  </a:gsLst>\n{}</a:gradFill>", pad, pad));
+                xml
+            }
+            ThemeFillStyle::Pattern {
+                preset,
+                foreground,
+                background,
+            } => {
+                let mut xml = format!(
+                    "\n{}<a:pattFill prst=\"{}\">",
+                    pad,
+                    escape_xml(preset.as_deref().unwrap_or("solid"))
+                );
+                if let Some(fg) = foreground {
+                    xml.push_str(&format!(
+                        "\n{}  <a:fgClr>{} </a:fgClr>",
+                        pad,
+                        self.build_theme_color_ref_xml(fg)
+                    ));
+                }
+                if let Some(bg) = background {
+                    xml.push_str(&format!(
+                        "\n{}  <a:bgClr>{} </a:bgClr>",
+                        pad,
+                        self.build_theme_color_ref_xml(bg)
+                    ));
+                }
+                xml.push_str(&format!("\n{}</a:pattFill>", pad));
+                xml
+            }
+            ThemeFillStyle::Unknown => format!(
+                "\n{}<a:solidFill><a:srgbClr val=\"FFFFFF\"/></a:solidFill>",
+                pad
+            ),
+        }
+    }
+
+    /// One entry of the line style list.
+    fn build_line_style_xml(&self, style: &ThemeLineStyle, indent: usize) -> String {
+        let pad = " ".repeat(indent);
+        let mut attrs = String::new();
+        if let Some(w) = style.width {
+            attrs.push_str(&format!(" w=\"{}\"", w));
+        }
+        if let Some(ref cap) = style.cap {
+            attrs.push_str(&format!(" cap=\"{}\"", escape_xml(cap)));
+        }
+        if let Some(ref cmpd) = style.compound {
+            attrs.push_str(&format!(" cmpd=\"{}\"", escape_xml(cmpd)));
+        }
+        if let Some(ref algn) = style.alignment {
+            attrs.push_str(&format!(" algn=\"{}\"", escape_xml(algn)));
+        }
+        let mut xml = format!("\n{}<a:ln{}>", pad, attrs);
+        if let Some(ref fill) = style.fill {
+            xml.push_str(&self.build_fill_style_xml(fill, indent + 2));
+        } else {
+            xml.push_str(&format!(
+                "\n{}  <a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill>",
+                pad
+            ));
+        }
+        if let Some(ref dash) = style.dash {
+            xml.push_str(&format!(
+                "\n{}  <a:prstDash val=\"{}\"/>",
+                pad,
+                escape_xml(dash)
+            ));
+        }
+        if let Some(ref head) = style.head_end {
+            xml.push_str(&format!(
+                "\n{}  <a:headEnd type=\"{}\"/>",
+                pad,
+                escape_xml(head)
+            ));
+        }
+        if let Some(ref tail) = style.tail_end {
+            xml.push_str(&format!(
+                "\n{}  <a:tailEnd type=\"{}\"/>",
+                pad,
+                escape_xml(tail)
+            ));
+        }
+        xml.push_str(&format!("\n{}</a:ln>", pad));
+        xml
+    }
+
+    /// A color reference child: srgbClr / schemeClr / sysClr / prstClr.
+    fn build_theme_color_ref_xml(&self, color: &ThemeColorRef) -> String {
+        if let Some(ref rgb) = color.rgb {
+            return format!("\n        <a:srgbClr val=\"{}\"/>", escape_xml(rgb));
+        }
+        if let Some(ref sys) = color.system {
+            let last = sys
+                .last_clr
+                .as_deref()
+                .map(|c| format!(" lastClr=\"{}\"", escape_xml(c)))
+                .unwrap_or_default();
+            return format!(
+                "\n        <a:sysClr val=\"{}\"{}/>",
+                escape_xml(&sys.val),
+                last
+            );
+        }
+        if let Some(ref prst) = color.preset {
+            return format!("\n        <a:prstClr val=\"{}\"/>", escape_xml(prst));
+        }
+        if let Some(ref scheme) = color.scheme {
+            let mut xml = format!(
+                "\n        <a:schemeClr val=\"{}\">",
+                escape_xml(&scheme.val)
+            );
+            for m in &scheme.modifiers {
+                xml.push_str(&Self::build_scheme_clr_transform_xml(m));
+            }
+            xml.push_str("\n        </a:schemeClr>");
+            return xml;
+        }
+        "\n        <a:srgbClr val=\"FFFFFF\"/>".to_string()
+    }
+
+    fn build_scheme_clr_transform_xml(m: &SchemeClrTransform) -> String {
+        match *m {
+            SchemeClrTransform::Complement => "\n          <a:comp/>".to_string(),
+            SchemeClrTransform::Gray => "\n          <a:gray/>".to_string(),
+            other => {
+                let (tag, val) = match other {
+                    SchemeClrTransform::Tint(v) => ("tint", v),
+                    SchemeClrTransform::Shade(v) => ("shade", v),
+                    SchemeClrTransform::LumMod(v) => ("lumMod", v),
+                    SchemeClrTransform::LumOff(v) => ("lumOff", v),
+                    SchemeClrTransform::Alpha(v) => ("alpha", v),
+                    SchemeClrTransform::AlphaMod(v) => ("alphaMod", v),
+                    SchemeClrTransform::AlphaOff(v) => ("alphaOff", v),
+                    SchemeClrTransform::SatMod(v) => ("satMod", v),
+                    SchemeClrTransform::SatOff(v) => ("satOff", v),
+                    SchemeClrTransform::HueMod(v) => ("hueMod", v),
+                    _ => unreachable!("handled above"),
+                };
+                format!("\n          <a:{} val=\"{}\"/>", tag, val)
+            }
+        }
     }
 
     fn build_theme_font_xml(&self, slot: &str, font: &ThemeFont) -> String {
@@ -2791,8 +3401,26 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_slide_master_xml(&self, _master: &SlideMaster) -> String {
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    fn build_slide_master_xml(&self, master: &SlideMaster) -> String {
+        // p:clrMap remaps scheme slots; emit it after p:cSld (schema order).
+        let cm = &master.clr_map;
+        let clr_map = format!(
+            "  <p:clrMap bg1=\"{}\" tx1=\"{}\" bg2=\"{}\" tx2=\"{}\" accent1=\"{}\" accent2=\"{}\" accent3=\"{}\" accent4=\"{}\" accent5=\"{}\" accent6=\"{}\" hlink=\"{}\" folHlink=\"{}\"/>\n",
+            escape_xml(&cm.bg1),
+            escape_xml(&cm.tx1),
+            escape_xml(&cm.bg2),
+            escape_xml(&cm.tx2),
+            escape_xml(&cm.accent1),
+            escape_xml(&cm.accent2),
+            escape_xml(&cm.accent3),
+            escape_xml(&cm.accent4),
+            escape_xml(&cm.accent5),
+            escape_xml(&cm.accent6),
+            escape_xml(&cm.hlink),
+            escape_xml(&cm.fol_hlink),
+        );
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -2802,8 +3430,9 @@ impl OoxmlSerializer {
       <p:grpSpPr/>
     </p:spTree>
   </p:cSld>
-</p:sldMaster>"#
-            .to_string()
+{} </p:sldMaster>"#,
+            clr_map
+        )
     }
 
     // --- XLSX helpers ---
@@ -3198,6 +3827,132 @@ impl OoxmlSerializer {
             );
         }
 
+        // conditional formatting (ORM-06: colorScale / dataBar / iconSet
+        // + the attribute-only rule kinds; schema order puts the blocks
+        // after mergeCells and before dataValidations/hyperlinks)
+        for cf in &sheet.properties.conditional_formatting {
+            if cf.rules.is_empty() {
+                continue;
+            }
+            xml.push_str(&format!(
+                r#"
+  <conditionalFormatting sqref="{}">"#,
+                escape_xml(&cf.sqref),
+            ));
+            for rule in &cf.rules {
+                xml.push_str(&format!(
+                    r#"
+    <cfRule type="{}""#,
+                    escape_xml(&rule.rule_type),
+                ));
+                if let Some(dxf_id) = rule.dxf_id {
+                    xml.push_str(&format!(r#" dxfId="{}""#, dxf_id));
+                }
+                if let Some(priority) = rule.priority {
+                    xml.push_str(&format!(r#" priority="{}""#, priority));
+                }
+                if rule.stop_if_true {
+                    xml.push_str(r#" stopIfTrue="1""#);
+                }
+                if let Some(ref op) = rule.operator {
+                    xml.push_str(&format!(r#" operator="{}""#, escape_xml(op)));
+                }
+                if let Some(ref text) = rule.text {
+                    xml.push_str(&format!(r#" text="{}""#, escape_xml(text)));
+                }
+                if let Some(ref period) = rule.time_period {
+                    xml.push_str(&format!(r#" timePeriod="{}""#, escape_xml(period)));
+                }
+                if let Some(rank) = rule.rank {
+                    xml.push_str(&format!(r#" rank="{}""#, rank));
+                }
+                if let Some(percent) = rule.percent {
+                    xml.push_str(&format!(r#" percent="{}""#, if percent { "1" } else { "0" }));
+                }
+                if let Some(bottom) = rule.bottom {
+                    xml.push_str(&format!(r#" bottom="{}""#, if bottom { "1" } else { "0" }));
+                }
+                if let Some(above) = rule.above_average {
+                    xml.push_str(&format!(r#" aboveAverage="{}""#, if above { "1" } else { "0" }));
+                }
+                if rule.formulas.is_empty()
+                    && matches!(rule.kind, XlsxConditionalFormatKind::Plain)
+                {
+                    xml.push_str("/>");
+                    continue;
+                }
+                xml.push('>');
+                match &rule.kind {
+                    XlsxConditionalFormatKind::ColorScale(scale) => {
+                        xml.push_str("\n      <colorScale>");
+                        for cfvo in &scale.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        for color in &scale.colors {
+                            Self::push_xlsx_cf_color(&mut xml, color);
+                        }
+                        xml.push_str("\n      </colorScale>");
+                    }
+                    XlsxConditionalFormatKind::DataBar(bar) => {
+                        xml.push_str("\n      <dataBar");
+                        if let Some(v) = bar.min_length {
+                            xml.push_str(&format!(r#" minLength="{}""#, v));
+                        }
+                        if let Some(v) = bar.max_length {
+                            xml.push_str(&format!(r#" maxLength="{}""#, v));
+                        }
+                        if !bar.show_value {
+                            xml.push_str(r#" showValue="0""#);
+                        }
+                        xml.push('>');
+                        for cfvo in &bar.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        if let Some(ref color) = bar.color {
+                            Self::push_xlsx_cf_color(&mut xml, color);
+                        }
+                        xml.push_str("\n      </dataBar>");
+                    }
+                    XlsxConditionalFormatKind::IconSet(set) => {
+                        xml.push_str("\n      <iconSet");
+                        if let Some(ref icon_set) = set.icon_set {
+                            xml.push_str(&format!(r#" iconSet="{}""#, escape_xml(icon_set)));
+                        }
+                        if !set.show_value {
+                            xml.push_str(r#" showValue="0""#);
+                        }
+                        if set.percent {
+                            xml.push_str(r#" percent="1""#);
+                        }
+                        if set.reverse {
+                            xml.push_str(r#" reverse="1""#);
+                        }
+                        xml.push('>');
+                        for cfvo in &set.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        xml.push_str("\n      </iconSet>");
+                    }
+                    XlsxConditionalFormatKind::Plain => {}
+                }
+                for formula in &rule.formulas {
+                    xml.push_str(&format!(
+                        r#"
+      <formula>{}</formula>"#,
+                        escape_xml(formula),
+                    ));
+                }
+                xml.push_str(
+                    r#"
+    </cfRule>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </conditionalFormatting>"#,
+            );
+        }
+
         // hyperlinks (ORM-06: the single most common interactive feature)
         if !sheet.properties.hyperlinks.is_empty() {
             xml.push_str(&format!(
@@ -3343,6 +4098,100 @@ impl OoxmlSerializer {
 
         xml.push_str("\n</worksheet>");
         xml
+    }
+
+    /// A CF threshold (`<cfvo type=".." val=".."/>`).
+    fn push_xlsx_cfvo(xml: &mut String, cfvo: &XlsxCfvo) {
+        xml.push_str(&format!("\n        <cfvo type=\"{}\"", escape_xml(&cfvo.cfvo_type)));
+        if let Some(ref val) = cfvo.val {
+            xml.push_str(&format!(r#" val="{}""#, escape_xml(val)));
+        }
+        if !cfvo.gte {
+            xml.push_str(r#" gte="0""#);
+        }
+        xml.push_str("/>");
+    }
+
+    /// A CF color reference (`<color rgb|theme|indexed tint=...>`).
+    fn push_xlsx_cf_color(xml: &mut String, color: &XlsxCfColor) {
+        xml.push_str("\n        <color");
+        if let Some(ref rgb) = color.rgb {
+            xml.push_str(&format!(r#" rgb="{}""#, escape_xml(rgb)));
+        }
+        if let Some(theme) = color.theme {
+            xml.push_str(&format!(r#" theme="{}""#, theme));
+        }
+        if let Some(indexed) = color.indexed {
+            xml.push_str(&format!(r#" indexed="{}""#, indexed));
+        }
+        if let Some(tint) = color.tint {
+            xml.push_str(&format!(r#" tint="{}""#, tint));
+        }
+        xml.push_str("/>");
+    }
+
+    /// A dxf font record (same shape as a `<font>` in the shared table).
+    fn push_xlsx_dxf_font(xml: &mut String, font: &XlsxFont) {
+        xml.push_str("\n      <font>");
+        if let Some(ref name) = font.name {
+            xml.push_str(&format!("\n        <name val=\"{}\"/>", escape_xml(name)));
+        }
+        if let Some(sz) = font.sz {
+            xml.push_str(&format!("\n        <sz val=\"{}\"/>", sz));
+        }
+        if font.b {
+            xml.push_str("\n        <b/>");
+        }
+        if font.i {
+            xml.push_str("\n        <i/>");
+        }
+        if font.strike {
+            xml.push_str("\n        <strike/>");
+        }
+        if let Some(ref u) = font.u {
+            xml.push_str(&format!("\n        <u val=\"{}\"/>", escape_xml(u)));
+        }
+        if let Some(ref color) = font.color {
+            xml.push_str(&format!("\n        <color rgb=\"{}\"/>", escape_xml(color)));
+        }
+        xml.push_str("\n      </font>");
+    }
+
+    /// A dxf fill record (colors as child elements, per CT_Dxf).
+    fn push_xlsx_dxf_fill(xml: &mut String, fill: &XlsxFill) {
+        xml.push_str("\n      <fill>");
+        match fill.pattern_type.as_deref() {
+            Some(pt) => {
+                xml.push_str(&format!(
+                    "\n        <patternFill patternType=\"{}\">",
+                    escape_xml(pt)
+                ));
+                if let Some(ref fg) = fill.fg_color {
+                    xml.push_str(&format!("\n          <fgColor rgb=\"{}\"/>", escape_xml(fg)));
+                }
+                if let Some(ref bg) = fill.bg_color {
+                    xml.push_str(&format!("\n          <bgColor rgb=\"{}\"/>", escape_xml(bg)));
+                }
+                xml.push_str("\n        </patternFill>");
+            }
+            None => xml.push_str("\n        <patternFill/>"),
+        }
+        xml.push_str("\n      </fill>");
+    }
+
+    /// A dxf border record.
+    fn push_xlsx_dxf_border(&self, xml: &mut String, border: &XlsxBorder) {
+        xml.push_str("\n      <border>");
+        for (name, side) in [
+            ("left", &border.left),
+            ("right", &border.right),
+            ("top", &border.top),
+            ("bottom", &border.bottom),
+            ("diagonal", &border.diagonal),
+        ] {
+            self.push_border_side(xml, name, side);
+        }
+        xml.push_str("\n      </border>");
     }
 
     /// Worksheet rels part holding the external hyperlink relationships.
@@ -3828,22 +4677,110 @@ impl OoxmlSerializer {
             );
         }
 
+        // dxfs (differential formats referenced by conditional-format
+        // rules via dxfId; schema order puts them after cellXfs)
+        if !styles.dxfs.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <dxfs count="{}">"#,
+                styles.dxfs.len(),
+            ));
+            for dxf in &styles.dxfs {
+                xml.push_str("\n    <dxf>");
+                if let Some(ref font) = dxf.font {
+                    Self::push_xlsx_dxf_font(&mut xml, font);
+                }
+                if let Some(ref num_fmt) = dxf.num_fmt {
+                    xml.push_str(&format!(
+                        r#"
+      <numFmt numFmtId="{}" formatCode="{}"/>"#,
+                        num_fmt.num_fmt_id,
+                        escape_xml(&num_fmt.format_code),
+                    ));
+                }
+                if let Some(ref fill) = dxf.fill {
+                    Self::push_xlsx_dxf_fill(&mut xml, fill);
+                }
+                if let Some(ref align) = dxf.alignment {
+                    xml.push_str("\n      <alignment");
+                    if let Some(ref h) = align.horizontal {
+                        xml.push_str(&format!(r#" horizontal="{}""#, escape_xml(h)));
+                    }
+                    if let Some(ref v) = align.vertical {
+                        xml.push_str(&format!(r#" vertical="{}""#, escape_xml(v)));
+                    }
+                    if let Some(rot) = align.text_rotation {
+                        xml.push_str(&format!(r#" textRotation="{}""#, rot));
+                    }
+                    if align.wrap_text {
+                        xml.push_str(r#" wrapText="1""#);
+                    }
+                    if let Some(ind) = align.indent {
+                        xml.push_str(&format!(r#" indent="{}""#, ind));
+                    }
+                    if align.shrink_to_fit {
+                        xml.push_str(r#" shrinkToFit="1""#);
+                    }
+                    xml.push_str("/>");
+                }
+                if let Some(ref border) = dxf.border {
+                    self.push_xlsx_dxf_border(&mut xml, border);
+                }
+                if let Some(ref prot) = dxf.protection {
+                    xml.push_str(&format!(
+                        r#"
+      <protection locked="{}" hidden="{}"/>"#,
+                        if prot.locked { "1" } else { "0" },
+                        if prot.hidden { "1" } else { "0" },
+                    ));
+                }
+                xml.push_str("\n    </dxf>");
+            }
+            xml.push_str(
+                r#"
+  </dxfs>"#,
+            );
+        }
+
         xml.push_str("\n</styleSheet>");
         xml
     }
 
     fn push_border_side(&self, xml: &mut String, name: &str, side: &Option<XlsxBorderSide>) {
         if let Some(ref s) = side {
-            xml.push_str(&format!(
-                r#"
-      <{} style="{}""#,
-                name,
-                s.style.as_deref().unwrap_or("none"),
-            ));
-            if let Some(ref color) = s.color {
-                xml.push_str(&format!(r#" color="{}""#, escape_xml(color)));
+            // Both attributes are optional in CT_BorderSide; omitting them
+            // keeps an empty side parseable back to None (round-trip).
+            match (s.style.as_deref(), s.color.as_deref()) {
+                (None, None) => xml.push_str(&format!(
+                    r#"
+      <{}/>"#,
+                    name,
+                )),
+                (style, color) => {
+                    xml.push_str(&format!(
+                        r#"
+      <{}"#,
+                        name,
+                    ));
+                    if let Some(st) = style {
+                        xml.push_str(&format!(r#" style="{}""#, st));
+                    }
+                    xml.push('>');
+                    // CT_BorderSide carries its color as a child element.
+                    if let Some(c) = color {
+                        xml.push_str(&format!(
+                            r#"
+        <color rgb="{}"/>"#,
+                            escape_xml(c)
+                        ));
+                    }
+                    xml.push_str(&format!(
+                        r#"
+      </{}>"#,
+                        name,
+                    ));
+                }
             }
-            xml.push_str("/>");
         } else {
             xml.push_str(&format!(
                 r#"
@@ -3919,6 +4856,17 @@ impl Default for OoxmlSerializer {
 }
 
 /// Escape special characters for XML text content.
+/// Re-indent a serialized shape fragment (shape serializers emit at spTree
+/// depth 0, i.e. a 4-space base indent) so it can be embedded inside a nested
+/// `p:grpSp` at the given depth. Blank fragments lines are dropped.
+fn indent_fragment(fragment: &str, prefix: &str) -> String {
+    fragment
+        .split('\n')
+        .filter(|line| !line.is_empty())
+        .map(|line| format!("\n{prefix}{line}"))
+        .collect()
+}
+
 fn escape_xml(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for ch in s.chars() {

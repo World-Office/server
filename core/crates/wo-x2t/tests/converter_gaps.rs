@@ -1500,3 +1500,1328 @@ fn gap_xlsx_chart_roundtrip() {
         "the owned chart part must be in the package: {names:?}"
     );
 }
+
+#[test]
+fn gap_xlsx_cf_ext_roundtrip() {
+    // ORM-06: the conditional-formatting extensions — colorScale /
+    // dataBar / iconSet rules plus the dxf (differential format) styles
+    // they reference — were dropped on import, so dashboards lost the
+    // exact visual the author chose. They must now (a) parse into the
+    // typed model, (b) survive an xlsx -> xlsx re-serialization in schema
+    // order, and (c) re-parse to the identical model. Also guards the
+    // styles scoping: dxf fonts/fills/borders must not leak into the
+    // shared styles tables (which would corrupt every style index).
+    let sheet_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Region</v></c><c r="B1" t="str"><v>Sales</v></c><c r="C1" t="str"><v>Share</v></c><c r="D1" t="str"><v>Rank</v></c></row>
+    <row r="2"><c r="A2" t="str"><v>North</v></c><c r="B2"><v>91.4</v></c><c r="C2"><v>42.1</v></c><c r="D2"><v>3</v></c></row>
+    <row r="3"><c r="A3" t="str"><v>South</v></c><c r="B3"><v>64.8</v></c><c r="C3"><v>18.4</v></c><c r="D3"><v>7</v></c></row>
+  </sheetData>
+  <mergeCells count="1"><mergeCell ref="A1:D1"/></mergeCells>
+  <conditionalFormatting sqref="B2:B9">
+    <cfRule type="colorScale" priority="1">
+      <colorScale>
+        <cfvo type="min"/>
+        <cfvo type="percentile" val="50"/>
+        <cfvo type="max"/>
+        <color rgb="FFF8696B"/>
+        <color theme="4" tint="0.4"/>
+        <color rgb="FF63BE7B"/>
+      </colorScale>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="C2:C9">
+    <cfRule type="dataBar" priority="2">
+      <dataBar minLength="5" maxLength="95" showValue="0">
+        <cfvo type="num" val="0"/>
+        <cfvo type="num" val="100"/>
+        <color rgb="FF638EC6"/>
+      </dataBar>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="D2:D9">
+    <cfRule type="iconSet" priority="3">
+      <iconSet iconSet="3Arrows" showValue="0" reverse="1">
+        <cfvo type="percent" val="0"/>
+        <cfvo type="percent" val="33" gte="0"/>
+        <cfvo type="percent" val="67"/>
+      </iconSet>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="B2:B9">
+    <cfRule type="cellIs" dxfId="0" priority="4" stopIfTrue="1" operator="greaterThan">
+      <formula>90</formula>
+    </cfRule>
+    <cfRule type="top10" dxfId="1" priority="5" rank="3" percent="1" bottom="1"/>
+  </conditionalFormatting>
+</worksheet>"#;
+    let styles_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1">
+    <numFmt numFmtId="164" formatCode="0.0&quot;%&quot;"/>
+  </numFmts>
+  <fonts count="2">
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><color rgb="FF9C0006"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/><bgColor rgb="FFFFC7CE"/></patternFill></fill>
+  </fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyFont="1"/></cellStyleXfs>
+  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+  <dxfs count="2">
+    <dxf>
+      <font><b/><color rgb="FF9C0006"/></font>
+      <fill><patternFill patternType="solid"><bgColor rgb="FFFFC7CE"/></patternFill></fill>
+    </dxf>
+    <dxf>
+      <numFmt numFmtId="165" formatCode="0.0&quot;%&quot;"/>
+      <alignment horizontal="center" textRotation="45" wrapText="1"/>
+      <border><left style="thin"><color rgb="FF00B050"/></left><right/><top/><bottom/><diagonal/></border>
+      <protection locked="0" hidden="1"/>
+    </dxf>
+  </dxfs>
+</styleSheet>"#;
+    let xlsx = xlsx_from_parts(&[
+        ("xl/worksheets/sheet1.xml", sheet_xml),
+        ("xl/styles.xml", styles_xml),
+    ]);
+
+    // 1. Typed parse: the four CF blocks plus the dxf table.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&xlsx).unwrap();
+    let sheet = &parsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    let cfs = &sheet.properties.conditional_formatting;
+    assert_eq!(cfs.len(), 4, "all conditionalFormatting blocks must parse");
+
+    // colorScale: three thresholds and three colors, theme colors kept.
+    assert_eq!(cfs[0].sqref, "B2:B9");
+    let cs_rule = &cfs[0].rules[0];
+    assert_eq!(cs_rule.rule_type, "colorScale");
+    assert_eq!(cs_rule.priority, Some(1));
+    let wo_ooxml::model::XlsxConditionalFormatKind::ColorScale(scale) = &cs_rule.kind else {
+        panic!("colorScale rule must carry a colorScale payload");
+    };
+    assert_eq!(scale.cfvos.len(), 3);
+    assert_eq!(scale.cfvos[0].cfvo_type, "min");
+    assert_eq!(scale.cfvos[0].val, None);
+    assert_eq!(scale.cfvos[1].cfvo_type, "percentile");
+    assert_eq!(scale.cfvos[1].val.as_deref(), Some("50"));
+    assert!(scale.cfvos[2].gte, "cfvo defaults to greater-than-or-equal");
+    assert_eq!(scale.colors.len(), 3);
+    assert_eq!(scale.colors[0].rgb.as_deref(), Some("FFF8696B"));
+    assert_eq!(scale.colors[1].theme, Some(4));
+    assert!(
+        (scale.colors[1].tint.unwrap() - 0.4).abs() < 1e-9,
+        "theme tint must parse"
+    );
+    assert_eq!(scale.colors[2].rgb.as_deref(), Some("FF63BE7B"));
+
+    // dataBar: lengths, hidden value, thresholds and bar color.
+    let wo_ooxml::model::XlsxConditionalFormatKind::DataBar(bar) = &cfs[1].rules[0].kind else {
+        panic!("dataBar rule must carry a dataBar payload");
+    };
+    assert_eq!(bar.min_length, Some(5));
+    assert_eq!(bar.max_length, Some(95));
+    assert!(!bar.show_value, "showValue=\"0\" must hide the value");
+    assert_eq!(bar.cfvos.len(), 2);
+    assert_eq!(bar.cfvos[1].cfvo_type, "num");
+    assert_eq!(bar.cfvos[1].val.as_deref(), Some("100"));
+    assert_eq!(bar.color.as_ref().unwrap().rgb.as_deref(), Some("FF638EC6"));
+
+    // iconSet: built-in id, reversed order, and an explicit gte="0".
+    let wo_ooxml::model::XlsxConditionalFormatKind::IconSet(set) = &cfs[2].rules[0].kind else {
+        panic!("iconSet rule must carry an iconSet payload");
+    };
+    assert_eq!(set.icon_set.as_deref(), Some("3Arrows"));
+    assert!(!set.show_value);
+    assert!(!set.percent);
+    assert!(set.reverse);
+    assert_eq!(set.cfvos.len(), 3);
+    assert!(!set.cfvos[1].gte, "gte=\"0\" must be kept");
+
+    // Attribute-only kinds survive on the same block.
+    assert_eq!(cfs[3].sqref, "B2:B9");
+    assert_eq!(cfs[3].rules.len(), 2);
+    let cell_is = &cfs[3].rules[0];
+    assert_eq!(cell_is.rule_type, "cellIs");
+    assert_eq!(cell_is.dxf_id, Some(0));
+    assert_eq!(cell_is.priority, Some(4));
+    assert!(cell_is.stop_if_true);
+    assert_eq!(cell_is.operator.as_deref(), Some("greaterThan"));
+    assert_eq!(cell_is.formulas, vec!["90".to_string()]);
+    assert_eq!(cell_is.kind, wo_ooxml::model::XlsxConditionalFormatKind::Plain);
+    let top10 = &cfs[3].rules[1];
+    assert_eq!(top10.rule_type, "top10");
+    assert_eq!(top10.dxf_id, Some(1));
+    assert_eq!(top10.rank, Some(3));
+    assert_eq!(top10.percent, Some(true));
+    assert_eq!(top10.bottom, Some(true));
+    assert!(top10.formulas.is_empty());
+
+    // dxf styles parse, and do NOT leak into the shared style tables.
+    let styles = &parsed.xlsx_workbook.as_ref().unwrap().styles;
+    assert_eq!(styles.dxfs.len(), 2, "both dxf records must parse");
+    let dxf0 = &styles.dxfs[0];
+    let font = dxf0.font.as_ref().expect("dxf font must parse");
+    assert!(font.b);
+    assert_eq!(font.color.as_deref(), Some("FF9C0006"));
+    let fill = dxf0.fill.as_ref().expect("dxf fill must parse");
+    assert_eq!(fill.pattern_type.as_deref(), Some("solid"));
+    assert_eq!(fill.bg_color.as_deref(), Some("FFFFC7CE"));
+    let dxf1 = &styles.dxfs[1];
+    assert_eq!(
+        dxf1.num_fmt.as_ref().unwrap().format_code,
+        "0.0\"%\"",
+        "escaped dxf format code must unescape to the raw code"
+    );
+    let align = dxf1.alignment.as_ref().unwrap();
+    assert_eq!(align.horizontal.as_deref(), Some("center"));
+    assert_eq!(align.text_rotation, Some(45));
+    assert!(align.wrap_text);
+    assert_eq!(
+        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().style.as_deref(),
+        Some("thin")
+    );
+    assert_eq!(
+        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().color.as_deref(),
+        Some("FF00B050")
+    );
+    let prot = dxf1.protection.as_ref().unwrap();
+    assert!(!prot.locked);
+    assert!(prot.hidden);
+    assert_eq!(styles.fonts.len(), 2, "dxf fonts must not leak into <fonts>");
+    assert_eq!(styles.fills.len(), 3, "dxf fills must not leak into <fills>");
+    assert_eq!(styles.borders.len(), 1, "dxf borders must not leak into <borders>");
+    assert_eq!(
+        styles.num_fmts.len(),
+        1,
+        "dxf numFmts must not leak into <numFmts>"
+    );
+
+    // 2. xlsx -> xlsx: CF blocks re-emit in schema order, the dxf table is
+    //    regenerated after cellXfs.
+    let reser = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx(parsed.xlsx_workbook.as_ref().unwrap())
+        .unwrap();
+    let sheet2 = zip_entry(&reser, "xl/worksheets/sheet1.xml");
+    let p_merge_end = sheet2.find("</mergeCells>").unwrap();
+    let p_cs = sheet2.find(r#"<conditionalFormatting sqref="B2:B9">"#).unwrap();
+    let p_cs_elem = sheet2.find("<colorScale>").unwrap();
+    let p_bar = sheet2.find(r#"<dataBar minLength="5" maxLength="95" showValue="0">"#).unwrap();
+    let p_set = sheet2
+        .find(r#"<iconSet iconSet="3Arrows" showValue="0" reverse="1">"#)
+        .unwrap();
+    let p_cellis = sheet2
+        .find(r#"<cfRule type="cellIs" dxfId="0" priority="4" stopIfTrue="1" operator="greaterThan">"#)
+        .unwrap();
+    let p_formula = sheet2.find("<formula>90</formula>").unwrap();
+    let p_top10 = sheet2
+        .find(r#"<cfRule type="top10" dxfId="1" priority="5" rank="3" percent="1" bottom="1"/>"#)
+        .unwrap();
+    assert!(
+        p_merge_end < p_cs
+            && p_cs < p_cs_elem
+            && p_cs_elem < p_bar
+            && p_bar < p_set
+            && p_set < p_cellis
+            && p_cellis < p_formula
+            && p_formula < p_top10,
+        "conditional formatting must re-emit in document order: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<cfvo type="percentile" val="50"/>"#),
+        "colorScale threshold lost: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<color theme="4" tint="0.4"/>"#),
+        "theme color lost: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<cfvo type="percent" val="33" gte="0"/>"#),
+        "iconSet gte=\"0\" lost: {sheet2}"
+    );
+    let styles2 = zip_entry(&reser, "xl/styles.xml");
+    let p_cellxfs_end = styles2.find("</cellXfs>").unwrap();
+    let p_dxfs = styles2.find(r#"<dxfs count="2">"#).unwrap();
+    assert!(
+        p_cellxfs_end < p_dxfs,
+        "dxfs must re-emit after cellXfs in schema order: {styles2}"
+    );
+    // Inside the dxf table the records keep their child order
+    // (font / numFmt / fill / alignment / border / protection).
+    let dxf_table = &styles2[p_dxfs..];
+    let p_dxf_font_b = dxf_table.find("<b/>").expect("dxf font bold flag lost");
+    let p_dxf_font_color = dxf_table
+        .find(r#"<color rgb="FF9C0006"/>"#)
+        .expect("dxf font color lost");
+    let p_dxf_fill = dxf_table
+        .find(r#"<bgColor rgb="FFFFC7CE"/>"#)
+        .expect("dxf fill color lost");
+    let p_dxf_numfmt = dxf_table
+        .find(r#"<numFmt numFmtId="165" formatCode="0.0&quot;%&quot;"/>"#)
+        .expect("dxf numFmt lost");
+    let p_dxf_align = dxf_table
+        .find(r#"textRotation="45""#)
+        .expect("dxf alignment lost");
+    let p_dxf_border = dxf_table
+        .find(r#"<color rgb="FF00B050"/>"#)
+        .expect("dxf border color lost");
+    let p_dxf_prot = dxf_table
+        .find(r#"<protection locked="0" hidden="1"/>"#)
+        .expect("dxf protection lost");
+    assert!(
+        p_dxf_font_b < p_dxf_font_color
+            && p_dxf_font_color < p_dxf_fill
+            && p_dxf_fill < p_dxf_numfmt
+            && p_dxf_numfmt < p_dxf_align
+            && p_dxf_align < p_dxf_border
+            && p_dxf_border < p_dxf_prot,
+        "dxf children must keep schema order: {styles2}"
+    );
+    assert!(
+        styles2.contains(r#"<fonts count="2">"#)
+            && styles2.contains(r#"<fills count="3">"#)
+            && styles2.contains(r#"<borders count="1">"#),
+        "shared style tables must keep their counts: {styles2}"
+    );
+
+    // 3. Re-parse: the models are identical.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rsheet = &reparsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    assert_eq!(
+        rsheet.properties.conditional_formatting, sheet.properties.conditional_formatting,
+        "conditional-formatting model must survive the round trip"
+    );
+    assert_eq!(
+        reparsed.xlsx_workbook.as_ref().unwrap().styles.dxfs,
+        styles.dxfs,
+        "dxf table must survive the round trip"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// P2B-P01: PPTX group shapes — p:grpSp with GrpSpPr transform (off/ext +
+// chOff/chExt), recursive SpTree groups, child bounding boxes (ORM-07 ranked
+// gap #1: grouped shapes used to be dropped by the direct-children spTree
+// scan).
+// ---------------------------------------------------------------------------
+
+/// Build a minimal valid pptx zip around a hand-written ppt/slides/slide1.xml.
+fn pptx_from_slide_xml(slide_xml: &str) -> Vec<u8> {
+    pptx_from_slide_xml_with_parts(slide_xml, &[])
+}
+
+/// Build a minimal valid pptx zip around a hand-written ppt/slides/slide1.xml
+/// plus extra parts (e.g. ppt/tableStyles.xml).
+fn pptx_from_slide_xml_with_parts(slide_xml: &str, parts: &[(&str, &str)]) -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        let mut content_types = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
+        );
+        if parts
+            .iter()
+            .any(|(name, _)| *name == "ppt/tableStyles.xml")
+        {
+            content_types.push_str(
+                "\n  <Override PartName=\"/ppt/tableStyles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml\"/>",
+            );
+        }
+        content_types.push_str("\n</Types>");
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(content_types.as_bytes()).unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="9144000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>"#)
+            .unwrap();
+        zip.start_file(
+            "ppt/_rels/presentation.xml.rels",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+        for (name, xml) in parts {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        }
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+/// Slide XML with a top-level `p:grpSp` holding a text shape plus a nested
+/// `p:grpSp` holding a picture (recursive SpTree member), each group with an
+/// explicit `GrpSpPr/a:xfrm` (off/ext + chOff/chExt child coordinate space).
+const GROUP_SLIDE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      <p:grpSp>
+        <p:nvGrpSpPr>
+          <p:cNvPr id="10" name="Diagram Group"/>
+          <p:cNvGrpSpPr/>
+          <p:nvPr/>
+        </p:nvGrpSpPr>
+        <p:grpSpPr>
+          <a:xfrm>
+            <a:off x="1000000" y="500000"/>
+            <a:ext cx="4000000" cy="2000000"/>
+            <a:chOff x="0" y="0"/>
+            <a:chExt cx="2000000" cy="1000000"/>
+          </a:xfrm>
+        </p:grpSpPr>
+        <p:sp>
+          <p:nvSpPr>
+            <p:cNvPr id="11" name="Label"/>
+            <p:nvPr/>
+          </p:nvSpPr>
+          <p:spPr>
+            <a:xfrm>
+              <a:off x="100000" y="200000"/>
+              <a:ext cx="800000" cy="400000"/>
+            </a:xfrm>
+          </p:spPr>
+          <p:txBody>
+            <a:bodyPr/>
+            <a:lstStyle/>
+            <a:p><a:r><a:t>Grouped label</a:t></a:r></a:p>
+          </p:txBody>
+        </p:sp>
+        <p:grpSp>
+          <p:nvGrpSpPr>
+            <p:cNvPr id="20" name="Icons"/>
+            <p:cNvGrpSpPr/>
+            <p:nvPr/>
+          </p:nvGrpSpPr>
+          <p:grpSpPr>
+            <a:xfrm>
+              <a:off x="200000" y="300000"/>
+              <a:ext cx="600000" cy="500000"/>
+              <a:chOff x="0" y="0"/>
+              <a:chExt cx="600000" cy="500000"/>
+            </a:xfrm>
+          </p:grpSpPr>
+          <p:pic>
+            <p:nvPicPr>
+              <p:cNvPr id="21" name="Icon"/>
+              <p:cNvPicPr/>
+              <p:nvPr/>
+            </p:nvPicPr>
+            <p:blipFill>
+              <a:blip r:embed="rId9"/>
+              <a:stretch>
+                <a:fillRect/>
+              </a:stretch>
+            </p:blipFill>
+            <p:spPr>
+              <a:xfrm>
+                <a:off x="50000" y="60000"/>
+                <a:ext cx="100000" cy="80000"/>
+              </a:xfrm>
+              <a:prstGeom prst="rect"/>
+            </p:spPr>
+          </p:pic>
+        </p:grpSp>
+      </p:grpSp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#;
+
+#[test]
+fn gap_pptx_group_roundtrip() {
+    use wo_ooxml::model::{GroupChild, GroupShape, SlideShape};
+    let data = pptx_from_slide_xml(GROUP_SLIDE_XML);
+    let parser = wo_ooxml::OoxmlParser::new();
+
+    // 1. Typed recursive group tree via parse_pptx_groups.
+    let per_slide = parser.parse_pptx_groups(&data).unwrap();
+    assert_eq!(per_slide.len(), 1, "one slide entry");
+    let groups: &Vec<GroupShape> = &per_slide[0];
+    assert_eq!(groups.len(), 1, "one top-level group on the slide");
+    let g = &groups[0];
+    assert_eq!(g.id, "10");
+    assert_eq!(g.name, "Diagram Group");
+    assert_eq!(
+        (g.transform.bounds.x, g.transform.bounds.y, g.transform.bounds.cx, g.transform.bounds.cy),
+        (1000000, 500000, 4000000, 2000000),
+        "GrpSpPr outer xfrm"
+    );
+    assert_eq!(g.transform.child_offset, Some((0, 0)), "chOff");
+    assert_eq!(g.transform.child_extent, Some((2000000, 1000000)), "chExt");
+    assert_eq!(g.children.len(), 2, "text shape + nested group");
+
+    let GroupChild::Shape(SlideShape::TextBox(tb)) = &g.children[0] else {
+        panic!("first group child must be a text shape");
+    };
+    assert_eq!(
+        (tb.bounds.x, tb.bounds.y, tb.bounds.cx, tb.bounds.cy),
+        (100000, 200000, 800000, 400000),
+        "child shapes keep their child-space bounds"
+    );
+    assert_eq!(
+        tb.text_body.paragraphs[0].runs[0].text, "Grouped label",
+        "grouped text body survives the group"
+    );
+
+    let GroupChild::Group(nested) = &g.children[1] else {
+        panic!("second group child must be a nested p:grpSp");
+    };
+    assert_eq!(nested.id, "20");
+    assert_eq!(nested.name, "Icons");
+    assert_eq!(
+        (nested.transform.bounds.x, nested.transform.bounds.y, nested.transform.bounds.cx, nested.transform.bounds.cy),
+        (200000, 300000, 600000, 500000)
+    );
+    assert_eq!(nested.children.len(), 1);
+    let GroupChild::Shape(SlideShape::Picture(pic)) = &nested.children[0] else {
+        panic!("nested group child must be a picture");
+    };
+    assert_eq!(pic.name, "Icon");
+    assert_eq!((pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy), (50000, 60000, 100000, 80000));
+
+    // 2. Child bounding boxes (union in the group's child coordinate space).
+    let cb = g.child_bounds.expect("outer group child bounds");
+    assert_eq!(
+        (cb.x, cb.y, cb.cx, cb.cy),
+        (100000, 200000, 800000, 600000),
+        "union of sp bounds + nested group bounds"
+    );
+    let ncb = nested.child_bounds.expect("nested group child bounds");
+    assert_eq!((ncb.x, ncb.y, ncb.cx, ncb.cy), (50000, 60000, 100000, 80000));
+
+    // 3. Flat slide model: grouped shapes are flattened with bounds mapped
+    // through the nested GrpSpPr transforms instead of being dropped.
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+    let shapes = &pres.slides[0].shapes;
+    assert_eq!(shapes.len(), 2, "group children flatten into slide shapes");
+    assert_eq!(
+        (shapes[0].bounds().x, shapes[0].bounds().y, shapes[0].bounds().cx, shapes[0].bounds().cy),
+        (1200000, 900000, 1600000, 800000),
+        "text shape mapped through the 2x outer group scale"
+    );
+    assert_eq!(
+        (shapes[1].bounds().x, shapes[1].bounds().y, shapes[1].bounds().cx, shapes[1].bounds().cy),
+        (1500000, 1220000, 200000, 160000),
+        "picture mapped through nested group + outer group transforms"
+    );
+
+    // 4. Serialize the slide back with the group tree and re-parse: the typed
+    // group model round-trips identically.
+    let slide_xml =
+        wo_ooxml::OoxmlSerializer::new().build_slide_xml_with_groups(&pres.slides[0], groups);
+    assert!(
+        slide_xml.contains("<p:grpSp>") && slide_xml.contains("<p:grpSpPr>"),
+        "serializer must emit p:grpSp + p:grpSpPr: {}",
+        &slide_xml[..slide_xml.len().min(2000)]
+    );
+    let out = pptx_from_slide_xml(&slide_xml);
+    let groups2 = parser.parse_pptx_groups(&out).unwrap();
+    assert_eq!(groups2.len(), 1);
+    assert_eq!(groups2[0].len(), 1, "one top-level group after re-parse");
+    let g2 = &groups2[0][0];
+    assert_eq!(g2.id, "10");
+    assert_eq!(g2.name, "Diagram Group");
+    assert_eq!(
+        (g2.transform.bounds.x, g2.transform.bounds.y, g2.transform.bounds.cx, g2.transform.bounds.cy),
+        (1000000, 500000, 4000000, 2000000),
+        "GrpSpPr xfrm survives the round trip"
+    );
+    assert_eq!(g2.transform.child_offset, Some((0, 0)), "chOff survives");
+    assert_eq!(g2.transform.child_extent, Some((2000000, 1000000)), "chExt survives");
+    assert_eq!(g2.children.len(), 2, "children survive the round trip");
+    let GroupChild::Shape(SlideShape::TextBox(tb2)) = &g2.children[0] else {
+        panic!("round-tripped first child must be a text shape");
+    };
+    assert_eq!(
+        (tb2.bounds.x, tb2.bounds.y, tb2.bounds.cx, tb2.bounds.cy),
+        (100000, 200000, 800000, 400000)
+    );
+    assert_eq!(tb2.text_body.paragraphs[0].runs[0].text.trim(), "Grouped label");
+    let GroupChild::Group(nested2) = &g2.children[1] else {
+        panic!("round-tripped second child must be a nested p:grpSp");
+    };
+    assert_eq!(nested2.id, "20");
+    assert_eq!(
+        (nested2.transform.bounds.x, nested2.transform.bounds.y, nested2.transform.bounds.cx, nested2.transform.bounds.cy),
+        (200000, 300000, 600000, 500000)
+    );
+    let GroupChild::Shape(SlideShape::Picture(pic2)) = &nested2.children[0] else {
+        panic!("round-tripped nested child must be a picture");
+    };
+    assert_eq!(pic2.name, "Icon");
+    assert_eq!((pic2.bounds.x, pic2.bounds.y, pic2.bounds.cx, pic2.bounds.cy), (50000, 60000, 100000, 80000));
+    let cb2 = g2.child_bounds.expect("round-tripped child bounds");
+    assert_eq!(
+        (cb2.x, cb2.y, cb2.cx, cb2.cy),
+        (100000, 200000, 800000, 600000),
+        "child bounding box recomputes identically"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// P2B-P03: PPTX slide text bodies — `a:bodyPr` layout (anchor/insets/autofit)
+// + `a:buChar`/`a:buAutoNum`/`a:buNone` bullets, and the `ppt/tableStyles.xml`
+// catalog reader (ORM-07 ranked gaps #4/#5/#10: bullets used to collapse to
+// plain paragraphs and tables lost every rule).
+// ---------------------------------------------------------------------------
+
+/// Slide XML with a text box carrying a full `a:bodyPr` (rtlCol, anchorCtr,
+/// anchor, all four insets, numCol/spcCol, wrap, normAutofit with applied
+/// scale) and a bullet mix — buChar with buClr/buSzPct/buFont helpers,
+/// buAutoNum with startAt and a theme color, buNone — plus a content
+/// placeholder whose bodyPr carries spAutoFit and an alphaLc numbering bullet.
+const TEXTBODY_SLIDE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="11" name="Bullets"/>
+          <p:nvPr/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="100000" y="200000"/>
+            <a:ext cx="3000000" cy="1500000"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr rtlCol="1" anchorCtr="1" anchor="ctr" lIns="91440" tIns="45720" rIns="91440" bIns="45720" numCol="2" spcCol="12700" wrap="square">
+            <a:normAutofit fontScale="87500" lnSpcReduction="5000"/>
+          </a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr>
+              <a:buClr><a:srgbClr val="5B9BD5"/></a:buClr>
+              <a:buSzPct val="100000"/>
+              <a:buFont typeface="Arial" pitchFamily="34" charset="0"/>
+              <a:buChar char="&#8226;"/>
+            </a:pPr>
+            <a:r><a:rPr lang="en-US" sz="1800" b="1"/><a:t>Char bullet</a:t></a:r>
+          </a:p>
+          <a:p>
+            <a:pPr>
+              <a:buClr><a:schemeClr val="accent1"/></a:buClr>
+              <a:buFont typeface="Calibri"/>
+              <a:buAutoNum type="arabicPeriod" startAt="2"/>
+            </a:pPr>
+            <a:r><a:t>Auto number</a:t></a:r>
+          </a:p>
+          <a:p>
+            <a:pPr><a:buNone/></a:pPr>
+            <a:r><a:t>No bullet</a:t></a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="12" name="Subtitle"/>
+          <p:nvPr>
+            <p:ph type="subTitle" idx="1"/>
+          </p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="500000" y="2500000"/>
+            <a:ext cx="4000000" cy="800000"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr anchor="b"><a:spAutoFit/></a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr><a:buAutoNum type="alphaLcParenR"/></a:pPr>
+            <a:r><a:t>Alpha list</a:t></a:r>
+          </a:p>
+          <a:p><a:r><a:t>Second line</a:t></a:r></a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#;
+
+/// `ppt/tableStyles.xml` in the shape corporate decks ship: a default style
+/// id, one `a:tblStyle` with a tblBg fill, a wholeTbl scope carrying tcBdr
+/// borders (scheme + literal colors) plus fillRef/fontRef, banding, and a
+/// firstRow accent override.
+const TABLE_STYLES_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}">
+  <a:tblStyle styleId="{93294377-8074-4D90-B10A-F10A93C39B14}" styleName="Medium Style 2 - Accent 1">
+    <a:tblBg><a:fillClr><a:srgbClr val="1F3864"/></a:fillClr></a:tblBg>
+    <a:wholeTbl>
+      <a:tcBdr>
+        <a:lnL w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:schemeClr val="accent1"/></a:solidFill>
+          <a:prstDash val="solid"/>
+        </a:lnL>
+        <a:lnT w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:srgbClr val="8EAADB"/></a:solidFill>
+          <a:prstDash val="sysDot"/>
+        </a:lnT>
+      </a:tcBdr>
+      <a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef>
+      <a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>
+    </a:wholeTbl>
+    <a:band1H><a:fillRef idx="3"><a:srgbClr val="D9E2F3"/></a:fillRef></a:band1H>
+    <a:band2H/>
+    <a:firstRow><a:fillRef idx="2"><a:schemeClr val="accent1"/></a:fillRef></a:firstRow>
+    <a:lastRow/>
+    <a:firstCol/>
+    <a:lastCol/>
+  </a:tblStyle>
+</a:tblStyleLst>"#;
+
+#[test]
+fn gap_pptx_textbody_roundtrip() {
+    use wo_ooxml::model::{PptxTableStyles, SlideShape, SlideTextFit, TextBullet};
+    let data = pptx_from_slide_xml_with_parts(
+        TEXTBODY_SLIDE_XML,
+        &[("ppt/tableStyles.xml", TABLE_STYLES_XML)],
+    );
+    let parser = wo_ooxml::OoxmlParser::new();
+
+    // 1. Typed rich text bodies: bodyPr layout + per-paragraph bullets.
+    let per_slide = parser.parse_pptx_text_bodies(&data).unwrap();
+    assert_eq!(per_slide.len(), 1, "one slide entry");
+    let bodies: &Vec<wo_ooxml::model::SlideTextBody> = &per_slide[0];
+    assert_eq!(bodies.len(), 2, "text box + placeholder text bodies");
+    let tb = &bodies[0];
+    assert_eq!(tb.shape_id, "11");
+    let bp = tb.body_pr.as_ref().expect("bodyPr must parse");
+    assert_eq!(bp.anchor.as_deref(), Some("ctr"));
+    assert_eq!(bp.anchor_centered, Some(true));
+    assert_eq!(bp.rtl_columns, Some(true));
+    assert_eq!(bp.wrap.as_deref(), Some("square"));
+    assert_eq!(bp.vert, None, "no vert attribute");
+    assert_eq!(bp.left_inset, Some(91440));
+    assert_eq!(bp.top_inset, Some(45720));
+    assert_eq!(bp.right_inset, Some(91440));
+    assert_eq!(bp.bottom_inset, Some(45720));
+    assert_eq!(bp.num_columns, Some(2));
+    assert_eq!(bp.column_spacing, Some(12700));
+    assert_eq!(
+        bp.autofit,
+        Some(SlideTextFit::NormAutofit {
+            font_scale: Some(87500),
+            line_space_reduction: Some(5000),
+        }),
+        "normAutofit with applied font scale"
+    );
+    assert_eq!(tb.paragraphs.len(), 3);
+    assert_eq!(
+        tb.paragraphs[0].bullet,
+        Some(TextBullet::Char {
+            character: "\u{2022}".to_string(),
+            font: Some("Arial".to_string()),
+            color: Some("5B9BD5".to_string()),
+            scheme_color: None,
+            size_pct: Some(100000),
+        }),
+        "buChar with its buClr/buSzPct/buFont helpers"
+    );
+    assert_eq!(
+        tb.paragraphs[1].bullet,
+        Some(TextBullet::AutoNum {
+            auto_num_type: "arabicPeriod".to_string(),
+            start_at: Some(2),
+            font: Some("Calibri".to_string()),
+            color: None,
+            scheme_color: Some("accent1".to_string()),
+            size_pct: None,
+        }),
+        "buAutoNum with startAt and theme color"
+    );
+    assert_eq!(
+        tb.paragraphs[2].bullet,
+        Some(TextBullet::None),
+        "buNone must survive as an explicit bullet suppression"
+    );
+    assert_eq!(tb.paragraphs[0].paragraph.runs[0].text, "Char bullet");
+    assert!(tb.paragraphs[0].paragraph.runs[0].bold, "run props kept");
+
+    let ph = &bodies[1];
+    assert_eq!(ph.shape_id, "12");
+    let pbp = ph.body_pr.as_ref().expect("placeholder bodyPr");
+    assert_eq!(pbp.anchor.as_deref(), Some("b"));
+    assert_eq!(pbp.autofit, Some(SlideTextFit::ShapeAutofit));
+    assert_eq!(
+        ph.paragraphs[0].bullet,
+        Some(TextBullet::AutoNum {
+            auto_num_type: "alphaLcParenR".to_string(),
+            start_at: None,
+            font: None,
+            color: None,
+            scheme_color: None,
+            size_pct: None,
+        })
+    );
+    assert_eq!(
+        ph.paragraphs[1].bullet, None,
+        "paragraph without pPr has no bullet"
+    );
+
+    // 2. The flat model still parses the same slide (text kept, bullets are
+    //    an additive typed view on top).
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+    assert_eq!(pres.slides[0].shapes.len(), 2);
+    let SlideShape::TextBox(flat_tb) = &pres.slides[0].shapes[0] else {
+        panic!("first shape must stay a text box in the flat model");
+    };
+    assert_eq!(flat_tb.id, "11");
+    assert_eq!(flat_tb.text_body.paragraphs.len(), 3);
+    assert_eq!(flat_tb.text_body.paragraphs[0].runs[0].text, "Char bullet");
+
+    // 3. Serialize the slide back with the rich bodies and re-parse: the
+    //    typed model round-trips identically, including bodyPr attribute
+    //    order-independent values and the bullet helpers.
+    let slide_xml = wo_ooxml::OoxmlSerializer::new()
+        .build_slide_xml_with_text_bodies(&pres.slides[0], bodies);
+    assert!(
+        slide_xml.contains("<a:buChar char=\"\u{2022}\"/>"),
+        "buChar must re-emit: {}",
+        &slide_xml[..slide_xml.len().min(4000)]
+    );
+    assert!(
+        slide_xml.contains("<a:buAutoNum type=\"arabicPeriod\" startAt=\"2\"/>"),
+        "buAutoNum with startAt must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buNone/>"),
+        "buNone must re-emit"
+    );
+    assert!(
+        slide_xml.contains("anchor=\"ctr\"")
+            && slide_xml.contains("lIns=\"91440\"")
+            && slide_xml.contains("fontScale=\"87500\""),
+        "bodyPr attributes and normAutofit scale must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buClr><a:schemeClr val=\"accent1\"/></a:buClr>"),
+        "theme-colored bullet must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buFont typeface=\"Arial\"/>"),
+        "bullet font must re-emit"
+    );
+    let out = pptx_from_slide_xml(&slide_xml);
+    let bodies2 = parser.parse_pptx_text_bodies(&out).unwrap();
+    assert_eq!(bodies2.len(), 1);
+    assert_eq!(
+        bodies2[0], *bodies,
+        "rich slide text bodies must survive serialize -> re-parse"
+    );
+
+    // 4. tableStyles.xml: typed catalog read + re-serialize + re-parse.
+    let styles = parser.parse_pptx_table_styles(&data).unwrap();
+    assert_eq!(
+        styles.default_style_id.as_deref(),
+        Some("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"),
+        "tblStyleLst def attribute"
+    );
+    assert_eq!(styles.styles.len(), 1);
+    let style = &styles.styles[0];
+    assert_eq!(style.style_id, "{93294377-8074-4D90-B10A-F10A93C39B14}");
+    assert_eq!(style.style_name.as_deref(), Some("Medium Style 2 - Accent 1"));
+    assert_eq!(style.table_background.as_deref(), Some("1F3864"));
+
+    let whole = style.whole_table.as_ref().expect("wholeTbl must parse");
+    assert_eq!(whole.borders.len(), 2, "tcBdr lines parse in order");
+    assert_eq!(whole.borders[0].edge, "lnL");
+    assert_eq!(whole.borders[0].width, Some(12700));
+    assert_eq!(whole.borders[0].dash.as_deref(), Some("solid"));
+    assert_eq!(whole.borders[0].color, None);
+    assert_eq!(
+        whole.borders[0].scheme_color.as_deref(),
+        Some("accent1"),
+        "scheme-colored border line"
+    );
+    assert_eq!(whole.borders[1].edge, "lnT");
+    assert_eq!(whole.borders[1].color.as_deref(), Some("8EAADB"));
+    assert_eq!(whole.borders[1].scheme_color, None);
+    assert_eq!(whole.borders[1].dash.as_deref(), Some("sysDot"));
+    let fill_ref = whole.fill_ref.as_ref().expect("wholeTbl fillRef");
+    assert_eq!(fill_ref.idx, "1");
+    assert_eq!(fill_ref.scheme_color.as_deref(), Some("accent1"));
+    let font_ref = whole.font_ref.as_ref().expect("wholeTbl fontRef");
+    assert_eq!(font_ref.idx, "minor");
+    assert_eq!(font_ref.scheme_color.as_deref(), Some("lt1"));
+
+    assert!(style.first_row.is_some(), "firstRow override parses");
+    assert_eq!(
+        style.first_row.as_ref().unwrap().fill_ref.as_ref().unwrap().idx,
+        "2"
+    );
+    assert_eq!(
+        style.band1_h.as_ref().unwrap().fill_ref.as_ref().unwrap().color.as_deref(),
+        Some("D9E2F3")
+    );
+    for (label, part) in [
+        ("band2H", &style.band2_h),
+        ("lastRow", &style.last_row),
+        ("firstCol", &style.first_col),
+        ("lastCol", &style.last_col),
+    ] {
+        assert!(part.is_some(), "empty {label} scope must still be present");
+    }
+
+    let styles_xml = wo_ooxml::OoxmlSerializer::new().serialize_pptx_table_styles(&styles);
+    assert!(
+        styles_xml.contains("<a:tblStyleLst xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" def=\"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}\">"),
+        "tblStyleLst root with def must re-emit"
+    );
+    assert!(
+        styles_xml.contains("<a:lnL w=\"12700\">")
+            && styles_xml.contains("<a:schemeClr val=\"accent1\"/>")
+            && styles_xml.contains("<a:prstDash val=\"sysDot\"/>"),
+        "tcBdr borders must re-emit with width/color/dash"
+    );
+    assert!(
+        styles_xml.contains("<a:fontRef idx=\"minor\">"),
+        "fontRef must re-emit its idx"
+    );
+    let out2 = pptx_from_slide_xml_with_parts(
+        "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"/>",
+        &[("ppt/tableStyles.xml", &styles_xml)],
+    );
+    let styles2 = parser.parse_pptx_table_styles(&out2).unwrap();
+    assert_eq!(
+        styles2, styles,
+        "table style catalog must survive serialize -> re-parse"
+    );
+
+    // 5. A package without ppt/tableStyles.xml yields the empty default.
+    let no_styles = pptx_from_slide_xml(
+        "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"/>",
+    );
+    assert_eq!(
+        parser.parse_pptx_table_styles(&no_styles).unwrap(),
+        PptxTableStyles::default()
+    );
+}
+
+// ---------------------------------------------------------------------------
+// P2B-P02: PPTX theme `a:fmtScheme` + `p:clrMap` — schemeClr (with color
+// transforms) and major/minor font resolution into the theme model (ORM-07
+// ranked gaps: "FmtScheme is the lookup table behind every styleRef" and
+// "master ClrMap + ClrMapOvr -> SchemeClr -> theme ClrScheme ... never
+// resolved").
+// ---------------------------------------------------------------------------
+
+/// Theme fixture: `dk1` as `a:sysClr` (lastClr path), a full `a:fmtScheme`
+/// whose style-table entries reference `a:schemeClr` with lumMod/lumOff/tint
+/// transforms, and major/minor fonts with ea/cs slots.
+const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Default">
+      <a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Default">
+      <a:majorFont>
+        <a:latin typeface="Calibri Light"/>
+        <a:ea typeface="MS Gothic"/>
+        <a:cs typeface="Arial"/>
+      </a:majorFont>
+      <a:minorFont>
+        <a:latin typeface="Calibri"/>
+        <a:ea typeface="MS PGothic"/>
+      </a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Office">
+      <a:fillStyleLst>
+        <a:solidFill>
+          <a:schemeClr val="dk1"><a:tint val="50000"/></a:schemeClr>
+        </a:solidFill>
+        <a:gradFill rotWithShape="1">
+          <a:gsLst>
+            <a:gs pos="0"><a:schemeClr val="accent1"/></a:gs>
+            <a:gs pos="100000"><a:schemeClr val="accent1"><a:shade val="50000"/></a:schemeClr></a:gs>
+          </a:gsLst>
+        </a:gradFill>
+        <a:pattFill prst="ltUpDiag">
+          <a:fgClr><a:schemeClr val="accent2"><a:satMod val="150000"/></a:schemeClr></a:fgClr>
+          <a:bgClr><a:srgbClr val="D9E2F3"/></a:bgClr>
+        </a:pattFill>
+      </a:fillStyleLst>
+      <a:lnStyleLst>
+        <a:ln w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:schemeClr val="lt1"><a:lumMod val="50000"/></a:schemeClr></a:solidFill>
+          <a:prstDash val="sysDot"/>
+          <a:headEnd type="triangle"/>
+          <a:tailEnd type="arrow"/>
+        </a:ln>
+        <a:ln w="6350"><a:solidFill><a:schemeClr val="accent3"/></a:solidFill></a:ln>
+        <a:ln w="19050"><a:solidFill><a:schemeClr val="accent4"/></a:solidFill></a:ln>
+      </a:lnStyleLst>
+      <a:effectStyleLst>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle>
+          <a:effectLst>
+            <a:outerShdw blurRad="40000" dist="23000" dir="5400000">
+              <a:srgbClr val="000000"><a:alpha val="38000"/></a:srgbClr>
+            </a:outerShdw>
+          </a:effectLst>
+        </a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+      </a:effectStyleLst>
+      <a:bgFillStyleLst>
+        <a:solidFill><a:schemeClr val="bg1"/></a:solidFill>
+        <a:noFill/>
+        <a:solidFill><a:schemeClr val="tx2"><a:lumMod val="75000"/><a:lumOff val="25000"/></a:schemeClr></a:solidFill>
+      </a:bgFillStyleLst>
+    </a:fmtScheme>
+  </a:themeElements>
+</a:theme>"#;
+
+/// Slide master with a non-identity `p:clrMap`: `bg2`/`tx2` are deliberately
+/// swapped so a naive identity map cannot pass the test.
+const MASTER_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+             xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+  </p:cSld>
+  <p:clrMap bg1="lt1" tx1="dk1" bg2="dk2" tx2="lt2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+</p:sldMaster>"#;
+
+/// Build a minimal pptx zip carrying theme1.xml + slideMaster1.xml alongside
+/// an empty slide (theme/master are discovered by scanning the archive).
+fn pptx_theme_fixture() -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let slide_xml = r#"<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld><p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+  </p:spTree></p:cSld>
+</p:sld>"#;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+  <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
+  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+        zip.start_file(
+            "ppt/_rels/presentation.xml.rels",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+</Relationships>"#,
+        )
+        .unwrap();
+        zip.start_file(
+            "ppt/presentation.xml",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="12192000" cy="6858000"/>
+  <p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst>
+</p:presentation>"#,
+        )
+        .unwrap();
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+        zip.start_file("ppt/theme/theme1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(THEME_XML.as_bytes()).unwrap();
+        zip.start_file(
+            "ppt/slideMasters/slideMaster1.xml",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(MASTER_XML.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn gap_pptx_theme_roundtrip() {
+    use wo_ooxml::model::{
+        ClrMap, SchemeClr, SchemeClrTransform, ThemeFillStyle, ThemeLineStyle,
+    };
+
+    let data = pptx_theme_fixture();
+    let parser = wo_ooxml::OoxmlParser::new();
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+
+    // 1. The theme parses with a typed FmtScheme (was `Option<String>`).
+    let theme = pres.theme.as_ref().expect("theme part must parse");
+    let fs = theme
+        .format_scheme
+        .as_ref()
+        .expect("fmtScheme must parse into the typed model");
+    assert_eq!(fs.name, "Office");
+    assert_eq!(fs.fill_styles.len(), 3, "solid + gradient + pattern");
+    assert_eq!(fs.line_styles.len(), 3);
+    assert_eq!(fs.effect_styles.len(), 3);
+    assert_eq!(fs.bg_fill_styles.len(), 3);
+
+    // Style table entry 1: solid fill referencing dk1 (sysClr lastClr path
+    // inside the clrScheme) with a 50% tint -> exact mid gray.
+    let ThemeFillStyle::Solid(solid) = &fs.fill_styles[0] else {
+        panic!("fill style 1 must be solidFill");
+    };
+    let scheme = solid.scheme.as_ref().expect("schemeClr reference kept");
+    assert_eq!(scheme.val, "dk1");
+    assert_eq!(scheme.modifiers, vec![SchemeClrTransform::Tint(50000)]);
+    assert_eq!(
+        theme.resolve_scheme_color("dk1", &scheme.modifiers).as_deref(),
+        Some("808080"),
+        "tint 50% over dk1 sysClr/lastClr"
+    );
+
+    // Style table entry 2: gradient with two accent1 stops (untinted +
+    // 50% shade), positions preserved as fractions.
+    let ThemeFillStyle::Gradient(stops) = &fs.fill_styles[1] else {
+        panic!("fill style 2 must be gradFill");
+    };
+    assert_eq!(stops.len(), 2);
+    assert_eq!(stops[0].position, Some(0.0));
+    assert_eq!(stops[1].position, Some(1.0));
+    assert_eq!(stops[0].color.scheme.as_ref().unwrap().val, "accent1");
+    assert_eq!(
+        stops[1].color.scheme.as_ref().unwrap().modifiers,
+        vec![SchemeClrTransform::Shade(50000)]
+    );
+    assert_eq!(
+        theme
+            .resolve_scheme_color("accent1", &[SchemeClrTransform::Shade(50000)])
+            .as_deref(),
+        Some("223962"),
+        "shade is per-channel: 4472C4 * 50% = 223962"
+    );
+
+    // Style table entry 3: pattern fill with fgClr/bgClr.
+    let ThemeFillStyle::Pattern { preset, foreground, background } = &fs.fill_styles[2] else {
+        panic!("fill style 3 must be pattFill");
+    };
+    assert_eq!(preset.as_deref(), Some("ltUpDiag"));
+    assert_eq!(
+        foreground.as_ref().unwrap().scheme.as_ref().unwrap().val,
+        "accent2"
+    );
+    assert_eq!(background.as_ref().unwrap().rgb.as_deref(), Some("D9E2F3"));
+    // satMod is recorded but does not alter the resolved RGB.
+    assert_eq!(
+        foreground
+            .as_ref()
+            .unwrap()
+            .resolve(theme, &ClrMap::default())
+            .as_deref(),
+        Some("ED7D31")
+    );
+
+    // Line styles: width + cap/cmpd/algn attrs, fill, dash, arrow ends.
+    let ln: &ThemeLineStyle = &fs.line_styles[0];
+    assert_eq!(ln.width, Some(12700));
+    assert_eq!(ln.cap.as_deref(), Some("flat"));
+    assert_eq!(ln.compound.as_deref(), Some("sng"));
+    assert_eq!(ln.alignment.as_deref(), Some("ctr"));
+    assert_eq!(ln.dash.as_deref(), Some("sysDot"));
+    assert_eq!(ln.head_end.as_deref(), Some("triangle"));
+    assert_eq!(ln.tail_end.as_deref(), Some("arrow"));
+    assert_eq!(
+        ln.fill.as_ref().unwrap(),
+        &ThemeFillStyle::Solid(wo_ooxml::model::ThemeColorRef {
+            scheme: Some(SchemeClr {
+                val: "lt1".to_string(),
+                modifiers: vec![SchemeClrTransform::LumMod(50000)],
+            }),
+            ..Default::default()
+        }),
+        "lnRef table keeps the schemeClr + transforms"
+    );
+
+    // Effect styles: empty effectLst vs one carrying an outerShdw.
+    assert!(!fs.effect_styles[0].has_effects);
+    assert!(fs.effect_styles[1].has_effects, "outerShdw detected");
+
+    // 2. Master p:clrMap parses (bg2/tx2 deliberately swapped in fixture).
+    let master = pres.slide_masters.first().expect("master part");
+    assert_eq!(master.clr_map.bg2, "dk2");
+    assert_eq!(master.clr_map.tx2, "lt2");
+    assert_eq!(master.clr_map.accent1, "accent1");
+
+    // Scheme resolution goes through the clrMap: tx2 remaps to lt2, not dk2.
+    assert_eq!(
+        theme
+            .resolve_scheme_color_with_clr_map(&master.clr_map, "tx2", &[])
+            .as_deref(),
+        Some("E7E6E6"),
+        "tx2 must resolve through the master clrMap (-> lt2)"
+    );
+    assert_eq!(
+        theme.resolve_scheme_color("tx2", &[]).as_deref(),
+        Some("44546A"),
+        "unmapped tx2 falls through to dk2"
+    );
+    // bg1 -> lt1 (white) per the default map.
+    assert_eq!(
+        theme
+            .resolve_scheme_color_with_clr_map(&master.clr_map, "bg1", &[])
+            .as_deref(),
+        Some("FFFFFF")
+    );
+
+    // 3. Major/minor font resolution (a:fontRef idx="major"/"minor").
+    assert_eq!(theme.major_latin_font(), Some("Calibri Light"));
+    assert_eq!(theme.minor_latin_font(), Some("Calibri"));
+    assert_eq!(theme.resolve_font("major").unwrap().east_asian.as_deref(), Some("MS Gothic"));
+    assert_eq!(theme.resolve_font("minor").unwrap().east_asian.as_deref(), Some("MS PGothic"));
+    assert_eq!(theme.resolve_font("major").unwrap().complex_script.as_deref(), Some("Arial"));
+    assert!(theme.resolve_font("bogus").is_none());
+
+    // 4. Serialize and re-parse: fmtScheme + clrMap survive byte-level
+    //    serialization into ppt/theme/theme1.xml + slideMaster1.xml.
+    let out = wo_ooxml::OoxmlSerializer::new()
+        .serialize_pptx(&pres)
+        .expect("pptx serialization");
+    let theme_blob = String::from_utf8(
+        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
+            .unwrap()
+            .by_name("ppt/theme/theme1.xml")
+            .unwrap()
+            .bytes()
+            .collect::<Result<Vec<u8>, _>>()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(
+        theme_blob.contains("<a:fmtScheme name=\"Office\">"),
+        "parsed fmtScheme must re-emit: {}",
+        &theme_blob[..theme_blob.len().min(6000)]
+    );
+    assert!(theme_blob.contains("<a:schemeClr val=\"dk1\">"));
+    assert!(theme_blob.contains("<a:tint val=\"50000\"/>"));
+    assert!(theme_blob.contains("<a:prstDash val=\"sysDot\"/>"));
+
+    let master_blob = String::from_utf8(
+        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
+            .unwrap()
+            .by_name("ppt/slideMasters/slideMaster1.xml")
+            .unwrap()
+            .bytes()
+            .collect::<Result<Vec<u8>, _>>()
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(
+        master_blob.contains("bg2=\"dk2\"") && master_blob.contains("tx2=\"lt2\""),
+        "master clrMap must re-emit: {}",
+        master_blob
+    );
+
+    let cursor2 = std::io::Cursor::new(out.as_slice());
+    let mut archive2 = zip::ZipArchive::new(cursor2).unwrap();
+    let pres2 = parser.parse_pptx(&mut archive2).unwrap().unwrap();
+    let theme2 = pres2.theme.as_ref().expect("theme after roundtrip");
+    let fs2 = theme2
+        .format_scheme
+        .as_ref()
+        .expect("fmtScheme after roundtrip");
+    assert_eq!(fs, fs2, "fmtScheme must round-trip identically");
+    let master2 = pres2.slide_masters.first().expect("master after roundtrip");
+    assert_eq!(master.clr_map, master2.clr_map, "clrMap must round-trip");
+    assert_eq!(theme2.major_latin_font(), Some("Calibri Light"));
+    assert_eq!(theme2.minor_latin_font(), Some("Calibri"));
+}
