@@ -1961,7 +1961,8 @@ impl OoxmlSerializer {
                 || para.properties.bidi
                 || para.properties.num_id.is_some()
                 || para.properties.shading.is_some()
-                || para.properties.borders.is_some();
+                || para.properties.borders.is_some()
+                || para.properties.paragraph_mark_revision.is_some();
 
             if has_props {
                 xml.push_str("<w:pPr>");
@@ -2100,6 +2101,14 @@ impl OoxmlSerializer {
                     }
                     xml.push_str("</w:pBdr>");
                 }
+                // P4-D01: paragraph-mark revision (w:rPr/w:ins|w:del|
+                // w:moveFrom|w:moveTo) — emitted last in w:pPr, the
+                // schema position of w:rPr.
+                if let Some(rev) = &para.properties.paragraph_mark_revision {
+                    xml.push_str("<w:rPr>");
+                    xml.push_str(&Self::revision_open_tag(rev));
+                    xml.push_str("</w:rPr>");
+                }
                 xml.push_str("</w:pPr>");
             }
         }
@@ -2108,9 +2117,39 @@ impl OoxmlSerializer {
         // into a single <w:hyperlink r:id="..."> wrapper (P2-06: runs
         // sharing a w:anchor are grouped the same way, with the anchor
         // attribute instead of r:id).
+        //
+        // P4-D01: del_depth tracks how deep inside a w:del wrapper we are —
+        // runs inside one must re-emit their text as w:delText (the deleted
+        // content element), not w:t.
+        let mut del_depth: usize = 0;
         let mut i = 0;
         while i < para.runs.len() {
             let run = &para.runs[i];
+            // P4-D01: revision markers open/close the tracked-change wrapper
+            // (w:ins / w:del / w:moveFrom / w:moveTo); runs between the
+            // markers are emitted inside the wrapper in run order, so the
+            // span position and its author/date metadata survive a round
+            // trip.
+            if let Some(rm) = &run.revision {
+                match rm {
+                    RevisionMarker::Start(rev) => {
+                        xml.push_str(&Self::revision_open_tag(rev));
+                        if rev.kind == RevisionKind::Deletion {
+                            del_depth += 1;
+                        }
+                        i += 1;
+                        continue;
+                    }
+                    RevisionMarker::End(kind) => {
+                        xml.push_str(&format!("</w:{}>", kind.as_str()));
+                        if *kind == RevisionKind::Deletion {
+                            del_depth = del_depth.saturating_sub(1);
+                        }
+                        i += 1;
+                        continue;
+                    }
+                }
+            }
             // P2-06: bookmark markers hoist out as bare w:bookmarkStart /
             // w:bookmarkEnd elements (never a <w:r>), in run order.
             if let Some(bm) = &run.bookmark {
@@ -2205,20 +2244,20 @@ impl OoxmlSerializer {
                         while i < para.runs.len()
                             && para.runs[i].hyperlink_anchor.as_deref() == Some(anchor)
                         {
-                            xml.push_str(&self.serialize_run(&para.runs[i]));
+                            xml.push_str(&self.serialize_run(&para.runs[i], del_depth > 0));
                             i += 1;
                         }
                         xml.push_str("</w:hyperlink>");
                         continue;
                     }
-                    xml.push_str(&self.serialize_run(run));
+                    xml.push_str(&self.serialize_run(run, del_depth > 0));
                     i += 1;
                 }
                 Some(rid) => {
                     xml.push_str(&format!("<w:hyperlink r:id=\"{}\">", escape_xml(rid)));
                     while i < para.runs.len() && para.runs[i].hyperlink_rid.as_deref() == Some(rid)
                     {
-                        xml.push_str(&self.serialize_run(&para.runs[i]));
+                        xml.push_str(&self.serialize_run(&para.runs[i], del_depth > 0));
                         i += 1;
                     }
                     xml.push_str("</w:hyperlink>");
@@ -2277,7 +2316,28 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn serialize_run(&self, run: &DocxRun) -> String {
+    /// P4-D01: the opening tag of a revision wrapper element
+    /// (`<w:ins|del|moveFrom|moveTo>` with its id/author/date attributes;
+    /// missing attributes are omitted).
+    fn revision_open_tag(rev: &DocxRevision) -> String {
+        let mut el = format!("<w:{}", rev.kind.as_str());
+        if let Some(id) = &rev.id {
+            el.push_str(&format!(" w:id=\"{}\"", escape_xml(id)));
+        }
+        if let Some(author) = &rev.author {
+            el.push_str(&format!(" w:author=\"{}\"", escape_xml(author)));
+        }
+        if let Some(date) = &rev.date {
+            el.push_str(&format!(" w:date=\"{}\"", escape_xml(date)));
+        }
+        el.push_str(">");
+        el
+    }
+
+    /// Serialize a run. `deleted` marks a run inside a `w:del` (or nested
+    /// delete) wrapper: its text re-emits as `w:delText` (the deleted
+    /// content element) instead of `w:t`, per ECMA-376.
+    fn serialize_run(&self, run: &DocxRun, deleted: bool) -> String {
         let mut xml = String::from("<w:r>");
 
         // Fields engine: complex-field markers re-emit verbatim (fldChar
@@ -2439,9 +2499,18 @@ impl OoxmlSerializer {
                     xml.push_str("<w:br w:type=\"page\"/>");
                 }
                 if !seg.is_empty() {
-                    xml.push_str("<w:t xml:space=\"preserve\">");
-                    xml.push_str(&escape_xml(seg));
-                    xml.push_str("</w:t>");
+                    if deleted {
+                        // P4-D01: text inside a w:del span is deleted
+                        // content — re-emit as w:delText so strict OOXML
+                        // consumers classify it correctly.
+                        xml.push_str("<w:delText xml:space=\"preserve\">");
+                        xml.push_str(&escape_xml(seg));
+                        xml.push_str("</w:delText>");
+                    } else {
+                        xml.push_str("<w:t xml:space=\"preserve\">");
+                        xml.push_str(&escape_xml(seg));
+                        xml.push_str("</w:t>");
+                    }
                 }
             }
         }
@@ -5707,6 +5776,7 @@ mod tests {
                         hyperlink_rid: None,
                         comment_anchor: None,
                         field: None,
+                        revision: None,
                         hyperlink_anchor: None,
                         bookmark: None,
                         sdt: None,
@@ -5854,6 +5924,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -5883,6 +5954,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -5912,6 +5984,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -5991,6 +6064,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -6031,6 +6105,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -6071,6 +6146,7 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            revision: None,
                             hyperlink_anchor: None,
                             bookmark: None,
                             sdt: None,
@@ -6155,6 +6231,7 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            revision: None,
                                             hyperlink_anchor: None,
                                             bookmark: None,
                                             sdt: None,
@@ -6199,6 +6276,7 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            revision: None,
                                             hyperlink_anchor: None,
                                             bookmark: None,
                                             sdt: None,
@@ -6249,6 +6327,7 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            revision: None,
                                             hyperlink_anchor: None,
                                             bookmark: None,
                                             sdt: None,
@@ -6293,6 +6372,7 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            revision: None,
                                             hyperlink_anchor: None,
                                             bookmark: None,
                                             sdt: None,
@@ -6817,6 +6897,7 @@ mod tests {
                                     hyperlink_rid: None,
                                     comment_anchor: None,
                                     field: None,
+                                    revision: None,
                                     hyperlink_anchor: None,
                                     bookmark: None,
                                     sdt: None,
@@ -7241,6 +7322,7 @@ mod tests {
                         hyperlink_rid: None,
                         comment_anchor: None,
                         field: None,
+                        revision: None,
                         hyperlink_anchor: None,
                         bookmark: None,
                         sdt: None,

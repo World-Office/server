@@ -2788,6 +2788,14 @@ impl OoxmlParser {
                         }
                     }
                 }
+                (Some(Self::W_NS), "ins")
+                | (Some(Self::W_NS), "del")
+                | (Some(Self::W_NS), "moveFrom")
+                | (Some(Self::W_NS), "moveTo") => {
+                    // P4-D01: tracked-change spans become marker runs so
+                    // run order (and thus revision position) round-trips.
+                    self.revision_span(&child, xml, &mut runs);
+                }
                 (Some(Self::W_NS), "sdt") => {
                     // P2-06: inline content control — marker runs keep the
                     // verbatim w:sdtPr metadata (alias/tag/id/placeholder)
@@ -2807,6 +2815,59 @@ impl OoxmlParser {
             raw_flds,
             fields,
         }
+    }
+
+    /// P4-D01: a tracked-change span (`w:ins` / `w:del` / `w:moveFrom` /
+    /// `w:moveTo`) — emit an open marker run carrying the author/date/id
+    /// metadata, inline the direct content (runs, nested spans, hyperlinks),
+    /// then a close marker.
+    fn revision_span(&self, span: &roxmltree::Node, xml: &str, runs: &mut Vec<DocxRun>) {
+        let kind = RevisionKind::from_local_name(span.tag_name().name())
+            .unwrap_or(RevisionKind::Insertion);
+        let revision = DocxRevision {
+            kind,
+            id: self.attr_ns(*span, "id").map(|s| s.to_string()),
+            author: self.attr_ns(*span, "author").map(|s| s.to_string()),
+            date: self.attr_ns(*span, "date").map(|s| s.to_string()),
+        };
+        runs.push(DocxRun {
+            revision: Some(RevisionMarker::Start(revision)),
+            ..DocxRun::default()
+        });
+        for c in span.children() {
+            if !c.is_element() {
+                continue;
+            }
+            match (c.tag_name().namespace(), c.tag_name().name()) {
+                (Some(Self::W_NS), "r") => runs.push(self.parse_run(&c, xml)),
+                (Some(Self::W_NS), "ins")
+                | (Some(Self::W_NS), "del")
+                | (Some(Self::W_NS), "moveFrom")
+                | (Some(Self::W_NS), "moveTo") => self.revision_span(&c, xml, runs),
+                (Some(Self::W_NS), "hyperlink") => {
+                    let rid = c.attribute((Self::R_NS, "id")).map(|s| s.to_string());
+                    let anchor = self.attr_ns(c, "anchor").map(|s| s.to_string());
+                    for r in c.children() {
+                        if r.is_element()
+                            && r.tag_name().name() == "r"
+                            && r.tag_name().namespace() == Some(Self::W_NS)
+                        {
+                            let mut run = self.parse_run(&r, xml);
+                            run.hyperlink_rid = rid.clone();
+                            if rid.is_none() {
+                                run.hyperlink_anchor = anchor.clone();
+                            }
+                            runs.push(run);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        runs.push(DocxRun {
+            revision: Some(RevisionMarker::End(kind)),
+            ..DocxRun::default()
+        });
     }
 
     /// P2-06: inline `w:sdt` (content control) — emit an open marker run
@@ -3003,6 +3064,26 @@ impl OoxmlParser {
                         props.borders = Some(borders);
                     }
                 }
+                "rPr" => {
+                    // P4-D01: paragraph-mark revision — w:rPr/w:ins|w:del|
+                    // w:moveFrom|w:moveTo inside w:pPr marks the paragraph
+                    // mark itself as inserted/deleted/moved (a whole
+                    // inserted or deleted paragraph carries one).
+                    for marker in child
+                        .children()
+                        .filter(|n| n.is_element() && n.tag_name().namespace() == Some(Self::W_NS))
+                    {
+                        if let Some(kind) = RevisionKind::from_local_name(marker.tag_name().name())
+                        {
+                            props.paragraph_mark_revision = Some(DocxRevision {
+                                kind,
+                                id: self.attr_ns(marker, "id").map(|s| s.to_string()),
+                                author: self.attr_ns(marker, "author").map(|s| s.to_string()),
+                                date: self.attr_ns(marker, "date").map(|s| s.to_string()),
+                            });
+                        }
+                    }
+                }
                 "outlineLvl" => {
                     props.outline_level = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
@@ -3063,6 +3144,7 @@ impl OoxmlParser {
             field: None,
             bookmark: None,
             sdt: None,
+            revision: None,
             pict: None,
         };
 
@@ -3076,6 +3158,14 @@ impl OoxmlParser {
             match (ns, local) {
                 (Some(Self::W_NS), "t") => {
                     // Preserve whitespace: check xml:space="preserve"
+                    if let Some(text) = child.text() {
+                        run.text.push_str(text);
+                    }
+                }
+                (Some(Self::W_NS), "delText") => {
+                    // P4-D01: deleted text (the run-content element inside a
+                    // w:del span) — same content semantics as w:t; keep it
+                    // on the run so the deleted wording round-trips.
                     if let Some(text) = child.text() {
                         run.text.push_str(text);
                     }

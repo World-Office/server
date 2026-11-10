@@ -3081,3 +3081,201 @@ fn gap_xlsx_wbprotect_roundtrip() {
         "rich values must round-trip"
     );
 }
+
+/// P4-D01 helper: revision marker sequence of a paragraph's runs in order
+/// ("S:ins" / "E:ins" / "S:del" / ...) — position in the run sequence is
+/// what has to round-trip, same idea as bookmark_seq.
+fn revision_seq(p: &wo_ooxml::model::DocxParagraph) -> Vec<String> {
+    p.runs
+        .iter()
+        .filter_map(|r| match &r.revision {
+            Some(wo_ooxml::model::RevisionMarker::Start(rev)) => {
+                Some(format!("S:{}", rev.kind.as_str()))
+            }
+            Some(wo_ooxml::model::RevisionMarker::End(kind)) => {
+                Some(format!("E:{}", kind.as_str()))
+            }
+            None => None,
+        })
+        .collect()
+}
+
+/// P4-D01 helper: the text of each run ("" for pure marker runs).
+fn run_texts(p: &wo_ooxml::model::DocxParagraph) -> Vec<&str> {
+    p.runs.iter().map(|r| r.text.as_str()).collect()
+}
+
+#[test]
+fn gap_docx_revisions_roundtrip() {
+    // P4-D01: typed DOCX revisions — w:ins / w:del / w:moveFrom / w:moveTo
+    // spans (author/date/id metadata) and the paragraph-mark revision
+    // (w:pPr/w:rPr/w:ins) must (a) parse into typed marker runs with their
+    // metadata, (b) still render the span text (including deleted
+    // w:delText) to html, and (c) survive a docx -> docx re-serialization
+    // in position, kind and metadata — re-parsing to the identical model.
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Kept. </w:t></w:r><w:ins w:id="1" w:author="Alice" w:date="2024-01-02T10:00:00Z"><w:r><w:t>inserted text</w:t></w:r></w:ins></w:p>
+    <w:p><w:del w:id="2" w:author="Bob" w:date="2024-01-03T11:30:00Z"><w:r><w:delText xml:space="preserve">old wording</w:delText></w:r></w:del><w:r><w:t>remains</w:t></w:r></w:p>
+    <w:p><w:moveFrom w:id="3" w:author="Alice" w:date="2024-02-10T08:15:00Z"><w:r><w:t>moved away</w:t></w:r></w:moveFrom><w:moveTo w:id="4" w:author="Alice" w:date="2024-02-10T08:15:00Z"><w:r><w:t>moved here</w:t></w:r></w:moveTo></w:p>
+    <w:p><w:pPr><w:rPr><w:ins w:id="5" w:author="Alice" w:date="2024-03-01T09:30:00Z"/></w:rPr></w:pPr><w:r><w:t>whole inserted paragraph</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_document_xml(document_xml);
+
+    // 1. Typed parse: every span becomes Start/End marker runs bracketing
+    //    its inner runs, carrying id/author/date.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    assert_eq!(body.blocks.len(), 4, "all four paragraphs parse");
+
+    let p0 = docx_para(body, 0);
+    assert_eq!(
+        revision_seq(p0),
+        vec!["S:ins".to_string(), "E:ins".to_string()],
+        "insertion span must bracket its run"
+    );
+    assert_eq!(
+        run_texts(p0),
+        vec!["Kept. ", "", "inserted text", ""],
+        "inserted run text must survive"
+    );
+    match &p0.runs[1].revision {
+        Some(wo_ooxml::model::RevisionMarker::Start(rev)) => {
+            assert_eq!(rev.kind, wo_ooxml::model::RevisionKind::Insertion);
+            assert_eq!(rev.id.as_deref(), Some("1"));
+            assert_eq!(rev.author.as_deref(), Some("Alice"));
+            assert_eq!(rev.date.as_deref(), Some("2024-01-02T10:00:00Z"));
+        }
+        other => panic!("runs[1] must open the insertion span, got {other:?}"),
+    }
+
+    let p1 = docx_para(body, 1);
+    assert_eq!(
+        revision_seq(p1),
+        vec!["S:del".to_string(), "E:del".to_string()],
+        "deletion span must bracket its run"
+    );
+    assert_eq!(p1.runs[1].text, "old wording", "w:delText content must be captured");
+    match &p1.runs[0].revision {
+        Some(wo_ooxml::model::RevisionMarker::Start(rev)) => {
+            assert_eq!(rev.kind, wo_ooxml::model::RevisionKind::Deletion);
+            assert_eq!(rev.author.as_deref(), Some("Bob"));
+            assert_eq!(rev.date.as_deref(), Some("2024-01-03T11:30:00Z"));
+        }
+        other => panic!("runs[0] must open the deletion span, got {other:?}"),
+    }
+
+    let p2 = docx_para(body, 2);
+    assert_eq!(
+        revision_seq(p2),
+        vec![
+            "S:moveFrom".to_string(),
+            "E:moveFrom".to_string(),
+            "S:moveTo".to_string(),
+            "E:moveTo".to_string()
+        ],
+        "moveFrom/moveTo spans must keep their order"
+    );
+    assert_eq!(
+        run_texts(p2),
+        vec!["", "moved away", "", "", "moved here", ""],
+        "moved runs must survive on both sides"
+    );
+
+    let mark = docx_para(body, 3)
+        .properties
+        .paragraph_mark_revision
+        .as_ref()
+        .expect("paragraph-mark revision must be typed");
+    assert_eq!(mark.kind, wo_ooxml::model::RevisionKind::Insertion);
+    assert_eq!(mark.id.as_deref(), Some("5"));
+    assert_eq!(mark.author.as_deref(), Some("Alice"));
+    assert_eq!(mark.date.as_deref(), Some("2024-03-01T09:30:00Z"));
+
+    // 2. docx -> html: span text (inserted AND deleted) still renders.
+    let html = String::from_utf8(DocxToHtmlConverter.convert(&docx).unwrap()).unwrap();
+    assert!(html.contains("inserted text"), "inserted text lost: {html}");
+    assert!(html.contains("old wording"), "deleted text lost: {html}");
+    assert!(html.contains("moved here"), "moveTo text lost: {html}");
+
+    // 3. docx -> docx: wrappers re-emit around their runs with their
+    //    author/date metadata; deleted text re-emits as w:delText.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    let ins_open = r#"<w:ins w:id="1" w:author="Alice" w:date="2024-01-02T10:00:00Z">"#;
+    let del_open = r#"<w:del w:id="2" w:author="Bob" w:date="2024-01-03T11:30:00Z">"#;
+    assert!(xml2.contains(ins_open), "w:ins metadata lost: {xml2}");
+    assert!(xml2.contains(del_open), "w:del metadata lost: {xml2}");
+    assert!(
+        xml2.contains(r#"<w:moveFrom w:id="3" w:author="Alice" w:date="2024-02-10T08:15:00Z">"#),
+        "w:moveFrom metadata lost: {xml2}"
+    );
+    assert!(
+        xml2.contains(r#"<w:moveTo w:id="4" w:author="Alice" w:date="2024-02-10T08:15:00Z">"#),
+        "w:moveTo metadata lost: {xml2}"
+    );
+    assert!(
+        xml2.contains(r#"<w:delText xml:space="preserve">old wording</w:delText>"#),
+        "deleted text must re-emit as w:delText inside w:del: {xml2}"
+    );
+    let (s, t, e) = (
+        xml2.find(ins_open).unwrap(),
+        xml2.find("inserted text").unwrap(),
+        xml2.find("</w:ins>").unwrap(),
+    );
+    assert!(s < t && t < e, "insertion span must wrap its run: {xml2}");
+    let (s, t, e) = (
+        xml2.find(del_open).unwrap(),
+        xml2.find("old wording").unwrap(),
+        xml2.find("</w:del>").unwrap(),
+    );
+    assert!(s < t && t < e, "deletion span must wrap its run: {xml2}");
+    let (s, t, e) = (
+        xml2.find(r#"<w:moveFrom w:id="3""#).unwrap(),
+        xml2.find("moved away").unwrap(),
+        xml2.find("</w:moveFrom>").unwrap(),
+    );
+    assert!(s < t && t < e, "moveFrom span must wrap its run: {xml2}");
+    assert!(
+        xml2.contains(r#"<w:rPr><w:ins w:id="5" w:author="Alice" w:date="2024-03-01T09:30:00Z"/></w:rPr></w:pPr>"#),
+        "paragraph-mark revision must re-emit inside w:pPr: {xml2}"
+    );
+
+    // 4. Re-parse equality: markers, metadata and texts are identical.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    for i in 0..4 {
+        assert_eq!(
+            revision_seq(docx_para(rbody, i)),
+            revision_seq(docx_para(body, i)),
+            "revision marker order must survive the round trip (paragraph {i})"
+        );
+        assert_eq!(
+            run_texts(docx_para(rbody, i)),
+            run_texts(docx_para(body, i)),
+            "run texts must survive the round trip (paragraph {i})"
+        );
+    }
+    assert_eq!(
+        docx_para(rbody, 0).runs[1].revision,
+        docx_para(body, 0).runs[1].revision,
+        "insertion metadata must round-trip"
+    );
+    assert_eq!(
+        docx_para(rbody, 1).runs[0].revision,
+        docx_para(body, 1).runs[0].revision,
+        "deletion metadata must round-trip"
+    );
+    assert_eq!(
+        docx_para(rbody, 2).runs[0].revision,
+        docx_para(body, 2).runs[0].revision,
+        "moveFrom metadata must round-trip"
+    );
+    assert_eq!(
+        docx_para(rbody, 3).properties.paragraph_mark_revision,
+        docx_para(body, 3).properties.paragraph_mark_revision,
+        "paragraph-mark revision metadata must round-trip"
+    );
+}

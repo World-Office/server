@@ -1394,6 +1394,13 @@ pub struct DocxParagraphProperties {
     /// Paragraph-level borders (F-040: w:pBdr).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub borders: Option<DocxParagraphBorders>,
+    /// Paragraph-mark revision (P4-D01): `w:pPr/w:rPr/w:ins|w:del|
+    /// w:moveFrom|w:moveTo` metadata marking the paragraph mark itself as
+    /// inserted / deleted / moved (a whole inserted paragraph carries one,
+    /// a whole deleted paragraph a `w:del`). Round-trips verbatim through
+    /// `DocxParagraph::raw_ppr`; the typed field is for consumers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paragraph_mark_revision: Option<DocxRevision>,
 }
 
 impl DocxParagraphProperties {
@@ -1430,6 +1437,10 @@ impl DocxParagraphProperties {
             bidi: self.bidi || over.bidi,
             shading: over.shading.clone().or_else(|| self.shading.clone()),
             borders: over.borders.clone().or_else(|| self.borders.clone()),
+            paragraph_mark_revision: over
+                .paragraph_mark_revision
+                .clone()
+                .or_else(|| self.paragraph_mark_revision.clone()),
         }
     }
 }
@@ -1546,6 +1557,13 @@ pub struct DocxRun {
     /// (with verbatim w:sdtPr) or close of an inline `w:sdt`.
     #[serde(default)]
     pub sdt: Option<SdtMarker>,
+    /// Track-change span marker carried by this run (P4-D01): the open
+    /// (with author/date/id metadata) or close of a `w:ins` / `w:del` /
+    /// `w:moveFrom` / `w:moveTo` span. Marker runs serialize to the bare
+    /// wrapper elements — inner runs are emitted inside the wrapper — so
+    /// revision spans and their metadata survive a round trip.
+    #[serde(default)]
+    pub revision: Option<RevisionMarker>,
     /// Verbatim `<w:pict>` subtree captured at parse time (legacy VML
     /// graphics the typed model cannot represent), re-emitted unchanged so
     /// pictures survive a parse-serialize cycle.
@@ -1662,6 +1680,75 @@ impl FieldKind {
             FieldKind::Other => "OTHER",
         }
     }
+}
+
+/// Which tracked-change span a run belongs to (revisions engine, P4-D01).
+/// Maps to the four OOXML track-change wrapper elements: `w:ins`, `w:del`,
+/// `w:moveFrom` and `w:moveTo`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RevisionKind {
+    /// `<w:ins>` — inserted content.
+    Insertion,
+    /// `<w:del>` — deleted content (inner runs carry `w:delText`).
+    Deletion,
+    /// `<w:moveFrom>` — content that was moved away from this position.
+    MoveFrom,
+    /// `<w:moveTo>` — content that was moved to this position.
+    MoveTo,
+}
+
+impl RevisionKind {
+    /// The OOXML element local name for this revision kind.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RevisionKind::Insertion => "ins",
+            RevisionKind::Deletion => "del",
+            RevisionKind::MoveFrom => "moveFrom",
+            RevisionKind::MoveTo => "moveTo",
+        }
+    }
+
+    /// Map a track-change element local name to its kind (`None` for
+    /// non-revision elements such as the moveFrom/moveTo *range* markers).
+    pub fn from_local_name(name: &str) -> Option<Self> {
+        match name {
+            "ins" => Some(RevisionKind::Insertion),
+            "del" => Some(RevisionKind::Deletion),
+            "moveFrom" => Some(RevisionKind::MoveFrom),
+            "moveTo" => Some(RevisionKind::MoveTo),
+            _ => None,
+        }
+    }
+}
+
+/// Track-change metadata shared by every OOXML revision element
+/// (CT_TrackChange): the revision id, the author who made the change and
+/// when. Both `w:ins`/`w:del` spans and the paragraph-mark revision
+/// (`w:pPr/w:rPr/w:ins`) normalize into this struct so converters can read
+/// author/date without re-scraping XML.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocxRevision {
+    /// Kind of change (ins / del / moveFrom / moveTo).
+    pub kind: RevisionKind,
+    /// `w:id` — revision identifier (unique within the document per
+    /// producer, but treated as opaque text here).
+    pub id: Option<String>,
+    /// `w:author` — who made the change.
+    pub author: Option<String>,
+    /// `w:date` — when (ISO 8601, e.g. `"2024-01-01T10:00:00Z"`).
+    pub date: Option<String>,
+}
+
+/// Which part of a revision span a run carries (revisions engine, P4-D01).
+/// A `<w:ins>`/`<w:del>`/`<w:moveFrom>`/`<w:moveTo>` span becomes an open
+/// marker run, its inner runs, then a close marker run — the same pattern
+/// as the sdt markers — so run order (and thus span position) round-trips.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RevisionMarker {
+    /// Opens the span; carries the author/date/id metadata.
+    Start(DocxRevision),
+    /// Closes the span of the given kind (matches the open marker's kind).
+    End(RevisionKind),
 }
 
 /// A typed document field (fields engine): instruction + cached result. Both
