@@ -1569,6 +1569,16 @@
     if (cmd === "toggleFooterFromBottom") { toggleSectionMarker("footer-from-bottom", "data-inches=\"0.8\""); return; }
     if (cmd === "toggleDropcap") { openDropcapDialog(); return; }
     if (cmd === "openBorders") { openBordersDialog(); return; }
+    // P3-U02: OO TableSettingsAdvanced + ImageSettingsAdvanced hosted from
+    // the P3-U01 dialog engine (wo-dialogs.js specs + WoDialogEngine); the
+    // okCmd payloads are one JSON ledger entry per dialog apply.
+    if (cmd === "openTableSettingsAdvanced") { openTableSettingsAdvanced(); return; }
+    if (cmd === "openImageSettingsAdvanced") { openImageSettingsAdvanced(); return; }
+    if (cmd === "tableSettingsAdvanced") { applyTableSettingsAdvanced(value); return; }
+    if (cmd === "imageSettingsAdvanced") { applyImageSettingsAdvanced(value); return; }
+    if (cmd === "imageAdvancedRotate") { applyImageAdvancedRotate(value === "ccw" ? -1 : 1); return; }
+    if (cmd === "imageAdvancedReplace") { applyImageAdvancedReplace(); return; }
+    if (cmd === "editWrapBoundary") { reportEditWrapBoundaryUnavailable(); return; }
     if (cmd === "multilevel") { multilevelItem(); return; }
     if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
     if (cmd === "pageColorNone") { clearPageColor(); return; }
@@ -7104,10 +7114,15 @@
   // transform string, so repeated rotates and flip combos round-trip.
   function applyImageTransform(obj) {
     const steps = ((parseInt(obj.getAttribute("data-rotate-steps") || "0", 10) % 4) + 4) % 4;
+    // P3-U02 (ImageSettingsAdvanced): the OO RotationFrame also allows
+    // arbitrary angles; data-rotate-angle carries the dial value and
+    // composes whenever no 90° step chain is active.
+    const angle = parseFloat(obj.getAttribute("data-rotate-angle") || "0");
     const fh = obj.getAttribute("data-flip-h") === "1";
     const fv = obj.getAttribute("data-flip-v") === "1";
     const parts = [];
     if (steps) parts.push(`rotate(${steps * 90}deg)`);
+    else if (angle) parts.push(`rotate(${angle}deg)`);
     if (fh || fv) parts.push(`scale(${fh ? -1 : 1}, ${fv ? -1 : 1})`);
     obj.style.transform = parts.join(" ");
   }
@@ -7370,7 +7385,10 @@
   });
   const rpTableAdvanced = document.getElementById("rp-table-advanced");
   if (rpTableAdvanced) rpTableAdvanced.addEventListener("click", () => {
-    emitCommand("openBorders"); // existing borders/table dialog
+    // P3-U02: the advanced rail link now hosts the OO TableSettingsAdvanced
+    // dialog from the data-driven engine; the borders-dialog detour stays
+    // as the engine-less fallback and the ribbon path (openBorders).
+    emitCommand("openTableSettingsAdvanced");
   });
 
   // Image/Shape section wiring.
@@ -7432,12 +7450,326 @@
   });
   const rpImageAdvanced = document.getElementById("rp-image-advanced");
   if (rpImageAdvanced) rpImageAdvanced.addEventListener("click", () => {
-    // Marker for the host page / future advanced image-settings dialog slice.
+    // AF15 marker stays for the host page / E2E; P3-U02 actually hosts the
+    // OO ImageSettingsAdvanced dialog from the data-driven engine now.
     window.dispatchEvent(new CustomEvent("wo:open-image-settings", {
       detail: { source: "right-panel" },
     }));
-    console.info("wo: open-image-settings requested (right panel)");
+    emitCommand("openImageSettingsAdvanced");
   });
+
+  // ------------------------------------------------------------------
+  // P3-U02: TableSettingsAdvanced + ImageSettingsAdvanced — the two
+  // largest missing OO views (ui-webapp.json), hosted from the P3-U01
+  // dialog engine. The specs live in wo-dialogs.js (WO_DIALOG_SPECS);
+  // this is the behavioral half:
+  //   - open*: build the dialog once (engine keeps the handle), re-sync
+  //     every row from the live selection (OO views re-read properties on
+  //     show), capture the target element — the dialog focus steals the
+  //     DOM selection, so apply resolves through the captured target
+  //     (same pattern as imageAltTarget above).
+  //   - apply*: runCommand(tableSettingsAdvanced/imageSettingsAdvanced)
+  //     with the OK payload (one JSON ledger entry — replayCommands just
+  //     re-runs the same handler against the replayed selection).
+  // Crop/adjust are honest CSS approximations (clip-path / filter — the
+  // WO object model has no raster transform engine); repeat-as-header and
+  // wrap-around-table persist as markers/classes like the banded rows.
+  // ------------------------------------------------------------------
+  const TABLE_ADVANCED_DIALOG_ID = "table-settings-advanced-dialog";
+  const IMAGE_ADVANCED_DIALOG_ID = "image-settings-advanced-dialog";
+  // TableStyler pen width units → pt (the widget's width ladder).
+  const TABLE_STYLER_WIDTH_PT = { 1: 0.5, 2: 1, 3: 1.5, 4: 2.25, 6: 3 };
+  let tableAdvTarget = null;
+  let imageAdvTarget = null;
+  function woAdvEngineReady() {
+    return !!(window.WoDialogs && window.WoDialogs.WO_DIALOG_SPECS && window.woDialogEngine);
+  }
+  function advPxToCm(pxValue) {
+    return Math.round(((parseFloat(pxValue) || 0) / 96) * 2.54 * 100) / 100;
+  }
+  function advCmToPx(cmValue) {
+    return Math.round((parseFloat(cmValue) || 0) * 96 / 2.54);
+  }
+  function advClampNum(v, lo, hi, dflt) {
+    const n = parseFloat(v);
+    return isNaN(n) ? dflt : Math.min(hi, Math.max(lo, Math.round(n)));
+  }
+  function advCm(v) { return Math.max(0, Math.round((parseFloat(v) || 0) * 100) / 100); }
+  function advParsePayload(value, cmd) {
+    try { return JSON.parse(String(value || "{}")) || {}; }
+    catch (err) { setStatus(t("Status.NotAvailable") + " " + cmd + " (bad payload)", true); return null; }
+  }
+  function advDistKeys(v, obj, attrPrefix) {
+    ["top", "bottom", "left", "right"].forEach((side) => {
+      const key = "dist" + side.charAt(0).toUpperCase() + side.slice(1);
+      const d = parseFloat(v[key]);
+      if (!isNaN(d)) obj.setAttribute(attrPrefix + side, String(Math.max(0, d)));
+    });
+  }
+
+  // -- TableSettingsAdvanced -------------------------------------------
+  function openTableSettingsAdvanced() {
+    closeAllMenus();
+    if (!woAdvEngineReady()) { emitCommand("openBorders"); return; } // AF15 fallback
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableSettingsAdvanced"); return; }
+    tableAdvTarget = table;
+    let handle = window.woDialogEngine.get(TABLE_ADVANCED_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.tableSettingsAdvanced);
+    syncTableAdvancedDialog(table, handle);
+    handle.open();
+  }
+  function closeTableSettingsAdvanced() {
+    if (woAdvEngineReady()) window.woDialogEngine.close(TABLE_ADVANCED_DIALOG_ID);
+    tableAdvTarget = null;
+  }
+  function syncTableAdvancedDialog(table, handle) {
+    const cell = table.querySelector("td, th");
+    const cs = cell ? window.getComputedStyle(cell) : null;
+    let align = "left";
+    if (table.style.marginLeft === "auto" && table.style.marginRight === "auto") align = "center";
+    else if (table.style.marginLeft === "auto") align = "right";
+    const wrap = table.getAttribute("data-table-wrap") === "around" ? "around" : "inline";
+    handle.setValue("align", align);
+    handle.setValue("indent", wrap === "around" ? 0 : advPxToCm(table.style.marginLeft));
+    handle.setValue("wrap", wrap);
+    handle.setValue("moveWithText", table.getAttribute("data-table-move-with-text") !== "0");
+    handle.setValue("allowOverlap", table.getAttribute("data-table-overlap") === "1");
+    ["Top", "Bottom", "Left", "Right"].forEach((side) => {
+      handle.setValue("dist" + side, parseFloat(table.getAttribute("data-table-dist-" + side.toLowerCase())) || 0);
+    });
+    handle.setValue("marginTop", cs ? advPxToCm(cs.paddingTop) : 0);
+    handle.setValue("marginBottom", cs ? advPxToCm(cs.paddingBottom) : 0);
+    handle.setValue("marginLeft", cs ? advPxToCm(cs.paddingLeft) : 0.19);
+    handle.setValue("marginRight", cs ? advPxToCm(cs.paddingRight) : 0.19);
+    handle.setValue("shade", (cs && csToHex(cs.backgroundColor)) || "#ffffff");
+    const penStyle = cs && ["solid", "dashed", "dotted", "double"].indexOf(cs.borderTopStyle) !== -1
+      ? cs.borderTopStyle : "solid";
+    const penColor = (cs && csToHex(cs.borderTopColor)) || "#000000";
+    const penWidth = cs ? Math.max(1, Math.round(pxToPt(parseFloat(cs.borderTopWidth) || 1) * 2)) : 2;
+    // Sync the TableStyler pen from the live table; painted segments start
+    // empty (they carry the NEXT border paint, like the OO styler).
+    handle.setValue("styler", { pen: { style: penStyle, width: penWidth, color: penColor }, borders: [] });
+    handle.setValue("repeatHeader", table.classList.contains("table-repeat-header"));
+    handle.setValue("resizeFit", table.style.tableLayout !== "fixed");
+  }
+  function applyTableSettingsAdvanced(value) {
+    const v = advParsePayload(value, "tableSettingsAdvanced");
+    if (!v) return;
+    const table = tableAdvTarget || selectedTable();
+    tableAdvTarget = null;
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableSettingsAdvanced"); return; }
+    // Position: alignment + indent + text flow around the table. Floats
+    // carry the "around" mode (web tables have no OO anchor model).
+    const align = ["left", "center", "right"].indexOf(v.align) !== -1 ? v.align : "left";
+    const wrap = v.wrap === "around" ? "around" : "inline";
+    const indentPx = advCmToPx(v.indent);
+    table.setAttribute("data-table-wrap", wrap);
+    table.style.cssFloat = wrap === "around" ? (align === "right" ? "right" : "left") : "";
+    if (wrap === "around") {
+      table.style.marginLeft = align === "right" ? "" : indentPx + "px";
+      table.style.marginRight = align === "right" ? indentPx + "px" : "";
+    } else if (align === "center") {
+      table.style.marginLeft = "auto";
+      table.style.marginRight = "auto";
+    } else if (align === "right") {
+      table.style.marginLeft = "auto";
+      table.style.marginRight = "0";
+    } else {
+      table.style.marginLeft = indentPx + "px";
+      table.style.marginRight = "";
+    }
+    // Text-flow extras are session markers (no OO anchor/overlap engine):
+    table.setAttribute("data-table-move-with-text",
+      (v.moveWithText === true || v.moveWithText === "true") ? "1" : "0");
+    table.setAttribute("data-table-overlap",
+      (v.allowOverlap === true || v.allowOverlap === "true") ? "1" : "0");
+    advDistKeys(v, table, "data-table-dist-");
+    // Default cell margins → per-cell padding (same funnel as the OO
+    // "cell margins apply to the whole table" scope).
+    const mTop = advCmToPx(v.marginTop);
+    const mBottom = advCmToPx(v.marginBottom);
+    const mLeft = advCmToPx(v.marginLeft);
+    const mRight = advCmToPx(v.marginRight);
+    Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+      cell.style.paddingTop = mTop + "px";
+      cell.style.paddingBottom = mBottom + "px";
+      cell.style.paddingLeft = mLeft + "px";
+      cell.style.paddingRight = mRight + "px";
+    });
+    // Borders & shading: the TableStyler payload (pen + painted segments)
+    // paints the whole cell ring — the WO table model has no per-side cell
+    // border mapping, so one painted border is the pen for all cells.
+    const sty = v.styler && typeof v.styler === "object" ? v.styler : {};
+    const borders = Array.isArray(sty.borders) ? sty.borders : [];
+    if (borders.length && borders[0] && borders[0].style !== "none") {
+      const b = borders[0];
+      const widthPt = TABLE_STYLER_WIDTH_PT[Number(b.width)] || 1;
+      const border = Math.max(0.5, widthPt) + "pt " + b.style + " " + (b.color || "#000000");
+      Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+        cell.style.border = border;
+      });
+    } else {
+      Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+        cell.style.border = "none";
+      });
+    }
+    if (v.shade) applyTableBackground(v.shade);
+    // Rows & behavior.
+    const repeat = v.repeatHeader === true || v.repeatHeader === "true";
+    table.classList.toggle("table-repeat-header", repeat);
+    if (repeat) table.setAttribute("data-repeat-header", "1");
+    else table.removeAttribute("data-repeat-header");
+    table.style.tableLayout = (v.resizeFit === true || v.resizeFit === "true") ? "auto" : "fixed";
+    markObjectMutation();
+    syncTablePanelControls();
+    setStatus(t("Status.TableAdvancedApplied"));
+  }
+
+  // -- ImageSettingsAdvanced -------------------------------------------
+  function openImageSettingsAdvanced() {
+    closeAllMenus();
+    if (!woAdvEngineReady()) {
+      console.info("wo: open-image-settings requested (dialog engine not booted)");
+      return;
+    }
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSettingsAdvanced"); return; }
+    imageAdvTarget = obj;
+    let handle = window.woDialogEngine.get(IMAGE_ADVANCED_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.imageSettingsAdvanced);
+    syncImageAdvancedDialog(obj, handle);
+    handle.open();
+  }
+  function closeImageSettingsAdvanced() {
+    if (woAdvEngineReady()) window.woDialogEngine.close(IMAGE_ADVANCED_DIALOG_ID);
+    imageAdvTarget = null;
+  }
+  function advImageCrop(obj) {
+    // data-crop encodes "left-right-top-bottom" percentages (clip-path safe).
+    const m = /^(\d+)-(\d+)-(\d+)-(\d+)$/.exec(obj.getAttribute("data-crop") || "");
+    return m ? { left: +m[1], right: +m[2], top: +m[3], bottom: +m[4] }
+             : { left: 0, right: 0, top: 0, bottom: 0 };
+  }
+  function syncImageAdvancedDialog(obj, handle) {
+    const isImg = obj.matches && obj.matches("img");
+    const w = isImg
+      ? parseInt(obj.getAttribute("width"), 10) || parseInt(obj.style.width, 10) || 0
+      : parseInt(obj.style.width, 10) || 0;
+    const h = isImg
+      ? parseInt(obj.getAttribute("height"), 10) || parseInt(obj.style.height, 10) || 0
+      : parseInt(obj.style.height, 10) || 0;
+    handle.setValue("width", w || 200);
+    handle.setValue("height", h || 150);
+    handle.setValue("keepRatio", obj.getAttribute("data-keep-ratio") !== "0");
+    const steps = ((parseInt(obj.getAttribute("data-rotate-steps") || "0", 10) % 4) + 4) % 4;
+    const angle = parseFloat(obj.getAttribute("data-rotate-angle"));
+    handle.setValue("angle", steps ? steps * 90 : (isNaN(angle) ? 0 : angle));
+    handle.setValue("wrap", "wrap-" + (obj.getAttribute("data-wrap") || "inline"));
+    ["Top", "Bottom", "Left", "Right"].forEach((side) => {
+      handle.setValue("dist" + side, parseFloat(obj.getAttribute("data-wrap-dist-" + side.toLowerCase())) || 0);
+    });
+    handle.setValue("brightness", parseFloat(obj.getAttribute("data-image-brightness")) || 100);
+    handle.setValue("contrast", parseFloat(obj.getAttribute("data-image-contrast")) || 100);
+    handle.setValue("saturation", parseFloat(obj.getAttribute("data-image-saturation")) || 100);
+    const crop = advImageCrop(obj);
+    handle.setValue("cropLeft", crop.left);
+    handle.setValue("cropRight", crop.right);
+    handle.setValue("cropTop", crop.top);
+    handle.setValue("cropBottom", crop.bottom);
+    handle.setValue("url", "");
+    handle.setValue("alt", isImg && !obj.classList.contains("vector-object")
+      ? (obj.getAttribute("alt") || "") : "");
+  }
+  function applyImageSettingsAdvanced(value) {
+    const v = advParsePayload(value, "imageSettingsAdvanced");
+    if (!v) return;
+    const obj = imageAdvTarget || selectedImageObject();
+    imageAdvTarget = null;
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSettingsAdvanced"); return; }
+    const w = parseFloat(v.width);
+    const h = parseFloat(v.height);
+    if (w > 0 && h > 0) {
+      if (v.keepRatio === true || v.keepRatio === "true") obj.setAttribute("data-keep-ratio", "1");
+      else obj.removeAttribute("data-keep-ratio");
+      applyImageSize(w, h, obj);
+    }
+    // Arbitrary angle (OO RotationFrame): applyImageTransform composes
+    // data-rotate-angle when no 90° step chain is active.
+    const angle = advClampNum(v.angle, -180, 180, 0);
+    if (angle) obj.setAttribute("data-rotate-angle", String(angle));
+    else obj.removeAttribute("data-rotate-angle");
+    applyImageTransform(obj);
+    if (v.wrap && String(v.wrap).indexOf("wrap-") === 0) applyImageWrap(String(v.wrap));
+    advDistKeys(v, obj, "data-wrap-dist-");
+    // Adjust → CSS filter (same live-filter approximation the photo editor
+    // uses; attributes carry the values back into the dialog on reopen).
+    const br = advClampNum(v.brightness, 20, 200, 100);
+    const ct = advClampNum(v.contrast, 20, 200, 100);
+    const sat = advClampNum(v.saturation, 0, 200, 100);
+    const filters = [];
+    if (br !== 100) filters.push("brightness(" + (br / 100) + ")");
+    if (ct !== 100) filters.push("contrast(" + (ct / 100) + ")");
+    if (sat !== 100) filters.push("saturate(" + (sat / 100) + ")");
+    if (filters.length) {
+      obj.style.filter = filters.join(" ");
+      obj.setAttribute("data-image-brightness", String(br));
+      obj.setAttribute("data-image-contrast", String(ct));
+      obj.setAttribute("data-image-saturation", String(sat));
+    } else {
+      obj.style.removeProperty("filter");
+      obj.removeAttribute("data-image-brightness");
+      obj.removeAttribute("data-image-contrast");
+      obj.removeAttribute("data-image-saturation");
+    }
+    // Crop → clip-path inset on raster images (placeholder div objects have
+    // no raster box to crop — honestly skipped).
+    if (obj.matches && obj.matches("img")) {
+      const cropL = advClampNum(v.cropLeft, 0, 45, 0);
+      const cropR = advClampNum(v.cropRight, 0, 45, 0);
+      const cropT = advClampNum(v.cropTop, 0, 45, 0);
+      const cropB = advClampNum(v.cropBottom, 0, 45, 0);
+      if (cropL || cropR || cropT || cropB) {
+        obj.style.clipPath = "inset(" + cropT + "% " + cropR + "% " + cropB + "% " + cropL + "%)";
+        obj.setAttribute("data-crop", [cropL, cropR, cropT, cropB].join("-"));
+      } else {
+        obj.style.removeProperty("clip-path");
+        obj.removeAttribute("data-crop");
+      }
+    }
+    const plain = obj.matches && obj.matches("img") && !obj.classList.contains("vector-object") ? obj : null;
+    if (plain && typeof v.alt === "string") applyImageAltText(v.alt, plain);
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus(t("Status.ImageAdvancedApplied"));
+  }
+  function applyImageAdvancedRotate(dir) {
+    const obj = imageAdvTarget || selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageRotate"); return; }
+    const steps = ((parseInt(obj.getAttribute("data-rotate-steps") || "0", 10) +
+      (dir === -1 ? 3 : 1)) % 4 + 4) % 4;
+    obj.setAttribute("data-rotate-steps", String(steps));
+    obj.removeAttribute("data-rotate-angle"); // steps supersede the dial angle
+    applyImageTransform(obj);
+    markObjectMutation();
+    setStatus("Object rotated 90°");
+  }
+  function applyImageAdvancedReplace() {
+    const obj = imageAdvTarget || selectedImageObject();
+    imageAdvTarget = null;
+    closeImageSettingsAdvanced();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " replaceImage"); return; }
+    // Re-anchor the selection on the captured object first: the dialog
+    // stole it (same restore as the image-alt dialog OK path).
+    const sel = window.getSelection();
+    if (sel && document.createRange) {
+      const r = document.createRange();
+      r.selectNodeContents(obj);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    applyObjectOp("replace-image"); // commits through insertImage()
+  }
 
   // Chart section wiring.
   const rpChartWidth = document.getElementById("rp-chart-width");

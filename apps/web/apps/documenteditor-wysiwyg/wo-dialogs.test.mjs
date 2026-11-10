@@ -312,4 +312,19 @@ for (const cls of ["wo-engine-dialog", "wo-dlg-section", "wo-ts-grid", "wo-hsb-s
 }
 console.log("ok 7 index.html loads the module; style.css ships the widget styles")
 
+// ---------------------------------------------------------------------------
+// 8. P3-U02 — consumer dialog specs (TableSettingsAdvanced/ImageSettingsAdvanced)
+//    export cleanly and render spec-shaped through the engine
+// ---------------------------------------------------------------------------
+assert.ok(mod.WO_DIALOG_SPECS, "consumer spec registry exported (WO_DIALOG_SPECS)")
+assert.equal(mod.WO_DIALOG_SPECS.tableSettingsAdvanced.id, "table-settings-advanced-dialog")
+assert.equal(mod.WO_DIALOG_SPECS.imageSettingsAdvanced.id, "image-settings-advanced-dialog")
+const specEngine = new mod.WoDialogEngine()
+const tablePanel = specEngine.renderSpec(mod.WO_DIALOG_SPECS.tableSettingsAdvanced)
+const imagePanel = specEngine.renderSpec(mod.WO_DIALOG_SPECS.imageSettingsAdvanced)
+assert.ok(tablePanel.includes('data-wo-cmd="tableSettingsAdvanced"'), "table OK emits its ledger cmd")
+assert.ok(tablePanel.includes('data-wo-widget="tableStyler"'), "table spec consumes the styler widget")
+assert.ok(imagePanel.includes('data-wo-cmd="imageSettingsAdvanced"'), "image OK emits its ledger cmd")
+console.log("ok 8 P3-U02 consumer specs export + render through the engine")
+
 console.log("WO-DIALOGS-PASS")

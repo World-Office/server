@@ -224,9 +224,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/ImageSettingsAdvanced.js",
   "oo_lines": 3322,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Largest missing view: advanced image dialog with rotation (RotationFrame), text wrapping boundaries (EditWrapBoundary), crop, adjust (brightness/contrast), replace-image, from-URL, insert shapes behind. WO has rp image section + image-dialog (size/alt/wrap/flip/fill/line/opacity/transform via applyImage*) but no crop, no adjust, no rotation dial, no wrap-point editing.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: WO_DIALOG_SPECS.imageSettingsAdvanced (7 sections); editor.js: openImageSettingsAdvanced()/applyImageSettingsAdvanced()/applyImageAdvancedRotate(); index.html: rp-image-advanced (L1229)",
+  "notes": "P3-U02: hosted from the dialog engine (build once + open-time re-sync + one JSON ledger entry per apply). Size/keep-ratio, rotation dial (data-rotate-angle composes in applyImageTransform) + 90° quick steps, wrap select riding the objectOp wrap values + distances (session markers), wrap-boundary entry point (LOUD-LIMITED divergence kept), adjust brightness/contrast/saturation (CSS filter), crop (CSS clip-path, plain imgs), replace via objectOp replace-image + from-URL field, alt text via applyImageAltText. Still absent vs OO: insert shapes behind, real raster transform engine (crop/adjust are CSS approximations), vector wrap-point editing.",
   "oo_layer": "documenteditor"
  },
  {
@@ -254,9 +254,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/TableSettingsAdvanced.js",
   "oo_lines": 2179,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Cell margins/distances, table alignment+indent, text flow around table, border/shading advanced editor (TableStyler-driven), repeat-as-header, resize behavior. WO table surface: rp table section + table-ops-dialog (merge/split/distribute) + borders-dialog; missing cell margins, wrap-around-table, header-row repetition.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: WO_DIALOG_SPECS.tableSettingsAdvanced (4 sections, tableStyler consumer); editor.js: openTableSettingsAdvanced()/applyTableSettingsAdvanced()/syncTableAdvancedDialog(); index.html: rp-table-advanced (L1183)",
+  "notes": "P3-U02: hosted from the dialog engine (build once + open-time re-sync + one JSON ledger entry per apply). Table alignment+indent+center/right margins, wrap-around-table (cssFloat + data-table-wrap markers), cell margins as per-cell padding, borders/shading via the P3-U01 tableStyler widget (pen paints the whole cell ring — no per-side cell mapping), repeat-as-header (table-repeat-header class marker), resize behavior (tableLayout). Still absent vs OO: per-side border painting on the real table, cell-size presets/width-height distribution, real page-model header repetition.",
   "oo_layer": "documenteditor"
  },
  {
@@ -964,9 +964,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/ImageSettingsAdvanced.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Advanced image dialog markup absent (rotation dial, wrap boundary editor, adjust sliders).",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: WO_DIALOG_SPECS.imageSettingsAdvanced rows (engine-rendered markup, no static HTML)",
+  "notes": "P3-U02: dialog markup generated from the spec by WoDialogEngine.renderSpec (same .dialog-overlay/.dialog conventions as the static templates) — rotation angle + 90° buttons, wrap select + distances, adjust/crop range sliders, replace/URL, alt text.",
   "oo_layer": "documenteditor"
  },
  {
@@ -994,9 +994,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/TableSettingsAdvanced.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Cell margins, table-to-text wrap, border style grid absent.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js: WO_DIALOG_SPECS.tableSettingsAdvanced rows (engine-rendered markup, no static HTML)",
+  "notes": "P3-U02: dialog markup generated from the spec by WoDialogEngine.renderSpec — position/wrap section, cell margins, tableStyler border grid + shading, header repetition + autofit.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1286,7 +1286,7 @@
   "oo_lines": 964,
   "wo_status": "partial",
   "wo_anchor": "editor.js: applyTableBanded()/applyTableBandedCols()/applyTableBorder(); borders-dialog; wo-dialogs.js: tableStyler() painting-grid factory (P3-U01)",
-  "notes": "Preset select + banding toggles remain; the OO interactive border-painting grid is now ported as a P3-U01 engine widget (en+de) and gets a consumer with TableSettingsAdvanced (P3-U02).",
+  "notes": "Preset select + banding toggles remain; the OO interactive border-painting grid is now ported as a P3-U01 engine widget (en+de) and got its consumer with TableSettingsAdvanced (P3-U02, engine-hosted dialog spec).",
   "oo_layer": "common"
  },
  {
