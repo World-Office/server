@@ -124,9 +124,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/controller/PageThumbnails.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "No page-thumbnail sidebar; model/Pages.js and its view have no WO counterpart. Needs paginated render source from the wasm engine (ORM-04 severity-3 rendering gap).",
+  "wo_status": "blocked",
+  "wo_anchor": "pages today: editor.js paginateQuiet()/currentPageInfo (DOM-counted pages); no engine raster path yet",
+  "notes": "P3-U05: blocked on the paginated page model + paginated raster output from the engine — ORM-04 severity-3 rasterizer rows (engine-internals.json: agg-2.4/include Agg core/rasterizer_cells_aa, graphics/Image.cpp Canvas draw_image; wo-renderer-wasm/src/layout.rs currently skips DocxBlock::Image). Named prerequisite: Phase-2 rasterization (PORT-PLAN Phase 2 §3).",
   "oo_layer": "documenteditor"
  },
  {
@@ -154,9 +154,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/controller/FormsTab.js",
   "oo_lines": 893,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Whole form-filling ribbon tab + role/filling workflow absent in WO (content controls exist as cc_dialog, but no form modes, no required-field validation, no SendForSigning flow).",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_getOForm/asc_getAllRoles/asc_addRole/asc_editRole/asc_MoveToFillingForm/asc_IsAllRequiredFormsFilled all wo_missing",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — OO's form-filling tab drives asc_GetOForm ×6, asc_MoveToFillingForm ×4, asc_getAllRoles ×3, role highlight/restriction calls, all wo_missing in ORM-01, and ORM-05's content-control engine is unwrap-only (CSdt partial; CSdtComboBox/CSdtCheckBox missing). Named prerequisites: Phase-1/3 roles exports (PORT-PLAN D3) + ORM-05 sdt engine.",
   "oo_layer": "documenteditor"
  },
  {
@@ -264,9 +264,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FormSettings.js",
   "oo_lines": 2084,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Forms mode: role assignment, field fixing, required highlighting, filling status. WO content controls (cc_dialog) are the only related surface.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the FormsTab controller row (OForm/roles exports wo_missing in ORM-01)",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — role assignment, field fixing, required highlighting and filling status all need the OForm model + asc_getAllRoles/asc_addRole/asc_editRole exports (wo_missing, ORM-01) and ORM-05's content-control engine. WO's cc-dialog is the only related surface today.",
   "oo_layer": "documenteditor"
  },
  {
@@ -284,9 +284,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/TextArtSettings.js",
   "oo_lines": 1513,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "WordArt transform gallery + fill/line for text art. WO has smartart-dialog + textart.test.mjs fixtures but no text-art styling panel; placeholder objects only.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.textArtDialog (\"text-art-dialog\", P3-U04)",
+  "notes": "P3-U05: hosted from the dialog engine — text/style/color/size rows + row cmds (textArtSetText/Style/Color/Size). The OO 18-preset transform gallery collapses to the style select (declared divergence); no apply-to-live-text-art-object wiring in editor.js yet (placeholder objects only, as before).",
   "oo_layer": "documenteditor"
  },
  {
@@ -324,9 +324,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FormsTab.js",
   "oo_lines": 1032,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Form field palette (text/combo/checkbox/radio/date/image/complex) for insertion; WO content-control dialog covers plain/rich/date/checkbox only.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the FormsTab controller row (OForm/roles exports wo_missing in ORM-01)",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — the field palette (text/combo/checkbox/radio/date/image/complex) inserts form fields that WO's content-control path cannot model yet (ORM-05: CSdtComboBox/CSdtCheckBox missing; #cc-dialog covers plain/rich/date/checkbox only).",
   "oo_layer": "documenteditor"
  },
  {
@@ -494,9 +494,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SignatureSettings.js",
   "oo_lines": 492,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Digital-signature line insertion and signing workflow absent (common SignDialog/PdfSignDialog also absent).",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_GetOForm/asc_onUpdateSignatures wo_missing (OO view drives them)",
+  "notes": "P3-U05: blocked on the signature workflow — digital-signature line insertion + signing need the OForm/signature exports (asc_GetOForm, asc_onUpdateSignatures, role exports — wo_missing, ORM-01). The common SignDialog/PdfSignDialog share the same prerequisite (see those rows).",
   "oo_layer": "documenteditor"
  },
  {
@@ -604,9 +604,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/StyleTitleDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "No create/rename-paragraph-style dialog; WO styles are fixed CSS classes (view-styles.test.mjs).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.styleTitleDialog (\"style-title-dialog\", P3-U04)",
+  "notes": "P3-U05: create/rename-style dialog hosted from the engine (title + color rows, styleTitleSet/cmd). WO styles remain fixed CSS classes (view-styles.test.mjs) — the spec is the engine-hosted UI; style-persistence apply is pending in editor.js.",
   "oo_layer": "documenteditor"
  },
  {
@@ -694,9 +694,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FootnoteTip.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Hover tip anchored to footnote anchors; WO footnote flow (btn-footnote + footnote.test.mjs) has no popover tip.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.footnoteTipDialog (\"footnote-tip-dialog\", P3-U04)",
+  "notes": "P3-U05: footnote hover tip hosted from the engine (text + position rows, footnoteTipSet/Position). The existing btn-footnote + footnote.test.mjs flow is unchanged; the tip is the engine dialog that flow can open.",
   "oo_layer": "documenteditor"
  },
  {
@@ -724,9 +724,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/MailMergeEmailDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Send-to-email merge step (SMTP/subject/attachment) absent; WO mailmerge-dialog covers recipients/fields only.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.mailMergeEmailDialog (\"mail-merge-email-dialog\", P3-U04)",
+  "notes": "P3-U05: send-to-email merge step hosted from the engine (subject/from/format + to/cc/bcc rows, mailMergeEmail* cmds). SMTP send is not implemented (UI surface only) — same honest split as the other P3-U04 specs.",
   "oo_layer": "documenteditor"
  },
  {
@@ -734,9 +734,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RolesManagerDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Form role manager absent (roles used by FormsTab/FillingStatus/SendForSigning).",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole wo_missing (member_of OForm)",
+  "notes": "P3-U05: blocked on the role exports — the role manager lists/edits OForm roles via asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole, all wo_missing in ORM-01 (member_of OForm). Named prerequisite: Phase-1/3 roles exports (PORT-PLAN D3, apply_structure_op).",
   "oo_layer": "documenteditor"
  },
  {
@@ -744,9 +744,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RoleEditDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Role add/edit absent (asc_addRole exists in wasm contract - see ORM-01 wasm-api.json).",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_addRole/asc_editRole wo_missing (member_of OForm)",
+  "notes": "P3-U05: blocked on asc_addRole/asc_editRole (wo_missing, ORM-01) — role add/edit needs the OForm role model on the wasm boundary (PORT-PLAN D3 typed ops).",
   "oo_layer": "documenteditor"
  },
  {
@@ -754,9 +754,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RoleDeleteDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Role delete confirm absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_removeRole wo_missing (member_of OForm)",
+  "notes": "P3-U05: blocked on asc_removeRole (wo_missing, ORM-01) — role delete confirm needs the same OForm role model as RoleEditDlg.",
   "oo_layer": "documenteditor"
  },
  {
@@ -764,9 +764,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SaveFormDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Save-as-form (docxf) path absent in WO; ORM-05 notes format layer also missing.",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_DownloadAs/asc_CDownloadOptions wo_missing; ORM-05 records the docxf format gap",
+  "notes": "P3-U05: blocked on the docxf format layer — save-as-form (.docxf) needs the OForm serialization the format layer does not have (ORM-05: content-control engine unwrap-only) plus asc_DownloadAs/asc_CDownloadOptions (wo_missing, ORM-01). Named prerequisite: Phase-2 ORM-05 sdt/docxf engine.",
   "oo_layer": "documenteditor"
  },
  {
@@ -774,9 +774,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SendForSigningSettings.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Signing workflow rail absent entirely.",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_getAllRoles/asc_GetOForm/asc_onUpdateSignatures wo_missing; OO view drives these directly",
+  "notes": "P3-U05: blocked on the signing workflow — the signing rail needs OForm + role exports (asc_getAllRoles, asc_getColor/asc_getSettings, asc_onUpdateSignatures — wo_missing, ORM-01) and the signature flow (see the SignDialog/PdfSignDialog rows). Named prerequisite: roles exports + PDF signing surface (Phase 4).",
   "oo_layer": "documenteditor"
  },
  {
@@ -784,9 +784,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FillingStatusSettings.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Filling-completion status rail absent (asc_canFillRole / asc_getFillingStatus in wasm contract unbound).",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_canFillRole/asc_getFillingStatus wo_missing (member_of OForm)",
+  "notes": "P3-U05: blocked on asc_canFillRole/asc_getFillingStatus (wo_missing, ORM-01) + the OForm model — the filling-completion status rail cannot compute per-role fill state without them.",
   "oo_layer": "documenteditor"
  },
  {
@@ -814,9 +814,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/PageThumbnails.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Thumbnail pane absent; depends on paginated raster output (ORM-04 engine gap).",
+  "wo_status": "blocked",
+  "wo_anchor": "same as the PageThumbnails controller row (paginateQuiet() DOM count is the only page source today)",
+  "notes": "P3-U05: blocked on the paginated page model + paginated raster output from the engine (ORM-04 severity-3: agg-2.4/include rasterizer + graphics/Image.cpp; Phase-2 rasterization per PORT-PLAN). The thumbnail pane renders engine raster frames, not DOM screenshots.",
   "oo_layer": "documenteditor"
  },
  {
@@ -844,9 +844,9 @@
   "oo_type": "model",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/model/Pages.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Paginated page model for thumbnails/print-preview; WO counts pages from DOM (currentPageInfo).",
+  "wo_status": "blocked",
+  "wo_anchor": "editor.js paginateQuiet()/currentPageInfo (DOM-derived page count, the interim page model)",
+  "notes": "P3-U05: blocked on the engine page model (real pagination) + paginated raster output (ORM-04 severity-3 rasterizer rows, Phase-2 per PORT-PLAN). Until then WO counts pages from the DOM.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1034,9 +1034,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/TextArtSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "TextArt gallery markup absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.textArtDialog (\"text-art-dialog\", P3-U04) — the spec's sections/rows replace the template markup",
+  "notes": "P3-U05: gallery markup absent by design — the engine renders the text-art-dialog spec (WoDialogEngine.build emits the same .dialog-overlay/.dialog DOM). No static template to port.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1044,9 +1044,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/FormSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Forms rail markup absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the FormSettings view row",
+  "notes": "P3-U05: blocked with the FormSettings view on the docxf/OForm engine layer (OForm/roles exports wo_missing in ORM-01; ORM-05 sdt engine). The rail markup would be an engine-hosted spec once the model lands.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1094,9 +1094,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/MailMergeEmailDlg.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Email-step markup absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.mailMergeEmailDialog (\"mail-merge-email-dialog\", P3-U04) — the spec's sections/rows replace the template markup",
+  "notes": "P3-U05: email-step markup replaced by the engine rendering of mail-merge-email-dialog (two sections: Email Settings, Recipients).",
   "oo_layer": "documenteditor"
  },
  {
@@ -1104,9 +1104,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/SignatureSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Signature rail markup absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the SignatureSettings view row",
+  "notes": "P3-U05: blocked with the SignatureSettings view on the signature workflow (OForm/signature exports wo_missing, ORM-01).",
   "oo_layer": "documenteditor"
  },
  {
@@ -1114,9 +1114,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/RolesManagerDlg.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Roles dialog markup absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the RolesManagerDlg view row",
+  "notes": "P3-U05: blocked with the RolesManagerDlg view on the role exports (asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole wo_missing, ORM-01).",
   "oo_layer": "documenteditor"
  },
  {
@@ -1124,9 +1124,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/SendForSigningSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Signing rail markup absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the SendForSigningSettings view row",
+  "notes": "P3-U05: blocked with the SendForSigningSettings view on the signing workflow (OForm/role exports wo_missing, ORM-01; signature flow, Phase 4).",
   "oo_layer": "documenteditor"
  },
  {
@@ -1134,9 +1134,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/FillingStatusSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Filling-status markup absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the FillingStatusSettings view row",
+  "notes": "P3-U05: blocked with the FillingStatusSettings view on asc_canFillRole/asc_getFillingStatus + the OForm model (wo_missing, ORM-01).",
   "oo_layer": "documenteditor"
  },
  {
@@ -1314,9 +1314,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/Calendar.js",
   "oo_lines": 503,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "No custom calendar widget; datetime/cc dialogs use native <input type=date>.",
+  "wo_status": "merged-into-editor.js",
+  "wo_anchor": "index.html #datetime-dialog (L2961) + native <select>/<input> date controls (declared widget divergence: widgets become native elements)",
+  "notes": "P3-U05: closed as merged — Common.UI.Calendar is served by the native date controls of the datetime/cc dialogs (the ORM-09 architecture delta: widgets become native elements, like ComboBox→<select>). The calendar grid widget itself is not ported (pure-UI follow-up, no engine dependency).",
   "oo_layer": "common"
  },
  {
@@ -1324,9 +1324,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/MaskedField.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Form masked fields (zip/date masks) absent with the forms feature.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the FormsTab controller row (form-filling feature, OForm/roles exports wo_missing in ORM-01)",
+  "notes": "P3-U05: blocked with the forms family — masked input fields (zip/date masks) exist for OO's form-filling workflow, which needs the docxf/OForm engine layer (ORM-01 roles exports + ORM-05 sdt engine).",
   "oo_layer": "common"
  },
  {
@@ -1394,9 +1394,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/SynchronizeTip.js",
   "oo_lines": 422,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Collaboration-sync tip bubble absent (presence shown via #user-chip only).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.syncTipDialog (\"sync-tip-dialog\", P3-U04)",
+  "notes": "P3-U05: collaboration sync tip hosted from the engine (status + auto-sync rows, syncTipStatus/syncTipAuto cmds). Presence display stays on #user-chip (status-text only, as before).",
   "oo_layer": "common"
  },
  {
@@ -1404,9 +1404,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/LoadMask.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "No loading mask during open/save; status text only (setStatus).",
+  "wo_status": "merged-into-editor.js",
+  "wo_anchor": "editor.js setStatus() (L453) used by loadDocument() (Status.Loading/Ready/LoadFailed, L491-531) + save flow; index.html footer.statusbar (L1297)",
+  "notes": "P3-U05: closed as merged — no overlay mask; open/save long-action feedback is the statusbar status text (declared divergence, low value: the editor stays interactive).",
   "oo_layer": "common"
  },
  {
@@ -1424,9 +1424,9 @@
   "oo_type": "common-component",
   "oo_file": "/tmp/oo-src/common/main/lib/component/MonacoEditor.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Monaco variant not ported (bundle-size decision; macro-dialog textarea is the anchor).",
+  "wo_status": "merged-into-editor.js",
+  "wo_anchor": "index.html #macro-dialog (L3392) — macro surface is marker-only",
+  "notes": "P3-U05: closed as merged — no code-editor host to port: WO ships no macro engine (bundle-size decision; #macro-dialog surfaces recording markers only), so the Monaco wrapper would host nothing. Revisit only if a macro engine lands (Phase-4 long tail).",
   "oo_layer": "common"
  },
  {
@@ -1554,9 +1554,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/HintManager.js",
   "oo_lines": 829,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Onboarding hint bubbles absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "no engine dependency — pure-UI follow-up; nearest WO surface: toolbar title tooltips (index.html) + table-ops-hint (L1778)",
+  "notes": "P3-U05: blocked on the Phase-3 UI long-tail pass (named deliverable: onboarding hints, PORT-PLAN Phase 3 §4 long tail / Phase 4). No engine prerequisite — scheduled after the dialog backlog; OO's hint bubbles (section-aware, keyboard-navigable) are not covered by WO's static tooltips.",
   "oo_layer": "common"
  },
  {
@@ -1654,9 +1654,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/ExternalDiagramEditor.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Chart data editor iframe absent; chart-dialog is type/size only.",
+  "wo_status": "blocked",
+  "wo_anchor": "chart-dialog is type/size only; no iframe plugin runtime (ORM-09 Plugins row: \"no iframe plugin runtime\")",
+  "notes": "P3-U05: blocked on the WO plugin/iframe runtime — OO opens the chart data editor as an external spreadsheet-app iframe (createExternalEditor + targetApp). Named prerequisite: Phase-4 plugin module (PORT-PLAN Phase 3 §4 / Phase 4 plugins work).",
   "oo_layer": "common"
  },
  {
@@ -1664,9 +1664,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/ExternalMergeEditor.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Spreadsheet mail-merge editor absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the ExternalDiagramEditor row (external-app iframe host)",
+  "notes": "P3-U05: blocked on the WO plugin/iframe runtime — the spreadsheet mail-merge editor is an external-app iframe, same host as the diagram editor (Phase-4 plugin module).",
   "oo_layer": "common"
  },
  {
@@ -1674,9 +1674,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/ExternalOleEditor.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "OLE object editor absent; object-dialog inserts placeholders only.",
+  "wo_status": "blocked",
+  "wo_anchor": "object-dialog inserts placeholders only; no iframe plugin runtime (same as the ExternalDiagramEditor row)",
+  "notes": "P3-U05: blocked on the WO plugin/iframe runtime (Phase-4 plugin module) plus the OLE object model — OO opens OLE objects in external app iframes; WO's object dialog inserts placeholders (ORM-05 unmanaged-parts bag is the format-side half of this).",
   "oo_layer": "common"
  },
  {
@@ -1684,9 +1684,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/ExternalUsers.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "External users list for comments/roles absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "collab surface today: #user-chip presence only; no gateway channel (Common.Gateway 'setusers' has no WO counterpart)",
+  "notes": "P3-U05: blocked on the docserver gateway user/mention integration — OO fetches external user lists (info/avatars) over Common.Gateway 'setusers' for comments/mentions/roles. Named prerequisite: Phase-4 collaboration (co-authoring identity/roles, PORT-PLAN Phase 4 §4).",
   "oo_layer": "common"
  },
  {
@@ -1694,9 +1694,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/ExternalLinks.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Cloud-source link management (ExternalLinksDlg) absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "WO standalone build: no docserver/cloud-source integration (FileScreen.StandaloneHint, editor.js L11905)",
+  "notes": "P3-U05: blocked on cloud-source integration — ExternalLinksDlg manages docserver cloud links (open-from-cloud), which the standalone WO build has no concept of (named divergence candidate; Phase-4 collaboration/cloud work).",
   "oo_layer": "common"
  },
  {
@@ -1704,9 +1704,9 @@
   "oo_type": "controller",
   "oo_file": "/tmp/oo-src/common/main/lib/controller/Draw.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Ink/annotation drawing controller absent (photo-editor-dialog is image-only).",
+  "wo_status": "merged-into-editor.js",
+  "wo_anchor": "editor.js ink section (L8868+): inkMode/inkStrokes/redrawInk(), toggleInk()/setInkMode()/inkSelect()/setInkColor()/setInkThickness(); index.html #ink-canvas (L1094) + Draw-tab buttons #btn-ink-* (L589-597)",
+  "notes": "P3-U05: ink/annotation controller merged — pen/highlighter/eraser tools, color + thickness pickers, and WO-FEA-DRAW-2 stroke select (click to select, drag to move, Delete to remove), all replayed from the inkStrokes registry. OO's Draw layer also covers PDF annotation editing — out of scope for the word editor (named divergence). Ink stays ephemeral (not persisted to DOCX) for this MVP.",
   "oo_layer": "common"
  },
  {
@@ -1814,9 +1814,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/ShortcutsEditDialog.js",
   "oo_lines": 526,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Shortcut re-binding UI absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.shortcutsEditDialog (\"shortcuts-edit-dialog\", P3-U04)",
+  "notes": "P3-U05: shortcut re-binding UI hosted from the engine (command/shortcut rows + reset button, shortcutsEdit* cmds). Actual keymap re-binding in editor.js is pending — the spec is the engine-hosted form.",
   "oo_layer": "common"
  },
  {
@@ -1854,9 +1854,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/DocumentAccessDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Per-user document access rights matrix absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.documentAccessDialog (\"document-access-dialog\", P3-U04)",
+  "notes": "P3-U05: per-user access matrix hosted from the engine (access level/users/allow-download rows + expiration section, documentAccess* cmds). Server-side rights enforcement is outside the standalone WO build (declared divergence).",
   "oo_layer": "common"
  },
  {
@@ -1894,9 +1894,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/RenameDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Document rename dialog absent (info-dialog is read-only).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.renameDialog (\"rename-dialog\", P3-U04)",
+  "notes": "P3-U05: document rename dialog hosted from the engine (name row, renameDialog/renameSetName cmds). Docserver rename endpoint is not wired (standalone build — the info dialog stays read-only until it lands).",
   "oo_layer": "common"
  },
  {
@@ -1904,9 +1904,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/CopyWarningDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Copy-protection warning absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.copyWarningDialog (\"copy-warning-dialog\", P3-U04)",
+  "notes": "P3-U05: copy-protection warning hosted from the engine (message row + don't-show-again checkbox, copyWarningDialog/copyWarningAck cmds).",
   "oo_layer": "common"
  },
  {
@@ -1924,9 +1924,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/ShapeShadowDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Shadow settings for shapes/textart absent.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.shapeSettings shadow rows (shadowOn/shadowColor/shadowBlur/shadowOffset, \"shape-settings-dialog\", P3-U03; confirmed by the P3-U04 batch)",
+  "notes": "P3-U05: no separate dialog — shadow settings (on/color/blur/offset) are the shadow rows of the P3-U03 shapeSettings spec, applied via applyShapeSettingsAdvanced() as box-shadow + data-shape-shadow (CSS approximation, per that row's note). Text-art shadow is still unwired (see the TextArtSettings row).",
   "oo_layer": "common"
  },
  {
@@ -1954,9 +1954,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/FormatSettingsDialog.js",
   "oo_lines": 702,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Number-format editor for fields/table formulas partial: WO formula-dialog has a fixed format list, no pattern editor.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.formatSettingsDialog (\"format-settings-dialog\", P3-U04)",
+  "notes": "P3-U05: number/text format editor hosted from the engine (font/size/color + paragraph rows, formatSettings* cmds). OO's field number-format pattern editor (asc_getFormatCode/asc_getNumFormatInfo, wo_missing per ORM-01) is not wired yet — the fixed format list in #formula-dialog remains.",
   "oo_layer": "common"
  },
  {
@@ -2004,9 +2004,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/SignDialog.js",
   "oo_lines": 398,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Signature-step signing dialog absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_getSigner1/asc_getSigner2/asc_getSignatureImage wo_missing",
+  "notes": "P3-U05: blocked on the signature flow — signing-step dialog needs the signer/signature-image exports (asc_getSigner1/asc_getSigner2/asc_getSignatureImage, wo_missing, ORM-01) and a signing surface (Phase 4).",
   "oo_layer": "common"
  },
  {
@@ -2014,9 +2014,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/SignSettingsDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Signature-line settings absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "same prerequisite as the SignDialog row (signature flow exports wo_missing in ORM-01)",
+  "notes": "P3-U05: blocked on the signature flow — signature-line settings (name/title/date placeholders) need the same OForm/signature exports as SignDialog (wo_missing, ORM-01).",
   "oo_layer": "common"
  },
  {
@@ -2024,9 +2024,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/PdfSignDialog.js",
   "oo_lines": 657,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "PDF digital-sign dialog absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "wasm-api.json (ORM-01): asc_getSigner1/asc_getSigner2/asc_getSignatureImage wo_missing; no PDF signing surface",
+  "notes": "P3-U05: blocked on the PDF signing flow — asc_getSigner1/asc_getSigner2/asc_getSignatureImage are wo_missing in ORM-01 and WO's word renderer has no PDF signing surface (named divergence candidate: OO's PDF sign path targets its PDF engine).",
   "oo_layer": "common"
  },
  {
@@ -2034,9 +2034,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/Charts3DDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "3D chart options absent (chart-dialog is 2D types).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.charts3dDialog (\"charts3d-dialog\", P3-U04)",
+  "notes": "P3-U05: 3D chart options hosted from the engine (3D enable/rotation/elevation/depth + lighting rows, charts3d* cmds). WO chart rendering stays 2D (chart-dialog is type/size only) — apply wiring pending, noted as the honest gap.",
   "oo_layer": "common"
  },
  {
@@ -2094,9 +2094,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/SelectFileDlg.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Generic file-picker dialog absent (doOpen uses <input type=file>).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.selectFileDialog (\"select-file-dialog\", P3-U04)",
+  "notes": "P3-U05: generic file-picker dialog hosted from the engine (path + browse + remember rows, selectFile* cmds). doOpen/#textfromfile-dialog keep the native <input type=file> (declared widget divergence).",
   "oo_layer": "common"
  },
  {
@@ -2104,9 +2104,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/CustomizeQuickAccessDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Toolbar customization absent (toolbar is static HTML).",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.quickAccessDialog (\"quick-access-dialog\", P3-U04)",
+  "notes": "P3-U05: toolbar customization hosted from the engine (add-to-quick-access select, quickAccessAdd cmd). The toolbar itself stays static HTML (index.html #toolbar) — persistence of the custom set is pending.",
   "oo_layer": "common"
  },
  {
@@ -2134,9 +2134,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/TextInputDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Generic single-input prompt dialog absent; bespoke fields per dialog.",
+  "wo_status": "hosted",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.textInputDialog (\"text-input-dialog\", P3-U04)",
+  "notes": "P3-U05: generic single-input prompt hosted from the engine (input row, textInputDialog/textInputSet cmds). Bespoke per-dialog fields remain where they exist.",
   "oo_layer": "common"
  },
  {
@@ -2144,9 +2144,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/ExternalEditor.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Generic external-iframe editor host absent.",
+  "wo_status": "blocked",
+  "wo_anchor": "no iframe plugin runtime (ORM-09 Plugins row: \"no iframe plugin runtime\")",
+  "notes": "P3-U05: blocked on the WO plugin/iframe runtime — the generic external-iframe editor host is exactly the Phase-4 plugin module deliverable; every External* controller row (diagram/merge/Ole) lands on it.",
   "oo_layer": "common"
  },
  {
@@ -2154,9 +2154,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/Draw.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Ink annotation canvas absent.",
+  "wo_status": "merged-into-editor.js",
+  "wo_anchor": "index.html Draw tab: #btn-ink-select/#btn-ink-pen/#btn-ink-highlighter/#btn-ink-eraser (L589-592), #btn-ink-draw/#btn-ink-color/#btn-ink-thickness (L595-597) + #ink-canvas overlay (L1094)",
+  "notes": "P3-U05: ink tool palette merged — the BaseView template (select/pen×3/eraser group) is replaced by static Draw-tab buttons driving data-cmd (toggleInk/inkMode/inkSelect/inkColor/inkThickness); the drawing surface is the #ink-canvas overlay.",
   "oo_layer": "common"
  },
  {

@@ -111,7 +111,7 @@ so columns are per-row-of-that-map, not cross-comparable):
 | ORM-06 ooxml-xlsx | 118 XlsxFormat families (829 classes / 5,340 fns) | 2 full / 42 partial / 74 missing | 9 core parts regenerated; charts/pivot/tables/comments ride `extra_parts` passthrough |
 | ORM-07 ooxml-pptx | 134 concepts (447 classes / 3,379 fns) | 26 full / 39 partial / 69 missing | inheritance/theme/group shapes/text-body/tables/transitions unmodeled; `PptxExtraPart` preserves bytes |
 | ORM-08 legacy-binary | MsBinaryFile (2,954 files; DocFile alone 287 files / 330 classes) | 5 full / 9 partial / 1 stub / 38 missing | **`.doc` is unreadable today**; CFB container is spec-complete and kept |
-| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 81 partial / 61 missing / 15 merged-into-editor.js | data-driven dialog engine missing; 3 widgets to port; forms + thumbnails blocked on engine/format |
+| ORM-09 ui-webapp | 217 web-apps components (~237 files) | 60 full / 91 partial / 17 hosted / 20 merged-into-editor.js / 29 blocked / 0 missing (P3-U05 closure) | data-driven dialog engine landed (P3-U01..U04, 19 specs); ledger closed to 0 `missing` — forms/signing/thumbnails/`External*` blocked on named prerequisites (ORM-01 roles exports, ORM-05 sdt engine, ORM-04 sev-3 rasterizer, Phase-4 plugin/iframe runtime) |
 
 Target end-state (what "done" means for this plan):
 
@@ -243,6 +243,13 @@ gap tests pass; xlsx round trips keep charts/tables/hyperlinks without
 Exit criteria: the 61 `missing` ORM-09 rows are either hosted from the
 dialog engine, merged-into-editor.js deliberately, or named as blocked with
 their Phase-2 prerequisite; right-panel parity surface stays green.
+**Ledger half met by the P3-U05 closure:** `ui-webapp.json` is at 0
+`missing` — 17 `hosted` (engine specs named per row), 5
+`merged-into-editor.js`, 29 `blocked` with their prerequisite named in
+`notes`/`wo_anchor`; re-verified by
+`apps/web/apps/documenteditor-wysiwyg/ui-closure.test.mjs` →
+`UI-CLOSURE-PASS`. The open halves are the editor.js open/apply wiring for
+the P3-U04 specs and the named prerequisites of the 29 `blocked` rows.
 
 ## Phase 4
 
