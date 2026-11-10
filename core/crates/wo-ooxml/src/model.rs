@@ -695,6 +695,12 @@ pub struct DocxParagraph {
     /// unchanged so fields survive a parse-serialize cycle.
     #[serde(default)]
     pub raw_flds: Vec<String>,
+    /// Typed fields resolved at parse time (fields engine, P2-03): both
+    /// `w:fldSimple` and the complex `w:fldChar` begin/separate/end form
+    /// normalize into this list (instruction, kind, cached result, dirty /
+    /// locked flags) so converters read fields without re-scraping XML.
+    #[serde(default)]
+    pub fields: Vec<DocxField>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -830,6 +836,11 @@ pub struct DocxRun {
     /// serializer re-emits the markers in run order.
     #[serde(default)]
     pub comment_anchor: Option<CommentAnchor>,
+    /// Complex-field marker carried by this run (fields engine): a fldChar
+    /// begin/separate/end boundary or an instrText chunk. Markers re-emit in
+    /// run order so complex fields survive a round trip.
+    #[serde(default)]
+    pub field: Option<FieldMarker>,
 }
 
 /// Which comment-range marker a run carries (F-102). The id is the numeric
@@ -839,6 +850,145 @@ pub enum CommentAnchor {
     Start(String),
     End(String),
     Reference(String),
+}
+
+/// Complex-field marker carried by a run (fields engine): a `<w:fldChar>`
+/// begin/separate/end boundary or a `<w:instrText>` chunk. Runs carrying a
+/// marker re-emit their marker in the serializer so complex fields survive a
+/// round trip; `run.text` stays empty for them so field plumbing never leaks
+/// into rendered output.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FieldMarker {
+    /// `<w:fldChar w:fldCharType="begin">` — opens a complex field.
+    Begin {
+        /// `w:dirty="true"` — instructs the consumer to recalculate.
+        dirty: bool,
+        /// `w:fldLock="true"` — recalculation forbidden.
+        locked: bool,
+    },
+    /// `<w:fldChar w:fldCharType="separate">` — instruction/result boundary.
+    Separate,
+    /// `<w:fldChar w:fldCharType="end">` — closes the complex field.
+    End,
+    /// `<w:instrText>` content (instructions may be split across runs).
+    Instruction(String),
+}
+
+/// Normalized kind of a field instruction (fields engine). Derived from the
+/// instruction's first token; unrecognized instructions stay [`FieldKind::Other`]
+/// so they still round-trip verbatim.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FieldKind {
+    Page,
+    NumPages,
+    NumChars,
+    NumWords,
+    Toc,
+    Date,
+    Time,
+    PageRef,
+    Ref,
+    NoteRef,
+    Seq,
+    Hyperlink,
+    If,
+    Formula,
+    Other,
+}
+
+impl FieldKind {
+    /// Normalize a raw instruction (`" PAGE "`, `"TOC \\o \"1-3\""`, ...) to
+    /// its kind. Switches (`\\...`) and leading punctuation are ignored.
+    pub fn from_instruction(instruction: &str) -> Self {
+        let token = instruction
+            .split_whitespace()
+            .next()
+            .unwrap_or("")
+            .trim_start_matches(['\\', '*', '@', '#', '\''])
+            .to_ascii_uppercase();
+        match token.as_str() {
+            "PAGE" => FieldKind::Page,
+            "NUMPAGES" => FieldKind::NumPages,
+            "NUMCHARS" => FieldKind::NumChars,
+            "NUMWORDS" => FieldKind::NumWords,
+            "TOC" => FieldKind::Toc,
+            "DATE" => FieldKind::Date,
+            "TIME" => FieldKind::Time,
+            "PAGEREF" => FieldKind::PageRef,
+            "REF" => FieldKind::Ref,
+            "NOTEREF" => FieldKind::NoteRef,
+            "SEQ" => FieldKind::Seq,
+            "HYPERLINK" => FieldKind::Hyperlink,
+            "IF" => FieldKind::If,
+            "=" => FieldKind::Formula,
+            _ => FieldKind::Other,
+        }
+    }
+
+    /// Canonical OOXML instruction token for this kind.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            FieldKind::Page => "PAGE",
+            FieldKind::NumPages => "NUMPAGES",
+            FieldKind::NumChars => "NUMCHARS",
+            FieldKind::NumWords => "NUMWORDS",
+            FieldKind::Toc => "TOC",
+            FieldKind::Date => "DATE",
+            FieldKind::Time => "TIME",
+            FieldKind::PageRef => "PAGEREF",
+            FieldKind::Ref => "REF",
+            FieldKind::NoteRef => "NOTEREF",
+            FieldKind::Seq => "SEQ",
+            FieldKind::Hyperlink => "HYPERLINK",
+            FieldKind::If => "IF",
+            FieldKind::Formula => "=",
+            FieldKind::Other => "OTHER",
+        }
+    }
+}
+
+/// A typed document field (fields engine): instruction + cached result. Both
+/// the `<w:fldSimple>` shorthand and the complex `<w:fldChar>`
+/// begin/separate/end form normalize into this struct at parse time so
+/// converters and the editor can read fields without re-scraping XML.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocxField {
+    /// Raw instruction text, e.g. `" PAGE "` or `"TOC \\o \"1-3\" \\h"`.
+    pub instruction: String,
+    /// Normalized instruction kind (first token of `instruction`).
+    pub kind: FieldKind,
+    /// Cached result text — the run text between `separate` and `end`, or the
+    /// fldSimple's inner runs. `None` when the field carries no result at all.
+    pub cached_result: Option<String>,
+    /// `w:dirty="true"` — recalculate when the document is opened.
+    pub dirty: bool,
+    /// `w:fldLock="true"` — the cached result must not be recalculated.
+    pub locked: bool,
+    /// True when captured from the complex (`w:fldChar`) form, false for
+    /// `w:fldSimple`.
+    pub complex: bool,
+}
+
+impl DocxField {
+    /// Build a field from an instruction; `kind` is derived from the first
+    /// instruction token.
+    pub fn new(instruction: impl Into<String>) -> Self {
+        let instruction = instruction.into();
+        let kind = FieldKind::from_instruction(&instruction);
+        Self {
+            instruction,
+            kind,
+            cached_result: None,
+            dirty: false,
+            locked: false,
+            complex: false,
+        }
+    }
+
+    /// The trimmed instruction token (`" PAGE "` -> `"PAGE"`).
+    pub fn instruction_token(&self) -> &str {
+        self.instruction.split_whitespace().next().unwrap_or("")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -52,7 +52,7 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBody, DocxBorder, DocxParagraph, DocxParagraphBorders,
+    CoreProperties, DocxBody, DocxBorder, DocxField, DocxParagraph, DocxParagraphBorders,
     DocxParagraphProperties, DocxRun, DocxTable, DocxTableCell, DocxTableRow, Fill, HeaderFooter,
     MediaPart, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation, Relationship, Slide,
     SlideShape, SlideSize, SlideTransition, TextAlignment, TextBody as OoxmlTextBody, TextBoxShape,
@@ -2619,6 +2619,18 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     _ => None,
                 });
                 if let Some(fld) = field_raw {
+                    // Fields engine: carry the field both verbatim (serializer
+                    // re-emits it) and typed (converters read instruction +
+                    // kind without re-scraping XML).
+                    let instr = content
+                        .iter()
+                        .find_map(|i| match i {
+                            InlineElement::Field { instr } => Some(instr.trim().to_string()),
+                            _ => None,
+                        })
+                        .unwrap_or_default();
+                    let mut field = DocxField::new(instr);
+                    field.complex = false;
                     paragraphs.push(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties {
@@ -2634,6 +2646,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         },
                         section_properties: None,
                         runs,
+                        fields: vec![field],
                         raw_flds: vec![fld],
                         ..Default::default()
                     });
@@ -4268,25 +4281,35 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
 
         let inlines = docx_runs_to_html_inlines(body, &para.runs);
 
-        // A captured w:fldSimple (PAGE, NUMPAGES, ...) becomes the editor's
-        // page-number dialect marker so the field survives docx -> html ->
-        // flatHtml (insert-page-number round-trip probe). The verbatim field
-        // subtree carries w:instr; prepend the marker to the paragraph.
+        // A field (PAGE, NUMPAGES, TOC, ...) becomes the editor's page-number
+        // dialect marker so the field survives docx -> html -> flatHtml
+        // (insert-page-number round-trip probe). P2-03 fields engine: prefer
+        // the typed DocxField list; the verbatim-XML scrape stays as the
+        // fallback for documents parsed before the typed model existed.
         let mut inlines = inlines;
-        if !para.raw_flds.is_empty() {
-            if let Some(instr) = para.raw_flds.iter().find_map(|raw| {
-                let lo = raw.find("instr=")?;
-                let start = raw[lo..].find('"').map(|j| lo + j + 1)?;
-                let end = raw[start..].find('"')?;
-                let v = raw[start..start + end].trim();
-                if v.is_empty() {
-                    None
-                } else {
-                    Some(v.to_string())
-                }
-            }) {
-                inlines.insert(0, InlineElement::Field { instr });
+        let field_instr = para.fields.iter().find_map(|field| {
+            let instr = field.instruction.trim();
+            (!instr.is_empty()).then(|| instr.to_string())
+        });
+        let field_instr = field_instr.or_else(|| {
+            if !para.raw_flds.is_empty() {
+                para.raw_flds.iter().find_map(|raw| {
+                    let lo = raw.find("instr=")?;
+                    let start = raw[lo..].find('"').map(|j| lo + j + 1)?;
+                    let end = raw[start..].find('"')?;
+                    let v = raw[start..start + end].trim();
+                    if v.is_empty() {
+                        None
+                    } else {
+                        Some(v.to_string())
+                    }
+                })
+            } else {
+                None
             }
+        });
+        if let Some(instr) = field_instr {
+            inlines.insert(0, InlineElement::Field { instr });
         }
 
         // F-040: map paragraph shading and borders to HTML
