@@ -438,7 +438,19 @@ impl OoxmlSerializer {
         xml
     }
 
-    fn build_slide_xml(&self, slide: &Slide) -> String {
+    /// Serialize a PPTX slide to its XML part (flat shapes only).
+    pub fn build_slide_xml(&self, slide: &Slide) -> String {
+        self.build_slide_xml_inner(slide, &[])
+    }
+
+    /// Serialize a PPTX slide to its XML part, appending recursive
+    /// `p:grpSp` group trees to the spTree after the flat shapes. Groups
+    /// written here round-trip through `OoxmlParser::parse_pptx_groups`.
+    pub fn build_slide_xml_with_groups(&self, slide: &Slide, groups: &[GroupShape]) -> String {
+        self.build_slide_xml_inner(slide, groups)
+    }
+
+    fn build_slide_xml_inner(&self, slide: &Slide, groups: &[GroupShape]) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -532,6 +544,13 @@ impl OoxmlSerializer {
                     );
                 }
             }
+        }
+
+        // Recursive p:grpSp group trees (ORM-07 gap #1) — after the flat
+        // shapes, in document order.
+        for group in groups {
+            let frag = self.serialize_group_shape_inner(group, 0);
+            xml.push_str(&frag);
         }
 
         xml.push_str("\n  </p:spTree>");
@@ -1046,6 +1065,67 @@ impl OoxmlSerializer {
       </p:spPr>
     </p:cxnSp>"#,
         );
+    }
+
+    /// Serialize a recursive group shape (`p:grpSp` with `nvGrpSpPr` +
+    /// `p:grpSpPr` carrying the `a:xfrm` child-space mapping) to an spTree
+    /// fragment. Nested groups recurse with deeper indentation.
+    pub fn serialize_group_shape_xml(&self, group: &GroupShape) -> String {
+        self.serialize_group_shape_inner(group, 0)
+    }
+
+    fn serialize_group_shape_inner(&self, group: &GroupShape, depth: usize) -> String {
+        let i = "    ".repeat(depth + 1); // shape-level indent (4 spaces at depth 0)
+        let c = "    ".repeat(depth + 2); // child-element indent
+        let t = &group.transform;
+        let mut xml = String::new();
+        xml.push_str(&format!(
+            "\n{i}<p:grpSp>\n{i}  <p:nvGrpSpPr>\n{c}  <p:cNvPr id=\"{}\" name=\"{}\"/>\n{c}  <p:cNvGrpSpPr/>\n{c}  <p:nvPr/>\n{i}  </p:nvGrpSpPr>\n{i}  <p:grpSpPr>\n{i}    <a:xfrm>\n{c}    <a:off x=\"{}\" y=\"{}\"/>\n{c}    <a:ext cx=\"{}\" cy=\"{}\"/>",
+            group.id,
+            escape_xml(&group.name),
+            t.bounds.x,
+            t.bounds.y,
+            t.bounds.cx,
+            t.bounds.cy,
+        ));
+        // Keep the child coordinate space explicit so children keep their
+        // geometry on re-parse: explicit chOff/chExt when parsed, else the
+        // computed child bounds union, else the group bounds (OOXML default).
+        let ((chx, chy), (chcx, chcy)) = group.effective_child_space();
+        xml.push_str(&format!(
+            "\n{c}    <a:chOff x=\"{chx}\" y=\"{chy}\"/>\n{c}    <a:chExt cx=\"{chcx}\" cy=\"{chcy}\"/>"
+        ));
+        xml.push_str(&format!(
+            "\n{i}    </a:xfrm>\n{i}  </p:grpSpPr>"
+        ));
+
+        for child in &group.children {
+            match child {
+                GroupChild::Shape(shape) => {
+                    let mut frag = String::new();
+                    match shape {
+                        SlideShape::TextBox(tb) => self.serialize_textbox_shape(&mut frag, tb),
+                        SlideShape::Placeholder(ph) => {
+                            self.serialize_placeholder_shape(&mut frag, ph)
+                        }
+                        SlideShape::Picture(pic) => self.serialize_picture_shape(&mut frag, pic),
+                        SlideShape::Table(table) => self.serialize_table_shape(&mut frag, table),
+                        SlideShape::Connector(conn) => {
+                            self.serialize_connector_shape(&mut frag, conn)
+                        }
+                        SlideShape::Chart(_) | SlideShape::SmartArt(_) => {
+                            // graphicFrame stubs are not modeled inside groups yet.
+                        }
+                    }
+                    xml.push_str(&indent_fragment(&frag, &i));
+                }
+                GroupChild::Group(nested) => {
+                    xml.push_str(&self.serialize_group_shape_inner(nested, depth + 1));
+                }
+            }
+        }
+        xml.push_str(&format!("\n{i}</p:grpSp>"));
+        xml
     }
 
     fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
@@ -4043,6 +4123,17 @@ impl Default for OoxmlSerializer {
 }
 
 /// Escape special characters for XML text content.
+/// Re-indent a serialized shape fragment (shape serializers emit at spTree
+/// depth 0, i.e. a 4-space base indent) so it can be embedded inside a nested
+/// `p:grpSp` at the given depth. Blank fragments lines are dropped.
+fn indent_fragment(fragment: &str, prefix: &str) -> String {
+    fragment
+        .split('\n')
+        .filter(|line| !line.is_empty())
+        .map(|line| format!("\n{prefix}{line}"))
+        .collect()
+}
+
 fn escape_xml(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for ch in s.chars() {

@@ -1565,3 +1565,281 @@ fn gap_xlsx_cf_ext_roundtrip() {
         "dxf table must survive the round trip"
     );
 }
+
+// ---------------------------------------------------------------------------
+// P2B-P01: PPTX group shapes — p:grpSp with GrpSpPr transform (off/ext +
+// chOff/chExt), recursive SpTree groups, child bounding boxes (ORM-07 ranked
+// gap #1: grouped shapes used to be dropped by the direct-children spTree
+// scan).
+// ---------------------------------------------------------------------------
+
+/// Build a minimal valid pptx zip around a hand-written ppt/slides/slide1.xml.
+fn pptx_from_slide_xml(slide_xml: &str) -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#)
+            .unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="9144000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>"#)
+            .unwrap();
+        zip.start_file(
+            "ppt/_rels/presentation.xml.rels",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(slide_xml.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+/// Slide XML with a top-level `p:grpSp` holding a text shape plus a nested
+/// `p:grpSp` holding a picture (recursive SpTree member), each group with an
+/// explicit `GrpSpPr/a:xfrm` (off/ext + chOff/chExt child coordinate space).
+const GROUP_SLIDE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      <p:grpSp>
+        <p:nvGrpSpPr>
+          <p:cNvPr id="10" name="Diagram Group"/>
+          <p:cNvGrpSpPr/>
+          <p:nvPr/>
+        </p:nvGrpSpPr>
+        <p:grpSpPr>
+          <a:xfrm>
+            <a:off x="1000000" y="500000"/>
+            <a:ext cx="4000000" cy="2000000"/>
+            <a:chOff x="0" y="0"/>
+            <a:chExt cx="2000000" cy="1000000"/>
+          </a:xfrm>
+        </p:grpSpPr>
+        <p:sp>
+          <p:nvSpPr>
+            <p:cNvPr id="11" name="Label"/>
+            <p:nvPr/>
+          </p:nvSpPr>
+          <p:spPr>
+            <a:xfrm>
+              <a:off x="100000" y="200000"/>
+              <a:ext cx="800000" cy="400000"/>
+            </a:xfrm>
+          </p:spPr>
+          <p:txBody>
+            <a:bodyPr/>
+            <a:lstStyle/>
+            <a:p><a:r><a:t>Grouped label</a:t></a:r></a:p>
+          </p:txBody>
+        </p:sp>
+        <p:grpSp>
+          <p:nvGrpSpPr>
+            <p:cNvPr id="20" name="Icons"/>
+            <p:cNvGrpSpPr/>
+            <p:nvPr/>
+          </p:nvGrpSpPr>
+          <p:grpSpPr>
+            <a:xfrm>
+              <a:off x="200000" y="300000"/>
+              <a:ext cx="600000" cy="500000"/>
+              <a:chOff x="0" y="0"/>
+              <a:chExt cx="600000" cy="500000"/>
+            </a:xfrm>
+          </p:grpSpPr>
+          <p:pic>
+            <p:nvPicPr>
+              <p:cNvPr id="21" name="Icon"/>
+              <p:cNvPicPr/>
+              <p:nvPr/>
+            </p:nvPicPr>
+            <p:blipFill>
+              <a:blip r:embed="rId9"/>
+              <a:stretch>
+                <a:fillRect/>
+              </a:stretch>
+            </p:blipFill>
+            <p:spPr>
+              <a:xfrm>
+                <a:off x="50000" y="60000"/>
+                <a:ext cx="100000" cy="80000"/>
+              </a:xfrm>
+              <a:prstGeom prst="rect"/>
+            </p:spPr>
+          </p:pic>
+        </p:grpSp>
+      </p:grpSp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#;
+
+#[test]
+fn gap_pptx_group_roundtrip() {
+    use wo_ooxml::model::{GroupChild, GroupShape, SlideShape};
+    let data = pptx_from_slide_xml(GROUP_SLIDE_XML);
+    let parser = wo_ooxml::OoxmlParser::new();
+
+    // 1. Typed recursive group tree via parse_pptx_groups.
+    let per_slide = parser.parse_pptx_groups(&data).unwrap();
+    assert_eq!(per_slide.len(), 1, "one slide entry");
+    let groups: &Vec<GroupShape> = &per_slide[0];
+    assert_eq!(groups.len(), 1, "one top-level group on the slide");
+    let g = &groups[0];
+    assert_eq!(g.id, "10");
+    assert_eq!(g.name, "Diagram Group");
+    assert_eq!(
+        (g.transform.bounds.x, g.transform.bounds.y, g.transform.bounds.cx, g.transform.bounds.cy),
+        (1000000, 500000, 4000000, 2000000),
+        "GrpSpPr outer xfrm"
+    );
+    assert_eq!(g.transform.child_offset, Some((0, 0)), "chOff");
+    assert_eq!(g.transform.child_extent, Some((2000000, 1000000)), "chExt");
+    assert_eq!(g.children.len(), 2, "text shape + nested group");
+
+    let GroupChild::Shape(SlideShape::TextBox(tb)) = &g.children[0] else {
+        panic!("first group child must be a text shape");
+    };
+    assert_eq!(
+        (tb.bounds.x, tb.bounds.y, tb.bounds.cx, tb.bounds.cy),
+        (100000, 200000, 800000, 400000),
+        "child shapes keep their child-space bounds"
+    );
+    assert_eq!(
+        tb.text_body.paragraphs[0].runs[0].text, "Grouped label",
+        "grouped text body survives the group"
+    );
+
+    let GroupChild::Group(nested) = &g.children[1] else {
+        panic!("second group child must be a nested p:grpSp");
+    };
+    assert_eq!(nested.id, "20");
+    assert_eq!(nested.name, "Icons");
+    assert_eq!(
+        (nested.transform.bounds.x, nested.transform.bounds.y, nested.transform.bounds.cx, nested.transform.bounds.cy),
+        (200000, 300000, 600000, 500000)
+    );
+    assert_eq!(nested.children.len(), 1);
+    let GroupChild::Shape(SlideShape::Picture(pic)) = &nested.children[0] else {
+        panic!("nested group child must be a picture");
+    };
+    assert_eq!(pic.name, "Icon");
+    assert_eq!((pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy), (50000, 60000, 100000, 80000));
+
+    // 2. Child bounding boxes (union in the group's child coordinate space).
+    let cb = g.child_bounds.expect("outer group child bounds");
+    assert_eq!(
+        (cb.x, cb.y, cb.cx, cb.cy),
+        (100000, 200000, 800000, 600000),
+        "union of sp bounds + nested group bounds"
+    );
+    let ncb = nested.child_bounds.expect("nested group child bounds");
+    assert_eq!((ncb.x, ncb.y, ncb.cx, ncb.cy), (50000, 60000, 100000, 80000));
+
+    // 3. Flat slide model: grouped shapes are flattened with bounds mapped
+    // through the nested GrpSpPr transforms instead of being dropped.
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+    let shapes = &pres.slides[0].shapes;
+    assert_eq!(shapes.len(), 2, "group children flatten into slide shapes");
+    assert_eq!(
+        (shapes[0].bounds().x, shapes[0].bounds().y, shapes[0].bounds().cx, shapes[0].bounds().cy),
+        (1200000, 900000, 1600000, 800000),
+        "text shape mapped through the 2x outer group scale"
+    );
+    assert_eq!(
+        (shapes[1].bounds().x, shapes[1].bounds().y, shapes[1].bounds().cx, shapes[1].bounds().cy),
+        (1500000, 1220000, 200000, 160000),
+        "picture mapped through nested group + outer group transforms"
+    );
+
+    // 4. Serialize the slide back with the group tree and re-parse: the typed
+    // group model round-trips identically.
+    let slide_xml =
+        wo_ooxml::OoxmlSerializer::new().build_slide_xml_with_groups(&pres.slides[0], groups);
+    assert!(
+        slide_xml.contains("<p:grpSp>") && slide_xml.contains("<p:grpSpPr>"),
+        "serializer must emit p:grpSp + p:grpSpPr: {}",
+        &slide_xml[..slide_xml.len().min(2000)]
+    );
+    let out = pptx_from_slide_xml(&slide_xml);
+    let groups2 = parser.parse_pptx_groups(&out).unwrap();
+    assert_eq!(groups2.len(), 1);
+    assert_eq!(groups2[0].len(), 1, "one top-level group after re-parse");
+    let g2 = &groups2[0][0];
+    assert_eq!(g2.id, "10");
+    assert_eq!(g2.name, "Diagram Group");
+    assert_eq!(
+        (g2.transform.bounds.x, g2.transform.bounds.y, g2.transform.bounds.cx, g2.transform.bounds.cy),
+        (1000000, 500000, 4000000, 2000000),
+        "GrpSpPr xfrm survives the round trip"
+    );
+    assert_eq!(g2.transform.child_offset, Some((0, 0)), "chOff survives");
+    assert_eq!(g2.transform.child_extent, Some((2000000, 1000000)), "chExt survives");
+    assert_eq!(g2.children.len(), 2, "children survive the round trip");
+    let GroupChild::Shape(SlideShape::TextBox(tb2)) = &g2.children[0] else {
+        panic!("round-tripped first child must be a text shape");
+    };
+    assert_eq!(
+        (tb2.bounds.x, tb2.bounds.y, tb2.bounds.cx, tb2.bounds.cy),
+        (100000, 200000, 800000, 400000)
+    );
+    assert_eq!(tb2.text_body.paragraphs[0].runs[0].text.trim(), "Grouped label");
+    let GroupChild::Group(nested2) = &g2.children[1] else {
+        panic!("round-tripped second child must be a nested p:grpSp");
+    };
+    assert_eq!(nested2.id, "20");
+    assert_eq!(
+        (nested2.transform.bounds.x, nested2.transform.bounds.y, nested2.transform.bounds.cx, nested2.transform.bounds.cy),
+        (200000, 300000, 600000, 500000)
+    );
+    let GroupChild::Shape(SlideShape::Picture(pic2)) = &nested2.children[0] else {
+        panic!("round-tripped nested child must be a picture");
+    };
+    assert_eq!(pic2.name, "Icon");
+    assert_eq!((pic2.bounds.x, pic2.bounds.y, pic2.bounds.cx, pic2.bounds.cy), (50000, 60000, 100000, 80000));
+    let cb2 = g2.child_bounds.expect("round-tripped child bounds");
+    assert_eq!(
+        (cb2.x, cb2.y, cb2.cx, cb2.cy),
+        (100000, 200000, 800000, 600000),
+        "child bounding box recomputes identically"
+    );
+}
