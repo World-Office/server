@@ -16,6 +16,7 @@ use pdf_writer::{Content, Name, Pdf, Rect, Ref, Str};
 use wo_common::{CoreError, Result};
 use wo_ooxml::model::{DocxBody, OoxmlFormat};
 use wo_ooxml::parser::OoxmlParser;
+use image::ImageEncoder as _;
 use wo_renderer::{Canvas, Color, FontLibrary, Paint};
 
 /// DOCX rendering pipeline.
@@ -185,6 +186,46 @@ impl DocxRenderPipeline {
         }
     }
 
+    /// Render a single page (1-based) and encode it as a real PNG image.
+    ///
+    /// The canvas rasterizer only exposes raw RGBA bytes (no embedded
+    /// dimensions), so this returns the pixel size alongside the PNG-encoded
+    /// bytes — HTTP callers can serve `image/png` without guessing the
+    /// buffer geometry. The page is laid out directly instead of going
+    /// through [`Self::render`], so only the requested page is rasterized.
+    pub fn render_page_png(&self, docx_data: &[u8], page_num: u32) -> Result<(u32, u32, Vec<u8>)> {
+        if page_num == 0 {
+            return Err(CoreError::InvalidInput {
+                message: "Page number must be 1-based".into(),
+            });
+        }
+
+        let body = self.parse_body(docx_data)?;
+        let layout_engine = LayoutEngine::new(&self.config);
+        let pages = layout_engine.layout(&body);
+        let page_count = pages.len();
+
+        if page_num as usize > page_count {
+            return Err(CoreError::InvalidInput {
+                message: format!("Page {} out of range ({} pages total)", page_num, page_count),
+            });
+        }
+
+        let page = &pages[page_num as usize - 1];
+        let scale = self.config.dpi as f32 / 72.0;
+        let width = (self.config.page_width * scale) as u32;
+        let height = (self.config.page_height * scale) as u32;
+
+        let mut canvas = Canvas::new(width, height);
+        canvas.set_font_library(FontLibrary::new());
+        canvas.scale(scale, scale);
+        render_layout_page(&mut canvas, page);
+
+        let rgba = canvas.to_rgba_bytes();
+        let png = encode_png(width, height, &rgba)?;
+        Ok((width, height, png))
+    }
+
     /// Get the rendering configuration.
     pub fn config(&self) -> &RenderConfig {
         &self.config
@@ -200,6 +241,15 @@ impl Default for DocxRenderPipeline {
     fn default() -> Self {
         Self::new(RenderConfig::default())
     }
+}
+
+/// Encode raw RGBA bytes as a PNG image (8-bit RGBA, no interlace).
+fn encode_png(width: u32, height: u32, rgba: &[u8]) -> Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    image::codecs::png::PngEncoder::new(&mut buf)
+        .write_image(rgba, width, height, image::ExtendedColorType::Rgba8)
+        .map_err(|e| CoreError::Serialization(format!("PNG encoding failed: {}", e)))?;
+    Ok(buf)
 }
 
 /// Generate a valid PDF document from layout pages.
@@ -830,6 +880,84 @@ mod tests {
                 );
             }
             _ => panic!("Expected PDF output"),
+        }
+    }
+
+    fn png_config() -> RenderConfig {
+        RenderConfig {
+            output_format: OutputFormat::Png,
+            ..RenderConfig::default()
+        }
+    }
+
+    /// Decode width/height out of the PNG IHDR chunk.
+    fn png_ihdr_dims(png: &[u8]) -> Option<(u32, u32)> {
+        if png.len() < 24 || &png[12..16] != b"IHDR" {
+            return None;
+        }
+        let w = u32::from_be_bytes(png[16..20].try_into().ok()?);
+        let h = u32::from_be_bytes(png[20..24].try_into().ok()?);
+        Some((w, h))
+    }
+
+    #[test]
+    fn test_render_page_png_encodes_real_png() {
+        let pipeline = DocxRenderPipeline::new(png_config());
+        let docx = make_minimal_docx();
+
+        let (width, height, png) = pipeline.render_page_png(&docx, 1).unwrap();
+
+        assert!(width > 0 && height > 0);
+        assert!(
+            png.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']),
+            "must be a real PNG image, not raw RGBA bytes"
+        );
+        // IHDR geometry must match the returned buffer dimensions.
+        assert_eq!(png_ihdr_dims(&png), Some((width, height)));
+        // Cross-check with the image crate's decoder.
+        let decoded = image::load_from_memory(&png).unwrap();
+        assert_eq!((decoded.width(), decoded.height()), (width, height));
+    }
+
+    #[test]
+    fn test_render_page_png_rejects_zero_and_out_of_range() {
+        let pipeline = DocxRenderPipeline::new(png_config());
+        let docx = make_minimal_docx();
+
+        let err = pipeline.render_page_png(&docx, 0).unwrap_err();
+        assert!(err.to_string().contains("1-based"), "got: {err}");
+
+        let err = pipeline
+            .render_page_png(&docx, 999)
+            .unwrap_err();
+        assert!(err.to_string().contains("out of range"), "got: {err}");
+    }
+
+    #[test]
+    fn test_render_page_png_matches_full_png_render() {
+        // Page 1 via render_page_png must be byte-identical to page 1 of the
+        // full multi-page PNG render (same config, same raster path).
+        let pipeline = DocxRenderPipeline::new(png_config());
+        let docx = make_minimal_docx();
+        let (w1, h1, png1) = pipeline.render_page_png(&docx, 1).unwrap();
+        let full = pipeline.render(&docx).unwrap();
+        match &full.output {
+            RenderOutput::Png(pages) => {
+                let (w2, h2, png2) = {
+                    let scale = png_config().dpi as f32 / 72.0;
+                    (
+                        (png_config().page_width * scale) as u32,
+                        (png_config().page_height * scale) as u32,
+                        pages[0].clone(),
+                    )
+                };
+                // The full render's page 1 is raw RGBA; encode it and compare
+                // against render_page_png's output.
+                let png2 = encode_png(w2, h2, &png2).unwrap();
+                assert_eq!((w1, h1), (w2, h2));
+                assert_eq!(png1, png2, "single-page PNG must match full render page 1");
+            }
+            _ => panic!("expected PNG output"),
         }
     }
 }

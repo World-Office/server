@@ -320,3 +320,18 @@ for i in ORM-01 ORM-02 ORM-03 ORM-04 ORM-05 ORM-06 ORM-07 ORM-08 ORM-09 ORM-10; 
   grep -q "$i" plan/oo-port/INDEX.md || exit 1
 done
 ```
+
+## Phase 5 — PageThumbnails backend (PTS)
+
+1. **PTS-T1 (done):** docserver page-render API. `wo-docserver::render`
+   serves `GET /api/documents/{id}/pages/{n}.png` (1-based `n`) as a real
+   `image/png` response plus `GET /api/documents/{id}/pages/count`, backed
+   by a new `DocxRenderPipeline::render_page_png` in `wo-docx-renderer`
+   (layout → rasterize one page → PNG-encode the RGBA buffer, which the
+   canvas only exposes raw). axum 0.8/matchit forbids dynamic route
+   suffixes (`{n}.png`), so the page route is registered as
+   `/pages/{page}` and the handler strips a trailing `.png`. Document
+   resolution mirrors the editor read views (store first, `demo.docx`
+   fallback); out-of-range pages are 404, bad ids/pages 400. This is the
+   paginated raster output the ORM-09 ledger names as prerequisite for the
+   blocked `PageThumbnails`/Print-preview families.

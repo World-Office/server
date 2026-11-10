@@ -9,7 +9,7 @@ pub mod model;
 pub mod pipeline;
 pub mod roundtrip;
 
-pub use model::{RenderConfig, RenderOutput, RenderResult};
+pub use model::{OutputFormat, RenderConfig, RenderOutput, RenderResult};
 pub use pipeline::DocxRenderPipeline;
 pub use roundtrip::DocxRendererRoundtrip;
 
