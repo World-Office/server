@@ -1,0 +1,222 @@
+{
+ "tasks": [
+  {
+   "id": "FX-R1",
+   "repo": "server",
+   "title": "wasm: OForm role/fill/signer engine \u2014 asc_add_role, asc_edit_role, asc_remove_role, asc_get_all_roles, asc_can_fill_role, asc_get_filling_status, AscSigner + asc_get_signers/asc_set_signers",
+   "deps": [],
+   "priority": 10,
+   "scope": [
+    "core/crates/wo-renderer-wasm/src/lib.rs"
+   ],
+   "touch": [
+    "core/crates/wo-renderer-wasm/src/lib.rs"
+   ],
+   "accept": "cd core/crates/wo-renderer-wasm && cargo test --lib 2>&1 | tail -3 && grep -c 'asc_add_role\\|asc_can_fill_role\\|asc_get_signers' src/lib.rs | grep -v '^0$' && echo ROLES-GATE-PASS",
+   "note": "Follow wasm-events.md wire shapes (snake_case event payloads, JSON in/out as String). Roles live in the doc model root {roles:[{id,name,color,description}]}; can_fill_role(role_id) consults an active_filling_role; filling_status -> {active_role,filled_fields,locked_fields}. Signers: doc-level array [{name,title,email,instructions}]. Every export: (a) wasm_bindgen pub fn, (b) a #[cfg(test)] unit test asserting JSON round shape, (c) a WsEvent broadcast. Do NOT touch editor JS."
+  },
+  {
+   "id": "FX-R2",
+   "repo": "server",
+   "title": "Rust: docxf format layer \u2014 wo-ooxml accepts .docxf (docx form variant: same reader/writer, forms-aware content-type), wo-docserver POST /api/documents/{id}/save-form + GET docxf conversion treated as docx",
+   "deps": [],
+   "priority": 10,
+   "scope": [
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-docserver/src/render.rs"
+   ],
+   "touch": [
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-docserver/src/render.rs"
+   ],
+   "accept": "cd core && cargo test -p wo-ooxml --lib 2>&1 | tail -2 && cargo test -p wo-docserver --lib 2>&1 | tail -2 && grep -c 'docxf' crates/wo-ooxml/src/parser.rs crates/wo-docserver/src/render.rs | grep -v ':0' && echo DOCXF-GATE-PASS",
+   "note": "docxf == docx with extension/content-type application/vnd.openxmlformats-officedocument.wordprocessingml.document + docx extension detection: sniff zip content-types for the forms namespace (w15:docIndex or simply accept both extensions). Sniffing must stay extension-agnostic (the roundtrip suite feeds bytes). save-form: accept {docx_id, form_meta} -> writes the docx bytes back with .docxf extension + content-type header. Add unit tests: parse docxf-bytes (fixture: tiny in-code zip via the existing test helpers), save-form route status 200 + content-disposition. Do NOT touch editor JS."
+  },
+  {
+   "id": "FX-U1",
+   "repo": "server",
+   "title": "editor: Forms tab (text/checkbox/dropdown/date field palette + view-fill-mode toggle) + SaveFormDlg (File > Save as form .docxf via POST /api/documents/{id}/save-form)",
+   "deps": [
+    "FX-R1",
+    "FX-R2"
+   ],
+   "priority": 10,
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css"
+   ],
+   "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node forms-tab.test.mjs 2>&1 | tail -1 | grep FORMS-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node save-form.test.mjs 2>&1 | tail -1 | grep SAVEFORM-PASS)",
+   "note": "Author both tests first (FORMS-PASS/SAVEFORM-PASS markers, local-static + stubbed-fetch boot like page-thumbnails.test.mjs). Forms tab: 4 buttons plant wo form spans (span.wo-form-field[data-kind=text|checkbox|dropdown|date] with data-role='') \u2014 reuse the cc-* content-control machinery where possible. Fill mode: body[data-fill-mode=fill] makes non-field content inert (CSS + click guard). SaveFormDlg: name+location inputs, OK -> fetch POST save-form with current HTML, status toast. i18n en+de for every new string. Roles/signers NOT in this task."
+  },
+  {
+   "id": "FX-U2",
+   "repo": "server",
+   "title": "editor: RolesManagerDlg (list/add/edit/delete roles via asc_get_all_roles/asc_add_role/asc_edit_role/asc_remove_role) + RoleEditDlg + RoleDeleteDlg + FormSettings (per-field role assignment + required/fill-mode)",
+   "deps": [
+    "FX-U1"
+   ],
+   "priority": 10,
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css"
+   ],
+   "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node roles-manager.test.mjs 2>&1 | tail -1 | grep ROLES-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node form-settings.test.mjs 2>&1 | tail -1 | grep FORMSET-PASS)",
+   "note": "wo-dialogs.js engine specs (WO_DIALOG_SPECS) for all four dialogs, WoDialogEngine.renderSpec pattern from ImageSettingsAdvanced. Role ops go through the wo-bridge wasm call path with a JS-side stub fallback when the engine is absent (stubbed-fetch tests). FormSettings: opens for the caret's form field (or first), fields: role (select from roles), required (checkbox), filling mode (select). Persist to the field span's data-role/data-required/data-fill-mode attrs."
+  },
+  {
+   "id": "FX-U3",
+   "repo": "server",
+   "title": "editor: FillingStatusSettings (asc_can_fill_role/asc_get_filling_status driven) + MaskedField closure (zip/date input masks on span.wo-form-field[data-kind=date] etc.) + drop the filling-status-settings KNOWN-GAP from tests/parity right-panel surface",
+   "deps": [
+    "FX-U2"
+   ],
+   "priority": 10,
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/surfaces/right-panel.cjs"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "tests/parity/surfaces/right-panel.cjs"
+   ],
+   "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node filling-status.test.mjs 2>&1 | tail -1 | grep FILLSTAT-PASS) && (cd tests/parity && /usr/bin/node surfaces/right-panel.cjs >/dev/null 2>&1; echo right-panel-exit=$?)",
+   "note": "FillingStatusSettings spec + engine: shows active role, per-status counts (filled/open), role switcher. MaskedField: date fields render a masked input (____-__-__) inside the fill overlay; zip (_____) likewise \u2014 mask chars literal, digits typed into data-value. right-panel.cjs: remove the filling-status-settings KNOWN-GAP override entry (the dialog now exists); keep others. Gate requires right-panel exit 0."
+  },
+  {
+   "id": "FX-U4",
+   "repo": "server",
+   "title": "editor: signature wave \u2014 SignDialog, SignSettingsDialog, SignatureSettings, SendForSigningSettings, PdfSignDialog (AscSigner via asc_get_signers/asc_set_signers) + drop signature-settings + send-for-signing-settings KNOWN-GAPs from right-panel",
+   "deps": [
+    "FX-U3"
+   ],
+   "priority": 10,
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css",
+    "tests/parity/surfaces/right-panel.cjs"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-wysiwyg/index.html",
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/wo-dialogs.js",
+    "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css",
+    "tests/parity/surfaces/right-panel.cjs"
+   ],
+   "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node signature-wave.test.mjs 2>&1 | tail -1 | grep SIGNWAVE-PASS) && (cd tests/parity && /usr/bin/node surfaces/right-panel.cjs >/dev/null 2>&1; echo right-panel-exit=$?)",
+   "note": "All five as WO_DIALOG_SPECS entries. SignatureSettings: insert a signature LINE (div.wo-signature-line[data-signers]) at caret; SignSettingsDialog: name/title/email/instructions fields bound to asc_get_signers/asc_set_signers; SignDialog: the signing step (role, drawn-name text input, Apply -> marks the line signed); SendForSigningSettings: recipients multi-select from roles, message, Send -> toast + status line; PdfSignDialog: pdf-specific signer confirm. No real crypto \u2014 the workflow state is editor-side (documented divergence in ledger notes, honest like HintManager)."
+  },
+  {
+   "id": "FX-U5",
+   "repo": "server",
+   "title": "ledger: flip the 19 forms/signing rows in plan/oo-port/ui-webapp.json (hosted/partial with FX: notes) + verify all 146 frontend tests green",
+   "deps": [
+    "FX-U4"
+   ],
+   "priority": 10,
+   "scope": [
+    "plan/oo-port/ui-webapp.json"
+   ],
+   "touch": [
+    "plan/oo-port/ui-webapp.json"
+   ],
+   "accept": "(cd apps/web/apps/documenteditor-wysiwyg && fails=0; for f in *.test.mjs; do /usr/bin/node $f >/dev/null 2>&1 || fails=$((fails+1)); done; echo frontend-failures=$fails) | grep 'frontend-failures=0' && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node ui-closure.test.mjs 2>&1 | grep -c '^ok ')",
+   "note": "Flip: FormsTab(2), FormSettings(2), MaskedField, SaveFormDlg, RolesManagerDlg(2), RoleEditDlg, RoleDeleteDlg, FillingStatusSettings(2) -> hosted; signature five (SignatureSettings 2, SignDialog, SignSettingsDialog, SendForSigningSettings 2, PdfSignDialog) -> hosted or partial with FX: trace notes naming the divergence (no crypto, editor-side state). wo_anchor points at the real host (spec key or file). blocked rows must drop 26 -> <=8. Keep ui-webapp.json totals consistent (217 rows, no missing)."
+  },
+  {
+   "id": "FXG-A",
+   "repo": "harness",
+   "title": "ledger: register the 4 now-green orphan probes (dropcap/watermark/pagenumber/bookmark) in build.py L4_FINAL_PROBES + rebuild -> L4 20->24",
+   "deps": [],
+   "priority": 10,
+   "scope": [
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -2) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<24){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Add 4 entries to L4_FINAL_PROBES following the hr-settings entry shape (art, cluster, oo contract mined from census/census-oo-dialogs.json + the probe's own header comment, behavior string). Do NOT edit server repo. Do NOT regenerate the artifacts. build.py must exit 0 and write ledger.json with L4=24."
+  },
+  {
+   "id": "FXG-B",
+   "repo": "harness",
+   "title": "L4 gold: author margins(page-setup) + page-size + columns probes (mine OO fields from census-oo-dialogs.json), register, rebuild",
+   "deps": [
+    "FXG-A"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node columns-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<25){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Write margins-dialog-l4.test.mjs, pagesize-dialog-l4.test.mjs, columns-dialog-l4.test.mjs (dropcap-dialog-l4.test.mjs pattern: local static serve + stubbed fetch + real ribbon open + field asserts + apply act + negative paths; evaluate-click for viewport safety). OO field contract from census/census-oo-dialogs.json entries. Run each; if a probe exposes a real editor gap, add declaredGaps to the artifact and leave it L1 \u2014 but at least ONE of the three must reach L4 (gate). Register all three in L4_FINAL_PROBES, rebuild."
+  },
+  {
+   "id": "FXG-C",
+   "repo": "harness",
+   "title": "L4 gold: references family \u2014 toc-dialog, crossref-dialog, insert-caption, tableoffigures probes + registration + rebuild",
+   "deps": [
+    "FXG-B"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node toc-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<26){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Same pattern as FXG-B. The four dialogs exist in WO (wo-dialogs specs). Acts: toc -> nav.toc with data-title; crossref -> inserts span.crossref[data-name] whose text follows the bookmark name; caption -> figure caption p.wp-caption; tableoffigures -> nav.tof marker. At least one must reach L4."
+  },
+  {
+   "id": "FXG-D",
+   "repo": "harness",
+   "title": "L4 gold: hyphenation + date-time (dlg-date-time L3->L4) probes + registration + final LEDGER-REPORT refresh",
+   "deps": [
+    "FXG-C"
+   ],
+   "priority": 10,
+   "scope": [
+    "census/ledger/build.py"
+   ],
+   "touch": [
+    "census/ledger/build.py"
+   ],
+   "accept": "(cd census/ledger && /usr/bin/node hyphenation-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/node datetime-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | tail -1) && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<27){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+   "note": "Same pattern. datetime: the existing datetime-dialog inserts a formatted date string \u2014 gold fields = format list + language + Update automatically flag. hyphenation: auto/manual toggle -> div.hyphenation marker (data-auto). At least one must reach L4. Finish by updating PARITY-REPORT.md L4 totals line."
+  }
+ ]
+}
