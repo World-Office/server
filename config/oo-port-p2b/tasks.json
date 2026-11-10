@@ -1,0 +1,167 @@
+{
+ "defaults": {
+  "max_attempts": 3,
+  "accept_timeout_s": 7200,
+  "agent_timeout_s": 9000,
+  "retry_delay_s": 60
+ },
+ "tasks": [
+  {
+   "id": "P2B-R01",
+   "title": "Rust: anti-aliased path rasterizer \u2014 AA cell grid, stroke joins/dashes, clip stack (Phase C, sev3 canv)",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-renderer/src/canvas.rs",
+    "core/crates/wo-renderer/src/path.rs",
+    "core/crates/wo-renderer/src/raster_tests.rs",
+    "core/crates/wo-renderer/src/lib.rs",
+    "core/crates/wo-renderer/Cargo.toml",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 3 (Rasterization quality, Phase C). The engine-internals sev3 rows 'aggregated zerox agg-2.4/include' and 'graphics/Image.cpp|Image.h' map to wo-renderer::canvas. Current canvas.rs strokes single-pixel perpendicular quads with hard edges (no AA), no joins/dashes, clip() is a coarse bbox flag. Implement an aggregate-style anti-aliased rasterizer: (1) an AA cell coverage buffer (render flat-filled paths with per-cell coverage from PathBuilder::flatten), (2) stroke with miter/round joins + dash pattern on the flattened segments, (3) a real clip stack (push/pop intersects current path with the coverage mask). Keep the public Canvas API and wasm bridge untouched. Add raster_tests.rs: AA diagonal line has 2+ shades (not all-or-nothing), round join on a 90-degree corner fills the outer corner, dashed line = alternating on/off runs, clip restricts drawn pixels to intersection, no wasm signature change. Do NOT edit wo-renderer-wasm. Baseline: `cargo test -p wo-renderer --lib` = 138 passing; keep them green.",
+   "acceptance": "PORT-PLAN Phase 2 item 3 (Rasterization quality, Phase C). The engine-internals sev3 rows 'aggregated zerox agg-2.4/include' and 'graphics/Image.cpp|Image.h' map to wo-renderer::canvas. Current canvas.rs strokes single-pixel perpendicular quads with hard edges (no AA), no joins/dashes, clip() is a coarse bbox flag. Implement an aggregate-style anti-aliased rasterizer: (1) an AA cell coverage buffer (render flat-filled paths with per-cell coverage from PathBuilder::flatten), (2) stroke with miter/round joins + dash pattern on the flattened segments, (3) a real clip stack (push/pop intersects current path with the coverage mask). Keep the public Canvas API and wasm bridge untouched. Add raster_tests.rs: AA diagonal line has 2+ shades (not all-or-nothing), round join on a 90-degree corner fills the outer corner, dashed line = alternating on/off runs, clip restricts drawn pixels to intersection, no wasm signature change. Do NOT edit wo-renderer-wasm. Baseline: `cargo test -p wo-renderer --lib` = 138 passing; keep them green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-renderer --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'fn (fill|stroke|clip).*aa|coverage|rasteriz' core/crates/wo-renderer/src/canvas.rs && test -f core/crates/wo-renderer/src/raster_tests.rs && grep -qE 'aa|coverage' core/crates/wo-renderer/src/raster_tests.rs && grep -q 'mod raster_tests' core/crates/wo-renderer/src/lib.rs && wc -l core/crates/wo-renderer/src/canvas.rs"
+  },
+  {
+   "id": "P2B-R02",
+   "title": "Rust: antialiased image interpolation \u2014 bilinear Image::draw_image scaling + transparent blend (Phase C sev3 Image)",
+   "deps": [
+    "P2B-R01"
+   ],
+   "scope": [
+    "core/crates/wo-renderer/src/canvas.rs",
+    "core/crates/wo-renderer/src/path.rs",
+    "core/crates/wo-renderer/src/raster_tests.rs",
+    "core/crates/wo-renderer/src/lib.rs",
+    "core/crates/wo-renderer/Cargo.toml",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 3 tail. engine-internals sev3 rows wo-renderer::canvas <- graphics/Image.cpp|Image.h. P2-01 added Canvas::draw_image but it uses nearest-neighbor sampling (aliased) and ignores per-pixel alpha. Upgrade draw_image to bilinear interpolation for scaling + proper src-over alpha blending (use wo-raster's Pixel::blend_over / RasterImage if convenient). Keep the existing signature. Extend raster_tests.rs (or image tests) with: bilinear upscale of a 2x2 gradient is smooth (no hard block edges), a fully-transparent source pixel contributes nothing, 50%-alpha red over blue ground = purple-ish. Baseline: `cargo test -p wo-renderer --lib` = 138 (+R01); keep green. Do NOT edit wo-renderer-wasm or wo-ooxml.",
+   "acceptance": "PORT-PLAN Phase 2 item 3 tail. engine-internals sev3 rows wo-renderer::canvas <- graphics/Image.cpp|Image.h. P2-01 added Canvas::draw_image but it uses nearest-neighbor sampling (aliased) and ignores per-pixel alpha. Upgrade draw_image to bilinear interpolation for scaling + proper src-over alpha blending (use wo-raster's Pixel::blend_over / RasterImage if convenient). Keep the existing signature. Extend raster_tests.rs (or image tests) with: bilinear upscale of a 2x2 gradient is smooth (no hard block edges), a fully-transparent source pixel contributes nothing, 50%-alpha red over blue ground = purple-ish. Baseline: `cargo test -p wo-renderer --lib` = 138 (+R01); keep green. Do NOT edit wo-renderer-wasm or wo-ooxml.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-renderer --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'bilinear|blend_over|src_over|alpha' core/crates/wo-renderer/src/canvas.rs && grep -qE 'bilinear|transparent|alpha' core/crates/wo-renderer/src/raster_tests.rs && grep -q 'mod raster_tests' core/crates/wo-renderer/src/lib.rs"
+  },
+  {
+   "id": "P2B-X01",
+   "title": "Rust: XLSX worksheet print/hyperlink parts \u2014 pageSetup/pageMargins/headerFooter/breaks + hyperlinks (ORM-06)",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 5 (XLSX module additions, ORM-06). ooxml-xlsx.json marks Worksheets/Hyperlinks.h CHyperlink/CHyperlinks 'missing' and 'partial' CPageSetup/CPageMargins/CPrintOptions. wo-ooxml parser.rs parse_xlsx_worksheet currently ignores <pageSetup>, <pageMargins>, <headerFooter>, <rowBreaks>/<colBreaks>, and <hyperlinks>. Add typed model structs (XlsxPageSetup, XlsxPageMargins, XlsxHeaderFooter, XlsxRowBreak, XlsxHyperlink) to model.rs, parse them in parse_xlsx_worksheet into the worksheet/sheet struct, and emit them in serialize_xlsx's sheet writer so a parse->serialize round trip keeps them (no extra_parts). Pin with a converter_gaps test gap_xlsx_print_hyperlink_roundtrip: build a minimal xlsx with A1:B2 pageSetup A4 portrait + a hyperlink on B2 -> parse -> serialize -> reparse, assert pageSetup paperSize/orientation and hyperlink r:id/target survive. Baseline: wo-ooxml 85, converter_gaps 23 passing; keep them green.",
+   "acceptance": "PORT-PLAN Phase 2 item 5 (XLSX module additions, ORM-06). ooxml-xlsx.json marks Worksheets/Hyperlinks.h CHyperlink/CHyperlinks 'missing' and 'partial' CPageSetup/CPageMargins/CPrintOptions. wo-ooxml parser.rs parse_xlsx_worksheet currently ignores <pageSetup>, <pageMargins>, <headerFooter>, <rowBreaks>/<colBreaks>, and <hyperlinks>. Add typed model structs (XlsxPageSetup, XlsxPageMargins, XlsxHeaderFooter, XlsxRowBreak, XlsxHyperlink) to model.rs, parse them in parse_xlsx_worksheet into the worksheet/sheet struct, and emit them in serialize_xlsx's sheet writer so a parse->serialize round trip keeps them (no extra_parts). Pin with a converter_gaps test gap_xlsx_print_hyperlink_roundtrip: build a minimal xlsx with A1:B2 pageSetup A4 portrait + a hyperlink on B2 -> parse -> serialize -> reparse, assert pageSetup paperSize/orientation and hyperlink r:id/target survive. Baseline: wo-ooxml 85, converter_gaps 23 passing; keep them green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'XlsxPageSetup|XlsxPageMargins|XlsxHeaderFooter|XlsxHyperlink' core/crates/wo-ooxml/src/model.rs && grep -qE 'pageSetup|pageMargins|hyperlinks' core/crates/wo-ooxml/src/parser.rs && grep -qE 'pageSetup|pageMargins|hyperlinks' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_xlsx_print_hyperlink_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-X02",
+   "title": "Rust: XLSX chart parts -> wo-chart bridge \u2014 parse xl/charts/* into ChartSpace typed graph, xlsx serialize keeps them (ORM-06)",
+   "deps": [
+    "P2B-X01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/",
+    "core/crates/wo-chart/src/model.rs"
+   ],
+   "description": "PORT-PLAN Phase 2 item 5 (ORM-06): wo-sheet::chart_bridge / parse xl/charts/* into wo-chart models. Today xlsx charts only survive as byte-bag extra_parts (XlsxExtraPart). Add typed parsing: (1) in wo-ooxml parser.rs parse_xlsx \u2014 detect xl/charts/chartN.xml parts and convert ChartSpace XML into wo-chart's Chart (fingerprint the wo-chart model in core/crates/wo-chart/src/model.rs; reuse existing ChartSpace-ish types or extend with a from_chartspace_xml constructor), (2) serialize_xlsx takes a Vec<Chart> and re-writes chartN.xml + the drawing/clrMap relationships so a chart round trips WITHOUT extra_parts. Pin with converter_gaps test gap_xlsx_chart_roundtrip: an xlsx with a bar chart + category/value axes -> parse -> typed Chart (not byte bag) -> serialize -> reparse, assert series values + chart type survive and extra_parts is empty. Keep wo-sheet 222 / wo-ooxml 85 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 5 (ORM-06): wo-sheet::chart_bridge / parse xl/charts/* into wo-chart models. Today xlsx charts only survive as byte-bag extra_parts (XlsxExtraPart). Add typed parsing: (1) in wo-ooxml parser.rs parse_xlsx \u2014 detect xl/charts/chartN.xml parts and convert ChartSpace XML into wo-chart's Chart (fingerprint the wo-chart model in core/crates/wo-chart/src/model.rs; reuse existing ChartSpace-ish types or extend with a from_chartspace_xml constructor), (2) serialize_xlsx takes a Vec<Chart> and re-writes chartN.xml + the drawing/clrMap relationships so a chart round trips WITHOUT extra_parts. Pin with converter_gaps test gap_xlsx_chart_roundtrip: an xlsx with a bar chart + category/value axes -> parse -> typed Chart (not byte bag) -> serialize -> reparse, assert series values + chart type survive and extra_parts is empty. Keep wo-sheet 222 / wo-ooxml 85 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'ChartSpace|from_chart|xl/charts' core/crates/wo-ooxml/src/parser.rs && grep -qE 'Chart|chartN|xl/charts' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_xlsx_chart_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-X03",
+   "title": "Rust: XLSX conditional-formatting extensions \u2014 ColorScale/DataBar/IconSet + dxf (ORM-06)",
+   "deps": [
+    "P2B-X01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 5 (ORM-06). ooxml-xlsx.json marks CColorScale/CDataBar/CIconSet 'missing', CConditionalFormattingRule 'partial'. wo-ooxml parse_xlsx currently reads basic conditionalFormatting rules but not the cfvo/colorScale/dataBar/iconSet children, and serialize_xlsx doesn't emit them. Add typed model (XlsxColorScale with stops, XlsxDataBar with axis/min/max, XlsxIconSet with iconset name + cfvos), parse into the rule enum, emit back. Pin with converter_gaps test gap_xlsx_cf_ext_roundtrip: a colorScale rule + a dataBar rule on a range -> parse -> serialize -> reparse, assert stops/cfvos/iconset survive. Do NOT touch wo-sheet (its ConditionalRule is a separate frontend path). Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 5 (ORM-06). ooxml-xlsx.json marks CColorScale/CDataBar/CIconSet 'missing', CConditionalFormattingRule 'partial'. wo-ooxml parse_xlsx currently reads basic conditionalFormatting rules but not the cfvo/colorScale/dataBar/iconSet children, and serialize_xlsx doesn't emit them. Add typed model (XlsxColorScale with stops, XlsxDataBar with axis/min/max, XlsxIconSet with iconset name + cfvos), parse into the rule enum, emit back. Pin with converter_gaps test gap_xlsx_cf_ext_roundtrip: a colorScale rule + a dataBar rule on a range -> parse -> serialize -> reparse, assert stops/cfvos/iconset survive. Do NOT touch wo-sheet (its ConditionalRule is a separate frontend path). Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'XlsxColorScale|XlsxDataBar|XlsxIconSet|colorScale' core/crates/wo-ooxml/src/model.rs && grep -qE 'colorScale|dataBar|iconSet|cfvo' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_xlsx_cf_ext_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-X04",
+   "title": "Rust: XLSX workbook protection/fileSharing + dynamicArray + richValue blocks (ORM-06)",
+   "deps": [
+    "P2B-X02"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 5 tail (ORM-06). ooxml-xlsx.json marks WorkbookPr.h CWorkbookProtection/CFileSharing 'missing' and Workbook.h CDynamicArrayProperties/CRichValueBlock 'missing'. Add typed opts to the workbook model: workbookProtection (lockStructure/lockWindows flags + algorithm/hash of the workbook password), fileSharing (readOnlyRecommended, userName), and per-cell dynamicArray (cm attr) / richValueBlock on shared strings or table columns. Parse + serialize so round trip keeps them. converter_gaps test gap_xlsx_wbprotect_roundtrip: workbook with lockStructure password + a spilled dynamicArray cell (c t=\"str\" cm=1) -> parse -> serialize -> reparse, assert protection flags/hash + cm attr survive. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 5 tail (ORM-06). ooxml-xlsx.json marks WorkbookPr.h CWorkbookProtection/CFileSharing 'missing' and Workbook.h CDynamicArrayProperties/CRichValueBlock 'missing'. Add typed opts to the workbook model: workbookProtection (lockStructure/lockWindows flags + algorithm/hash of the workbook password), fileSharing (readOnlyRecommended, userName), and per-cell dynamicArray (cm attr) / richValueBlock on shared strings or table columns. Parse + serialize so round trip keeps them. converter_gaps test gap_xlsx_wbprotect_roundtrip: workbook with lockStructure password + a spilled dynamicArray cell (c t=\"str\" cm=1) -> parse -> serialize -> reparse, assert protection flags/hash + cm attr survive. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'WorkbookProtection|FileSharing|dynamicArray|RichValue' core/crates/wo-ooxml/src/model.rs && grep -q 'gap_xlsx_wbprotect_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-P01",
+   "title": "Rust: PPTX group shapes \u2014 GrpSpPr + recursive SpTree groups, child bounding boxes (ORM-07)",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 6 (ORM-07): GroupShape + parser recursion. ooxml-pptx.json marks Logic/GrpSpPr.h 'missing', Logic/SpTree 'partial'. parse_pptx_shapes flattens one level and drops <p:grpSp> children. Add SlideShape::Group(GroupShape) with grpSpPr (childOffset/childExtents/xfrm off/off ext/ext) + Vec<SlideShape> children, parse recursively, and emit the group in serialize_pptx. Slide inherit takes child boxes offset by the group origin. converter_gaps test gap_pptx_group_roundtrip: slide with a grpSp containing 2 shapes with child extents -> parse (children present, not flattened) -> serialize -> reparse, assert child count + bounds survive. Keep wo-ooxml 85 / wo-slide 80 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 6 (ORM-07): GroupShape + parser recursion. ooxml-pptx.json marks Logic/GrpSpPr.h 'missing', Logic/SpTree 'partial'. parse_pptx_shapes flattens one level and drops <p:grpSp> children. Add SlideShape::Group(GroupShape) with grpSpPr (childOffset/childExtents/xfrm off/off ext/ext) + Vec<SlideShape> children, parse recursively, and emit the group in serialize_pptx. Slide inherit takes child boxes offset by the group origin. converter_gaps test gap_pptx_group_roundtrip: slide with a grpSp containing 2 shapes with child extents -> parse (children present, not flattened) -> serialize -> reparse, assert child count + bounds survive. Keep wo-ooxml 85 / wo-slide 80 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'GroupShape|GrpSpPr|grpSp' core/crates/wo-ooxml/src/model.rs && grep -qE 'grpSp|GroupShape|recursive' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_pptx_group_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-P02",
+   "title": "Rust: PPTX theme FmtScheme/ClrMap \u2014 schemeClr + major/minor font resolution into theme model (ORM-07)",
+   "deps": [
+    "P2B-P01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 6 (ORM-07): theme.rs FmtScheme/ClrMap/SchemeClr resolution. ooxml-pptx.json marks Theme/FmtScheme.h 'missing', Theme/ThemeElements.h 'partial', ExtraClrScheme/ClrMap 'missing'. parse_pptx_themes reads FontScheme + basic clrScheme but drops fmtScheme (fillStylesLst/lnStylesLst/effectStylesLst/bgFillStyleLst) and the slide-level clrMapOvr. Add FmtScheme (style lists), ClrMap (accent1..6/hlink mapping), SchemeClr resolution helper (theme color -> hex or system), wire clrMapOvr per slide. converter_gaps test gap_pptx_theme_roundtrip: theme with fmtScheme fill style + a slide using schemeClr accent1 -> parse -> resolve accent1 to its mapped color -> serialize -> reparse keeps fmtScheme. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 6 (ORM-07): theme.rs FmtScheme/ClrMap/SchemeClr resolution. ooxml-pptx.json marks Theme/FmtScheme.h 'missing', Theme/ThemeElements.h 'partial', ExtraClrScheme/ClrMap 'missing'. parse_pptx_themes reads FontScheme + basic clrScheme but drops fmtScheme (fillStylesLst/lnStylesLst/effectStylesLst/bgFillStyleLst) and the slide-level clrMapOvr. Add FmtScheme (style lists), ClrMap (accent1..6/hlink mapping), SchemeClr resolution helper (theme color -> hex or system), wire clrMapOvr per slide. converter_gaps test gap_pptx_theme_roundtrip: theme with fmtScheme fill style + a slide using schemeClr accent1 -> parse -> resolve accent1 to its mapped color -> serialize -> reparse keeps fmtScheme. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'FmtScheme|ClrMap|SchemeClr|schemeClr' core/crates/wo-ooxml/src/model.rs && grep -qE 'FmtScheme|clrMap|schemeClr' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_pptx_theme_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  },
+  {
+   "id": "P2B-P03",
+   "title": "Rust: PPTX SlideTextBody bullets+BodyPr + tableStyles reader (ORM-07)",
+   "deps": [
+    "P2B-P01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 6 (ORM-07): SlideTextBody with BodyPr + bullets; table cell borders + tableStyles reader. parse_pptx_text_body reads runs but drops <a:bodyPr> (anchor/vert/rtlCol) and <a:pPr><a:buChar>/<a:buAutoNum>/<a:buNone> bullet props, and parse_pptx_table ignores cell borders. Add TextBody fields (anchor, vert, wrap, bullet: Option<TextBullet> with bullet_char / autonum type), cell border parse into TableShape cell style, and a parse_pptx_table_styles reading ppt/tableStyles.xml (tableStyleId/tableStyleName). converter_gaps test gap_pptx_textbody_roundtrip: text body with anchor=b anchor ctr + a buChar bullet + a table cell with borders -> parse -> serialize -> reparse, assert anchor/bullet char/cell border survive. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "acceptance": "PORT-PLAN Phase 2 item 6 (ORM-07): SlideTextBody with BodyPr + bullets; table cell borders + tableStyles reader. parse_pptx_text_body reads runs but drops <a:bodyPr> (anchor/vert/rtlCol) and <a:pPr><a:buChar>/<a:buAutoNum>/<a:buNone> bullet props, and parse_pptx_table ignores cell borders. Add TextBody fields (anchor, vert, wrap, bullet: Option<TextBullet> with bullet_char / autonum type), cell border parse into TableShape cell style, and a parse_pptx_table_styles reading ppt/tableStyles.xml (tableStyleId/tableStyleName). converter_gaps test gap_pptx_textbody_roundtrip: text body with anchor=b anchor ctr + a buChar bullet + a table cell with borders -> parse -> serialize -> reparse, assert anchor/bullet char/cell border survive. Keep wo-ooxml 85 / converter_gaps 23 green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && grep -qE 'TextBullet|bodyPr|buChar|buAutoNum' core/crates/wo-ooxml/src/model.rs && grep -qE 'bodyPr|buChar|buAutoNum|TableStyle' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_pptx_textbody_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/parser.rs"
+  }
+ ]
+}
