@@ -1,0 +1,17 @@
+{
+  "task": "P3-U05",
+  "attempt": 1,
+  "worker": "p2b-qwen0",
+  "model": "tud/Qwen3.8-27B",
+  "wall_clock_s": 1737.613278684,
+  "tokens": 3899819,
+  "turns": 59,
+  "prompt_tokens": 3835989,
+  "completion_tokens": 63830,
+  "ts": 1794317220,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}

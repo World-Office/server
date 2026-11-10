@@ -1,0 +1,50 @@
+{
+  "P3-U01": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794312011,
+    "attempt_worker": "p2b-glm0"
+  },
+  "P3-U02": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794313224,
+    "attempt_worker": "p2b-glm2"
+  },
+  "P3-U05": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794315482,
+    "attempt_worker": "p2b-qwen0"
+  },
+  "P3-U03": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794314258,
+    "attempt_worker": "p2b-glm3"
+  },
+  "P3-E01": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794312011,
+    "attempt_worker": "p2b-glm1"
+  },
+  "P3-U04": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794315123,
+    "attempt_worker": "p2b-mis0"
+  }
+}

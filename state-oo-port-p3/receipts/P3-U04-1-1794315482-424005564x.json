@@ -1,0 +1,17 @@
+{
+  "task": "P3-U04",
+  "attempt": 1,
+  "worker": "p2b-mis0",
+  "model": "tud/mistral-medium-3.5-128b",
+  "wall_clock_s": 358.485062183,
+  "tokens": 828826,
+  "turns": 43,
+  "prompt_tokens": 817596,
+  "completion_tokens": 11230,
+  "ts": 1794315482,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}
