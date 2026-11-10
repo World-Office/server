@@ -2880,6 +2880,20 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
    section width so the track reads as a slider, not a stub input. */
 .wo-engine-dialog .wo-dlg-row-range { display: flex; align-items: center; gap: 8px; }
 .wo-engine-dialog .wo-dlg-row-range input[type="range"] { flex: 1; }
+/* P3-U03: ReviewPopover — the engine dialog anchored at the comment instead
+   of centered: the panel escapes the flex centering with fixed coordinates
+   written by editor.js anchorReviewPopover(). */
+.wo-review-popover .wo-dlg-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin: 0;
+  min-width: 300px;
+  max-width: min(380px, 92vw);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.wo-review-popover { background: transparent; pointer-events: none; }
+.wo-review-popover .wo-dlg-panel { pointer-events: auto; }
 .wo-dlg-section {
   border: 1px solid var(--border);
   border-radius: 8px;

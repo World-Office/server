@@ -1579,6 +1579,17 @@
     if (cmd === "imageAdvancedRotate") { applyImageAdvancedRotate(value === "ccw" ? -1 : 1); return; }
     if (cmd === "imageAdvancedReplace") { applyImageAdvancedReplace(); return; }
     if (cmd === "editWrapBoundary") { reportEditWrapBoundaryUnavailable(); return; }
+    // P3-U03: OO ShapeSettings + ReviewPopover + ExtendedColorDialog hosted
+    // from the P3-U01 dialog engine (specs in wo-dialogs.js); okCmd payloads
+    // are one JSON ledger entry per dialog apply.
+    if (cmd === "openShapeSettings") { openShapeSettings(); return; }
+    if (cmd === "shapeSettings") { applyShapeSettingsAdvanced(value); return; }
+    if (cmd === "openReviewPopover") { openReviewPopover(value); return; }
+    if (cmd === "reviewPopover") { applyReviewPopover(value); return; }
+    if (cmd === "reviewPopoverGoTo") { reviewPopoverGoTo(); return; }
+    if (cmd === "reviewPopoverDelete") { reviewPopoverDelete(); return; }
+    if (cmd === "openExtendedColor") { openExtendedColorDialog(value); return; }
+    if (cmd === "extendedColor") { applyExtendedColorDialog(value); return; }
     if (cmd === "multilevel") { multilevelItem(); return; }
     if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
     if (cmd === "pageColorNone") { clearPageColor(); return; }
@@ -7635,6 +7646,10 @@
     }
     const obj = selectedImageObject();
     if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSettingsAdvanced"); return; }
+    // P3-U03: drawing shapes get the OO ShapeSettings panel, not the image
+    // one (OO routes by object kind the same way) — the shared rail entry
+    // stays the single "Advanced…" link.
+    if (obj.classList && obj.classList.contains("drawing-shape")) { openShapeSettings(); return; }
     imageAdvTarget = obj;
     let handle = window.woDialogEngine.get(IMAGE_ADVANCED_DIALOG_ID);
     if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.imageSettingsAdvanced);
@@ -7769,6 +7784,451 @@
       sel.addRange(r);
     }
     applyObjectOp("replace-image"); // commits through insertImage()
+  }
+
+  // ------------------------------------------------------------------
+  // P3-U03: ShapeSettings + ReviewPopover + ExtendedColorDialog — the next
+  // three missing OO views (ui-webapp.json), hosted from the P3-U01 dialog
+  // engine. Same split as P3-U02: wo-dialogs.js owns the spec DATA, this is
+  // the behavioral half (open* builds+syncs from the live selection, apply*
+  // consumes the OK payload as one replayable ledger entry).
+  //
+  // ShapeSettings: the WO object model has no OO fill registry, so shape
+  // style persists as data-shape-* attributes + inline SVG paint attributes
+  // (fill / stroke / stroke-dasharray / stroke-linecap / stroke-linejoin /
+  // marker-start / marker-end) on the svg element; gradient fills and
+  // shadows are honest CSS approximations (linear-gradient wrapper
+  // background / box-shadow) — the same approximation policy P3-U02 uses
+  // for crop/adjust. Arrowheads render as real <marker> defs.
+  //
+  // ReviewPopover: OO opens the anchored single-thread editor on comment
+  // click; here a click on span.comment emits openReviewPopover and the
+  // built engine dialog is anchored next to the comment (wo-review-popover
+  // class + inline left/top on the panel) instead of being centered.
+  //
+  // ExtendedColorDialog: the custom-color dialog the palettes were missing —
+  // the hsbColorPicker widget port (P3-U01) plus R/G/B, hex and opacity
+  // rows; the apply routes to the captured target (page background, shape
+  // fill/line/shadow) recorded at open time.
+  // ------------------------------------------------------------------
+  const SHAPE_SETTINGS_DIALOG_ID = "shape-settings-dialog";
+  const REVIEW_POPOVER_DIALOG_ID = "review-popover-dialog";
+  const EXTENDED_COLOR_DIALOG_ID = "extended-color-dialog";
+  const SHAPE_DASHARRAY = { solid: "", dashed: "8 4", dotted: "2 4", double: "1 4" };
+  let shapeAdvTarget = null;
+  let reviewPopoverTarget = null;
+  let extendedColorTarget = null; // { kind, shape } — where the custom color lands
+  let woShapeMarkerSeq = 0;
+  function shapeAdvReady() {
+    return !!(window.WoDialogs && window.WoDialogs.WO_DIALOG_SPECS && window.woDialogEngine);
+  }
+  function advHexToRgb(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if (!m) return null;
+    return {
+      r: parseInt(m[1].slice(0, 2), 16),
+      g: parseInt(m[1].slice(2, 4), 16),
+      b: parseInt(m[1].slice(4, 6), 16),
+    };
+  }
+  function advRgbToHex(r, g, b) {
+    const to2 = (v) => ("0" + Math.max(0, Math.min(255, Math.round(Number(v) || 0))).toString(16)).slice(-2);
+    return "#" + to2(r) + to2(g) + to2(b);
+  }
+  /** hex + alpha(0-100) → css color (rgba below 100% so the value survives). */
+  function advWithAlpha(hex, alpha) {
+    const a = Math.max(0, Math.min(100, Math.round(parseFloat(alpha) || 0))) / 100;
+    const rgb = advHexToRgb(hex) || { r: 0, g: 0, b: 0 };
+    return a >= 1 ? hex : "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + a + ")";
+  }
+  function advParseJsonAttr(el, attr, dflt) {
+    try {
+      const v = JSON.parse(el.getAttribute(attr) || "null");
+      return v == null ? dflt : v;
+    } catch (err) { return dflt; }
+  }
+  function selectedShapeObject() {
+    const obj = selectedImageObject();
+    if (obj && obj.classList && obj.classList.contains("drawing-shape")) return obj;
+    return null;
+  }
+  /** The paintable svg child of a shape wrapper (rect/circle/polygon/…). */
+  function shapeSvgChild(shape) {
+    const svg = shape.querySelector("svg");
+    if (!svg) return null;
+    return svg.querySelector("rect, circle, ellipse, polygon, polyline, path, line");
+  }
+
+  // -- ShapeSettings ----------------------------------------------------
+  function openShapeSettings() {
+    closeAllMenus();
+    if (!shapeAdvReady()) { setStatus(t("Status.NotAvailable") + " shapeSettings"); return; }
+    const shape = selectedShapeObject();
+    if (!shape || READ_ONLY) { setStatus(t("Status.NotAvailable") + " shapeSettings"); return; }
+    shapeAdvTarget = shape;
+    let handle = window.woDialogEngine.get(SHAPE_SETTINGS_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.shapeSettings);
+    syncShapeSettingsDialog(shape, handle);
+    handle.open();
+  }
+  function closeShapeSettings() {
+    if (shapeAdvReady()) window.woDialogEngine.close(SHAPE_SETTINGS_DIALOG_ID);
+    shapeAdvTarget = null;
+  }
+  function syncShapeSettingsDialog(shape, handle) {
+    const child = shapeSvgChild(shape);
+    const fillAttr = shape.getAttribute("data-shape-fill");
+    const gradient = advParseJsonAttr(shape, "data-shape-gradient", null);
+    let fillType = "solid";
+    let fill = "#4a6cf7";
+    const svgFill = child ? (child.getAttribute("fill") || "").toLowerCase() : "none";
+    if (Array.isArray(gradient) && gradient.length >= 2) fillType = "gradient";
+    else if (fillAttr) fillType = "solid";
+    else if (svgFill === "none" || svgFill === "" || svgFill === "transparent") fillType = "none";
+    if (fillType === "gradient") fill = (gradient[0] && gradient[0].color) || "#4a6cf7";
+    else if (fillType === "solid") fill = fillAttr || (svgFill && svgFill !== "none" ? svgFill : "#4a6cf7");
+    handle.setValue("fillType", fillType);
+    handle.setValue("fill", fillType === "none" ? "#4a6cf7" : fill);
+    handle.setValue("fillGradient", Array.isArray(gradient) ? gradient : [{ offset: 0, color: fill }, { offset: 100, color: "#ffffff" }]);
+    // Line: stroke state lives on the svg child (createShapeSvg defaults).
+    const svgStroke = child ? (child.getAttribute("stroke") || "").toLowerCase() : "#4472c4";
+    const line = advParseJsonAttr(shape, "data-shape-line", null) || {};
+    const widthPt = line.width != null ? Number(line.width)
+      : Math.round((parseFloat(child && child.getAttribute("stroke-width")) || 2) * 0.75 * 100) / 100;
+    let dash = line.style || "solid";
+    if (!line.style && child) {
+      const da = child.getAttribute("stroke-dasharray") || "";
+      dash = da ? (da === "1 4" ? "double" : (da === "2 4" ? "dotted" : "dashed")) : "solid";
+    }
+    handle.setValue("line", line.color || (svgStroke && svgStroke !== "none" ? svgStroke : "#4472c4"));
+    handle.setValue("lineWidth", Math.max(0, widthPt));
+    handle.setValue("lineStyle", ["solid", "dashed", "dotted", "double", "none"].indexOf(dash) !== -1 ? dash : "solid");
+    handle.setValue("cap", (child && child.getAttribute("stroke-linecap")) || "flat");
+    handle.setValue("join", (child && child.getAttribute("stroke-linejoin")) || "round");
+    const arrows = advParseJsonAttr(shape, "data-shape-arrows", {}) || {};
+    handle.setValue("arrowBegin", arrows.begin || "none");
+    handle.setValue("arrowEnd", arrows.end || "none");
+    // Shadow.
+    const shadow = advParseJsonAttr(shape, "data-shape-shadow", null);
+    handle.setValue("shadowOn", !!shadow);
+    handle.setValue("shadowColor", (shadow && shadow.color) || "#000000");
+    handle.setValue("shadowBlur", shadow ? Number(shadow.blur) || 6 : 6);
+    handle.setValue("shadowOffset", shadow ? Number(shadow.offset) || 4 : 4);
+    // Geometry markers.
+    handle.setValue("moveWithText", shape.getAttribute("data-shape-move-with-text") !== "0");
+    handle.setValue("lockAspect", shape.getAttribute("data-shape-lock-aspect") === "1");
+    handle.setValue("behindDoc", shape.getAttribute("data-wrap") === "behind");
+  }
+  /** Inject (or replace) the <marker> defs for begin/end arrowheads. */
+  function applyShapeArrows(shape, begin, end) {
+    const svg = shape.querySelector("svg");
+    const child = shapeSvgChild(shape);
+    if (!svg || !child) return;
+    const defsId = "wo-arrows-" + (++woShapeMarkerSeq);
+    const kinds = {
+      arrow: '<path d="M0,0 L10,4 L0,8 z" fill="context-stroke"></path>',
+      stealth: '<path d="M0,0 L12,4 L0,8 L4,4 z" fill="context-stroke"></path>',
+      diamond: '<path d="M0,4 L5,0 L10,4 L5,8 z" fill="context-stroke"></path>',
+      oval: '<circle cx="5" cy="4" r="4" fill="context-stroke"></circle>',
+    };
+    const marker = (kind, refX) => kind && kinds[kind]
+      ? '<marker id="' + defsId + "-" + refX + '" markerUnits="strokeWidth" markerWidth="12" markerHeight="8"' +
+        ' refX="' + (refX === "begin" ? 10 : 1) + '" refY="4" orient="auto">' + kinds[kind] + "</marker>"
+      : "";
+    const beginDef = marker(begin, "begin");
+    const endDef = marker(end, "end");
+    const old = svg.querySelector("defs[data-wo-arrows]");
+    if (old) old.remove();
+    if (beginDef || endDef) {
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      defs.setAttribute("data-wo-arrows", "1");
+      defs.innerHTML = beginDef + endDef;
+      svg.insertBefore(defs, svg.firstChild);
+      child.setAttribute("marker-start", beginDef ? "url(#" + defsId + "-begin)" : "");
+      child.setAttribute("marker-end", endDef ? "url(#" + defsId + "-end)" : "");
+    } else {
+      child.removeAttribute("marker-start");
+      child.removeAttribute("marker-end");
+    }
+    shape.setAttribute("data-shape-arrows", JSON.stringify({ begin: begin || "none", end: end || "none" }));
+  }
+  function applyShapeSettingsAdvanced(value) {
+    const v = advParsePayload(value, "shapeSettings");
+    if (!v) return;
+    const shape = shapeAdvTarget || selectedShapeObject();
+    shapeAdvTarget = null;
+    if (!shape || READ_ONLY) { setStatus(t("Status.NotAvailable") + " shapeSettings"); return; }
+    const child = shapeSvgChild(shape);
+    // Fill: none / solid (svg paint attr) / gradient (wrapper background —
+    // the svg interior stays transparent so the gradient shows through).
+    const fillType = ["none", "solid", "gradient"].indexOf(v.fillType) !== -1 ? v.fillType : "solid";
+    const gradient = Array.isArray(v.fillGradient) ? v.fillGradient
+      .map((s) => ({ offset: Math.max(0, Math.min(100, parseFloat(s && s.offset) || 0)), color: (s && s.color) || "#000000" }))
+      : null;
+    if (fillType === "gradient" && gradient && gradient.length >= 2) {
+      shape.setAttribute("data-shape-gradient", JSON.stringify(gradient));
+      shape.style.background = "linear-gradient(to right," +
+        gradient.map((s) => s.color + " " + s.offset + "%").join(",") + ")";
+      shape.removeAttribute("data-shape-fill");
+      if (child) child.setAttribute("fill", "none");
+    } else if (fillType === "solid" && v.fill) {
+      shape.setAttribute("data-shape-fill", String(v.fill));
+      shape.removeAttribute("data-shape-gradient");
+      shape.style.removeProperty("background");
+      if (child) child.setAttribute("fill", String(v.fill));
+    } else { // none (or a degenerate gradient falls back to no fill)
+      shape.removeAttribute("data-shape-fill");
+      shape.removeAttribute("data-shape-gradient");
+      shape.style.removeProperty("background");
+      if (child) child.setAttribute("fill", "none");
+    }
+    // Line: stroke paint attributes on the svg child; pt → px at 96dpi/72pt
+    // like the rail line-size control renders it.
+    const lineStyle = ["solid", "dashed", "dotted", "double", "none"].indexOf(v.lineStyle) !== -1 ? v.lineStyle : "solid";
+    const lineColor = v.line || "#4472c4";
+    const linePx = Math.max(0, (parseFloat(v.lineWidth) || 0) * 96 / 72);
+    if (child) {
+      if (lineStyle === "none" || linePx <= 0) child.setAttribute("stroke", "none");
+      else {
+        child.setAttribute("stroke", lineColor);
+        child.setAttribute("stroke-width", String(linePx));
+        child.setAttribute("stroke-linecap", v.cap || "flat");
+        child.setAttribute("stroke-linejoin", v.join || "round");
+        const dash = SHAPE_DASHARRAY[lineStyle] || "";
+        if (dash) child.setAttribute("stroke-dasharray", dash);
+        else child.removeAttribute("stroke-dasharray");
+      }
+    }
+    shape.setAttribute("data-shape-line", JSON.stringify({ color: lineColor, width: parseFloat(v.lineWidth) || 0, style: lineStyle }));
+    applyShapeArrows(shape, v.arrowBegin, v.arrowEnd);
+    // Shadow → box-shadow approximation; attrs carry it back into the dialog.
+    const shadowOn = v.shadowOn === true || v.shadowOn === "true";
+    if (shadowOn) {
+      const blur = Math.max(0, parseFloat(v.shadowBlur) || 6);
+      const off = parseFloat(v.shadowOffset) || 4;
+      const color = advWithAlpha(v.shadowColor || "#000000", 40);
+      shape.style.boxShadow = off + "px " + off + "px " + blur + "px " + color;
+      shape.setAttribute("data-shape-shadow", JSON.stringify({ color: v.shadowColor || "#000000", blur: blur, offset: off }));
+    } else {
+      shape.style.removeProperty("box-shadow");
+      shape.removeAttribute("data-shape-shadow");
+    }
+    // Geometry markers (session-level like the table flow markers — no OO
+    // anchor engine behind them yet).
+    shape.setAttribute("data-shape-move-with-text",
+      (v.moveWithText === true || v.moveWithText === "true" || v.moveWithText === undefined) ? "1" : "0");
+    if (v.lockAspect === true || v.lockAspect === "true") shape.setAttribute("data-shape-lock-aspect", "1");
+    else shape.removeAttribute("data-shape-lock-aspect");
+    if (v.behindDoc === true || v.behindDoc === "true") {
+      if (!shape.getAttribute("data-wrap")) shape.setAttribute("data-wrap", "behind");
+    }
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus(t("Status.ShapeAdvancedApplied"));
+  }
+
+  // -- ReviewPopover ----------------------------------------------------
+  function openReviewPopover(commentId) {
+    closeAllMenus();
+    if (!shapeAdvReady()) { setStatus(t("Status.NotAvailable") + " reviewPopover"); return; }
+    let span = null;
+    const id = commentId == null ? "" : String(commentId);
+    if (id) span = editor.querySelector('span.comment[data-id="' + id + '"]');
+    if (!span) {
+      // Fall back to the selected / most recently clicked comment.
+      const sel = window.getSelection();
+      const node = sel && sel.anchorNode
+        ? (sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode) : null;
+      span = node && node.closest ? node.closest("span.comment") : null;
+    }
+    if (!span || !editor.contains(span)) { setStatus(t("Status.NotAvailable") + " reviewPopover"); return; }
+    reviewPopoverTarget = span;
+    let handle = window.woDialogEngine.get(REVIEW_POPOVER_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.reviewPopover);
+    syncReviewPopover(span, handle);
+    anchorReviewPopover(span, handle);
+    handle.open();
+  }
+  function closeReviewPopover() {
+    if (shapeAdvReady()) window.woDialogEngine.close(REVIEW_POPOVER_DIALOG_ID);
+    reviewPopoverTarget = null;
+  }
+  function syncReviewPopover(span, handle) {
+    const thread = parseThread(span);
+    handle.setValue("author", thread.author || TRACK_AUTHOR);
+    handle.setValue("text", thread.text || "");
+    handle.setValue("resolved", thread.resolved);
+    handle.setValue("reply", "");
+  }
+  /** Anchor the built panel next to the comment span (OO popover behavior). */
+  function anchorReviewPopover(span, handle) {
+    const panel = handle.el.querySelector ? handle.el.querySelector(".wo-dlg-panel") : null;
+    if (!panel || typeof span.getBoundingClientRect !== "function") return;
+    handle.el.classList.add("wo-review-popover");
+    const rect = span.getBoundingClientRect();
+    const left = Math.max(8, rect.left + window.scrollX);
+    const top = rect.bottom + window.scrollY + 8;
+    panel.style.left = Math.round(left) + "px";
+    panel.style.top = Math.round(top) + "px";
+  }
+  function applyReviewPopover(value) {
+    const v = advParsePayload(value, "reviewPopover");
+    if (!v) return;
+    const id = v.id == null ? "" : String(v.id);
+    const span = (id && editor.querySelector('span.comment[data-id="' + id + '"]')) ||
+      (reviewPopoverTarget && editor.contains(reviewPopoverTarget) ? reviewPopoverTarget : null);
+    reviewPopoverTarget = null;
+    if (!span) { setStatus(t("Status.NotAvailable") + " reviewPopover"); return; }
+    let mutated = false;
+    if (typeof v.text === "string" && v.text !== (span.getAttribute("data-comment") || "")) {
+      span.setAttribute("data-comment", v.text);
+      mutated = true;
+    }
+    const resolved = v.resolved === true || v.resolved === "true";
+    if (resolved !== (span.getAttribute("data-resolved") === "1")) {
+      toggleResolved(span);
+      mutated = true;
+    }
+    if (typeof v.reply === "string" && v.reply.trim()) {
+      addReply(span, TRACK_AUTHOR, v.reply.trim());
+      mutated = true;
+    }
+    if (mutated) afterTrackEdit();
+    renderCommentsList();
+    openCommentsPanel();
+    setStatus(t("Status.ReviewPopoverApplied"));
+  }
+  function reviewPopoverGoTo() {
+    const span = reviewPopoverTarget ||
+      (function () {
+        const sel = window.getSelection();
+        const node = sel && sel.anchorNode
+          ? (sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode) : null;
+        return node && node.closest ? node.closest("span.comment") : null;
+      })();
+    if (!span || !editor.contains(span)) return;
+    span.scrollIntoView({ block: "center" });
+    const r = document.createRange();
+    r.selectNodeContents(span);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+  }
+  function reviewPopoverDelete() {
+    const span = reviewPopoverTarget;
+    closeReviewPopover();
+    if (!span || !editor.contains(span)) return;
+    deleteComment(span);
+  }
+  // OO opens the ReviewPopover on comment click; the panel list stays the
+  // thread browser. One wo-command per click keeps it replayable.
+  editor.addEventListener("click", (ev) => {
+    const span = ev.target && ev.target.closest ? ev.target.closest("span.comment") : null;
+    if (!span || !editor.contains(span)) return;
+    const id = span.getAttribute("data-id");
+    if (id) emitCommand("openReviewPopover", id);
+  });
+
+  // -- ExtendedColorDialog ----------------------------------------------
+  function openExtendedColorDialog(purpose) {
+    closeAllMenus();
+    if (!shapeAdvReady()) { setStatus(t("Status.NotAvailable") + " extendedColor"); return; }
+    const kind = ["page", "shape-fill", "shape-line", "shape-shadow"].indexOf(purpose) !== -1 ? purpose : "page";
+    const shape = selectedShapeObject();
+    extendedColorTarget = { kind: kind, shape: shape };
+    let handle = window.woDialogEngine.get(EXTENDED_COLOR_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.extendedColorDialog);
+    // Sync the rows from the live target color (OO re-reads on show).
+    let current = "#ffffff";
+    if (kind === "page") {
+      const paper = editor.style.getPropertyValue("--paper");
+      current = (paper && paper.trim()) || "#ffffff";
+    } else if (shape) {
+      const child = shapeSvgChild(shape);
+      if (kind === "shape-fill") {
+        current = shape.getAttribute("data-shape-fill") ||
+          (child && child.getAttribute("fill")) || "#4a6cf7";
+        const gradient = advParseJsonAttr(shape, "data-shape-gradient", null);
+        if (Array.isArray(gradient) && gradient[0]) current = gradient[0].color;
+      } else if (kind === "shape-line") {
+        const line = advParseJsonAttr(shape, "data-shape-line", {}) || {};
+        current = line.color || (child && child.getAttribute("stroke")) || "#4472c4";
+      } else {
+        const shadow = advParseJsonAttr(shape, "data-shape-shadow", {}) || {};
+        current = shadow.color || "#000000";
+      }
+    }
+    const m = /^#?[0-9a-f]{6}$/i.exec(String(current).trim());
+    const hex = m ? (String(current).trim().charAt(0) === "#" ? String(current).trim().toLowerCase()
+      : "#" + String(current).trim().toLowerCase()) : "#ffffff";
+    const rgb = advHexToRgb(hex) || { r: 255, g: 255, b: 255 };
+    handle.setValue("hsb", hex);
+    handle.setValue("r", rgb.r);
+    handle.setValue("g", rgb.g);
+    handle.setValue("b", rgb.b);
+    handle.setValue("hex", hex);
+    handle.setValue("alpha", 100);
+    handle.open();
+  }
+  function applyExtendedColorDialog(value) {
+    const v = advParsePayload(value, "extendedColor");
+    if (!v) return;
+    const target = extendedColorTarget || { kind: "page", shape: selectedShapeObject() };
+    extendedColorTarget = null;
+    // The picker widget is the source of truth; the explicit hex / RGB rows
+    // are fallbacks (OO keeps the same precedence between its fields).
+    const hex = (v.hsb && v.hsb.hex) || v.hex ||
+      advRgbToHex(v.r, v.g, v.b) || "#ffffff";
+    // Missing alpha in a replayed/legacy payload means opaque — never
+    // transparent, or a replays-only ledger would erase the fill.
+    const alpha = v.alpha === undefined || v.alpha === null || v.alpha === ""
+      ? 100 : Math.max(0, Math.min(100, Math.round(parseFloat(v.alpha) || 0)));
+    const color = advWithAlpha(hex, alpha);
+    if (target.kind === "shape-fill" && target.shape && editor.contains(target.shape)) {
+      const child = shapeSvgChild(target.shape);
+      target.shape.setAttribute("data-shape-fill", hex);
+      target.shape.removeAttribute("data-shape-gradient");
+      target.shape.style.removeProperty("background");
+      if (child) {
+        child.setAttribute("fill", color);
+        if (alpha < 100) child.setAttribute("fill-opacity", String(alpha / 100));
+        else child.removeAttribute("fill-opacity");
+      }
+      markObjectMutation();
+      syncRightPanelControls();
+    } else if (target.kind === "shape-line" && target.shape && editor.contains(target.shape)) {
+      const child = shapeSvgChild(target.shape);
+      const line = advParseJsonAttr(target.shape, "data-shape-line", {}) || {};
+      if (child && (child.getAttribute("stroke") || "none") !== "none") child.setAttribute("stroke", color);
+      target.shape.setAttribute("data-shape-line", JSON.stringify({
+        color: hex, width: line.width != null ? line.width : 2, style: line.style || "solid",
+      }));
+      markObjectMutation();
+      syncRightPanelControls();
+    } else if (target.kind === "shape-shadow" && target.shape && editor.contains(target.shape)) {
+      const shadow = advParseJsonAttr(target.shape, "data-shape-shadow", {}) || {};
+      const blur = Number(shadow.blur) || 6;
+      const off = Number(shadow.offset) || 4;
+      target.shape.style.boxShadow = off + "px " + off + "px " + blur + "px " + color;
+      target.shape.setAttribute("data-shape-shadow", JSON.stringify({ color: hex, blur: blur, offset: off }));
+      markObjectMutation();
+    } else if (target.kind === "page") {
+      // Same funnel as confirmPageColorDialog (an explicit pick, not
+      // Automatic/None), keeping the page-color dialog inputs in sync.
+      editor.style.setProperty("--paper", color);
+      const pageColor = document.getElementById("pagecolor");
+      if (pageColor) pageColor.value = hex;
+      markDirty();
+    } else {
+      setStatus(t("Status.ExtendedColorNoTarget"));
+      return;
+    }
+    closeExtendedColorDialog();
+    setStatus(t("Status.ExtendedColorApplied"));
+  }
+  function closeExtendedColorDialog() {
+    if (shapeAdvReady()) window.woDialogEngine.close(EXTENDED_COLOR_DIALOG_ID);
+    extendedColorTarget = null;
   }
 
   // Chart section wiring.
@@ -10588,6 +11048,13 @@
       if (editObjBtn) {
         editObjBtn.hidden = !isEditableObject(ctxImageSel);
       }
+      // P3-U03: the ShapeSettings row is shape-only — a plain img / chart
+      // gets the image / chart panels instead (OO routes by object kind).
+      const shapeSettingsBtn = ctxMenu.querySelector('button[data-ctx="ShapeSettings"]');
+      if (shapeSettingsBtn) {
+        shapeSettingsBtn.hidden = !(ctxImageSel && ctxImageSel.classList &&
+          ctxImageSel.classList.contains("drawing-shape"));
+      }
       // T-002 object ctx parity: link/field rows gate on the caret target.
       let ctxAnchor = window.getSelection && window.getSelection().anchorNode
         || e.target;
@@ -10846,6 +11313,13 @@
         } else {
           setStatus(t("Status.NoSelection"));
         }
+      } else if (action === "ShapeSettings") {
+        // P3-U03: the OO ShapeSettings row — routed through the wo-command
+        // bus so the engine-hosted dialog open is replayable like every
+        // other dialog open. Works for shapes; other objects report the
+        // same unavailability as the rail entry.
+        closeCtx();
+        emitCommand("openShapeSettings");
       } else if (action === "EditPoints") {
         // WO-22-ctx-edit-points: honest loud-limited divergence. OO opens an
         // interactive bezier-point editor here, but the web editor has no

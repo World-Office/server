@@ -1660,6 +1660,11 @@
          mode so the placeholder is rewritten in place. -->
     <button type="button" role="menuitem" data-ctx="EditObject" data-showif="object" data-i18n="Ctx.EditObject">Edit object</button>
     <button type="button" role="menuitem" data-ctx="ConvertToShape" data-showif="object" data-i18n="Ctx.ConvertToShape">Convert to shape</button>
+    <!-- P3-U03: OO ShapeSettings entry point — right-click on a drawing
+         shape opens the engine-hosted shape style dialog (fill/line/shadow).
+         editor.js shows the row only for shapes (same hide-if logic as the
+         image rows) and emits openShapeSettings on the wo-command bus. -->
+    <button type="button" role="menuitem" data-ctx="ShapeSettings" data-showif="object" data-i18n="Ctx.ShapeSettings">Shape settings…</button>
     <!-- WO-22-ctx-edit-points: OO's vector-only "Edit points" row. The web
          editor has no vector path/contour model (shapes are CSS/SVG
          placeholders with no editable geometry), so a real bezier-point
