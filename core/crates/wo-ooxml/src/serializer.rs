@@ -88,6 +88,20 @@ impl OoxmlSerializer {
 
     /// Serialize an `OoxmlDocument` to DOCX bytes (ZIP archive).
     pub fn serialize(&self, doc: &OoxmlDocument) -> Result<Vec<u8>, anyhow::Error> {
+        self.serialize_with_content_type(doc, false)
+    }
+
+    /// Serialize an `OoxmlDocument` to `.docxf` bytes (ZIP archive): the
+    /// same DOCX writer with the forms-aware main-part content type.
+    pub fn serialize_docxf(&self, doc: &OoxmlDocument) -> Result<Vec<u8>, anyhow::Error> {
+        self.serialize_with_content_type(doc, true)
+    }
+
+    fn serialize_with_content_type(
+        &self,
+        doc: &OoxmlDocument,
+        docxf: bool,
+    ) -> Result<Vec<u8>, anyhow::Error> {
         let buf = Cursor::new(Vec::new());
         let mut zip = zip::ZipWriter::new(buf);
 
@@ -95,7 +109,11 @@ impl OoxmlSerializer {
             .compression_method(zip::CompressionMethod::Deflated);
 
         // 1. [Content_Types].xml
-        let content_types = self.build_content_types(doc);
+        let content_types = if docxf {
+            self.build_docxf_content_types(doc)
+        } else {
+            self.build_content_types(doc)
+        };
         zip.start_file("[Content_Types].xml", options)?;
         zip.write_all(content_types.as_bytes())?;
 
@@ -1559,6 +1577,17 @@ impl OoxmlSerializer {
     }
 
     fn build_content_types(&self, doc: &OoxmlDocument) -> String {
+        self.build_content_types_with(doc, crate::parser::DOCX_MAIN_CONTENT_TYPE)
+    }
+
+    /// Forms-aware content-type registry: the `.docxf` (docx form variant)
+    /// twin of `build_content_types` — identical except the main-part
+    /// Override carries the forms-aware docxf content type.
+    pub fn build_docxf_content_types(&self, doc: &OoxmlDocument) -> String {
+        self.build_content_types_with(doc, crate::parser::DOCXF_MAIN_CONTENT_TYPE)
+    }
+
+    fn build_content_types_with(&self, doc: &OoxmlDocument, main_ct: &str) -> String {
         let mut extra = String::new();
         if let Some(ref body) = doc.docx_body {
             if body.header.is_some() {
@@ -1623,10 +1652,12 @@ impl OoxmlSerializer {
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>{}{}
+  <Override PartName="/word/document.xml" ContentType="{main}"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>{extra}{tail}
 </Types>"#,
-            extra, ""
+            main = main_ct,
+            extra = extra,
+            tail = ""
         )
     }
 
@@ -7502,5 +7533,52 @@ mod tests {
         assert!(doc_xml.contains("<w:body>"));
         assert!(!doc_xml.contains("<w:p>"));
         assert!(!doc_xml.contains("<w:tbl>"));
+    }
+
+    // -----------------------------------------------------------------------
+    // DOCXF — same writer, forms-aware content type
+    // -----------------------------------------------------------------------
+
+    /// `serialize_docxf` emits the identical package with the forms-aware
+    /// main-part content type; the plain DOCX register is untouched.
+    #[test]
+    fn test_serialize_docxf_emits_forms_aware_content_type() {
+        let doc = make_minimal_doc();
+        let ser = OoxmlSerializer::new();
+
+        let docx = ser.serialize(&doc).unwrap();
+        let docxf = ser.serialize_docxf(&doc).unwrap();
+
+        let docx_ct = read_zip_entry(&docx, "[Content_Types].xml");
+        let docxf_ct = read_zip_entry(&docxf, "[Content_Types].xml");
+        assert!(docx_ct.contains(crate::parser::DOCX_MAIN_CONTENT_TYPE));
+        assert!(docxf_ct.contains(crate::parser::DOCXF_MAIN_CONTENT_TYPE));
+        assert!(
+            !docxf_ct.contains(crate::parser::DOCX_MAIN_CONTENT_TYPE),
+            "docxf package must not carry the plain main content type"
+        );
+        // Same part inventory — only the content-type register differs.
+        assert_eq!(zip_entry_names(&docx), zip_entry_names(&docxf));
+    }
+
+    /// Reader accepts writer output: the `.docxf` bytes parse back through
+    /// the same DOCX reader, and normalize byte-cleanly to plain DOCX.
+    #[test]
+    fn test_docxf_writer_output_roundtrips_through_reader() {
+        let doc = make_minimal_doc();
+        let ser = OoxmlSerializer::new();
+        let docxf = ser.serialize_docxf(&doc).unwrap();
+
+        assert!(
+            crate::parser::is_docxf_package(&docxf),
+            "writer output is a docxf form package"
+        );
+        let parsed = crate::parser::OoxmlParser::new().parse(&docxf).unwrap();
+        assert_eq!(parsed.format, OoxmlFormat::Docx);
+
+        let docx = crate::parser::docxf_to_docx(&docxf).unwrap();
+        assert!(!crate::parser::is_docxf_package(&docx));
+        let reparsed = crate::parser::OoxmlParser::new().parse(&docx).unwrap();
+        assert_eq!(reparsed.format, OoxmlFormat::Docx);
     }
 }

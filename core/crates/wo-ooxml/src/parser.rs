@@ -14,6 +14,137 @@ use wo_common::{CoreError, Document, DocumentMetadata, Result};
 use crate::detector::detect_ooxml_format;
 use crate::model::*;
 
+// ---------------------------------------------------------------------------
+// DOCXF — the DOCX *form* variant (forms-aware package)
+// ---------------------------------------------------------------------------
+//
+// A `.docxf` package (the form-authoring/filling variant used for PDF-style
+// forms) has the exact same ZIP shape as a `.docx`: same parts, same
+// relationships, same reader and writer. The only difference is the
+// main-part Override in `[Content_Types].xml`, which carries the forms-aware
+// content type below instead of `...document.main+xml`. This layer makes the
+// parser accept `.docxf` packages on the plain DOCX path and lets callers
+// flip a package between the two content-type registers.
+
+/// Main-part content type of a plain DOCX package.
+pub const DOCX_MAIN_CONTENT_TYPE: &str =
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
+
+/// Forms-aware main-part content type of a `.docxf` package (the DOCX form
+/// variant; the MIME registered for docxf in the document-formats table).
+pub const DOCXF_MAIN_CONTENT_TYPE: &str =
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document.docxf";
+
+/// True when `ct` is exactly the forms-aware DOCXF main content type.
+pub fn is_docxf_content_type(ct: &str) -> bool {
+    ct.trim().eq_ignore_ascii_case(DOCXF_MAIN_CONTENT_TYPE)
+}
+
+/// True when a `[Content_Types].xml` registry declares the forms-aware DOCXF
+/// main content type — i.e. the package is a `.docxf` form package rather
+/// than a plain `.docx`.
+pub fn content_types_declare_docxf(content_types_xml: &str) -> bool {
+    content_types_xml.contains(DOCXF_MAIN_CONTENT_TYPE)
+}
+
+/// Rewrite a `[Content_Types].xml` registry between the plain DOCX and the
+/// forms-aware DOCXF main content type. `to_docxf = true` upgrades a DOCX
+/// registry to the forms-aware register; `false` normalizes a `.docxf`
+/// registry back to plain DOCX. Everything else is left byte-identical.
+pub fn convert_docxf_content_types(content_types_xml: &str, to_docxf: bool) -> String {
+    let (from, to) = if to_docxf {
+        (DOCX_MAIN_CONTENT_TYPE, DOCXF_MAIN_CONTENT_TYPE)
+    } else {
+        (DOCXF_MAIN_CONTENT_TYPE, DOCX_MAIN_CONTENT_TYPE)
+    };
+    content_types_xml.replace(from, to)
+}
+
+/// True when `data` is a ZIP package whose `[Content_Types].xml` declares the
+/// forms-aware DOCXF main content type.
+pub fn is_docxf_package(data: &[u8]) -> bool {
+    if data.len() < 4 || data[0] != b'P' || data[1] != b'K' {
+        return false;
+    }
+    let cursor = Cursor::new(data);
+    if let Ok(mut archive) = zip::ZipArchive::new(cursor) {
+        if let Ok(mut entry) = archive.by_name("[Content_Types].xml") {
+            let mut buf = String::new();
+            if entry.read_to_string(&mut buf).is_ok() {
+                return content_types_declare_docxf(&buf);
+            }
+        }
+    }
+    false
+}
+
+/// Re-zip a package, flipping its `[Content_Types].xml` between the DOCX and
+/// DOCXF content-type registers. Entry order and compression are preserved.
+fn rewrite_docxf_zip(data: &[u8], to_docxf: bool) -> Result<Vec<u8>> {
+    let cursor = Cursor::new(data);
+    let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+        format: "ooxml".into(),
+        message: format!("Invalid ZIP: {e}"),
+    })?;
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("ZIP entry {i}: {e}"),
+        })?;
+        let name = entry.name().to_string();
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(entry.compression());
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Cannot read {name}: {e}"),
+        })?;
+        out.start_file(name.as_str(), options).map_err(|e| {
+            CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
+        })?;
+        if name == "[Content_Types].xml" {
+            let xml = String::from_utf8_lossy(&bytes);
+            std::io::Write::write_all(
+                &mut out,
+                convert_docxf_content_types(&xml, to_docxf).as_bytes(),
+            )
+            .map_err(|e| {
+                CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
+            })?;
+        } else {
+            std::io::Write::write_all(&mut out, &bytes).map_err(|e| {
+                CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
+            })?;
+        }
+    }
+    let finished = out.finish().map_err(|e| {
+        CoreError::Serialization(format!("ooxml: cannot finish ZIP: {e}"))
+    })?;
+    Ok(finished.into_inner())
+}
+
+/// Normalize a `.docxf` package to its plain DOCX twin ("docxf conversion
+/// treated as docx"): byte-identical except the main-part content type is
+/// rewritten to `...document.main+xml` so every strict DOCX reader accepts
+/// it. Non-docxf input is returned unchanged.
+pub fn docxf_to_docx(data: &[u8]) -> Result<Vec<u8>> {
+    if !is_docxf_package(data) {
+        return Ok(data.to_vec());
+    }
+    rewrite_docxf_zip(data, false)
+}
+
+/// Upgrade a plain DOCX package to the forms-aware DOCXF register: the same
+/// package with the main-part content type rewritten to the docxf content
+/// type. Already-docxf input is returned unchanged.
+pub fn docx_to_docxf(data: &[u8]) -> Result<Vec<u8>> {
+    if is_docxf_package(data) {
+        return Ok(data.to_vec());
+    }
+    rewrite_docxf_zip(data, true)
+}
+
 /// While inside a complex field's result (after `separate`), plain runs feed
 /// the field's cached result text; the instruction accumulates from the
 /// `w:instrText` chunks between `begin` and `separate`.
@@ -123,7 +254,14 @@ impl OoxmlParser {
             message: format!("Invalid [Content_Types].xml: {}", e),
         })?;
 
-        let format = detect_ooxml_format(&ct_xml);
+        // DOCXF: the forms-aware docx variant is read by this same reader —
+        // normalize its content-type register before detection so the
+        // package flows through the exact DOCX path (same reader/writer,
+        // forms-aware content type is the only difference).
+        let format = detect_ooxml_format(&convert_docxf_content_types(
+            &ct_xml,
+            false,
+        ));
 
         // Parse content types
         let content_types = self.parse_content_types(&ct_doc);
@@ -7964,5 +8102,95 @@ mod tests {
         assert_eq!(value["data_labels"]["visible"], true);
         assert_eq!(value["data_labels"]["show_value"], true);
         assert_eq!(value["data_labels"]["show_category"], false);
+    }
+
+    // -----------------------------------------------------------------------
+    // DOCXF — the docx form variant (same reader, forms-aware content type)
+    // -----------------------------------------------------------------------
+
+    /// A `.docxf` package: identical ZIP shape to `make_minimal_docx`, but the
+    /// main-part Override carries the forms-aware docxf content type.
+    fn make_minimal_docxf() -> Vec<u8> {
+        let docx = make_minimal_docx();
+        docx_to_docxf(&docx).expect("docx -> docxf must succeed")
+    }
+
+    #[test]
+    fn test_docxf_content_type_helpers() {
+        assert!(is_docxf_content_type(DOCXF_MAIN_CONTENT_TYPE));
+        assert!(!is_docxf_content_type(DOCX_MAIN_CONTENT_TYPE));
+        let ct = r#"<Types><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.docxf"/></Types>"#;
+        assert!(content_types_declare_docxf(ct));
+        assert!(!content_types_declare_docxf(
+            r#"<Types><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#
+        ));
+    }
+
+    #[test]
+    fn test_convert_docxf_content_types_roundtrip() {
+        let docx_ct = format!(
+            r#"<Types><Override PartName="/word/document.xml" ContentType="{DOCX_MAIN_CONTENT_TYPE}"/></Types>"#
+        );
+        let docxf = convert_docxf_content_types(&docx_ct, true);
+        assert!(content_types_declare_docxf(&docxf), "docx -> docxf upgrade");
+        assert!(
+            !docxf.contains(DOCX_MAIN_CONTENT_TYPE),
+            "old main content type must be gone"
+        );
+        let back = convert_docxf_content_types(&docxf, false);
+        assert_eq!(back, docx_ct, "docxf -> docx normalization is lossless");
+    }
+
+    #[test]
+    fn test_docxf_package_detection() {
+        let docx = make_minimal_docx();
+        let docxf = make_minimal_docxf();
+        assert!(!is_docxf_package(&docx));
+        assert!(is_docxf_package(&docxf));
+        // The form variant is still a valid OOXML package.
+        assert!(is_ooxml_file(&docxf));
+        assert!(!is_docxf_package(b"PK\x03\x04 garbage"));
+        assert!(!is_docxf_package(b"not a zip at all"));
+    }
+
+    /// The core contract: a `.docxf` package flows through the *same* DOCX
+    /// reader — format, body text and metadata all parse identically to its
+    /// plain `.docx` twin.
+    #[test]
+    fn test_docxf_parses_as_docx() {
+        let parser = OoxmlParser::new();
+        let docxf = parser.parse(&make_minimal_docxf()).unwrap();
+        let docx = parser.parse(&make_minimal_docx()).unwrap();
+
+        assert_eq!(docxf.format, OoxmlFormat::Docx, "docxf reads as docx");
+        assert_eq!(docxf.main_part.as_deref(), Some("word/document.xml"));
+        assert_eq!(
+            docxf.core_properties.title, docx.core_properties.title,
+            "core properties survive the form variant"
+        );
+        // The forms-aware content type stays visible in the parsed registry.
+        assert!(docxf
+            .content_types
+            .iter()
+            .any(|e| is_docxf_content_type(&e.content_type)));
+    }
+
+    #[test]
+    fn test_docxf_to_docx_conversion_treated_as_docx() {
+        let docxf = make_minimal_docxf();
+        let docx = docxf_to_docx(&docxf).unwrap();
+        assert!(!is_docxf_package(&docx), "normalized twin is plain docx");
+        assert!(is_ooxml_file(&docx));
+        // Conversion is a content-type flip: the document part is untouched.
+        let parser = OoxmlParser::new();
+        let a = parser.parse(&docxf).unwrap();
+        let b = parser.parse(&docx).unwrap();
+        assert_eq!(a.core_properties.title, b.core_properties.title);
+
+        // Normalizing a plain docx is a no-op (same bytes back).
+        let plain = make_minimal_docx();
+        assert_eq!(docxf_to_docx(&plain).unwrap(), plain);
+        // Upgrading an already-docxf package is a no-op too.
+        assert_eq!(docx_to_docxf(&docxf).unwrap(), docxf);
     }
 }
