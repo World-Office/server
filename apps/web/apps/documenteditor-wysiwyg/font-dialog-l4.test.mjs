@@ -84,7 +84,8 @@ assert.ok(dlg.includes('id="font-dialog-preview"'), "live preview box must exist
 assert.ok(dlg.includes('id="btn-font-close"') && dlg.includes('id="btn-font-ok"'),
   "Cancel/OK buttons must exist")
 // Same option lists as the home pickers (dialog and picker never drift).
-for (const opt of ["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana"]) {
+for (const opt of ["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana",
+  "Calibri", "Cambria", "Candara", "Consolas", "Constantia", "Corbel", "Tahoma", "Trebuchet MS"]) {
   assert.ok(dlg.includes(`value="${opt}"`), `family list keeps ${opt}`)
 }
 for (const step of ["1", "2", "3", "4", "5", "6", "7"]) {

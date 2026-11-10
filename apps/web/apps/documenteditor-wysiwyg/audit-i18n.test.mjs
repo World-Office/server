@@ -169,7 +169,7 @@ assert.deepEqual(
 // --- 5. Buttons with visible text/title must carry data-i18n ---------------
 // Font names are product names and font sizes are numerals — untranslated by
 // convention. Pure-glyph buttons (▾ carets) have no translatable text.
-const FONT_NAMES = new Set(["Arial", "Courier New", "Georgia", "Times New Roman", "Verdana"])
+const FONT_NAMES = new Set(["Arial", "Calibri", "Cambria", "Candara", "Consolas", "Constantia", "Corbel", "Courier New", "Georgia", "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"])
 const buttons = [...htmlSrc.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].map((m) => m[0])
 const unlabeled = buttons
   .filter((b) => !/data-i18n/.test(b))
