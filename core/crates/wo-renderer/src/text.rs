@@ -3,10 +3,17 @@
 //! Provides text shaping, line breaking, and paragraph layout for the rendering engine.
 //! Uses real font metrics from `FontLibrary` (backed by fontdb) when available,
 //! with fallback defaults when no fonts are loaded.
+//!
+//! Phase B: when the library yields a usable face, line breaking runs on
+//! *shaped runs* ([`crate::shaping::Shaper`] + [`crate::textlayout`])
+//! instead of the legacy per-character `char_advance` estimate. The
+//! per-character path is kept only as the no-font fallback.
 
 use std::f32;
 
 use crate::fonts::FontLibrary;
+use crate::shaping::{ShapedRun, Shaper};
+use crate::textlayout;
 
 /// A single glyph with positioning information.
 #[derive(Debug, Clone, PartialEq)]
@@ -166,7 +173,57 @@ impl TextLayoutEngine {
     ///
     /// # Returns
     /// A `TextLayout` containing the laid-out lines
+    ///
+    /// When `fonts` yields a usable face, the text is shaped with
+    /// [`Shaper`] and lines are broken on the shaped run
+    /// ([`crate::textlayout::break_lines`]); otherwise the legacy
+    /// per-character metrics are used as the no-font fallback.
     pub fn layout_paragraph(
+        &self,
+        text: &str,
+        font_size: f32,
+        max_width: f32,
+        line_height: f32,
+        fonts: &FontLibrary,
+    ) -> TextLayout {
+        if text.is_empty() {
+            return TextLayout {
+                lines: Vec::new(),
+                total_width: 0.0,
+                total_height: 0.0,
+            };
+        }
+
+        let ascent = fonts.ascent(font_size);
+        let descent = fonts.descent(font_size);
+
+        if let Some(shaper) = Shaper::from_library(fonts, false) {
+            let shaped =
+                textlayout::layout_paragraph(&shaper, text, font_size, max_width, line_height);
+            let lines = shaped
+                .into_iter()
+                .map(|line| {
+                    TextLine::new(
+                        glyph_run_from_shaped(&line.run),
+                        line.width,
+                        ascent,
+                        descent,
+                        line.y + ascent,
+                    )
+                })
+                .collect();
+            return TextLayout::new(lines);
+        }
+
+        self.layout_paragraph_fallback(text, font_size, max_width, line_height, fonts)
+    }
+
+    /// Legacy per-character line breaking (no-font fallback).
+    ///
+    /// Kept for libraries with no usable face (e.g. `FontLibrary::empty()`
+    /// in unit tests). New code paths should prefer the shaped-run layout.
+    #[allow(clippy::too_many_arguments)] // mirrors layout_paragraph
+    fn layout_paragraph_fallback(
         &self,
         text: &str,
         font_size: f32,
@@ -261,6 +318,16 @@ impl TextLayoutEngine {
 
         TextLayout::new(lines)
     }
+}
+
+/// Convert a shaped run into the legacy [`GlyphRun`] representation used
+/// by [`TextLine`].
+fn glyph_run_from_shaped(run: &ShapedRun) -> GlyphRun {
+    let mut out = GlyphRun::new(run.font_size);
+    for g in &run.glyphs {
+        out.add_glyph(g.glyph_id, g.x_offset, g.y_offset, g.x_advance);
+    }
+    out
 }
 
 #[cfg(test)]
