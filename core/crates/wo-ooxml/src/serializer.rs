@@ -3125,6 +3125,126 @@ impl OoxmlSerializer {
             );
         }
 
+        // conditional formatting (ORM-06: colorScale / dataBar / iconSet
+        // + the attribute-only rule kinds; schema order puts the blocks
+        // after mergeCells and before dataValidations/hyperlinks)
+        for cf in &sheet.properties.conditional_formatting {
+            if cf.rules.is_empty() {
+                continue;
+            }
+            xml.push_str(&format!(
+                r#"
+  <conditionalFormatting sqref="{}">"#,
+                escape_xml(&cf.sqref),
+            ));
+            for rule in &cf.rules {
+                xml.push_str(&format!(
+                    r#"
+    <cfRule type="{}""#,
+                    escape_xml(&rule.rule_type),
+                ));
+                if let Some(dxf_id) = rule.dxf_id {
+                    xml.push_str(&format!(r#" dxfId="{}""#, dxf_id));
+                }
+                if let Some(priority) = rule.priority {
+                    xml.push_str(&format!(r#" priority="{}""#, priority));
+                }
+                if rule.stop_if_true {
+                    xml.push_str(r#" stopIfTrue="1""#);
+                }
+                if let Some(ref op) = rule.operator {
+                    xml.push_str(&format!(r#" operator="{}""#, escape_xml(op)));
+                }
+                if let Some(ref text) = rule.text {
+                    xml.push_str(&format!(r#" text="{}""#, escape_xml(text)));
+                }
+                if let Some(ref period) = rule.time_period {
+                    xml.push_str(&format!(r#" timePeriod="{}""#, escape_xml(period)));
+                }
+                if let Some(rank) = rule.rank {
+                    xml.push_str(&format!(r#" rank="{}""#, rank));
+                }
+                if let Some(percent) = rule.percent {
+                    xml.push_str(&format!(r#" percent="{}""#, if percent { "1" } else { "0" }));
+                }
+                if let Some(bottom) = rule.bottom {
+                    xml.push_str(&format!(r#" bottom="{}""#, if bottom { "1" } else { "0" }));
+                }
+                if let Some(above) = rule.above_average {
+                    xml.push_str(&format!(r#" aboveAverage="{}""#, if above { "1" } else { "0" }));
+                }
+                xml.push('>');
+                match &rule.kind {
+                    XlsxConditionalFormatKind::ColorScale(scale) => {
+                        xml.push_str("\n      <colorScale>");
+                        for cfvo in &scale.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        for color in &scale.colors {
+                            Self::push_xlsx_cf_color(&mut xml, color);
+                        }
+                        xml.push_str("\n      </colorScale>");
+                    }
+                    XlsxConditionalFormatKind::DataBar(bar) => {
+                        xml.push_str("\n      <dataBar");
+                        if let Some(v) = bar.min_length {
+                            xml.push_str(&format!(r#" minLength="{}""#, v));
+                        }
+                        if let Some(v) = bar.max_length {
+                            xml.push_str(&format!(r#" maxLength="{}""#, v));
+                        }
+                        if !bar.show_value {
+                            xml.push_str(r#" showValue="0""#);
+                        }
+                        xml.push('>');
+                        for cfvo in &bar.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        if let Some(ref color) = bar.color {
+                            Self::push_xlsx_cf_color(&mut xml, color);
+                        }
+                        xml.push_str("\n      </dataBar>");
+                    }
+                    XlsxConditionalFormatKind::IconSet(set) => {
+                        xml.push_str("\n      <iconSet");
+                        if let Some(ref icon_set) = set.icon_set {
+                            xml.push_str(&format!(r#" iconSet="{}""#, escape_xml(icon_set)));
+                        }
+                        if !set.show_value {
+                            xml.push_str(r#" showValue="0""#);
+                        }
+                        if set.percent {
+                            xml.push_str(r#" percent="1""#);
+                        }
+                        if set.reverse {
+                            xml.push_str(r#" reverse="1""#);
+                        }
+                        xml.push('>');
+                        for cfvo in &set.cfvos {
+                            Self::push_xlsx_cfvo(&mut xml, cfvo);
+                        }
+                        xml.push_str("\n      </iconSet>");
+                    }
+                    XlsxConditionalFormatKind::Plain => {}
+                }
+                for formula in &rule.formulas {
+                    xml.push_str(&format!(
+                        r#"
+      <formula>{}</formula>"#,
+                        escape_xml(formula),
+                    ));
+                }
+                xml.push_str(
+                    r#"
+    </cfRule>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </conditionalFormatting>"#,
+            );
+        }
+
         // hyperlinks (ORM-06: the single most common interactive feature)
         if !sheet.properties.hyperlinks.is_empty() {
             xml.push_str(&format!(
@@ -3270,6 +3390,112 @@ impl OoxmlSerializer {
 
         xml.push_str("\n</worksheet>");
         xml
+    }
+
+    /// A CF threshold (`<cfvo type=".." val=".."/>`).
+    fn push_xlsx_cfvo(xml: &mut String, cfvo: &XlsxCfvo) {
+        xml.push_str(&format!("\n        <cfvo type=\"{}\"", escape_xml(&cfvo.cfvo_type)));
+        if let Some(ref val) = cfvo.val {
+            xml.push_str(&format!(r#" val="{}""#, escape_xml(val)));
+        }
+        if !cfvo.gte {
+            xml.push_str(r#" gte="0""#);
+        }
+        xml.push_str("/>");
+    }
+
+    /// A CF color reference (`<color rgb|theme|indexed tint=...>`).
+    fn push_xlsx_cf_color(xml: &mut String, color: &XlsxCfColor) {
+        xml.push_str("\n        <color");
+        if let Some(ref rgb) = color.rgb {
+            xml.push_str(&format!(r#" rgb="{}""#, escape_xml(rgb)));
+        }
+        if let Some(theme) = color.theme {
+            xml.push_str(&format!(r#" theme="{}""#, theme));
+        }
+        if let Some(indexed) = color.indexed {
+            xml.push_str(&format!(r#" indexed="{}""#, indexed));
+        }
+        if let Some(tint) = color.tint {
+            xml.push_str(&format!(r#" tint="{}""#, tint));
+        }
+        xml.push_str("/>");
+    }
+
+    /// A dxf font record (same shape as a `<font>` in the shared table).
+    fn push_xlsx_dxf_font(xml: &mut String, font: &XlsxFont) {
+        xml.push_str("\n      <font>");
+        if let Some(ref name) = font.name {
+            xml.push_str(&format!("\n        <name val=\"{}\"/>", escape_xml(name)));
+        }
+        if let Some(sz) = font.sz {
+            xml.push_str(&format!("\n        <sz val=\"{}\"/>", sz));
+        }
+        if font.b {
+            xml.push_str("\n        <b/>");
+        }
+        if font.i {
+            xml.push_str("\n        <i/>");
+        }
+        if font.strike {
+            xml.push_str("\n        <strike/>");
+        }
+        if let Some(ref u) = font.u {
+            xml.push_str(&format!("\n        <u val=\"{}\"/>", escape_xml(u)));
+        }
+        if let Some(ref color) = font.color {
+            xml.push_str(&format!("\n        <color rgb=\"{}\"/>", escape_xml(color)));
+        }
+        xml.push_str("\n      </font>");
+    }
+
+    /// A dxf fill record (colors as child elements, per CT_Dxf).
+    fn push_xlsx_dxf_fill(xml: &mut String, fill: &XlsxFill) {
+        xml.push_str("\n      <fill>");
+        match fill.pattern_type.as_deref() {
+            Some(pt) => {
+                xml.push_str(&format!(
+                    "\n        <patternFill patternType=\"{}\">",
+                    escape_xml(pt)
+                ));
+                if let Some(ref fg) = fill.fg_color {
+                    xml.push_str(&format!("\n          <fgColor rgb=\"{}\"/>", escape_xml(fg)));
+                }
+                if let Some(ref bg) = fill.bg_color {
+                    xml.push_str(&format!("\n          <bgColor rgb=\"{}\"/>", escape_xml(bg)));
+                }
+                xml.push_str("\n        </patternFill>");
+            }
+            None => xml.push_str("\n        <patternFill/>"),
+        }
+        xml.push_str("\n      </fill>");
+    }
+
+    /// A dxf border record.
+    fn push_xlsx_dxf_border(&self, xml: &mut String, border: &XlsxBorder) {
+        xml.push_str("\n      <border>");
+        for (name, side) in [
+            ("left", &border.left),
+            ("right", &border.right),
+            ("top", &border.top),
+            ("bottom", &border.bottom),
+            ("diagonal", &border.diagonal),
+        ] {
+            if let Some(ref s) = side {
+                xml.push_str(&format!(
+                    "\n        <{} style=\"{}\"",
+                    name,
+                    s.style.as_deref().unwrap_or("none"),
+                ));
+                if let Some(ref color) = s.color {
+                    xml.push_str(&format!(r#" color="{}""#, escape_xml(color)));
+                }
+                xml.push_str("/>");
+            } else {
+                xml.push_str(&format!("\n        <{}/>", name));
+            }
+        }
+        xml.push_str("\n      </border>");
     }
 
     /// Worksheet rels part holding the external hyperlink relationships.
@@ -3641,6 +3867,71 @@ impl OoxmlSerializer {
             xml.push_str(
                 r#"
   </cellXfs>"#,
+            );
+        }
+
+        // dxfs (differential formats referenced by conditional-format
+        // rules via dxfId; schema order puts them after cellXfs)
+        if !styles.dxfs.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <dxfs count="{}">"#,
+                styles.dxfs.len(),
+            ));
+            for dxf in &styles.dxfs {
+                xml.push_str("\n    <dxf>");
+                if let Some(ref font) = dxf.font {
+                    Self::push_xlsx_dxf_font(&mut xml, font);
+                }
+                if let Some(ref num_fmt) = dxf.num_fmt {
+                    xml.push_str(&format!(
+                        r#"
+      <numFmt numFmtId="{}" formatCode="{}"/>"#,
+                        num_fmt.num_fmt_id,
+                        escape_xml(&num_fmt.format_code),
+                    ));
+                }
+                if let Some(ref fill) = dxf.fill {
+                    Self::push_xlsx_dxf_fill(&mut xml, fill);
+                }
+                if let Some(ref align) = dxf.alignment {
+                    xml.push_str("\n      <alignment");
+                    if let Some(ref h) = align.horizontal {
+                        xml.push_str(&format!(r#" horizontal="{}""#, escape_xml(h)));
+                    }
+                    if let Some(ref v) = align.vertical {
+                        xml.push_str(&format!(r#" vertical="{}""#, escape_xml(v)));
+                    }
+                    if let Some(rot) = align.text_rotation {
+                        xml.push_str(&format!(r#" textRotation="{}""#, rot));
+                    }
+                    if align.wrap_text {
+                        xml.push_str(r#" wrapText="1""#);
+                    }
+                    if let Some(ind) = align.indent {
+                        xml.push_str(&format!(r#" indent="{}""#, ind));
+                    }
+                    if align.shrink_to_fit {
+                        xml.push_str(r#" shrinkToFit="1""#);
+                    }
+                    xml.push_str("/>");
+                }
+                if let Some(ref border) = dxf.border {
+                    self.push_xlsx_dxf_border(&mut xml, border);
+                }
+                if let Some(ref prot) = dxf.protection {
+                    xml.push_str(&format!(
+                        r#"
+      <protection locked="{}" hidden="{}"/>"#,
+                        if prot.locked { "1" } else { "0" },
+                        if prot.hidden { "1" } else { "0" },
+                    ));
+                }
+                xml.push_str("\n    </dxf>");
+            }
+            xml.push_str(
+                r#"
+  </dxfs>"#,
             );
         }
 

@@ -3552,6 +3552,31 @@ impl OoxmlParser {
                 }
             }
 
+            // ORM-06: conditional formatting — the visual rule kinds
+            // (colorScale / dataBar / iconSet) plus the attribute-only
+            // kinds (cellIs / expression / top10 / ...) so dashboards keep
+            // their exact visuals across a round trip.
+            for cf_elem in worksheet_elem.descendants() {
+                if cf_elem.has_tag_name("conditionalFormatting")
+                    && cf_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let mut block = XlsxConditionalFormatting {
+                        sqref: cf_elem
+                            .attribute("sqref")
+                            .unwrap_or_default()
+                            .to_string(),
+                        rules: Vec::new(),
+                    };
+                    for rule_elem in cf_elem.children().filter(|n| n.is_element()) {
+                        if !rule_elem.has_tag_name("cfRule") {
+                            continue;
+                        }
+                        block.rules.push(Self::parse_xlsx_cf_rule(rule_elem));
+                    }
+                    sheet_properties.conditional_formatting.push(block);
+                }
+            }
+
             // Parse columns
             for col_elem in worksheet_elem.descendants() {
                 if col_elem.has_tag_name("col")
@@ -3652,6 +3677,112 @@ impl OoxmlParser {
         }
     }
 
+    /// One `<cfRule>`: attributes + optional type-specific element.
+    fn parse_xlsx_cf_rule(elem: roxmltree::Node) -> XlsxConditionalFormatRule {
+        let mut rule = XlsxConditionalFormatRule {
+            rule_type: elem.attribute("type").unwrap_or_default().to_string(),
+            priority: elem.attribute("priority").and_then(|v| v.parse().ok()),
+            stop_if_true: elem.attribute("stopIfTrue") == Some("1"),
+            dxf_id: elem.attribute("dxfId").and_then(|v| v.parse().ok()),
+            operator: elem.attribute("operator").map(|v| v.to_string()),
+            text: elem.attribute("text").map(|v| v.to_string()),
+            time_period: elem.attribute("timePeriod").map(|v| v.to_string()),
+            rank: elem.attribute("rank").and_then(|v| v.parse().ok()),
+            percent: elem.attribute("percent").map(|v| v == "1"),
+            bottom: elem.attribute("bottom").map(|v| v == "1"),
+            above_average: elem.attribute("aboveAverage").map(|v| v == "1"),
+            formulas: Vec::new(),
+            kind: XlsxConditionalFormatKind::Plain,
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            match child.tag_name().name() {
+                "formula" => {
+                    rule.formulas.push(child.text().unwrap_or_default().to_string())
+                }
+                "colorScale" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::ColorScale(Self::parse_xlsx_color_scale(child));
+                }
+                "dataBar" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::DataBar(Self::parse_xlsx_data_bar(child));
+                }
+                "iconSet" => {
+                    rule.kind =
+                        XlsxConditionalFormatKind::IconSet(Self::parse_xlsx_icon_set(child));
+                }
+                _ => {}
+            }
+        }
+        rule
+    }
+
+    /// A CF/dxf color reference: rgb hex, theme index (+tint) or legacy
+    /// indexed palette entry.
+    fn parse_xlsx_cf_color(elem: roxmltree::Node) -> Option<XlsxCfColor> {
+        Some(XlsxCfColor {
+            rgb: elem.attribute("rgb").map(|v| v.to_string()),
+            theme: elem.attribute("theme").and_then(|v| v.parse().ok()),
+            indexed: elem.attribute("indexed").and_then(|v| v.parse().ok()),
+            tint: elem.attribute("tint").and_then(|v| v.parse().ok()),
+        })
+    }
+
+    fn parse_xlsx_cfvo(elem: roxmltree::Node) -> XlsxCfvo {
+        XlsxCfvo {
+            cfvo_type: elem.attribute("type").unwrap_or("num").to_string(),
+            val: elem.attribute("val").map(|v| v.to_string()),
+            gte: elem.attribute("gte") != Some("0"),
+        }
+    }
+
+    fn parse_xlsx_color_scale(elem: roxmltree::Node) -> XlsxColorScale {
+        let mut scale = XlsxColorScale::default();
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                scale.cfvos.push(Self::parse_xlsx_cfvo(child));
+            } else if child.has_tag_name("color") {
+                if let Some(color) = Self::parse_xlsx_cf_color(child) {
+                    scale.colors.push(color);
+                }
+            }
+        }
+        scale
+    }
+
+    fn parse_xlsx_data_bar(elem: roxmltree::Node) -> XlsxDataBar {
+        let mut bar = XlsxDataBar {
+            min_length: elem.attribute("minLength").and_then(|v| v.parse().ok()),
+            max_length: elem.attribute("maxLength").and_then(|v| v.parse().ok()),
+            show_value: elem.attribute("showValue") != Some("0"),
+            ..Default::default()
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                bar.cfvos.push(Self::parse_xlsx_cfvo(child));
+            } else if child.has_tag_name("color") {
+                bar.color = Self::parse_xlsx_cf_color(child);
+            }
+        }
+        bar
+    }
+
+    fn parse_xlsx_icon_set(elem: roxmltree::Node) -> XlsxIconSet {
+        let mut set = XlsxIconSet {
+            icon_set: elem.attribute("iconSet").map(|v| v.to_string()),
+            show_value: elem.attribute("showValue") != Some("0"),
+            percent: elem.attribute("percent") == Some("1"),
+            reverse: elem.attribute("reverse") == Some("1"),
+            ..Default::default()
+        };
+        for child in elem.children().filter(|n| n.is_element()) {
+            if child.has_tag_name("cfvo") {
+                set.cfvos.push(Self::parse_xlsx_cfvo(child));
+            }
+        }
+        set
+    }
+
     fn parse_xlsx_cell(
         &self,
         cell_elem: roxmltree::Node,
@@ -3730,101 +3861,72 @@ impl OoxmlParser {
 
         let mut styles = XlsxStyles::default();
 
-        // Parse number formats
-        for num_fmt_elem in doc.descendants() {
-            if num_fmt_elem.has_tag_name("numFmt")
-                && num_fmt_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                if let (Some(num_fmt_id), Some(format_code)) = (
-                    num_fmt_elem.attribute("numFmtId"),
-                    num_fmt_elem.attribute("formatCode"),
-                ) {
-                    if let Ok(num_fmt_id_parsed) = num_fmt_id.parse::<u32>() {
-                        styles.num_fmts.push(XlsxNumFmt {
-                            num_fmt_id: num_fmt_id_parsed,
-                            format_code: format_code.to_string(),
-                        });
-                    }
-                }
-            }
-        }
-
-        // Parse fonts
-        for font_elem in doc.descendants() {
-            if font_elem.has_tag_name("font")
-                && font_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut font = XlsxFont::default();
-
-                for child in font_elem.children() {
-                    if child.has_tag_name("name") {
-                        font.name = child.text().map(|t| t.to_string());
-                    } else if child.has_tag_name("sz") {
-                        font.sz = child.text().and_then(|t| t.parse::<f64>().ok());
-                    } else if child.has_tag_name("b") {
-                        font.b = true;
-                    } else if child.has_tag_name("i") {
-                        font.i = true;
-                    } else if child.has_tag_name("u") {
-                        font.u = child.text().map(|t| t.to_string());
-                    } else if child.has_tag_name("strike") {
-                        font.strike = true;
-                    } else if child.has_tag_name("color") {
-                        font.color = child.attribute("rgb").map(|c| c.to_string());
-                    }
-                }
-
-                styles.fonts.push(font);
-            }
-        }
-
-        // Parse fills
-        for fill_elem in doc.descendants() {
-            if fill_elem.has_tag_name("fill")
-                && fill_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut fill = XlsxFill::default();
-
-                for child in fill_elem.children() {
-                    if child.has_tag_name("patternFill") {
-                        fill.pattern_type = child.attribute("patternType").map(|p| p.to_string());
-                        if let Some(fg_color) = child.children().find(|c| c.has_tag_name("fgColor"))
-                        {
-                            fill.fg_color = fg_color.attribute("rgb").map(|c| c.to_string());
-                        }
-                        if let Some(bg_color) = child.children().find(|c| c.has_tag_name("bgColor"))
-                        {
-                            fill.bg_color = bg_color.attribute("rgb").map(|c| c.to_string());
+        // Parse number formats (scoped to <numFmts>: the <numFmt> entries
+        // inside <dxf> differential formats must not leak into the shared
+        // numFmt table).
+        if let Some(num_fmts_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("numFmts") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for num_fmt_elem in num_fmts_elem.children() {
+                if num_fmt_elem.has_tag_name("numFmt")
+                    && num_fmt_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let (Some(num_fmt_id), Some(format_code)) = (
+                        num_fmt_elem.attribute("numFmtId"),
+                        num_fmt_elem.attribute("formatCode"),
+                    ) {
+                        if let Ok(num_fmt_id_parsed) = num_fmt_id.parse::<u32>() {
+                            styles.num_fmts.push(XlsxNumFmt {
+                                num_fmt_id: num_fmt_id_parsed,
+                                format_code: format_code.to_string(),
+                            });
                         }
                     }
                 }
-
-                styles.fills.push(fill);
             }
         }
 
-        // Parse borders (simplified)
-        for border_elem in doc.descendants() {
-            if border_elem.has_tag_name("border")
-                && border_elem.tag_name().namespace() == Some(Self::S_NS)
-            {
-                let mut border = XlsxBorder::default();
-
-                for child in border_elem.children() {
-                    if child.has_tag_name("left") {
-                        border.left = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("right") {
-                        border.right = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("top") {
-                        border.top = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("bottom") {
-                        border.bottom = Some(self.parse_xlsx_border_side(child));
-                    } else if child.has_tag_name("diagonal") {
-                        border.diagonal = Some(self.parse_xlsx_border_side(child));
-                    }
+        // Parse fonts (scoped to <fonts>; fonts inside <dxf> differential
+        // formats belong to the dxf table below).
+        if let Some(fonts_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("fonts") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for font_elem in fonts_elem.children() {
+                if font_elem.has_tag_name("font")
+                    && font_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.fonts.push(Self::parse_xlsx_font(font_elem));
                 }
+            }
+        }
 
-                styles.borders.push(border);
+        // Parse fills (scoped to <fills> for the same dxf reason).
+        if let Some(fills_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("fills") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for fill_elem in fills_elem.children() {
+                if fill_elem.has_tag_name("fill")
+                    && fill_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.fills.push(Self::parse_xlsx_fill(fill_elem));
+                }
+            }
+        }
+
+        // Parse borders (scoped to <borders> for the same dxf reason).
+        if let Some(borders_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("borders") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for border_elem in borders_elem.children() {
+                if border_elem.has_tag_name("border")
+                    && border_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    styles.borders.push(self.parse_xlsx_border(border_elem));
+                }
             }
         }
 
@@ -3904,7 +4006,106 @@ impl OoxmlParser {
             }
         }
 
+        // Parse dxfs (CT_Dxfs): differential formats referenced by
+        // conditional-format rules via dxfId. Each record is a style delta
+        // (font / numFmt / fill / alignment / border / protection).
+        if let Some(dxfs_elem) = doc
+            .descendants()
+            .find(|n| n.has_tag_name("dxfs") && n.tag_name().namespace() == Some(Self::S_NS))
+        {
+            for dxf_elem in dxfs_elem.children() {
+                if !dxf_elem.has_tag_name("dxf")
+                    || dxf_elem.tag_name().namespace() != Some(Self::S_NS)
+                {
+                    continue;
+                }
+                let mut dxf = XlsxDxf::default();
+                for child in dxf_elem.children().filter(|n| n.is_element()) {
+                    match child.tag_name().name() {
+                        "font" => dxf.font = Some(Self::parse_xlsx_font(child)),
+                        "numFmt" => {
+                            dxf.num_fmt = Some(XlsxNumFmt {
+                                num_fmt_id: child
+                                    .attribute("numFmtId")
+                                    .and_then(|v| v.parse().ok())
+                                    .unwrap_or(0),
+                                format_code: child
+                                    .attribute("formatCode")
+                                    .unwrap_or_default()
+                                    .to_string(),
+                            });
+                        }
+                        "fill" => dxf.fill = Some(Self::parse_xlsx_fill(child)),
+                        "alignment" => dxf.alignment = Some(self.parse_xlsx_alignment(child)),
+                        "border" => dxf.border = Some(self.parse_xlsx_border(child)),
+                        "protection" => dxf.protection = Some(self.parse_xlsx_protection(child)),
+                        _ => {}
+                    }
+                }
+                styles.dxfs.push(dxf);
+            }
+        }
+
         Ok(styles)
+    }
+
+    /// A `<font>` record (shared font table and dxf deltas share the shape).
+    fn parse_xlsx_font(elem: roxmltree::Node) -> XlsxFont {
+        let mut font = XlsxFont::default();
+        for child in elem.children() {
+            if child.has_tag_name("name") {
+                font.name = child.text().map(|t| t.to_string());
+            } else if child.has_tag_name("sz") {
+                font.sz = child.text().and_then(|t| t.parse::<f64>().ok());
+            } else if child.has_tag_name("b") {
+                font.b = true;
+            } else if child.has_tag_name("i") {
+                font.i = true;
+            } else if child.has_tag_name("u") {
+                font.u = child.text().map(|t| t.to_string());
+            } else if child.has_tag_name("strike") {
+                font.strike = true;
+            } else if child.has_tag_name("color") {
+                font.color = child.attribute("rgb").map(|c| c.to_string());
+            }
+        }
+        font
+    }
+
+    /// A `<fill>` record (pattern fill with fg/bg color children).
+    fn parse_xlsx_fill(elem: roxmltree::Node) -> XlsxFill {
+        let mut fill = XlsxFill::default();
+        for child in elem.children() {
+            if child.has_tag_name("patternFill") {
+                fill.pattern_type = child.attribute("patternType").map(|p| p.to_string());
+                if let Some(fg_color) = child.children().find(|c| c.has_tag_name("fgColor")) {
+                    fill.fg_color = fg_color.attribute("rgb").map(|c| c.to_string());
+                }
+                if let Some(bg_color) = child.children().find(|c| c.has_tag_name("bgColor")) {
+                    fill.bg_color = bg_color.attribute("rgb").map(|c| c.to_string());
+                }
+            }
+        }
+        fill
+    }
+
+    /// A `<border>` record.
+    fn parse_xlsx_border(&self, elem: roxmltree::Node) -> XlsxBorder {
+        let mut border = XlsxBorder::default();
+        for child in elem.children() {
+            if child.has_tag_name("left") {
+                border.left = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("right") {
+                border.right = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("top") {
+                border.top = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("bottom") {
+                border.bottom = Some(self.parse_xlsx_border_side(child));
+            } else if child.has_tag_name("diagonal") {
+                border.diagonal = Some(self.parse_xlsx_border_side(child));
+            }
+        }
+        border
     }
 
     fn parse_xlsx_border_side(&self, elem: roxmltree::Node) -> XlsxBorderSide {
