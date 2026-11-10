@@ -27,6 +27,37 @@ fn roundtrip(html: &str) -> String {
     String::from_utf8(out).unwrap()
 }
 
+/// Build a minimal valid docx zip around a hand-written word/document.xml.
+fn docx_from_document_xml(document_xml: &str) -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#)
+            .unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("word/document.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(document_xml.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
 #[test]
 fn gap_entities_nbsp_parses_and_survives() {
     let html = "<html><body><p>A&nbsp;B &mdash; C&hellip;</p></body></html>";
@@ -305,4 +336,130 @@ fn page_number_span_becomes_docx_page_field_and_back() {
     );
     // and the text next to it is untouched
     assert!(out.contains("Sentinel paragraph here."), "{}", out);
+}
+
+fn paragraph_fields(docx: &[u8]) -> Vec<wo_ooxml::model::DocxField> {
+    let parsed = wo_ooxml::OoxmlParser::new().parse(docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    body.blocks
+        .iter()
+        .flat_map(|b| match b {
+            wo_ooxml::model::DocxBlock::Paragraph(p) => p.fields.clone(),
+            _ => Vec::new(),
+        })
+        .collect()
+}
+
+#[test]
+fn gap_fields_roundtrip() {
+    // P2-03 fields engine: a document mixing the w:fldSimple shorthand and
+    // complex w:fldChar begin/instrText/separate/end fields (NUMPAGES with a
+    // cached result, TOC without one, a nested PAGEREF) must parse into
+    // typed DocxField entries, render the cached results (never the
+    // instructions) to HTML, and survive a docx -> docx re-serialization.
+    let document_xml = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Page </w:t></w:r><w:fldSimple w:instr=" PAGE "><w:r><w:t>4</w:t></w:r></w:fldSimple><w:r><w:t> of </w:t></w:r></w:p>
+    <w:p>
+      <w:r><w:fldChar w:fldCharType="begin"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+      <w:r><w:t>12</w:t></w:r>
+      <w:r><w:fldChar w:fldCharType="end"/></w:r>
+    </w:p>
+    <w:p>
+      <w:r><w:fldChar w:fldCharType="begin"/></w:r>
+      <w:r><w:instrText xml:space="preserve">TOC \o &quot;1-3&quot; \h</w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+      <w:r><w:fldChar w:fldCharType="begin"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> PAGEREF _Toc1 \h </w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+      <w:r><w:t>7</w:t></w:r>
+      <w:r><w:fldChar w:fldCharType="end"/></w:r>
+      <w:r><w:fldChar w:fldCharType="end"/></w:r>
+    </w:p>
+    <w:p><w:r><w:t>Sentinel paragraph here.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_document_xml(
+        std::str::from_utf8(document_xml).expect("document.xml is utf8"),
+    );
+
+    // 1. Typed parse: fldSimple + complex + nested fields normalize to
+    //    DocxField entries with the right instruction, kind and cached
+    //    result; field plumbing never lands in run text. The nested PAGEREF
+    //    inside the TOC is its own typed field, and its visible result
+    //    bubbles up into the enclosing TOC's cached result.
+    let fields = paragraph_fields(&docx);
+    assert_eq!(fields.len(), 4, "expected 4 typed fields: {:?}", fields);
+    assert_eq!(fields[0].instruction, " PAGE ");
+    assert_eq!(fields[0].kind, wo_ooxml::model::FieldKind::Page);
+    assert!(!fields[0].complex);
+    assert_eq!(fields[0].cached_result.as_deref(), Some("4"));
+    assert_eq!(fields[1].instruction, " NUMPAGES ");
+    assert_eq!(fields[1].kind, wo_ooxml::model::FieldKind::NumPages);
+    assert!(fields[1].complex);
+    assert_eq!(fields[1].cached_result.as_deref(), Some("12"));
+    assert_eq!(fields[2].instruction, " PAGEREF _Toc1 \\h ");
+    assert_eq!(fields[2].kind, wo_ooxml::model::FieldKind::PageRef);
+    assert!(fields[2].complex);
+    assert_eq!(fields[2].cached_result.as_deref(), Some("7"));
+    assert_eq!(fields[3].instruction, "TOC \\o \"1-3\" \\h");
+    assert_eq!(fields[3].kind, wo_ooxml::model::FieldKind::Toc);
+    assert_eq!(
+        fields[3].cached_result.as_deref(),
+        Some("7"),
+        "nested PAGEREF result must bubble into the TOC result"
+    );
+    assert_eq!(fields[3].instruction_token(), "TOC");
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    let leaked: Vec<&str> = body
+        .blocks
+        .iter()
+        .flat_map(|b| match b {
+            wo_ooxml::model::DocxBlock::Paragraph(p) => p.runs.iter().collect::<Vec<_>>(),
+            _ => Vec::new(),
+        })
+        .filter_map(|r| {
+            let t = r.text.as_str();
+            (t.contains("NUMPAGES") || t.contains("instrText")).then_some(t)
+        })
+        .collect();
+    assert!(leaked.is_empty(), "instruction leaked into run text");
+
+    // 2. HTML side: cached results render as text, instructions never leak,
+    //    and non-PAGE fields keep their instruction in the dialect marker.
+    let html = DocxToHtmlConverter.convert(&docx).unwrap();
+    let html = String::from_utf8(html).unwrap();
+    assert!(html.contains("Page "), "body text lost: {html}");
+    assert!(html.contains(">4<"), "fldSimple cached result lost: {html}");
+    assert!(html.contains(">12<"), "complex cached result lost: {html}");
+    assert!(html.contains(">7<"), "nested PAGEREF result lost: {html}");
+    assert!(
+        html.contains("data-field=\" NUMPAGES \"") || html.contains("data-field=\"NUMPAGES\""),
+        "complex field marker lost: {html}"
+    );
+    assert!(
+        !html.contains(">NUMPAGES<") && !html.contains("instrText"),
+        "instruction leaked as text: {html}"
+    );
+    assert!(
+        html.contains("Sentinel paragraph here."),
+        "body text lost: {html}"
+    );
+
+    // 3. docx -> docx: re-serializing through the OOXML engine keeps the
+    //    complex-field XML and re-parses to the same typed fields.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert!(
+        xml2.contains("fldChar") && xml2.contains("instrText"),
+        "complex-field XML lost in re-serialization: {}",
+        xml2
+    );
+    assert!(xml2.contains("fldSimple"), "fldSimple lost: {}", xml2);
+    let fields2 = paragraph_fields(&reser);
+    assert_eq!(fields, fields2, "typed fields changed across docx round trip");
 }

@@ -14,6 +14,17 @@ use wo_common::{CoreError, Document, DocumentMetadata, Result};
 use crate::detector::detect_ooxml_format;
 use crate::model::*;
 
+/// While inside a complex field's result (after `separate`), plain runs feed
+/// the field's cached result text; the instruction accumulates from the
+/// `w:instrText` chunks between `begin` and `separate`.
+struct OpenField {
+    instruction: String,
+    has_separate: bool,
+    cached_result: String,
+    dirty: bool,
+    locked: bool,
+}
+
 /// OOXML parser.
 pub struct OoxmlParser;
 
@@ -985,6 +996,7 @@ impl OoxmlParser {
 
             paragraphs.push(DocxParagraph {
                 raw_flds: Vec::new(),
+                fields: Vec::new(),
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
                 runs,
@@ -1655,6 +1667,10 @@ impl OoxmlParser {
         let mut runs = Vec::new();
         let mut raw_ppr = None;
         let mut raw_flds = Vec::new();
+        let mut fields = Vec::new();
+        // Fields engine: stack of currently-open complex fields so nested
+        // fields (e.g. PAGEREF inside a TOC) normalize independently.
+        let mut open_fields: Vec<OpenField> = Vec::new();
 
         for child in p_node.children() {
             if !child.is_element() {
@@ -1679,7 +1695,69 @@ impl OoxmlParser {
                     properties = self.parse_paragraph_properties(&child);
                 }
                 (Some(Self::W_NS), "r") => {
-                    runs.push(self.parse_run(&child, xml));
+                    let run = self.parse_run(&child, xml);
+                    // Fields engine: feed fldChar/instrText markers into the
+                    // open-field stack and accumulate cached result text from
+                    // the plain runs between `separate` and `end`.
+                    match &run.field {
+                        Some(FieldMarker::Begin { dirty, locked }) => {
+                            open_fields.push(OpenField {
+                                instruction: String::new(),
+                                has_separate: false,
+                                cached_result: String::new(),
+                                dirty: *dirty,
+                                locked: *locked,
+                            });
+                        }
+                        Some(FieldMarker::Instruction(text)) => {
+                            if let Some(open) = open_fields.last_mut() {
+                                open.instruction.push_str(text);
+                            }
+                        }
+                        Some(FieldMarker::Separate) => {
+                            if let Some(open) = open_fields.last_mut() {
+                                open.has_separate = true;
+                            }
+                        }
+                        Some(FieldMarker::End) => {
+                            if let Some(open) = open_fields.pop() {
+                                // A nested field's visible result also belongs
+                                // to the enclosing field's cached result (e.g.
+                                // PAGEREF page numbers inside a TOC result).
+                                if open.has_separate {
+                                    if let Some(parent) = open_fields.last_mut() {
+                                        if parent.has_separate {
+                                            parent
+                                                .cached_result
+                                                .push_str(&open.cached_result);
+                                        }
+                                    }
+                                }
+                                fields.push(DocxField {
+                                    kind: FieldKind::from_instruction(&open.instruction),
+                                    instruction: open.instruction,
+                                    cached_result: if open.has_separate
+                                        && !open.cached_result.is_empty()
+                                    {
+                                        Some(open.cached_result)
+                                    } else {
+                                        None
+                                    },
+                                    dirty: open.dirty,
+                                    locked: open.locked,
+                                    complex: true,
+                                });
+                            }
+                        }
+                        None => {
+                            if let Some(open) = open_fields.last_mut() {
+                                if open.has_separate {
+                                    open.cached_result.push_str(&run.text);
+                                }
+                            }
+                        }
+                    }
+                    runs.push(run);
                 }
                 (Some(Self::W_NS), "commentRangeStart")
                 | (Some(Self::W_NS), "commentRangeEnd")
@@ -1706,6 +1784,33 @@ impl OoxmlParser {
                     // typed model's blind spot survives a round trip.
                     let r = child.range();
                     raw_flds.push(xml[r.start..r.end].to_string());
+                    // Fields engine: also normalize the fldSimple into a
+                    // typed DocxField (instruction @w:instr + the cached
+                    // result of its inner runs) for converters.
+                    let instruction = child
+                        .attribute((Self::W_NS, "instr"))
+                        .or_else(|| child.attribute("instr"))
+                        .unwrap_or("")
+                        .to_string();
+                    let cached_result: String = child
+                        .descendants()
+                        .filter(|n| n.is_element() && n.tag_name().name() == "t")
+                        .filter_map(|n| n.text())
+                        .collect();
+                    fields.push(DocxField {
+                        kind: FieldKind::from_instruction(&instruction),
+                        cached_result: if cached_result.is_empty() {
+                            None
+                        } else {
+                            Some(cached_result)
+                        },
+                        dirty: child.attribute((Self::W_NS, "dirty")) == Some("true")
+                            || child.attribute("dirty") == Some("true"),
+                        locked: child.attribute((Self::W_NS, "fldLock")) == Some("true")
+                            || child.attribute("fldLock") == Some("true"),
+                        complex: false,
+                        instruction,
+                    });
                 }
                 (Some(Self::W_NS), "hyperlink") => {
                     // Hyperlinks contain runs. Capture @r:id so the link
@@ -1740,6 +1845,7 @@ impl OoxmlParser {
             section_properties: None,
             raw_ppr,
             raw_flds,
+            fields,
         }
     }
 
@@ -1926,6 +2032,7 @@ impl OoxmlParser {
             raw_rpr: None,
             drawing: None,
             hyperlink_rid: None,
+            field: None,
         };
 
         for child in r_node.children() {
@@ -1968,6 +2075,25 @@ impl OoxmlParser {
                         run.image_width_emu = extent.attribute("cx").and_then(|v| v.parse().ok());
                         run.image_height_emu = extent.attribute("cy").and_then(|v| v.parse().ok());
                     }
+                }
+                (Some(Self::W_NS), "fldChar") => {
+                    // Fields engine: fldChar begin/separate/end boundaries.
+                    let kind = self.attr_ns(child, "fldCharType").unwrap_or("");
+                    run.field = match kind {
+                        "begin" => Some(FieldMarker::Begin {
+                            dirty: self.attr_ns(child, "dirty") == Some("true"),
+                            locked: self.attr_ns(child, "fldLock") == Some("true"),
+                        }),
+                        "separate" => Some(FieldMarker::Separate),
+                        _ => Some(FieldMarker::End),
+                    };
+                }
+                (Some(Self::W_NS), "instrText") => {
+                    // Fields engine: instruction chunk (may be split across
+                    // several runs; joined in parse_paragraph). Stored on the
+                    // marker, NOT in run.text, so it never renders.
+                    let text = child.text().unwrap_or("");
+                    run.field = Some(FieldMarker::Instruction(text.to_string()));
                 }
                 (Some(Self::W_NS), "footnoteReference") => {
                     run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());

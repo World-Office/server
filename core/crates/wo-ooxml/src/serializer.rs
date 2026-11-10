@@ -1551,12 +1551,98 @@ impl OoxmlSerializer {
             xml.push_str(fld);
         }
 
+        // Fields engine: typed DocxField entries that were created in code
+        // (not produced by parsing) serialize as canonical complex fields.
+        // Parse-derived fields are already materialized above — either as a
+        // verbatim fldSimple subtree or as fldChar/instrText marker runs — so
+        // they are skipped to avoid duplicating the field.
+        let fields_materialized = !para.raw_flds.is_empty()
+            || para.runs.iter().any(|r| r.field.is_some());
+        if !fields_materialized {
+            for field in &para.fields {
+                xml.push_str(&Self::field_to_xml(field));
+            }
+        }
+
         xml.push_str("</w:p>\n");
+        xml
+    }
+
+    /// Fields engine: serialize a typed [`DocxField`] as the canonical
+    /// complex form — begin / instrText / separate / cached result / end —
+    /// for fields created in code (never parsed from XML).
+    fn field_to_xml(field: &DocxField) -> String {
+        let mut xml = String::new();
+        xml.push_str("<w:r><w:fldChar w:fldCharType=\"begin\"");
+        if field.dirty {
+            xml.push_str(" w:dirty=\"true\"");
+        }
+        if field.locked {
+            xml.push_str(" w:fldLock=\"true\"");
+        }
+        xml.push_str("/></w:r>");
+        xml.push_str("<w:r><w:instrText xml:space=\"preserve\">");
+        xml.push_str(&escape_xml(&field.instruction));
+        xml.push_str("</w:instrText></w:r>");
+        if let Some(result) = &field.cached_result {
+            if !result.is_empty() {
+                xml.push_str("<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>");
+                xml.push_str("<w:r><w:t xml:space=\"preserve\">");
+                xml.push_str(&escape_xml(result));
+                xml.push_str("</w:t></w:r>");
+            }
+        }
+        xml.push_str("<w:r><w:fldChar w:fldCharType=\"end\"/></w:r>");
         xml
     }
 
     fn serialize_run(&self, run: &DocxRun) -> String {
         let mut xml = String::from("<w:r>");
+
+        // Fields engine: complex-field markers re-emit verbatim (fldChar
+        // begin/separate/end boundaries and instrText chunks) so fields the
+        // document carried survive a round trip. Instruction text lives on
+        // the marker only and must not render as run text.
+        match &run.field {
+            Some(FieldMarker::Begin { dirty, locked }) => {
+                if let Some(ref raw) = run.raw_rpr {
+                    xml.push_str(raw);
+                }
+                xml.push_str("<w:fldChar w:fldCharType=\"begin\"");
+                if *dirty {
+                    xml.push_str(" w:dirty=\"true\"");
+                }
+                if *locked {
+                    xml.push_str(" w:fldLock=\"true\"");
+                }
+                xml.push_str("/></w:r>");
+                return xml;
+            }
+            Some(FieldMarker::Separate) => {
+                if let Some(ref raw) = run.raw_rpr {
+                    xml.push_str(raw);
+                }
+                xml.push_str("<w:fldChar w:fldCharType=\"separate\"/></w:r>");
+                return xml;
+            }
+            Some(FieldMarker::End) => {
+                if let Some(ref raw) = run.raw_rpr {
+                    xml.push_str(raw);
+                }
+                xml.push_str("<w:fldChar w:fldCharType=\"end\"/></w:r>");
+                return xml;
+            }
+            Some(FieldMarker::Instruction(text)) => {
+                if let Some(ref raw) = run.raw_rpr {
+                    xml.push_str(raw);
+                }
+                xml.push_str("<w:instrText xml:space=\"preserve\">");
+                xml.push_str(&escape_xml(text));
+                xml.push_str("</w:instrText></w:r>");
+                return xml;
+            }
+            None => {}
+        }
 
         let has_rpr = run.bold
             || run.italic
@@ -2942,6 +3028,7 @@ mod tests {
                 comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
+                    fields: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
@@ -2967,6 +3054,7 @@ mod tests {
                         drawing: None,
                         hyperlink_rid: None,
                         comment_anchor: None,
+                        field: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -3078,6 +3166,7 @@ mod tests {
                 comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
+                    fields: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![
@@ -3104,6 +3193,7 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -3128,6 +3218,7 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -3152,6 +3243,7 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         },
                     ],
                     raw_ppr: None,
@@ -3196,6 +3288,7 @@ mod tests {
                 blocks: vec![
                     DocxBlock::Paragraph(DocxParagraph {
                         raw_flds: Vec::new(),
+                        fields: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         runs: vec![DocxRun {
@@ -3221,12 +3314,14 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
                         raw_flds: Vec::new(),
+                        fields: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Center),
@@ -3255,12 +3350,14 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
                         raw_flds: Vec::new(),
+                        fields: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Right),
@@ -3289,6 +3386,7 @@ mod tests {
                             drawing: None,
                             hyperlink_rid: None,
                             comment_anchor: None,
+                            field: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3338,6 +3436,7 @@ mod tests {
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
                                         raw_flds: Vec::new(),
+                                        fields: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
@@ -3363,6 +3462,7 @@ mod tests {
                                             drawing: None,
                                             hyperlink_rid: None,
                                             comment_anchor: None,
+                                            field: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3376,6 +3476,7 @@ mod tests {
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
                                         raw_flds: Vec::new(),
+                                        fields: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
@@ -3401,6 +3502,7 @@ mod tests {
                                             drawing: None,
                                             hyperlink_rid: None,
                                             comment_anchor: None,
+                                            field: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3420,6 +3522,7 @@ mod tests {
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
                                         raw_flds: Vec::new(),
+                                        fields: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
@@ -3445,6 +3548,7 @@ mod tests {
                                             drawing: None,
                                             hyperlink_rid: None,
                                             comment_anchor: None,
+                                            field: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3458,6 +3562,7 @@ mod tests {
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
                                         raw_flds: Vec::new(),
+                                        fields: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
@@ -3483,6 +3588,7 @@ mod tests {
                                             drawing: None,
                                             hyperlink_rid: None,
                                             comment_anchor: None,
+                                            field: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3631,6 +3737,7 @@ mod tests {
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
                             raw_flds: Vec::new(),
+                            fields: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
@@ -3707,6 +3814,7 @@ mod tests {
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {
                                 raw_flds: Vec::new(),
+                                fields: Vec::new(),
                                 style_id: None,
                                 properties: DocxParagraphProperties::default(),
                                 runs: vec![DocxRun {
@@ -3746,6 +3854,7 @@ mod tests {
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {
                                 raw_flds: Vec::new(),
+                                fields: Vec::new(),
                                 style_id: None,
                                 properties: DocxParagraphProperties::default(),
                                 runs: vec![DocxRun {
@@ -3874,6 +3983,7 @@ mod tests {
                     text_body: Some(TextBody {
                         paragraphs: vec![DocxParagraph {
                             raw_flds: Vec::new(),
+                            fields: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
@@ -3971,6 +4081,7 @@ mod tests {
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
                             raw_flds: Vec::new(),
+                            fields: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![
@@ -3997,6 +4108,7 @@ mod tests {
                                     drawing: None,
                                     hyperlink_rid: None,
                                     comment_anchor: None,
+                                    field: None,
                                 },
                                 DocxRun {
                                     footnote_rid: None,
@@ -4171,6 +4283,7 @@ mod tests {
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
                             raw_flds: Vec::new(),
+                            fields: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
@@ -4385,6 +4498,7 @@ mod tests {
                 comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
+                    fields: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
@@ -4410,6 +4524,7 @@ mod tests {
                         drawing: None,
                         hyperlink_rid: None,
                         comment_anchor: None,
+                        field: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
