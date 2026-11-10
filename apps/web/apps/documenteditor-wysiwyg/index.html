@@ -3213,6 +3213,12 @@
       document.body.appendChild(s);
     });
   </script>
+  <!-- P3-U01: data-driven dialog engine (ORM-09 Phase 3). Deferred ES module
+       (no hand-written dialog HTML here); built dialogs register their ids
+       into editor.js DIALOG_IDS via woRegisterDialogId() and emit commands on
+       the wo-command bus, so they inherit the modal Tab trap, Esc close, i18n
+       and the recordCommand/replayCommands ledger unchanged. -->
+  <script type="module" src="wo-dialogs.js"></script>
   <!-- Review panel: list track-changes for accept/reject -->
   <aside id="review-panel" class="side-panel" aria-label="Review changes" hidden>
     <div class="side-panel-header">

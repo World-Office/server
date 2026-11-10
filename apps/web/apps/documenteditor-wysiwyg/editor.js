@@ -391,6 +391,10 @@
   seedA11yStrings(t);
   seedMenuStrings(t);
   seedVersionStrings(t);
+  // P3-U01 seam: wo-dialogs.js (ES module, boots independently of this
+  // script's order) resolves the same translation instance for engine-built
+  // dialogs so their data-i18n markers use the active locale + bucket.
+  window.__WO_I18N_T__ = t;
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -2046,6 +2050,24 @@
     }
     return null;
   }
+  // P3-U01: wo-dialogs.js (data-driven dialog engine) registers every
+  // engine-built dialog id here, so the modal Tab trap + global Esc close
+  // above see dynamic dialogs exactly like the static index.html ones.
+  // The live array is shared on purpose: getOpenDialog() re-reads it on
+  // every keystroke, so runtime pushes just work. Ids queued by wo-dialogs.js
+  // before this script ran drain immediately after the seam exists.
+  window.woRegisterDialogId = function (id) {
+    if (typeof id !== "string" || !id || DIALOG_IDS.indexOf(id) !== -1) return false;
+    DIALOG_IDS.push(id);
+    return true;
+  };
+  window.woUnregisterDialogId = function (id) {
+    const at = DIALOG_IDS.indexOf(id);
+    if (at === -1) return false;
+    DIALOG_IDS.splice(at, 1);
+    return true;
+  };
+  (window.__WO_PENDING_DIALOG_IDS__ || []).forEach((id) => window.woRegisterDialogId(id));
   // BUG1-STATIC-AUDIT: Esc closes the open modal overlay. Esc handling was
   // ad-hoc before (only version-history, ai-review, protect, photo-editor,
   // HF mode, ink select had listeners); the other 36 registered dialogs had
