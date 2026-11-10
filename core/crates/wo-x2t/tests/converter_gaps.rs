@@ -613,3 +613,425 @@ fn gap_numbering_foreign_roundtrip() {
     assert!(html.contains("Second sentinel paragraph."), "body text lost");
     assert!(html.contains("Ordinal item"), "ordinal item lost");
 }
+
+/// P2-06 test helper: fetch the paragraph at a body block index.
+fn docx_para(
+    b: &wo_ooxml::model::DocxBody,
+    i: usize,
+) -> &wo_ooxml::model::DocxParagraph {
+    match &b.blocks[i] {
+        wo_ooxml::model::DocxBlock::Paragraph(p) => p,
+        _ => panic!("block {} must be a paragraph", i),
+    }
+}
+
+/// P2-06 marker-sequence helper: the bookmark markers of a paragraph's
+/// runs in order ("S:<name>" / "E:<id>") — position in the run sequence is
+/// what has to round-trip.
+fn bookmark_seq(p: &wo_ooxml::model::DocxParagraph) -> Vec<String> {
+    p.runs
+        .iter()
+        .filter_map(|r| match &r.bookmark {
+            Some(wo_ooxml::model::BookmarkMarker::Start(b)) => Some(format!(
+                "S:{}",
+                b.name.as_deref().unwrap_or("?")
+            )),
+            Some(wo_ooxml::model::BookmarkMarker::End(id)) => Some(format!("E:{}", id)),
+            None => None,
+        })
+        .collect()
+}
+
+#[test]
+fn gap_bookmark_anchor_roundtrip() {
+    // P2-06: typed bookmarks (w:bookmarkStart / w:bookmarkEnd pairs —
+    // named, unnamed, nested) and an internal w:hyperlink w:anchor must
+    // (a) parse into the typed bookmark catalogue + anchor-tagged runs,
+    // (b) render to html as a fragment link <a href="#name">, and
+    // (c) survive a docx -> docx re-serialization with the markers in
+    // their original run positions.
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p><w:bookmarkStart w:id="0" w:name="_Toc1"/><w:r><w:t>Heading text</w:t></w:r><w:bookmarkEnd w:id="0"/></w:p>
+    <w:p><w:bookmarkStart w:id="1" w:name="_Toc2"/><w:bookmarkStart w:id="2"/><w:r><w:t>Nested range text</w:t></w:r><w:bookmarkEnd w:id="2"/><w:bookmarkEnd w:id="1"/></w:p>
+    <w:p><w:r><w:t>Jump to </w:t></w:r><w:hyperlink w:anchor="_Toc1"><w:r><w:t>the heading</w:t></w:r></w:hyperlink><w:r><w:t>.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_document_xml(document_xml);
+
+    // 1. Typed parse: the catalogue carries every bookmarkStart (named and
+    //    anonymous) in document order, the w:anchor tags the link run, and
+    //    the markers keep their positions in the run sequence.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    assert_eq!(body.bookmarks.len(), 3, "bookmark catalogue");
+    assert_eq!(body.bookmarks[0].id, "0");
+    assert_eq!(body.bookmarks[0].name.as_deref(), Some("_Toc1"));
+    assert_eq!(body.bookmarks[1].name.as_deref(), Some("_Toc2"));
+    assert_eq!(body.bookmarks[2].id, "2");
+    assert_eq!(body.bookmarks[2].name, None, "anonymous bookmark keeps a None name");
+    assert_eq!(
+        bookmark_seq(docx_para(body, 0)),
+        vec!["S:_Toc1".to_string(), "E:0".to_string()],
+        "markers must bracket the heading run"
+    );
+    assert_eq!(
+        bookmark_seq(docx_para(body, 1)),
+        vec![
+            "S:_Toc2".to_string(),
+            "S:?".to_string(),
+            "E:2".to_string(),
+            "E:1".to_string()
+        ],
+        "nested bookmark ranges keep their interleaved order"
+    );
+    let anchored: Vec<&str> = docx_para(body, 2)
+        .runs
+        .iter()
+        .filter_map(|r| r.hyperlink_anchor.as_deref())
+        .collect();
+    assert_eq!(anchored, vec!["_Toc1"], "w:anchor must tag the link run");
+
+    // 2. docx -> html: the anchor link renders as a fragment link, body
+    //    text untouched.
+    let html = DocxToHtmlConverter.convert(&docx).unwrap();
+    let html = String::from_utf8(html).unwrap();
+    assert!(
+        html.contains(r##"href="#_Toc1""##),
+        "anchor link must render as a fragment link: {html}"
+    );
+    assert!(html.contains("the heading"), "link text lost: {html}");
+    assert!(
+        html.contains("Heading text") && html.contains("Nested range text"),
+        "body text lost: {html}"
+    );
+
+    // 3. docx -> docx: markers and the anchor hyperlink re-emit in
+    //    position, and re-parse to the identical model.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert!(
+        xml2.contains(r#"<w:bookmarkStart w:id="0" w:name="_Toc1"/>"#),
+        "named bookmarkStart lost: {xml2}"
+    );
+    assert!(
+        xml2.contains(r#"<w:bookmarkStart w:id="2"/>"#),
+        "anonymous bookmark must keep its id-only form: {xml2}"
+    );
+    assert!(
+        xml2.contains(r#"<w:bookmarkEnd w:id="0"/>"#),
+        "bookmarkEnd lost: {xml2}"
+    );
+    assert!(
+        xml2.contains(r#"<w:hyperlink w:anchor="_Toc1">"#),
+        "anchor hyperlink lost: {xml2}"
+    );
+    let s = xml2.find(r#"<w:bookmarkStart w:id="0""#).unwrap();
+    let t = xml2.find("Heading text").unwrap();
+    let e = xml2.find(r#"<w:bookmarkEnd w:id="0"/>"#).unwrap();
+    assert!(s < t && t < e, "bookmark range lost its position: {xml2}");
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    assert_eq!(
+        rbody.bookmarks, body.bookmarks,
+        "bookmark catalogue must survive the round trip"
+    );
+    assert_eq!(
+        bookmark_seq(docx_para(rbody, 1)),
+        bookmark_seq(docx_para(body, 1)),
+        "marker order must survive the round trip"
+    );
+
+    // 4. html -> docx: a fragment href becomes w:hyperlink w:anchor — no
+    //    External relationship is created.
+    let docx2 = HtmlToDocxConverter
+        .convert(b"<html><body><p><a href=\"#_Toc1\">internal link</a></p></body></html>")
+        .unwrap();
+    let xml3 = docx_xml(&docx2);
+    assert!(
+        xml3.contains(r#"<w:hyperlink w:anchor="_Toc1">"#),
+        "fragment href must become w:hyperlink w:anchor, got: {xml3}"
+    );
+    let rels = zip_entry(&docx2, "word/_rels/document.xml.rels");
+    assert!(
+        !rels.contains("relationships/hyperlink"),
+        "anchor link must not create a hyperlink relationship: {rels}"
+    );
+}
+
+#[test]
+fn gap_sdt_roundtrip() {
+    // P2-06: w:sdt content controls — block-level (wrapping whole
+    // paragraphs, single and multi) and inline (wrapping runs inside a
+    // paragraph) — must keep their w:sdtPr metadata (alias/tag/id/
+    // placeholder) verbatim across a parse -> serialize -> parse cycle,
+    // and their text must still render to html.
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:sdt>
+      <w:sdtPr><w:alias w:val="Author"/><w:tag w:val="author"/><w:id w:val="12345678"/><w:placeholder><w:docPart w:gallery="Normal"/></w:placeholder></w:sdtPr>
+      <w:sdtContent><w:p><w:r><w:t>Jane Doe</w:t></w:r></w:p></w:sdtContent>
+    </w:sdt>
+    <w:p><w:r><w:t>Field: </w:t></w:r><w:sdt><w:sdtPr><w:alias w:val="City"/><w:tag w:val="city"/></w:sdtPr><w:sdtContent><w:r><w:t>Springfield</w:t></w:r></w:sdtContent></w:sdt></w:p>
+    <w:sdt>
+      <w:sdtPr><w:alias w:val="Section"/><w:tag w:val="section"/><w:id w:val="87654321"/></w:sdtPr>
+      <w:sdtContent>
+        <w:p><w:r><w:t>First wrapped line</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Second wrapped line</w:t></w:r></w:p>
+      </w:sdtContent>
+    </w:sdt>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_document_xml(document_xml);
+
+    // 1. Typed parse: two block wraps (single + multi paragraph) with
+    //    verbatim sdtPr; the inline sdt becomes Start/End marker runs.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    assert_eq!(body.sdt_wraps.len(), 2, "block-level sdt wraps");
+    assert_eq!(body.sdt_wraps[0].start, 0);
+    assert_eq!(body.sdt_wraps[0].end, 0);
+    assert!(
+        body.sdt_wraps[0].pr.contains(r#"<w:alias w:val="Author"/>"#)
+            && body.sdt_wraps[0].pr.contains(r#"<w:docPart w:gallery="Normal"/>"#),
+        "verbatim sdtPr must keep alias + placeholder: {}",
+        body.sdt_wraps[0].pr
+    );
+    assert_eq!(body.sdt_wraps[1].start, 2);
+    assert_eq!(body.sdt_wraps[1].end, 3, "multi-paragraph wrap spans both blocks");
+    assert!(
+        body.sdt_wraps[1].pr.contains(r#"<w:tag w:val="section"/>"#),
+        "section sdtPr: {}",
+        body.sdt_wraps[1].pr
+    );
+    let inline_para = match &body.blocks[1] {
+        wo_ooxml::model::DocxBlock::Paragraph(p) => p,
+        _ => panic!("block 1 must be a paragraph"),
+    };
+    let seq: Vec<String> = inline_para
+        .runs
+        .iter()
+        .map(|r| match &r.sdt {
+            Some(wo_ooxml::model::SdtMarker::Start { pr }) => {
+                format!("S({})", pr.contains(r#"w:tag w:val="city""#))
+            }
+            Some(wo_ooxml::model::SdtMarker::End) => "E".to_string(),
+            None => format!("T:{}", r.text),
+        })
+        .collect();
+    assert_eq!(
+        seq,
+        vec![
+            "T:Field: ".to_string(),
+            "S(true)".to_string(),
+            "T:Springfield".to_string(),
+            "E".to_string()
+        ],
+        "inline sdt must become open-marker, text run, close-marker in order"
+    );
+
+    // 2. docx -> docx: all three wrappers re-emit with the sdtPr metadata
+    //    intact and the multi-paragraph wrap enclosing both paragraphs.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert_eq!(
+        xml2.matches("<w:sdt>").count(),
+        3,
+        "all three sdt wrappers must re-emit: {xml2}"
+    );
+    assert_eq!(xml2.matches("</w:sdt>").count(), 3, "unbalanced sdt: {xml2}");
+    assert!(
+        xml2.contains(r#"<w:alias w:val="Author"/>"#)
+            && xml2.contains(r#"<w:tag w:val="city"/>"#),
+        "sdtPr metadata lost: {xml2}"
+    );
+    let l1 = xml2.find("First wrapped line").unwrap();
+    let l2 = xml2.find("Second wrapped line").unwrap();
+    let close = xml2.rfind("</w:sdt>").unwrap();
+    assert!(l1 < l2 && l2 < close, "multi-paragraph wrap must enclose both: {xml2}");
+
+    // 3. Re-parse: identical wraps, and the inline markers survive.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    assert_eq!(
+        rbody.sdt_wraps, body.sdt_wraps,
+        "block sdt wraps must survive the round trip"
+    );
+    let rinline = match &rbody.blocks[1] {
+        wo_ooxml::model::DocxBlock::Paragraph(p) => p,
+        _ => panic!("re-parsed block 1 must be a paragraph"),
+    };
+    assert_eq!(seq, {
+        let mut v = Vec::new();
+        v.extend(rinline.runs.iter().map(|r| match &r.sdt {
+            Some(wo_ooxml::model::SdtMarker::Start { pr }) => {
+                format!("S({})", pr.contains(r#"w:tag w:val="city""#))
+            }
+            Some(wo_ooxml::model::SdtMarker::End) => "E".to_string(),
+            None => format!("T:{}", r.text),
+        }));
+        v
+    }, "inline sdt markers must survive the round trip");
+
+    // 4. html side: the wrappers are transparent — every text renders.
+    let html = DocxToHtmlConverter.convert(&docx).unwrap();
+    let html = String::from_utf8(html).unwrap();
+    assert!(
+        html.contains("Jane Doe") && html.contains("Springfield"),
+        "sdt text lost: {html}"
+    );
+    assert!(
+        html.contains("First wrapped line") && html.contains("Second wrapped line"),
+        "wrapped paragraph text lost: {html}"
+    );
+}
+
+#[test]
+fn gap_pict_verbatim_roundtrip() {
+    // P2-06: a legacy w:pict (VML) graphic in a run has no typed-model
+    // equivalent — the parser must capture the subtree verbatim and the
+    // serializer re-emit it byte-identical, with the run's neighbors
+    // (text, rPr) intact.
+    let pict = r##"<w:pict><v:shape id="_x0000_s1026" type="#_x0000_t75" style="width:106pt;height:79pt" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w10="urn:schemas-microsoft-com:office:word"><w10:wrap type="none"/><v:imagedata r:id="rIdPic1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></v:shape></w:pict>"##;
+    let document_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:rPr><w:b/></w:rPr>{pict}</w:r><w:r><w:t> after the picture</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Second sentinel paragraph.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#
+    );
+    let docx = docx_from_document_xml(&document_xml);
+
+    // 1. Parse: the pict subtree lands verbatim on the run; rPr and the
+    //    following text run survive.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    let para = match &body.blocks[0] {
+        wo_ooxml::model::DocxBlock::Paragraph(p) => p,
+        _ => panic!("block 0 must be a paragraph"),
+    };
+    let captured = para
+        .runs[0]
+        .pict
+        .as_deref()
+        .expect("w:pict must be captured verbatim");
+    assert_eq!(captured, pict, "captured pict must be the exact source subtree");
+    assert!(para.runs[0].bold, "rPr before the pict must still parse");
+    assert_eq!(
+        para.runs[1].text, " after the picture",
+        "text after the pict run must survive"
+    );
+
+    // 2. docx -> docx: re-emitted byte-identical.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let xml2 = docx_xml(&reser);
+    assert!(xml2.contains(pict), "pict must re-emit byte-identical: {xml2}");
+    assert!(xml2.contains("after the picture"), "neighboring text lost: {xml2}");
+
+    // 3. Re-parse: identical capture.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    let rpara = match &rbody.blocks[0] {
+        wo_ooxml::model::DocxBlock::Paragraph(p) => p,
+        _ => panic!("re-parsed block 0 must be a paragraph"),
+    };
+    assert_eq!(
+        rpara.runs[0].pict.as_deref(),
+        Some(pict),
+        "pict must survive the round trip"
+    );
+}
+
+#[test]
+fn gap_unmanaged_parts_roundtrip() {
+    // P2-06 unmanaged-parts bag: parts the model does not parse
+    // (word/settings.xml, word/endnotes.xml, customXml/*) must be captured
+    // byte-for-byte at parse time, re-zipped byte-identically after a
+    // docx -> docx round trip, with their content types re-declared —
+    // while managed parts never enter the bag.
+    let settings = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:zoom w:percent="110"/><w:defaultTabStop w:val="720"/></w:settings>"#;
+    let endnotes = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:endnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:endnote w:id="0"><w:p><w:r><w:endnoteRef/></w:r></w:p></w:endnote></w:endnotes>"#;
+    let custom = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><data><custom>keep-me</custom></data>"#;
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Body survives too.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_parts(&[
+        ("word/document.xml", document_xml),
+        ("word/settings.xml", settings),
+        ("word/endnotes.xml", endnotes),
+        ("customXml/item1.xml", custom),
+    ]);
+
+    // 1. Parse: every foreign part lands in the unmanaged-parts bag with
+    //    identical bytes; managed parts stay out.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    let names: Vec<&str> = body
+        .unmanaged_parts
+        .iter()
+        .map(|p| p.name.as_str())
+        .collect();
+    assert!(
+        names.contains(&"word/settings.xml"),
+        "settings.xml must be bagged: {names:?}"
+    );
+    assert!(names.contains(&"word/endnotes.xml"), "endnotes must be bagged: {names:?}");
+    assert!(
+        names.contains(&"customXml/item1.xml"),
+        "customXml must be bagged: {names:?}"
+    );
+    assert!(
+        !names.contains(&"word/document.xml"),
+        "managed parts must not enter the bag: {names:?}"
+    );
+    let settings_part = body
+        .unmanaged_parts
+        .iter()
+        .find(|p| p.name == "word/settings.xml")
+        .unwrap();
+    assert_eq!(
+        &settings_part.bytes[..],
+        settings.as_bytes(),
+        "bagged bytes must be identical"
+    );
+
+    // 2. docx -> docx: parts re-zip byte-identical and their content
+    //    types are re-declared.
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    assert_eq!(
+        zip_entry(&reser, "word/settings.xml"),
+        settings,
+        "settings.xml must re-zip byte-identical"
+    );
+    assert_eq!(zip_entry(&reser, "word/endnotes.xml"), endnotes);
+    assert_eq!(zip_entry(&reser, "customXml/item1.xml"), custom);
+    let ct = zip_entry(&reser, "[Content_Types].xml");
+    assert!(
+        ct.contains(r#"<Override PartName="/word/settings.xml""#),
+        "settings content type must be re-declared: {ct}"
+    );
+    assert!(
+        ct.contains(r#"<Override PartName="/customXml/item1.xml""#),
+        "customXml content type must be re-declared: {ct}"
+    );
+
+    // 3. Re-parse: bag and body text intact.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rbody = reparsed.docx_body.as_ref().unwrap();
+    assert_eq!(
+        rbody.unmanaged_parts, body.unmanaged_parts,
+        "unmanaged-parts bag must survive the round trip"
+    );
+    let html = DocxToHtmlConverter.convert(&docx).unwrap();
+    let html = String::from_utf8(html).unwrap();
+    assert!(html.contains("Body survives too."), "body text lost: {html}");
+}
