@@ -3694,6 +3694,28 @@ impl OoxmlParser {
             }
         }
 
+        let mut color_scheme = ColorScheme::default();
+        let mut font_scheme = FontScheme::default();
+        let mut format_scheme: Option<FmtScheme> = None;
+
+        for child in root.descendants() {
+            let local = child.tag_name().name();
+            let ns = child.tag_name().namespace();
+
+            match (ns, local) {
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "clrScheme") => {
+                    color_scheme = self.parse_color_scheme(&child);
+                }
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fontScheme") => {
+                    font_scheme = self.parse_font_scheme(&child);
+                }
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fmtScheme") => {
+                    format_scheme = Some(self.parse_fmt_scheme(&child, xml));
+                }
+                _ => {}
+            }
+        }
+
         Some(Theme {
             name: if name.is_empty() {
                 "Theme".to_string()
@@ -3702,7 +3724,194 @@ impl OoxmlParser {
             },
             color_scheme,
             font_scheme,
-            format_scheme: None,
+            format_scheme,
+        })
+    }
+
+    // --- FmtScheme / schemeClr parsing (ORM-07 theme style tables) ---
+
+    /// Parse `a:fmtScheme`: the fill/line/effect/bg-fill style tables that
+    /// every `a:styleRef` `idx` points into.
+    fn parse_fmt_scheme(&self, node: &roxmltree::Node, doc_xml: &str) -> FmtScheme {
+        let mut scheme = FmtScheme {
+            name: node.attribute("name").unwrap_or("").to_string(),
+            ..Default::default()
+        };
+        for child in node.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "fillStyleLst" => scheme.fill_styles = self.parse_fill_style_list(&child),
+                "lnStyleLst" => scheme.line_styles = self.parse_line_style_list(&child),
+                "effectStyleLst" => {
+                    scheme.effect_styles = child
+                        .children()
+                        .filter(|c| c.is_element() && c.tag_name().name() == "effectStyle")
+                        .map(|c| self.parse_effect_style(&c, doc_xml))
+                        .collect();
+                }
+                "bgFillStyleLst" => scheme.bg_fill_styles = self.parse_fill_style_list(&child),
+                _ => {}
+            }
+        }
+        scheme
+    }
+
+    fn parse_fill_style_list(&self, node: &roxmltree::Node) -> Vec<ThemeFillStyle> {
+        node.children()
+            .filter(|c| c.is_element())
+            .map(|c| self.parse_fill_style(&c))
+            .collect()
+    }
+
+    fn parse_fill_style(&self, node: &roxmltree::Node) -> ThemeFillStyle {
+        match node.tag_name().name() {
+            "noFill" => ThemeFillStyle::NoFill,
+            "grpFill" => ThemeFillStyle::GroupFill,
+            "blipFill" => ThemeFillStyle::Blip,
+            "solidFill" => ThemeFillStyle::Solid(self.parse_theme_color_ref(node)),
+            "gradFill" => ThemeFillStyle::Gradient(
+                node.children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "gsLst")
+                    .map(|gs_lst| {
+                        gs_lst
+                            .children()
+                            .filter(|c| c.is_element() && c.tag_name().name() == "gs")
+                            .map(|gs| ThemeGradientStop {
+                                position: gs.attribute("pos").and_then(|v| v.parse::<i64>().ok())
+                                    .map(|v| v as f64 / 100_000.0),
+                                color: self.parse_theme_color_ref(&gs),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            ),
+            "pattFill" => ThemeFillStyle::Pattern {
+                preset: node.attribute("prst").map(|v| v.to_string()),
+                foreground: node
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "fgClr")
+                    .map(|c| self.parse_theme_color_ref(&c)),
+                background: node
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "bgClr")
+                    .map(|c| self.parse_theme_color_ref(&c)),
+            },
+            _ => ThemeFillStyle::Unknown,
+        }
+    }
+
+    fn parse_line_style_list(&self, node: &roxmltree::Node) -> Vec<ThemeLineStyle> {
+        node.children()
+            .filter(|c| c.is_element())
+            .map(|c| self.parse_line_style(&c))
+            .collect()
+    }
+
+    fn parse_line_style(&self, node: &roxmltree::Node) -> ThemeLineStyle {
+        let mut style = ThemeLineStyle {
+            width: node.attribute("w").and_then(|v| v.parse().ok()),
+            cap: node.attribute("cap").map(|v| v.to_string()),
+            compound: node.attribute("cmpd").map(|v| v.to_string()),
+            alignment: node.attribute("algn").map(|v| v.to_string()),
+            ..Default::default()
+        };
+        for child in node.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "solidFill" => style.fill = Some(self.parse_fill_style(&child)),
+                "gradFill" => style.fill = Some(self.parse_fill_style(&child)),
+                "noFill" => style.fill = Some(ThemeFillStyle::NoFill),
+                "prstDash" => style.dash = child.attribute("val").map(|v| v.to_string()),
+                "headEnd" => style.head_end = child.attribute("type").map(|v| v.to_string()),
+                "tailEnd" => style.tail_end = child.attribute("type").map(|v| v.to_string()),
+                _ => {}
+            }
+        }
+        style
+    }
+
+    fn parse_effect_style(&self, node: &roxmltree::Node, doc_xml: &str) -> ThemeEffectStyle {
+        let effect_lst = node
+            .children()
+            .find(|c| c.is_element() && c.tag_name().name() == "effectLst");
+        let has_effects = effect_lst
+            .map(|e| e.children().any(|gc| gc.is_element()))
+            .unwrap_or(false);
+        // Keep the verbatim effect list XML so the style re-serializes
+        // losslessly (the typed model only records presence).
+        let raw = if has_effects {
+            let range = effect_lst.map(|e| e.range()).unwrap_or(0..0);
+            doc_xml.get(range.start..range.end).map(|s| s.to_string())
+        } else {
+            None
+        };
+        ThemeEffectStyle { has_effects, raw }
+    }
+
+    /// Parse the single color child of a container element (`a:solidFill`,
+    /// `a:gs`, `a:fgClr`, ...): srgbClr / schemeClr / sysClr / prstClr.
+    fn parse_theme_color_ref(&self, container: &roxmltree::Node) -> ThemeColorRef {
+        for child in container.children().filter(|c| c.is_element()) {
+            match child.tag_name().name() {
+                "srgbClr" => {
+                    return ThemeColorRef {
+                        rgb: child.attribute("val").map(|v| v.to_string()),
+                        ..Default::default()
+                    };
+                }
+                "schemeClr" => {
+                    return ThemeColorRef {
+                        scheme: Some(self.parse_scheme_clr(&child)),
+                        ..Default::default()
+                    };
+                }
+                "sysClr" => {
+                    return ThemeColorRef {
+                        system: Some(ThemeSystemColor {
+                            val: child.attribute("val").unwrap_or("").to_string(),
+                            last_clr: child.attribute("lastClr").map(|v| v.to_string()),
+                        }),
+                        ..Default::default()
+                    };
+                }
+                "prstClr" => {
+                    return ThemeColorRef {
+                        preset: child.attribute("val").map(|v| v.to_string()),
+                        ..Default::default()
+                    };
+                }
+                _ => {}
+            }
+        }
+        ThemeColorRef::default()
+    }
+
+    /// Parse `a:schemeClr` with its color-transform children.
+    fn parse_scheme_clr(&self, node: &roxmltree::Node) -> SchemeClr {
+        SchemeClr {
+            val: node.attribute("val").unwrap_or("").to_string(),
+            modifiers: node
+                .children()
+                .filter(|c| c.is_element())
+                .filter_map(|c| self.parse_scheme_clr_transform(&c))
+                .collect(),
+        }
+    }
+
+    fn parse_scheme_clr_transform(&self, node: &roxmltree::Node) -> Option<SchemeClrTransform> {
+        let val = || node.attribute("val").and_then(|v| v.parse::<i64>().ok());
+        Some(match node.tag_name().name() {
+            "tint" => SchemeClrTransform::Tint(val()?),
+            "shade" => SchemeClrTransform::Shade(val()?),
+            "lumMod" => SchemeClrTransform::LumMod(val()?),
+            "lumOff" => SchemeClrTransform::LumOff(val()?),
+            "alpha" => SchemeClrTransform::Alpha(val()?),
+            "alphaMod" => SchemeClrTransform::AlphaMod(val()?),
+            "alphaOff" => SchemeClrTransform::AlphaOff(val()?),
+            "satMod" => SchemeClrTransform::SatMod(val()?),
+            "satOff" => SchemeClrTransform::SatOff(val()?),
+            "hueMod" => SchemeClrTransform::HueMod(val()?),
+            "comp" => SchemeClrTransform::Complement,
+            "gray" => SchemeClrTransform::Gray,
+            _ => return None,
         })
     }
 
@@ -3719,8 +3928,18 @@ impl OoxmlParser {
             let color = child
                 .descendants()
                 .find(|n| n.has_tag_name("srgbClr") || n.has_tag_name("sysClr"))
-                .and_then(|n| n.attribute("val"))
-                .map(|v| v.to_string())
+                .map(|n| {
+                    // sysClr carries the concrete color in lastClr; `val`
+                    // is the system color name (window, windowText, ...).
+                    if n.has_tag_name("sysClr") {
+                        n.attribute("lastClr")
+                            .or_else(|| n.attribute("val"))
+                            .unwrap_or("")
+                            .to_string()
+                    } else {
+                        n.attribute("val").unwrap_or("").to_string()
+                    }
+                })
                 .unwrap_or_default();
 
             if !local.is_empty() && !color.is_empty() {
@@ -3829,15 +4048,40 @@ impl OoxmlParser {
     fn parse_single_slide_master(&self, xml: &str, _path: &str) -> Option<SlideMaster> {
         let doc = XmlDoc::parse(xml).ok()?;
 
-        let name = doc
-            .root_element()
-            .attribute("name")
-            .unwrap_or("Slide Master")
-            .to_string();
+        let root = doc.root_element();
+        let name = root.attribute("name").unwrap_or("Slide Master").to_string();
+
+        // p:clrMap: remaps scheme slots for the slides following this master.
+        let mut clr_map = ClrMap::default();
+        for child in root.children().filter(|c| c.is_element()) {
+            if child.tag_name().name() == "clrMap"
+                && child.tag_name().namespace() == Some(Self::P_NS)
+            {
+                for slot in [
+                    "bg1",
+                    "tx1",
+                    "bg2",
+                    "tx2",
+                    "accent1",
+                    "accent2",
+                    "accent3",
+                    "accent4",
+                    "accent5",
+                    "accent6",
+                    "hlink",
+                    "folHlink",
+                ] {
+                    if let Some(v) = child.attribute(slot) {
+                        clr_map.set_slot(slot, v);
+                    }
+                }
+            }
+        }
 
         Some(SlideMaster {
             id: 1,
             name,
+            clr_map,
             slide_layouts: Vec::new(), // Layouts resolved via relationships
         })
     }
