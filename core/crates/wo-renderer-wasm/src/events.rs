@@ -180,6 +180,16 @@ pub enum WsEvent {
     /// revision id, `kind` is "accept" | "reject" | "update" | "move".
     TrackChange { id: String, kind: String, data: Value },
 
+    // ---- collaboration / protection (Phase 4, P4-C01) ----
+    /// OO `asc_onChangeRestrictions` — the document-protection mode flipped.
+    /// `mode` is the `setDocumentRestriction` wire string: "none" |
+    /// "readOnly" | "comment-only" | "fill-forms" | "track-changes".
+    RestrictionChange {
+        mode: String,
+        allow_print: bool,
+        allow_copy: bool,
+    },
+
     // ---- proofing / view misc (Phase 2/3) ----
     SpellCheckVariants {
         word: String,
