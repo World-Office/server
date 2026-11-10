@@ -123,9 +123,13 @@ for (const f of CLOSED_FILES) {
     `${f}: note carries a campaign trace prefix (e.g. "P3-U05: " or "PTS: ")`
   )
 }
-// Exactly 51 rows were touched (no drift beyond the closure set).
-const touched = rows.filter((r) => typeof r.notes === "string" && r.notes.startsWith("P3-U05:"))
-assert.equal(touched.length, 51, "exactly 51 ledger rows carry the P3-U05 closure note")
+// No drift beyond the closure set: every traced row belongs to a known campaign
+// (P3-U05 closed 51 rows; oo-pts flipped 4 more: PageThumbnails×2, Pages, HintManager).
+const traced = rows.filter((r) => typeof r.notes === "string" && /^[A-Z0-9]+(-[A-Z0-9]+)*: /.test(r.notes))
+assert.ok(
+  traced.length >= 51 && traced.every((r) => /^P3-U05: |^PTS: /.test(r.notes)),
+  `traced rows must be P3-U05/PTS campaign closures (got ${traced.length}: ${[...new Set(traced.map((r) => r.notes.split(":")[0]))].join(",")})`
+)
 
 const tally = {}
 touched.forEach((r) => (tally[r.wo_status] = (tally[r.wo_status] || 0) + 1))
