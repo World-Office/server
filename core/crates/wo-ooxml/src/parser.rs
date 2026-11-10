@@ -4150,7 +4150,12 @@ impl OoxmlParser {
         })?;
         let workbook = self.parse_xlsx(&mut archive)?;
         let charts = self.parse_xlsx_charts(&mut archive)?;
-        Ok(XlsxBook { workbook, charts })
+        let rich_values = self.parse_xlsx_rich_values(&mut archive)?;
+        Ok(XlsxBook {
+            workbook,
+            charts,
+            rich_values,
+        })
     }
 
     /// Parse every `xl/charts/chartN.xml` part into the typed ChartSpace
@@ -4767,9 +4772,91 @@ impl OoxmlParser {
                     break;
                 }
             }
+
+            // ORM-06: `fileSharing` (read-only-recommended + author stamp).
+            properties.file_sharing = workbook_elem
+                .children()
+                .find(|n| {
+                    n.has_tag_name("fileSharing")
+                        && n.tag_name().namespace() == Some(Self::S_NS)
+                })
+                .map(|fs| XlsxFileSharing {
+                    read_only_recommended: Self::parse_xlsx_flag(fs, "readOnlyRecommended"),
+                    user_name: fs.attribute("userName").map(|v| v.to_string()),
+                    create_date_time_stamp: fs
+                        .attribute("createDateTimeStamp")
+                        .map(|v| v.to_string()),
+                });
+
+            // ORM-06: `workbookProtection` (lock flags + password hash).
+            properties.workbook_protection = workbook_elem
+                .children()
+                .find(|n| {
+                    n.has_tag_name("workbookProtection")
+                        && n.tag_name().namespace() == Some(Self::S_NS)
+                })
+                .map(|prot| XlsxWorkbookProtection {
+                    lock_structure: Self::parse_xlsx_flag(prot, "lockStructure"),
+                    lock_windows: Self::parse_xlsx_flag(prot, "lockWindows"),
+                    lock_revision: Self::parse_xlsx_flag(prot, "lockRevision"),
+                    workbook_password: prot.attribute("workbookPassword").map(|v| v.to_string()),
+                    workbook_password_crc: prot
+                        .attribute("workbookPasswordCRC")
+                        .and_then(|v| v.parse().ok()),
+                    algorithm_name: prot.attribute("algorithmName").map(|v| v.to_string()),
+                    hash_value: prot.attribute("hashValue").map(|v| v.to_string()),
+                    salt_value: prot.attribute("saltValue").map(|v| v.to_string()),
+                    spin_count: prot.attribute("spinCount").and_then(|v| v.parse().ok()),
+                });
         }
 
         Ok(properties)
+    }
+
+    /// An OOXML boolean flag attribute: `"1"`/`"true"` mean on, an absent
+    /// attribute stays `None` (so serializer defaults are preserved).
+    fn parse_xlsx_flag(elem: roxmltree::Node, name: &str) -> Option<bool> {
+        elem.attribute(name).map(|v| v == "1" || v == "true")
+    }
+
+    // --- ORM-06: XLSX rich values (xl/richData/richValue.xml) ---
+
+    /// Parse the `xl/richData/richValue.xml` part (Excel 365 rich values:
+    /// images and formatted objects embedded in cells). Missing part ->
+    /// an empty vector, so ordinary books are unaffected.
+    pub fn parse_xlsx_rich_values(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Vec<XlsxRichValue>> {
+        if archive.by_name("xl/richData/richValue.xml").is_err() {
+            return Ok(Vec::new());
+        }
+        let xml = self.read_zip_entry(archive, "xl/richData/richValue.xml")?;
+        let doc = XmlDoc::parse(&xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid richValue.xml: {}", e),
+        })?;
+
+        let mut rich_values = Vec::new();
+        for rv_elem in doc.descendants().filter(|n| n.has_tag_name("rv")) {
+            let mut value = XlsxRichValue::default();
+            for child in rv_elem.children().filter(|n| n.is_element()) {
+                match child.tag_name().name() {
+                    "rvb" => {
+                        value.blob = child.text().and_then(|t| t.trim().parse().ok());
+                    }
+                    "rvc" | "rvd" | "rvs" => {
+                        value.records.push(XlsxRichValueRecord {
+                            t: child.attribute("t").and_then(|v| v.parse().ok()),
+                            v: child.attribute("v").map(|v| v.to_string()),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+            rich_values.push(value);
+        }
+        Ok(rich_values)
     }
 
     fn parse_xlsx_sheets(
@@ -5162,6 +5249,71 @@ impl OoxmlParser {
                     });
                 }
             }
+
+            // ORM-06: dynamic arrays (`f[@t="array"]`), rich-value cell
+            // links (`c/@vm`) and the `<metadata>` blocks they point into.
+            // Excel 365 spill formulas and in-cell rich values previously
+            // collapsed to plain values on import.
+            for cell_elem in worksheet_elem.descendants() {
+                if !(cell_elem.has_tag_name("c")
+                    && cell_elem.tag_name().namespace() == Some(Self::S_NS))
+                {
+                    continue;
+                }
+                let cell_ref = match cell_elem.attribute("r") {
+                    Some(r) => r.to_string(),
+                    None => continue,
+                };
+                if let Some(f_elem) = cell_elem.children().find(|n| {
+                    n.has_tag_name("f") && n.tag_name().namespace() == Some(Self::S_NS)
+                }) {
+                    if f_elem.attribute("t") == Some("array") {
+                        sheet_properties.dynamic_arrays.push(XlsxDynamicArray {
+                            cell_ref: cell_ref.clone(),
+                            ref_range: f_elem.attribute("ref").map(|v| v.to_string()),
+                            aca: f_elem.attribute("aca") == Some("1"),
+                            cm: cell_elem
+                                .attribute("cm")
+                                .or_else(|| f_elem.attribute("cm"))
+                                .and_then(|v| v.parse().ok()),
+                            formula: f_elem.text().unwrap_or_default().to_string(),
+                        });
+                    }
+                }
+                if let Some(vm) = cell_elem.attribute("vm").and_then(|v| v.parse().ok()) {
+                    sheet_properties.rich_value_refs.push(XlsxRichValueRef { cell_ref, vm });
+                }
+            }
+
+            // ORM-06: the worksheet `<metadata>` block behind `c/@cm` and
+            // `c/@vm` (dynamic-array + rich-value metadata records).
+            if let Some(meta_elem) = worksheet_elem.children().find(|n| {
+                n.has_tag_name("metadata") && n.tag_name().namespace() == Some(Self::S_NS)
+            }) {
+                let mut metadata = XlsxMetadata::default();
+                for child in meta_elem.children().filter(|n| n.is_element()) {
+                    match child.tag_name().name() {
+                        "metadataTypes" => {
+                            for t in child
+                                .children()
+                                .filter(|n| n.is_element() && n.has_tag_name("metadataType"))
+                            {
+                                if let Some(name) = t.attribute("name") {
+                                    metadata.metadata_types.push(name.to_string());
+                                }
+                            }
+                        }
+                        "cellMetadata" => {
+                            metadata.cell_metadata = Self::parse_xlsx_metadata_blocks(child);
+                        }
+                        "valueMetadata" => {
+                            metadata.value_metadata = Self::parse_xlsx_metadata_blocks(child);
+                        }
+                        _ => {}
+                    }
+                }
+                sheet_properties.metadata = Some(metadata);
+            }
         }
 
         Ok((rows, cols, merges, sheet_properties))
@@ -5181,6 +5333,23 @@ impl OoxmlParser {
                 .unwrap_or(0),
             man: elem.attribute("man") == Some("1"),
         }
+    }
+
+    /// The `<bk>` blocks of a `<cellMetadata>` / `<valueMetadata>` element
+    /// (ORM-06): each block is its `<rc t=".." v=".."/>` records, in order.
+    fn parse_xlsx_metadata_blocks(elem: roxmltree::Node) -> Vec<Vec<XlsxMetadataRecord>> {
+        elem.children()
+            .filter(|n| n.is_element() && n.has_tag_name("bk"))
+            .map(|bk| {
+                bk.children()
+                    .filter(|n| n.is_element() && n.has_tag_name("rc"))
+                    .map(|rc| XlsxMetadataRecord {
+                        t: rc.attribute("t").and_then(|v| v.parse().ok()),
+                        v: rc.attribute("v").and_then(|v| v.parse().ok()),
+                    })
+                    .collect()
+            })
+            .collect()
     }
 
     /// One `<cfRule>`: attributes + optional type-specific element.
@@ -7478,6 +7647,7 @@ mod tests {
                 path: String::new(),
                 space,
             }],
+            rich_values: Vec::new(),
         };
         let out = OoxmlSerializer::new().serialize_xlsx_book(&book).unwrap();
         let xml = {

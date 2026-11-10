@@ -2825,3 +2825,259 @@ fn gap_pptx_theme_roundtrip() {
     assert_eq!(theme2.major_latin_font(), Some("Calibri Light"));
     assert_eq!(theme2.minor_latin_font(), Some("Calibri"));
 }
+
+/// Build a minimal xlsx zip around a hand-written workbook.xml plus parts
+/// (P2B-X04: the workbook-protection fixture needs `fileSharing` and
+/// `workbookProtection` in xl/workbook.xml, which the default helper does
+/// not carry).
+fn xlsx_book_from_parts(
+    workbook_xml: &str,
+    parts: &[(&str, &str)],
+    overrides: &[(&str, &str)],
+) -> Vec<u8> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
+        let mut ct = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>"#,
+        );
+        for (part, content_type) in overrides {
+            ct.push_str(&format!(
+                "\n  <Override PartName=\"{}\" ContentType=\"{}\"/>",
+                part, content_type
+            ));
+        }
+        ct.push_str("\n</Types>");
+        zip.write_all(ct.as_bytes()).unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#)
+            .unwrap();
+        zip.start_file("xl/workbook.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(workbook_xml.as_bytes()).unwrap();
+        zip.start_file("xl/_rels/workbook.xml.rels", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#)
+            .unwrap();
+        for (name, xml) in parts {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        }
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn gap_xlsx_wbprotect_roundtrip() {
+    // ORM-06 (P2B-X04): the Excel 365 workbook-guard and modern-value
+    // blocks were dropped on import — `workbookProtection` and
+    // `fileSharing` vanished (a protected workbook silently became
+    // editable), dynamic-array spill formulas collapsed to plain values
+    // (the `f[@t="array"]` + `aca` + `cm` attributes and the worksheet
+    // `<metadata>` records were unread), and rich values (in-cell images,
+    // `xl/richData/richValue.xml` + `c/@vm` links) were lost entirely.
+    // All four blocks must now parse into the typed model, survive an
+    // xlsx -> xlsx re-serialization, and re-parse to the identical model.
+    let workbook_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <fileSharing readOnlyRecommended="1" userName="Anna Fischer" createDateTimeStamp="2024-03-01T09:15:00Z"/>
+  <workbookPr date1904="0"/>
+  <workbookProtection lockStructure="1" lockWindows="1" algorithmName="SHA-512" hashValue="Q3aaA2h1Xv9kQ0hash" saltValue="c2FsdA==" spinCount="100000"/>
+  <sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#;
+    let sheet_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Item</v></c><c r="B1" t="str"><v>Unique</v></c><c r="C1" t="str"><v>Photo</v></c></row>
+    <row r="2"><c r="A2" t="str"><v>Widget</v></c><c r="B2" t="str"><v>Widget</v></c><c r="C2"><v>7</v></c></row>
+    <row r="3"><c r="A3" t="str"><v>Gadget</v></c><c r="B3" cm="1" t="str"><f aca="1" t="array" ref="B3">_xlfn.UNIQUE(A2:A9)</f><v>Widget</v></c><c r="C3" vm="1"><v>1</v></c></row>
+  </sheetData>
+  <metadata>
+    <metadataTypes count="2"><metadataType name="XLDAPR"/><metadataType name="XLRICHVALUE"/></metadataTypes>
+    <cellMetadata count="1"><bk metadataType="1"><rc t="1" v="0"/></bk></cellMetadata>
+    <valueMetadata count="1"><bk metadataType="2"><rc t="2" v="0"/></bk></valueMetadata>
+  </metadata>
+</worksheet>"#;
+    let rich_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<richValueRoot xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata">
+  <rv>
+    <rvb>0</rvb>
+    <rvc t="2" v="Image"/>
+    <rvc t="3" v="0"/>
+    <rvd t="7" v="Widget photo"/>
+  </rv>
+</richValueRoot>"#;
+    let xlsx = xlsx_book_from_parts(
+        workbook_xml,
+        &[
+            ("xl/worksheets/sheet1.xml", sheet_xml),
+            ("xl/richData/richValue.xml", rich_xml),
+        ],
+        &[(
+            "/xl/richData/richValue.xml",
+            "application/vnd.ms-excel.richvalue+xml",
+        )],
+    );
+
+    // 1. Typed parse: protection, dynamic array, metadata, rich values.
+    let book = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
+
+    let fs = book
+        .workbook
+        .properties
+        .file_sharing
+        .as_ref()
+        .expect("fileSharing must parse");
+    assert_eq!(fs.read_only_recommended, Some(true));
+    assert_eq!(fs.user_name.as_deref(), Some("Anna Fischer"));
+    assert_eq!(
+        fs.create_date_time_stamp.as_deref(),
+        Some("2024-03-01T09:15:00Z")
+    );
+
+    let prot = book
+        .workbook
+        .properties
+        .workbook_protection
+        .as_ref()
+        .expect("workbookProtection must parse");
+    assert_eq!(prot.lock_structure, Some(true));
+    assert_eq!(prot.lock_windows, Some(true));
+    assert_eq!(prot.lock_revision, None, "absent flag stays None");
+    assert_eq!(prot.algorithm_name.as_deref(), Some("SHA-512"));
+    assert_eq!(prot.hash_value.as_deref(), Some("Q3aaA2h1Xv9kQ0hash"));
+    assert_eq!(prot.salt_value.as_deref(), Some("c2FsdA=="));
+    assert_eq!(prot.spin_count, Some(100000));
+
+    let sheet = &book.workbook.sheets[0];
+    assert_eq!(sheet.properties.dynamic_arrays.len(), 1, "dynamicArray cell must parse");
+    let da = &sheet.properties.dynamic_arrays[0];
+    assert_eq!(da.cell_ref, "B3");
+    assert_eq!(da.ref_range.as_deref(), Some("B3"));
+    assert!(da.aca, "spill always-calculate flag must survive");
+    assert_eq!(da.cm, Some(1));
+    assert_eq!(da.formula, "_xlfn.UNIQUE(A2:A9)");
+
+    let meta = sheet
+        .properties
+        .metadata
+        .as_ref()
+        .expect("worksheet metadata must parse");
+    assert_eq!(meta.metadata_types, vec!["XLDAPR", "XLRICHVALUE"]);
+    assert_eq!(meta.cell_metadata.len(), 1);
+    assert_eq!(meta.cell_metadata[0][0].t, Some(1));
+    assert_eq!(meta.cell_metadata[0][0].v, Some(0));
+    assert_eq!(meta.value_metadata.len(), 1);
+    assert_eq!(meta.value_metadata[0][0].t, Some(2));
+
+    assert_eq!(sheet.properties.rich_value_refs.len(), 1);
+    assert_eq!(sheet.properties.rich_value_refs[0].cell_ref, "C3");
+    assert_eq!(sheet.properties.rich_value_refs[0].vm, 1);
+
+    assert_eq!(book.rich_values.len(), 1, "richValue part must parse");
+    let rv = &book.rich_values[0];
+    assert_eq!(rv.blob, Some(0), "rvb blob index must survive");
+    assert_eq!(rv.records.len(), 3);
+    assert_eq!(rv.records[0].t, Some(2));
+    assert_eq!(rv.records[0].v.as_deref(), Some("Image"));
+    assert_eq!(rv.records[2].t, Some(7));
+    assert_eq!(rv.records[2].v.as_deref(), Some("Widget photo"));
+
+    // 2. Serialize: every block re-emits into the regenerated package.
+    let reser = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx_book(&book)
+        .unwrap();
+    let wb_xml = zip_entry(&reser, "xl/workbook.xml");
+    let fs_pos = wb_xml.find("<fileSharing").expect("fileSharing must re-emit");
+    assert!(
+        wb_xml.contains(r#"<fileSharing readOnlyRecommended="1" userName="Anna Fischer" createDateTimeStamp="2024-03-01T09:15:00Z"/>"#),
+        "fileSharing attributes must re-emit: {wb_xml}"
+    );
+    let prot_pos = wb_xml
+        .find("<workbookProtection")
+        .expect("workbookProtection must re-emit");
+    assert!(
+        wb_xml.contains(r#"<workbookProtection lockStructure="1" lockWindows="1" algorithmName="SHA-512" hashValue="Q3aaA2h1Xv9kQ0hash" saltValue="c2FsdA==" spinCount="100000"/>"#),
+        "workbookProtection hash block must re-emit: {wb_xml}"
+    );
+    assert!(
+        fs_pos < prot_pos && wb_xml.find("<workbookPr").unwrap() < prot_pos,
+        "schema order fileSharing < workbookPr < workbookProtection"
+    );
+
+    let sheet2 = zip_entry(&reser, "xl/worksheets/sheet1.xml");
+    assert!(
+        sheet2.contains(r#"<c r="B3" cm="1" t="str">"#),
+        "dynamic-array cm must re-emit: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<f aca="1" t="array" ref="B3">_xlfn.UNIQUE(A2:A9)</f>"#),
+        "array formula attributes must re-emit: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<c r="C3" vm="1">"#),
+        "rich-value vm link must re-emit: {sheet2}"
+    );
+    assert!(sheet2.contains("<metadata>"), "metadata block must re-emit");
+    assert!(sheet2.contains(r#"<metadataType name="XLDAPR"/>"#));
+    assert!(sheet2.contains(r#"<rc t="1" v="0" />"#), "cellMetadata records must re-emit: {sheet2}");
+    assert!(sheet2.contains(r#"<rc t="2" v="0" />"#), "valueMetadata records must re-emit: {sheet2}");
+
+    let ct = zip_entry(&reser, "[Content_Types].xml");
+    assert!(
+        ct.contains(r#"<Override PartName="/xl/richData/richValue.xml" ContentType="application/vnd.ms-excel.richvalue+xml"/>"#),
+        "richValue content type must be re-declared: {ct}"
+    );
+    let rv2 = zip_entry(&reser, "xl/richData/richValue.xml");
+    assert!(rv2.contains("<rvb>0</rvb>"), "richValue blob must re-emit: {rv2}");
+    assert!(rv2.contains(r#"<rvc t="2" v="Image" />"#));
+    assert!(rv2.contains(r#"<rvc t="7" v="Widget photo" />"#), "richValue records must re-emit: {rv2}");
+
+    // 3. Re-parse: the typed model is identical, so a protected,
+    //    dynamic-array + rich-value workbook survives an edit round trip.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&reser).unwrap();
+    assert_eq!(
+        reparsed.workbook.properties.file_sharing, book.workbook.properties.file_sharing,
+        "fileSharing must round-trip"
+    );
+    assert_eq!(
+        reparsed.workbook.properties.workbook_protection, book.workbook.properties.workbook_protection,
+        "workbookProtection must round-trip without unlocking"
+    );
+    assert_eq!(
+        reparsed.workbook.sheets[0].properties.dynamic_arrays,
+        book.workbook.sheets[0].properties.dynamic_arrays,
+        "dynamic arrays must round-trip"
+    );
+    assert_eq!(
+        reparsed.workbook.sheets[0].properties.metadata,
+        book.workbook.sheets[0].properties.metadata,
+        "worksheet metadata must round-trip"
+    );
+    assert_eq!(
+        reparsed.workbook.sheets[0].properties.rich_value_refs,
+        book.workbook.sheets[0].properties.rich_value_refs,
+        "rich-value cell links must round-trip"
+    );
+    assert_eq!(
+        reparsed.rich_values, book.rich_values,
+        "rich values must round-trip"
+    );
+}
