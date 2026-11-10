@@ -135,6 +135,52 @@ pub struct XlsxWorkbookProperties {
     pub view: Option<String>,
     pub active_tab: Option<usize>,
     pub first_sheet: Option<usize>,
+    /// `fileSharing` (ORM-06) — the shared-workbook guard rails.
+    pub file_sharing: Option<XlsxFileSharing>,
+    /// `workbookProtection` (ORM-06) — workbook lock flags + password hash.
+    pub workbook_protection: Option<XlsxWorkbookProtection>,
+}
+
+/// `workbookProtection` (CT_WorkbookProtection, ORM-06): the workbook-level
+/// lock flags plus the password hash — either the legacy hashed attribute
+/// or the modern agile-encryption block (`algorithmName`/`hashValue`/
+/// `saltValue`/`spinCount`). Dropping this silently unlocks a protected
+/// workbook on round trip.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxWorkbookProtection {
+    /// `lockStructure` — structure edits (add/remove/move/rename sheets,
+    /// window management) are locked.
+    pub lock_structure: Option<bool>,
+    /// `lockWindows` — window size/position is locked.
+    pub lock_windows: Option<bool>,
+    /// `lockRevision` — change-tracking revisions are locked.
+    pub lock_revision: Option<bool>,
+    /// `workbookPassword` — legacy (reversible) password hash.
+    pub workbook_password: Option<String>,
+    /// `workbookPasswordCRC` — CRC-32 of the workbook password.
+    pub workbook_password_crc: Option<u32>,
+    /// `algorithmName` — modern password hash algorithm (e.g. `SHA-512`).
+    pub algorithm_name: Option<String>,
+    /// `hashValue` — modern password hash (base64).
+    pub hash_value: Option<String>,
+    /// `saltValue` — modern password salt (base64).
+    pub salt_value: Option<String>,
+    /// `spinCount` — modern hash iteration count.
+    pub spin_count: Option<u32>,
+}
+
+/// `fileSharing` (CT_FileSharing, ORM-06): the shared-workbook stamp —
+/// the "read-only recommended" open prompt plus the authoring identity.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxFileSharing {
+    /// `readOnlyRecommended` — open as read-only unless overridden.
+    pub read_only_recommended: Option<bool>,
+    /// `userName` — author recorded on the share.
+    pub user_name: Option<String>,
+    /// `createDateTimeStamp` — when the shared copy was created.
+    pub create_date_time_stamp: Option<String>,
 }
 
 /// A single worksheet.
@@ -180,6 +226,73 @@ pub struct XlsxSheetProperties {
     pub hyperlinks: Vec<XlsxHyperlink>,
     /// Conditional formatting (`<conditionalFormatting sqref=...>` blocks).
     pub conditional_formatting: Vec<XlsxConditionalFormatting>,
+    /// Worksheet `<metadata>` block (ORM-06, Excel 365) — the metadata
+    /// types plus the `cellMetadata` / `valueMetadata` `<bk>` blocks that
+    /// the `c/@cm` and `c/@vm` cell references point into.
+    pub metadata: Option<XlsxMetadata>,
+    /// Dynamic-array formula records (ORM-06, Excel 365) — cells whose
+    /// `f` is a dynamic array (`f[@t="array"]`) with its spill range,
+    /// always-calculate flag and cell-metadata link.
+    pub dynamic_arrays: Vec<XlsxDynamicArray>,
+    /// Rich-value cell references (ORM-06, Excel 365) — the `c/@vm`
+    /// value-metadata indexes that wire cells to rich values.
+    pub rich_value_refs: Vec<XlsxRichValueRef>,
+}
+
+/// A dynamic-array formula record (ORM-06): one cell whose `<f>` carries
+/// `t="array"` (Excel 365 dynamic arrays spill into neighbours). Kept at
+/// sheet level so the plain `XlsxCell` model stays untouched while the
+/// spill semantics survive a round trip.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxDynamicArray {
+    /// The anchoring cell reference (e.g. `B3`).
+    pub cell_ref: String,
+    /// `f/@ref` — the range the array result covers.
+    pub ref_range: Option<String>,
+    /// `f/@aca` — always-calculate flag (re-spill on every calc).
+    pub aca: bool,
+    /// `f/@cm` / `c/@cm` — cell-metadata index into the worksheet
+    /// `<metadata>` `cellMetadata` blocks.
+    pub cm: Option<u32>,
+    /// The formula text (e.g. `_xlfn.UNIQUE(A2:A9)`).
+    pub formula: String,
+}
+
+/// One `c/@vm` value-metadata link (ORM-06): a cell whose value is a rich
+/// value (image / formatted object) stored in `xl/richData/richValue.xml`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxRichValueRef {
+    /// The cell reference (e.g. `C3`).
+    pub cell_ref: String,
+    /// The `c/@vm` index into the worksheet `valueMetadata` blocks.
+    pub vm: u32,
+}
+
+/// One `<rc>` metadata record inside a `<bk>` block: a typed reference
+/// into the workbook metadata tables (`t` = record type, `v` = value).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxMetadataRecord {
+    /// `t` — metadata record type (1 = dynamic array, 2 = rich value ...).
+    pub t: Option<u32>,
+    /// `v` — the record value.
+    pub v: Option<u32>,
+}
+
+/// Worksheet `<metadata>` block (ORM-06, Excel 365): the declared metadata
+/// types (e.g. `XLDAPR` for dynamic arrays, `XLRICHVALUE` for rich values)
+/// plus the per-index `<bk>` record blocks behind `c/@cm` / `c/@vm`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxMetadata {
+    /// `<metadataTypes>` — the declared metadata type names.
+    pub metadata_types: Vec<String>,
+    /// `<cellMetadata>` — one `<bk>` block per `cm` index.
+    pub cell_metadata: Vec<Vec<XlsxMetadataRecord>>,
+    /// `<valueMetadata>` — one `<bk>` block per `vm` index.
+    pub value_metadata: Vec<Vec<XlsxMetadataRecord>>,
 }
 
 /// Worksheet print model (ORM-06 print/PDF parity): page margins, page
@@ -3539,6 +3652,35 @@ pub struct XlsxBook {
     pub workbook: XlsxWorkbook,
     /// The typed chart parts (`xl/charts/chartN.xml`), in package order.
     pub charts: Vec<XlsxChartPart>,
+    /// The typed rich-value part (`xl/richData/richValue.xml`, ORM-06) —
+    /// images / formatted objects embedded in cells, addressed through
+    /// the worksheets' `c/@vm` value-metadata links.
+    pub rich_values: Vec<XlsxRichValue>,
+}
+
+/// Rich-value part content type (`xl/richData/richValue.xml`, ORM-06).
+pub const XLSX_RICH_VALUE_CONTENT_TYPE: &str = "application/vnd.ms-excel.richvalue+xml";
+
+/// One `<rv>` rich value from `xl/richData/richValue.xml` (ORM-06): the
+/// payload behind a rich-value cell — an image, formatted number with
+/// custom styling, or other structured object.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxRichValue {
+    /// `rvb` — binary blob index (image data via the rich-value rels).
+    pub blob: Option<u32>,
+    /// `rvc`/`rvd` — structured key/value records (key id -> value).
+    pub records: Vec<XlsxRichValueRecord>,
+}
+
+/// One rich-value key/value pair (`rvc` or `rvd` child of `<rv>`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxRichValueRecord {
+    /// `t` — the structured key id.
+    pub t: Option<u32>,
+    /// `v` — the value (a literal string or an index).
+    pub v: Option<String>,
 }
 
 /// One `xl/charts/chartN.xml` part: its package path plus the typed

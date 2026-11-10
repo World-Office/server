@@ -202,7 +202,7 @@ impl OoxmlSerializer {
 
     /// Serialize an XlsxWorkbook to XLSX bytes (ZIP archive).
     pub fn serialize_xlsx(&self, wb: &XlsxWorkbook) -> Result<Vec<u8>, anyhow::Error> {
-        self.write_xlsx_zip(wb, &[])
+        self.write_xlsx_zip(wb, &[], &[])
     }
 
     /// Serialize a workbook plus its typed chart parts (ORM-06): the
@@ -214,18 +214,20 @@ impl OoxmlSerializer {
         wb: &XlsxWorkbook,
         charts: &[XlsxChartPart],
     ) -> Result<Vec<u8>, anyhow::Error> {
-        self.write_xlsx_zip(wb, charts)
+        self.write_xlsx_zip(wb, charts, &[])
     }
 
-    /// Serialize a whole parsed book (workbook model + chart parts).
+    /// Serialize a whole parsed book (workbook model + chart parts +
+    /// rich values).
     pub fn serialize_xlsx_book(&self, book: &XlsxBook) -> Result<Vec<u8>, anyhow::Error> {
-        self.write_xlsx_zip(&book.workbook, &book.charts)
+        self.write_xlsx_zip(&book.workbook, &book.charts, &book.rich_values)
     }
 
     fn write_xlsx_zip(
         &self,
         wb: &XlsxWorkbook,
         charts: &[XlsxChartPart],
+        rich_values: &[XlsxRichValue],
     ) -> Result<Vec<u8>, anyhow::Error> {
         let buf = Cursor::new(Vec::new());
         let mut zip = zip::ZipWriter::new(buf);
@@ -234,7 +236,7 @@ impl OoxmlSerializer {
             .compression_method(zip::CompressionMethod::Deflated);
 
         // 1. [Content_Types].xml
-        let content_types = self.build_xlsx_content_types(wb, charts);
+        let content_types = self.build_xlsx_content_types(wb, charts, rich_values);
         zip.start_file("[Content_Types].xml", options)?;
         zip.write_all(content_types.as_bytes())?;
 
@@ -280,6 +282,13 @@ impl OoxmlSerializer {
             let chart_xml = self.build_xlsx_chart_xml(chart);
             zip.start_file(&path, options)?;
             zip.write_all(chart_xml.as_bytes())?;
+        }
+
+        // 5c. xl/richData/richValue.xml (ORM-06): regenerated rich values.
+        if !rich_values.is_empty() {
+            let rv_xml = self.build_xlsx_rich_values_xml(rich_values);
+            zip.start_file("xl/richData/richValue.xml", options)?;
+            zip.write_all(rv_xml.as_bytes())?;
         }
 
         // 6. xl/sharedStrings.xml
@@ -3437,7 +3446,12 @@ impl OoxmlSerializer {
 
     // --- XLSX helpers ---
 
-    fn build_xlsx_content_types(&self, wb: &XlsxWorkbook, charts: &[XlsxChartPart]) -> String {
+    fn build_xlsx_content_types(
+        &self,
+        wb: &XlsxWorkbook,
+        charts: &[XlsxChartPart],
+        rich_values: &[XlsxRichValue],
+    ) -> String {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -3472,7 +3486,44 @@ impl OoxmlSerializer {
                 XLSX_CHART_CONTENT_TYPE
             ));
         }
+        // ORM-06: the regenerated rich-value part.
+        if !rich_values.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <Override PartName="/xl/richData/richValue.xml" ContentType="{}"/>"#,
+                XLSX_RICH_VALUE_CONTENT_TYPE
+            ));
+        }
         xml.push_str("\n</Types>");
+        xml
+    }
+
+    /// Regenerate `xl/richData/richValue.xml` (ORM-06) from the typed
+    /// rich-value records: one `<rv>` per payload, each with its blob
+    /// index (`rvb`) and structured key/value records (`rvc`).
+    fn build_xlsx_rich_values_xml(&self, rich_values: &[XlsxRichValue]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<richValueRoot xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata">"#,
+        );
+        for rv in rich_values {
+            xml.push_str("\n  <rv>");
+            if let Some(blob) = rv.blob {
+                xml.push_str(&format!("\n    <rvb>{}</rvb>", blob));
+            }
+            for rec in &rv.records {
+                let mut attrs = String::new();
+                if let Some(t) = rec.t {
+                    attrs.push_str(&format!(" t=\"{}\"", t));
+                }
+                if let Some(ref v) = rec.v {
+                    attrs.push_str(&format!(" v=\"{}\"", escape_xml(v)));
+                }
+                xml.push_str(&format!("\n    <rvc{} />", attrs));
+            }
+            xml.push_str("\n  </rv>");
+        }
+        xml.push_str("\n</richValueRoot>");
         xml
     }
 
@@ -3492,6 +3543,21 @@ impl OoxmlSerializer {
           xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">"#,
         );
 
+        // ORM-06: fileSharing precedes workbookPr in schema order.
+        if let Some(ref fs) = wb.properties.file_sharing {
+            xml.push_str("\n  <fileSharing");
+            if fs.read_only_recommended == Some(true) {
+                xml.push_str(r#" readOnlyRecommended="1""#);
+            }
+            if let Some(ref user) = fs.user_name {
+                xml.push_str(&format!(r#" userName="{}""#, escape_xml(user)));
+            }
+            if let Some(ref stamp) = fs.create_date_time_stamp {
+                xml.push_str(&format!(r#" createDateTimeStamp="{}""#, escape_xml(stamp)));
+            }
+            xml.push_str("/>");
+        }
+
         // workbookPr
         xml.push_str(
             r#"
@@ -3499,6 +3565,40 @@ impl OoxmlSerializer {
         );
         xml.push_str(if wb.properties.date_1904 { "1" } else { "0" });
         xml.push_str("\"/>");
+
+        // ORM-06: workbookProtection — the workbook keeps its lock flags
+        // and password hash across a round trip (no silent unlock).
+        if let Some(ref prot) = wb.properties.workbook_protection {
+            xml.push_str("\n  <workbookProtection");
+            if prot.lock_structure == Some(true) {
+                xml.push_str(r#" lockStructure="1""#);
+            }
+            if prot.lock_windows == Some(true) {
+                xml.push_str(r#" lockWindows="1""#);
+            }
+            if prot.lock_revision == Some(true) {
+                xml.push_str(r#" lockRevision="1""#);
+            }
+            if let Some(ref pw) = prot.workbook_password {
+                xml.push_str(&format!(r#" workbookPassword="{}""#, escape_xml(pw)));
+            }
+            if let Some(crc) = prot.workbook_password_crc {
+                xml.push_str(&format!(r#" workbookPasswordCRC="{}""#, crc));
+            }
+            if let Some(ref alg) = prot.algorithm_name {
+                xml.push_str(&format!(r#" algorithmName="{}""#, escape_xml(alg)));
+            }
+            if let Some(ref hash) = prot.hash_value {
+                xml.push_str(&format!(r#" hashValue="{}""#, escape_xml(hash)));
+            }
+            if let Some(ref salt) = prot.salt_value {
+                xml.push_str(&format!(r#" saltValue="{}""#, escape_xml(salt)));
+            }
+            if let Some(spins) = prot.spin_count {
+                xml.push_str(&format!(r#" spinCount="{}""#, spins));
+            }
+            xml.push_str("/>");
+        }
 
         // bookViews
         xml.push_str(
@@ -3741,11 +3841,32 @@ impl OoxmlSerializer {
             }
             xml.push('>');
             for cell in &row.cells {
+                // ORM-06: dynamic-array / rich-value cell attributes. The
+                // typed model keeps these at sheet level (keyed by cell
+                // ref) so the plain XlsxCell rows stay untouched.
+                let dyn_array = sheet
+                    .properties
+                    .dynamic_arrays
+                    .iter()
+                    .find(|da| da.cell_ref == cell.r);
+                let rich_ref = sheet
+                    .properties
+                    .rich_value_refs
+                    .iter()
+                    .find(|rv| rv.cell_ref == cell.r);
                 xml.push_str(&format!(
                     r#"
       <c r="{}""#,
                     cell.r,
                 ));
+                if let Some(da) = dyn_array {
+                    if let Some(cm) = da.cm {
+                        xml.push_str(&format!(r#" cm="{}""#, cm));
+                    }
+                }
+                if let Some(rv) = rich_ref {
+                    xml.push_str(&format!(r#" vm="{}""#, rv.vm));
+                }
                 // Cell type attribute
                 let type_attr = match cell.t {
                     CellType::S => "t=\"s\"",
@@ -3763,13 +3884,20 @@ impl OoxmlSerializer {
                     xml.push_str(&format!(r#" s="{}""#, s));
                 }
 
-                // Formula
+                // Formula (+ dynamic-array spill attributes, ORM-06).
                 if let Some(ref f) = cell.f {
-                    xml.push_str(&format!(
-                        r#">
-        <f>{}</f>"#,
-                        escape_xml(f)
-                    ));
+                    xml.push_str(r#">
+        <f"#);
+                    if let Some(da) = dyn_array {
+                        if da.aca {
+                            xml.push_str(r#" aca="1""#);
+                        }
+                        xml.push_str(r#" t="array""#);
+                        if let Some(ref span) = da.ref_range {
+                            xml.push_str(&format!(r#" ref="{}""#, escape_xml(span)));
+                        }
+                    }
+                    xml.push_str(&format!(">{}</f>", escape_xml(f)));
                 } else {
                     xml.push('>');
                 }
@@ -4094,6 +4222,52 @@ impl OoxmlSerializer {
                 ));
             }
             xml.push_str(&format!("\n  </{}>", tag));
+        }
+
+        // ORM-06: the worksheet `<metadata>` block (dynamic-array /
+        // rich-value metadata records behind `c/@cm` / `c/@vm`).
+        if let Some(ref meta) = sheet.properties.metadata {
+            if !meta.metadata_types.is_empty()
+                || !meta.cell_metadata.is_empty()
+                || !meta.value_metadata.is_empty()
+            {
+                xml.push_str("\n  <metadata>");
+                if !meta.metadata_types.is_empty() {
+                    xml.push_str(&format!(
+                        "\n    <metadataTypes count=\"{}\">",
+                        meta.metadata_types.len()
+                    ));
+                    for name in &meta.metadata_types {
+                        xml.push_str(&format!(
+                            "\n      <metadataType name=\"{}\"/>",
+                            escape_xml(name)
+                        ));
+                    }
+                    xml.push_str("\n    </metadataTypes>");
+                }
+                for (tag, blocks) in [
+                    ("cellMetadata", &meta.cell_metadata),
+                    ("valueMetadata", &meta.value_metadata),
+                ] {
+                    if blocks.is_empty() {
+                        continue;
+                    }
+                    xml.push_str(&format!("\n    <{} count=\"{}\">", tag, blocks.len()));
+                    for block in blocks {
+                        xml.push_str("\n      <bk>");
+                        for rc in block {
+                            xml.push_str(&format!(
+                                "\n        <rc{}{} />",
+                                rc.t.map(|t| format!(" t=\"{}\"", t)).unwrap_or_default(),
+                                rc.v.map(|v| format!(" v=\"{}\"", v)).unwrap_or_default(),
+                            ));
+                        }
+                        xml.push_str("\n      </bk>");
+                    }
+                    xml.push_str(&format!("\n    </{}>", tag));
+                }
+                xml.push_str("\n  </metadata>");
+            }
         }
 
         xml.push_str("\n</worksheet>");

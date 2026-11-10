@@ -27,10 +27,12 @@ pub use model::{
     SlideTextBody, SlideTextFit, TableCell, TableColumn, TableRow, TableShape, TextBody,
     TextBullet, TextBoxShape, Theme, ThemeColor, ThemeColorRef, ThemeEffectStyle, ThemeFillStyle,
     ThemeFont, ThemeGradientStop, ThemeLineStyle, ThemePreset, ThemeSystemColor, XlsxBook, XlsxBrk,
-    XlsxChartPart, XLSX_CHART_CONTENT_TYPE, XLSX_CHART_REL_TYPE, XlsxConditionalFormatKind,
-    XlsxConditionalFormatRule, XlsxConditionalFormatting, XlsxColorScale, XlsxCfColor, XlsxCfvo,
-    XlsxDataBar, XlsxDxf, XlsxHeaderFooter, XlsxHyperlink, XlsxIconSet, XlsxPageMargins,
-    XlsxPageSetup, XlsxPrintSettings,
+    XlsxChartPart, XLSX_CHART_CONTENT_TYPE, XLSX_CHART_REL_TYPE, XlsxColorScale,
+    XlsxConditionalFormatKind, XlsxConditionalFormatRule, XlsxConditionalFormatting, XlsxCfColor,
+    XlsxCfvo, XlsxDataBar, XlsxDxf, XlsxDynamicArray, XlsxFileSharing, XlsxHeaderFooter,
+    XlsxHyperlink, XlsxIconSet, XlsxMetadata, XlsxMetadataRecord, XlsxPageMargins, XlsxPageSetup,
+    XLSX_RICH_VALUE_CONTENT_TYPE, XlsxRichValue, XlsxRichValueRecord, XlsxRichValueRef,
+    XlsxWorkbookProtection, XlsxPrintSettings,
 };
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
