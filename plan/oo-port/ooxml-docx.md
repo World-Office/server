@@ -30,8 +30,10 @@ the WO source in this worktree, not by assumption.
 - `OoxmlSerializer` (serializer.rs) writes: `[Content_Types].xml`,
   `_rels/.rels` + `word/_rels/document.xml.rels`, `word/document.xml`,
   `word/header1.xml`/`footer1.xml` (fixed rIdHdr/rIdFtr),
-  `word/footnotes.xml` (verbatim), `word/numbering.xml` (**fixed 8-abstractNum
-  template**, only when `body_uses_numbering()`), `word/comments.xml` +
+  `word/footnotes.xml` (verbatim), `word/numbering.xml` (P2-05: parsed
+  `DocxNumbering` re-emitted data-driven when captured; **fixed 8-abstractNum
+  template** as html→docx fallback, emitted only when `body_uses_numbering()`
+  or a numbering part was parsed), `word/comments.xml` +
   `commentsExtended.xml`, `word/styles.xml` (from a default template +
   typed styles), `docProps/core.xml`.
 - The fidelity strategy is **verbatim escape hatches**: `raw_ppr`,
@@ -64,7 +66,7 @@ the WO source in this worktree, not by assumption.
 | Settings/Settings.h | 1048 | none — `word/settings.xml` is never read or written | **missing** |
 | Logic/Vml.h | 999 | none | **missing** |
 | Logic/ParagraphProperty.cpp | 971 | typed subset (jc/ind/spacing/keep*/tabs/numPr+bidi/shd/pBdr/startValue) + `raw_ppr` | partial |
-| Numbering.cpp | 946 | serializer-only: `build_numbering_xml` emits a fixed 8-abstractNum template (1/7/8 bullet, 2–6 decimal); parser never reads numbering.xml | partial |
+| Numbering.cpp | 946 | P2-05 data-driven: `parse_numbering` reads every `w:abstractNum` (levels: start/numFmt/lvlText/lvlJc/lvlRestart/pStyle/suff/isLgl/ind) + `w:num` (abstractNumId, lvlOverride/startOverride) into typed `DocxNumbering`; serializer re-emits what was parsed (`build_numbering_xml_from`) with the fixed 8-template as html→docx fallback; docx→html maps foreign numFmt → ordered/unordered + css list-style-type. Untyped tail: numPicBullet, abstractNum rPr-in-lvl, lvlStyleLink resolution | full |
 | Comments.cpp | 929 | `Comment{id,author,date,text,resolved,parent_id}` + anchors; bodies flattened to plain text; people.xml/commentsIds/commentsExt absent | partial |
 | Logic/VmlOfficeDrawing.h | 825 | none | **missing** |
 | Logic/RunProperty.cpp | 785 | typed subset (b/i/u kinds/strike/dstrike/sz/szCs/color/highlight/vertAlign/smallCaps/allCaps) + `raw_rpr` | partial |
@@ -142,12 +144,15 @@ fields) exists solely as opaque verbatim XML.
 4. **Endnotes (`CEndnotes`)** — zero handling, unlike footnotes which at
    least survive verbatim. Copy the footnotes pattern
    (`endnotes_raw: Option<String>` + serializer part 4d) as the cheap fix.
-5. **Numbering round-trip (`CNumbering`/`CAbstractNum`/`CLvl`)** —
-   foreign numbering collapses to the fixed 8-template (numFmt decimal|
-   bullet only; no lowerLetter/upperRoman, no lvlOverride, no
-   numPicBullet). Parse numbering.xml into a typed
-   `Vec<AbstractNum>` and re-emit what was read; keep the template as
-   fallback for html→docx (which converter_gaps pins to numIds 1–8).
+5. **Numbering round-trip (`CNumbering`/`CAbstractNum`/`CLvl`)** — ✅
+   **landed (P2-05)**: `parse_numbering` reads every `w:abstractNum`
+   (levels: start/numFmt/lvlText/lvlJc/lvlRestart/pStyle/suff/isLgl/ind)
+   + `w:num` (incl. lvlOverride/startOverride) into typed `DocxNumbering`;
+   the serializer re-emits what was parsed (`build_numbering_xml_from`)
+   instead of collapsing foreign definitions, and the docx→html converter
+   derives ordered/unordered + css list-style-type from `w:numFmt`
+   (`css_for_num_fmt`) for numIds outside the fixed 1..8 registry. Untyped
+   tail: numPicBullet, `w:rPr` inside `w:lvl`.
 6. **Tracked changes (`CIns`/`CDel`/`CRPrChange`/`CPPrChange`)** —
    insertions lose their envelope, deletions (`w:delText`) vanish
    entirely. Blocks any document-collab import story.
@@ -186,10 +191,10 @@ gap_x conventions):
   (drives #4; mirrors `test_footnote_round_trip`).
 - `gap_settings_verbatim_roundtrip` — settings.xml byte-preserved
   (drives #3; mirrors `test_footnote_round_trip` mechanics).
-- `gap_numbering_foreign_roundtrip` — a docx with
-  `lowerLetter`/`upperRoman` + lvlOverride must keep its numFmt (drives
-  #5; today collapses to the fixed template that
-  `c2_2b_list_style_type_roundtrip` pins).
+- `gap_numbering_foreign_roundtrip` — ✅ **landed (P2-05)**: a docx with
+  `lowerLetter`/`upperRoman`/`ordinal` + lvlOverride keeps its numFmt
+  across docx→docx and drives the html list mapping
+  (converter_gaps.rs).
 - `gap_bookmark_anchor_roundtrip` — bookmark + `w:hyperlink w:anchor`
   survive (drives #8).
 - `gap_pict_verbatim_roundtrip` — `w:pict` textbox in a header survives
@@ -203,16 +208,17 @@ gap_x conventions):
 
 ## Coverage summary
 
-- **full (28)**: document body skeleton (`CParagraph`, `CRun`, `CTable`,
+- **full (32)**: document body skeleton (`CParagraph`, `CRun`, `CTable`,
   `CHyperlink`, `CText`, `CJc`, `CInd`, `CSpacing`, `CNumPr`, `CTabs`,
   `CShading`, `CPBdr`, `CTblBorders`, `CHdrFtrRef`,
   `CFootnoteReference`, comment anchors, `CCore`, `CContentTypes`,
   `CRelationShip`, media/image parts, `WritingElement` dispatch → WO
-  match arms) — each backed by a named congruence/converters test.
-- **partial (50)**: the "verbatim escape hatch" tier — styles, sections,
+  match arms; P2-05: `CNumbering`/`CAbstractNum`/`CLvl`/`CNum` data-driven
+  parse+serialize) — each backed by a named congruence/converters test.
+- **partial (46)**: the "verbatim escape hatch" tier — styles, sections,
   table/paragraph/run property long tails, sdt (unwrapped), fldSimple,
-  hdr/ftr (default only), numbering (emit-only template), comments
-  (bodies flattened), rels (document.xml.rels only).
+  hdr/ftr (default only), comments (bodies flattened), rels
+  (document.xml.rels only).
 - **missing (115)**: fields engine, settings, endnotes, VML/ActiveX/OLE,
   OMML math, SmartArt/diagrams, revisions, bookmarks, customXml, theme,
   fontTable, app.xml, flat OPC, docDefaults/latentStyles, people.xml,

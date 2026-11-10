@@ -29,6 +29,12 @@ fn roundtrip(html: &str) -> String {
 
 /// Build a minimal valid docx zip around a hand-written word/document.xml.
 fn docx_from_document_xml(document_xml: &str) -> Vec<u8> {
+    docx_from_parts(&[("word/document.xml", document_xml)])
+}
+
+/// Build a minimal valid docx zip around hand-written parts (P2-05: lets a
+/// test add a foreign word/numbering.xml next to word/document.xml).
+fn docx_from_parts(parts: &[(&str, &str)]) -> Vec<u8> {
     use std::io::Write;
     use zip::write::SimpleFileOptions;
     let mut buf = Vec::new();
@@ -41,6 +47,7 @@ fn docx_from_document_xml(document_xml: &str) -> Vec<u8> {
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>
 </Types>"#)
             .unwrap();
         zip.start_file("_rels/.rels", SimpleFileOptions::default())
@@ -50,12 +57,22 @@ fn docx_from_document_xml(document_xml: &str) -> Vec<u8> {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>"#)
             .unwrap();
-        zip.start_file("word/document.xml", SimpleFileOptions::default())
-            .unwrap();
-        zip.write_all(document_xml.as_bytes()).unwrap();
+        for (name, xml) in parts {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        }
         zip.finish().unwrap();
     }
     buf
+}
+
+/// Read an arbitrary zip entry from a docx as utf8 (P2-05: numbering.xml).
+fn zip_entry(docx: &[u8], name: &str) -> String {
+    let cursor = std::io::Cursor::new(docx);
+    let mut zip = zip::ZipArchive::new(cursor).unwrap();
+    let mut xml = String::new();
+    zip.by_name(name).unwrap().read_to_string(&mut xml).unwrap();
+    xml
 }
 
 #[test]
@@ -464,4 +481,135 @@ fn gap_fields_roundtrip() {
     assert!(xml2.contains("fldSimple"), "fldSimple lost: {}", xml2);
     let fields2 = paragraph_fields(&reser);
     assert_eq!(fields, fields2, "typed fields changed across docx round trip");
+}
+
+#[test]
+fn gap_numbering_foreign_roundtrip() {
+    // P2-05: a foreign word/numbering.xml (abstractNum ids + numFmts WO's
+    // fixed 8-template never emits: upperRoman, lowerLetter, lvlText masks,
+    // a lvlOverride startOverride) must (a) land in the typed
+    // DocxNumbering, (b) survive a docx -> docx re-serialization instead of
+    // collapsing to the fixed template, and (c) drive the docx -> html list
+    // mapping (ordered + css list-style-type straight from w:numFmt).
+    let numbering_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="100">
+    <w:multiLevelType w:val="hybridMultilevel"/>
+    <w:name w:val="Outline Roman"/>
+    <w:lvl w:ilvl="0"><w:start w:val="3"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl>
+    <w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="lowerLetter"/><w:lvlText w:val="%2)"/><w:lvlJc w:val="left"/></w:lvl>
+  </w:abstractNum>
+  <w:abstractNum w:abstractNumId="200">
+    <w:multiLevelType w:val="singleLevel"/>
+    <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="lowerLetter"/><w:lvlText w:val="(%1)"/><w:lvlJc w:val="left"/></w:lvl>
+  </w:abstractNum>
+  <w:abstractNum w:abstractNumId="300">
+    <w:multiLevelType w:val="singleLevel"/>
+    <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="ordinal"/><w:lvlText w:val="%1"/><w:isLgl/></w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="42"><w:abstractNumId w:val="100"/>
+    <w:lvlOverride w:ilvl="0"><w:startOverride w:val="5"/></w:lvlOverride>
+  </w:num>
+  <w:num w:numId="43"><w:abstractNumId w:val="300"/></w:num>
+  <w:num w:numId="44"><w:abstractNumId w:val="200"/></w:num>
+</w:numbering>"#;
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="42"/></w:numPr></w:pPr><w:r><w:t>First level item</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Mid sentinel paragraph.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="44"/></w:numPr></w:pPr><w:r><w:t>Letter item</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Second sentinel paragraph.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="43"/></w:numPr></w:pPr><w:r><w:t>Ordinal item</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let docx = docx_from_parts(&[
+        ("word/document.xml", document_xml),
+        ("word/numbering.xml", numbering_xml),
+    ]);
+
+    // 1. Typed parse: both foreign abstractNums, their levels (numFmt /
+    //    lvlText / ind / isLgl) and the num bindings + startOverride land
+    //    in DocxNumbering instead of being ignored.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
+    let body = parsed.docx_body.as_ref().unwrap();
+    let numbering = body.numbering.as_ref().expect("numbering parsed");
+    assert_eq!(numbering.abstract_nums.len(), 3, "all abstractNums");
+    let a100 = numbering.abstract_num(100).expect("abstractNum 100");
+    assert_eq!(a100.name.as_deref(), Some("Outline Roman"));
+    assert_eq!(a100.levels[0].num_fmt.as_deref(), Some("upperRoman"));
+    assert_eq!(a100.levels[0].lvl_text.as_deref(), Some("%1."));
+    assert_eq!(a100.levels[0].start, Some(3));
+    assert_eq!(a100.levels[0].indent_left, Some(720));
+    assert_eq!(a100.levels[1].num_fmt.as_deref(), Some("lowerLetter"));
+    assert_eq!(a100.levels[1].lvl_text.as_deref(), Some("%2)"));
+    assert_eq!(
+        numbering.abstract_num(200).unwrap().levels[0]
+            .num_fmt
+            .as_deref(),
+        Some("lowerLetter")
+    );
+    assert_eq!(
+        numbering.abstract_num(200).unwrap().levels[0]
+            .lvl_text
+            .as_deref(),
+        Some("(%1)")
+    );
+    assert_eq!(
+        numbering.abstract_num(300).unwrap().levels[0]
+            .num_fmt
+            .as_deref(),
+        Some("ordinal")
+    );
+    assert!(numbering.abstract_num(300).unwrap().levels[0].is_lgl);
+    assert_eq!(numbering.num(42).unwrap().abstract_num_id, 100);
+    assert_eq!(numbering.start_override(42, 0), Some(5));
+    assert_eq!(numbering.num(43).unwrap().abstract_num_id, 300);
+    assert_eq!(numbering.num(44).unwrap().abstract_num_id, 200);
+
+    // 2. docx -> docx: the serializer re-emits exactly what was parsed
+    //    (pre P2-05 this collapsed to the fixed decimal|bullet template).
+    let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
+    let num_xml = zip_entry(&reser, "word/numbering.xml");
+    assert!(
+        num_xml.contains(r#"<w:abstractNum w:abstractNumId="100">"#),
+        "foreign abstractNum lost: {}",
+        num_xml
+    );
+    assert!(num_xml.contains(r#"<w:numFmt w:val="upperRoman"/>"#));
+    assert!(num_xml.contains(r#"<w:numFmt w:val="lowerLetter"/>"#));
+    assert!(num_xml.contains(r#"<w:numFmt w:val="ordinal"/>"#));
+    assert!(num_xml.contains(r#"<w:lvlText w:val="%2)"/>"#));
+    assert!(num_xml.contains(r#"<w:num w:numId="42">"#));
+    assert!(num_xml.contains(r#"<w:startOverride w:val="5"/>"#));
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let renum = reparsed
+        .docx_body
+        .as_ref()
+        .unwrap()
+        .numbering
+        .as_ref()
+        .expect("numbering survives re-parse");
+    assert_eq!(renum, numbering, "typed numbering identical across round trip");
+
+    // 3. docx -> html: w:numFmt drives the list kind and css style for
+    //    numIds outside the built-in 1..8 registry.
+    let html = DocxToHtmlConverter.convert(&docx).unwrap();
+    let html = String::from_utf8(html).unwrap();
+    assert!(
+        html.contains("list-style-type:upper-roman"),
+        "upperRoman numFmt must map to upper-roman css: {}",
+        html
+    );
+    assert!(
+        html.contains("list-style-type:lower-alpha"),
+        "lowerLetter numFmt must map to lower-alpha css: {}",
+        html
+    );
+    assert!(html.contains("<ol"), "counting numFmts must order lists");
+    assert!(html.contains("First level item"), "item lost: {html}");
+    assert!(html.contains("Letter item"), "letter item lost: {html}");
+    assert!(html.contains("Mid sentinel paragraph."), "body text lost");
+    assert!(html.contains("Second sentinel paragraph."), "body text lost");
+    assert!(html.contains("Ordinal item"), "ordinal item lost");
 }

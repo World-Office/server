@@ -29,6 +29,15 @@ fn strip_hf_refs(sect_pr: &str) -> String {
     out
 }
 
+/// True when the body carries a parsed (non-empty) numbering part — the
+/// P2-05 signal that numbering.xml must be emitted even when no body
+/// paragraph happens to reference a numId.
+fn has_parsed_numbering(body: &DocxBody) -> bool {
+    body.numbering
+        .as_ref()
+        .is_some_and(|n| !n.is_empty())
+}
+
 /// True when any paragraph (body or table cell) carries numPr — decides
 /// whether the serializer must emit word/numbering.xml and its rel.
 fn body_uses_numbering(body: &DocxBody) -> bool {
@@ -114,12 +123,23 @@ impl OoxmlSerializer {
             }
         }
 
-        // 4e-2. word/numbering.xml — emitted only when a paragraph uses
-        // numPr, so documents without lists keep the exact old byte shape.
+        // 4e-2. word/numbering.xml — emitted when a paragraph uses numPr or
+        // the document carries a parsed numbering part (P2-05), so documents
+        // without lists keep the exact old byte shape. Parsed numbering is
+        // re-emitted data-driven (all abstractNums, numFmt, lvlText,
+        // lvlOverride); the fixed 8-template stays as the html->docx fallback.
         if let Some(ref body) = doc.docx_body {
-            if body_uses_numbering(body) {
+            let parsed_numbering = body
+                .numbering
+                .as_ref()
+                .filter(|n| !n.is_empty());
+            if body_uses_numbering(body) || parsed_numbering.is_some() {
                 zip.start_file("word/numbering.xml", options)?;
-                zip.write_all(self.build_numbering_xml().as_bytes())?;
+                let xml = match parsed_numbering {
+                    Some(n) => self.build_numbering_xml_from(n),
+                    None => self.build_numbering_xml(),
+                };
+                zip.write_all(xml.as_bytes())?;
             }
         }
 
@@ -1065,7 +1085,8 @@ impl OoxmlSerializer {
                 extra.push_str("\n  <Override PartName=\"/word/comments.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml\"/>");
                 extra.push_str("\n  <Override PartName=\"/word/commentsExtended.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml\"/>");
             }
-            let uses_numbering = body_uses_numbering(body);
+            let uses_numbering =
+                body_uses_numbering(body) || has_parsed_numbering(body);
             if uses_numbering {
                 extra.push_str("\n  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>");
             }
@@ -1138,7 +1159,7 @@ impl OoxmlSerializer {
                     "\n  <Relationship Id=\"rIdCmtEx\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended\" Target=\"commentsExtended.xml\"/>",
                 );
             }
-            if body_uses_numbering(body) {
+            if body_uses_numbering(body) || has_parsed_numbering(body) {
                 extra.push_str(
                     "\n  <Relationship Id=\"rIdNum\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering\" Target=\"numbering.xml\"/>",
                 );
@@ -1178,21 +1199,26 @@ impl OoxmlSerializer {
     /// 4 lowerRoman, 5 upperAlpha, 6 upperRoman, 7 circle `◦`, 8 square `▪`.
     /// Levels 0..5 indent 720+360*lvl with a hanging 360. Used by the
     /// editor's Bullets and Numbering dialog via css list-style-type.
+    ///
+    /// P2-05: the numFmt values now match the css registry (3 lowerAlpha,
+    /// 4 lowerRoman, ...) so a round trip through the typed parser yields
+    /// the same css list-style-type the registry pins. This template is
+    /// the html->docx fallback; documents that carry their own
+    /// numbering.xml go through `build_numbering_xml_from` instead.
     fn build_numbering_xml(&self) -> String {
-        let defs: Vec<(u32, bool, &str)> = vec![
-            (1, true, "\u{2022}"),
-            (2, false, "%1."),
-            (3, false, "%1."),
-            (4, false, "%1."),
-            (5, false, "%1."),
-            (6, false, "%1."),
-            (7, true, "\u{25E6}"),
-            (8, true, "\u{25AA}"),
+        let defs: Vec<(u32, &str, &str)> = vec![
+            (1, "bullet", "\u{2022}"),
+            (2, "decimal", "%1."),
+            (3, "lowerLetter", "%1."),
+            (4, "lowerRoman", "%1."),
+            (5, "upperLetter", "%1."),
+            (6, "upperRoman", "%1."),
+            (7, "bullet", "\u{25E6}"),
+            (8, "bullet", "\u{25AA}"),
         ];
-        let levels = |bullet: bool, text: &str| -> String {
+        let levels = |fmt: &str, text: &str| -> String {
             (0..6)
                 .map(|lvl| {
-                    let fmt = if bullet { "bullet" } else { "decimal" };
                     format!(
                         "        <w:lvl w:ilvl=\"{}\"><w:start w:val=\"1\"/><w:numFmt w:val=\"{}\"/><w:lvlText w:val=\"{}\"/><w:lvlJc w:val=\"left\"/><w:pPr><w:ind w:left=\"{}\" w:hanging=\"360\"/></w:pPr></w:lvl>\n",
                         lvl, fmt, text, 720 + lvl * 360
@@ -1205,18 +1231,109 @@ impl OoxmlSerializer {
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 "#,
         );
-        for (id, bullet, text) in &defs {
+        for (id, fmt, text) in &defs {
             xml.push_str(&format!(
                 "  <w:abstractNum w:abstractNumId=\"{}\">\n{}\n  </w:abstractNum>\n",
                 id,
-                levels(*bullet, text)
+                levels(fmt, text)
             ));
         }
-        for (id, _b, _t) in &defs {
+        for (id, _f, _t) in &defs {
             xml.push_str(&format!(
                 "  <w:num w:numId=\"{}\"><w:abstractNumId w:val=\"{}\"/></w:num>\n",
                 id, id
             ));
+        }
+        xml.push_str("</w:numbering>");
+        xml
+    }
+
+    /// Data-driven numbering part (P2-05): emit exactly what was parsed
+    /// from `word/numbering.xml` — every `w:abstractNum` with its metadata
+    /// and typed levels (start / numFmt / lvlText / lvlJc / lvlRestart /
+    /// pStyle / suff / isLgl / ind), and every `w:num` with its
+    /// abstractNumId link and lvlOverride/startOverride patches. A foreign
+    /// numbering definition therefore survives parse -> serialize -> parse.
+    fn build_numbering_xml_from(&self, numbering: &DocxNumbering) -> String {
+        let val = |name: &str, v: &str| format!("<w:{} w:val=\"{}\"/>", name, escape_xml(v));
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+"#,
+        );
+        for a in &numbering.abstract_nums {
+            xml.push_str(&format!(
+                "  <w:abstractNum w:abstractNumId=\"{}\">\n",
+                a.abstract_num_id
+            ));
+            if let Some(t) = a.multi_level_type.as_deref() {
+                xml.push_str(&format!("    {}\n", val("multiLevelType", t)));
+            }
+            if let Some(n) = a.name.as_deref() {
+                xml.push_str(&format!("    {}\n", val("name", n)));
+            }
+            if let Some(s) = a.style_link.as_deref() {
+                xml.push_str(&format!("    {}\n", val("styleLink", s)));
+            }
+            if let Some(s) = a.num_style_link.as_deref() {
+                xml.push_str(&format!("    {}\n", val("numStyleLink", s)));
+            }
+            for lvl in &a.levels {
+                xml.push_str(&format!("    <w:lvl w:ilvl=\"{}\">", lvl.ilvl));
+                if let Some(s) = lvl.start {
+                    xml.push_str(&format!("<w:start w:val=\"{}\"/>", s));
+                }
+                if let Some(f) = lvl.num_fmt.as_deref() {
+                    xml.push_str(&format!("<w:numFmt w:val=\"{}\"/>", escape_xml(f)));
+                }
+                if let Some(t) = lvl.lvl_text.as_deref() {
+                    xml.push_str(&format!("<w:lvlText w:val=\"{}\"/>", escape_xml(t)));
+                }
+                if let Some(j) = lvl.lvl_jc.as_deref() {
+                    xml.push_str(&format!("<w:lvlJc w:val=\"{}\"/>", escape_xml(j)));
+                }
+                if let Some(r) = lvl.lvl_restart {
+                    xml.push_str(&format!("<w:lvlRestart w:val=\"{}\"/>", r));
+                }
+                if let Some(s) = lvl.p_style.as_deref() {
+                    xml.push_str(&format!("<w:pStyle w:val=\"{}\"/>", escape_xml(s)));
+                }
+                if let Some(s) = lvl.suff.as_deref() {
+                    xml.push_str(&format!("<w:suff w:val=\"{}\"/>", escape_xml(s)));
+                }
+                if lvl.is_lgl {
+                    xml.push_str("<w:isLgl/>");
+                }
+                let mut ind = String::new();
+                if let Some(l) = lvl.indent_left {
+                    ind.push_str(&format!(" w:left=\"{}\"", l));
+                }
+                if let Some(h) = lvl.indent_hanging {
+                    ind.push_str(&format!(" w:hanging=\"{}\"", h));
+                }
+                if let Some(f) = lvl.indent_first_line {
+                    ind.push_str(&format!(" w:firstLine=\"{}\"", f));
+                }
+                if !ind.is_empty() {
+                    xml.push_str(&format!("<w:pPr><w:ind{}/></w:pPr>", ind));
+                }
+                xml.push_str("</w:lvl>\n");
+            }
+            xml.push_str("  </w:abstractNum>\n");
+        }
+        for num in &numbering.nums {
+            xml.push_str(&format!(
+                "  <w:num w:numId=\"{}\"><w:abstractNumId w:val=\"{}\"/>",
+                num.num_id, num.abstract_num_id
+            ));
+            for o in &num.level_overrides {
+                xml.push_str(&format!("<w:lvlOverride w:ilvl=\"{}\">", o.ilvl));
+                if let Some(s) = o.start_override {
+                    xml.push_str(&format!("<w:startOverride w:val=\"{}\"/>", s));
+                }
+                xml.push_str("</w:lvlOverride>");
+            }
+            xml.push_str("</w:num>\n");
         }
         xml.push_str("</w:numbering>");
         xml
@@ -3353,6 +3470,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3491,6 +3609,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3612,6 +3731,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3756,6 +3876,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -4823,6 +4944,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -4901,6 +5023,7 @@ mod tests {
                 media: vec![],
                 image_rels: vec![],
                 hyperlink_rels: vec![],
+                numbering: None,
             }),
         };
         let ser = OoxmlSerializer::new();

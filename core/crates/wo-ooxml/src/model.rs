@@ -492,6 +492,166 @@ pub struct Comment {
     pub parent_id: Option<String>,
 }
 
+// --- DOCX numbering (P2-05, ORM-05 #5) ---------------------------------
+//
+// Typed `word/numbering.xml` model so a foreign document keeps its own
+// numbering definitions (any numFmt, any level text, lvlOverrides) instead
+// of collapsing to the fixed 8-abstractNum template the serializer used to
+// emit. The template survives as the html->docx fallback.
+
+/// One `w:lvl` inside an `w:abstractNum` definition.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxNumLevel {
+    /// Level index (`w:ilvl` attribute).
+    pub ilvl: u32,
+    /// `w:start` — the value the level starts counting at.
+    #[serde(default)]
+    pub start: Option<u32>,
+    /// `w:numFmt w:val` — decimal, lowerRoman, bullet, none, ...
+    #[serde(default)]
+    pub num_fmt: Option<String>,
+    /// `w:lvlText w:val` — the display mask, e.g. `%1.`, `%1-%2)`, `•`.
+    #[serde(default)]
+    pub lvl_text: Option<String>,
+    /// `w:lvlJc w:val` — level justification (left/center/right).
+    #[serde(default)]
+    pub lvl_jc: Option<String>,
+    /// `w:lvlRestart w:val` — level whose change restarts this level.
+    #[serde(default)]
+    pub lvl_restart: Option<u32>,
+    /// `w:pStyle w:val` — paragraph style linked to this level.
+    #[serde(default)]
+    pub p_style: Option<String>,
+    /// `w:suff w:val` — what follows the number (tab/space/nothing).
+    #[serde(default)]
+    pub suff: Option<String>,
+    /// `w:isLgl` — render with legal (arabic) style regardless of numFmt.
+    #[serde(default)]
+    pub is_lgl: bool,
+    /// `w:ind w:left` from the level's `w:pPr` (twips).
+    #[serde(default)]
+    pub indent_left: Option<i32>,
+    /// `w:ind w:hanging` from the level's `w:pPr` (twips).
+    #[serde(default)]
+    pub indent_hanging: Option<i32>,
+    /// `w:ind w:firstLine` from the level's `w:pPr` (twips).
+    #[serde(default)]
+    pub indent_first_line: Option<i32>,
+}
+
+impl DocxNumLevel {
+    /// True when the level renders as a bullet glyph rather than a counter
+    /// (numFmt `bullet`, or `none` — the marker is the only visual).
+    pub fn is_bullet(&self) -> bool {
+        matches!(self.num_fmt.as_deref(), Some("bullet") | Some("none"))
+    }
+}
+
+/// A `w:lvlOverride` inside a `w:num` — per-instance level patch.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxLvlOverride {
+    /// Level being overridden (`w:ilvl` attribute).
+    pub ilvl: u32,
+    /// `w:startOverride w:val` — restart this level at N for this num.
+    #[serde(default)]
+    pub start_override: Option<u32>,
+}
+
+/// A `w:abstractNum` — the numbering *definition* (levels + formats).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxAbstractNum {
+    /// `w:abstractNumId` attribute.
+    pub abstract_num_id: u32,
+    /// `w:multiLevelType w:val` — singleLevel / multilevel / hybridMultilevel.
+    #[serde(default)]
+    pub multi_level_type: Option<String>,
+    /// `w:name w:val` — abstractNum display name.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// `w:styleLink w:val` — links a numbering style to this definition.
+    #[serde(default)]
+    pub style_link: Option<String>,
+    /// `w:numStyleLink w:val` — indirect link through a numbering style.
+    #[serde(default)]
+    pub num_style_link: Option<String>,
+    /// Level definitions in ascending `w:ilvl` order.
+    #[serde(default)]
+    pub levels: Vec<DocxNumLevel>,
+}
+
+/// A `w:num` — a concrete list instance (numId) bound to a definition.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxNum {
+    /// `w:numId` attribute — what `w:numPr/w:numId` references.
+    pub num_id: u32,
+    /// `w:abstractNumId w:val` — the definition this instance uses.
+    pub abstract_num_id: u32,
+    /// `w:lvlOverride` patches (per level).
+    #[serde(default)]
+    pub level_overrides: Vec<DocxLvlOverride>,
+}
+
+/// Typed content of `word/numbering.xml` (P2-05). Captured at parse time
+/// and re-emitted verbatim-by-construction so foreign numbering survives a
+/// docx -> docx round trip.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxNumbering {
+    /// Every `w:abstractNum` definition, in document order.
+    #[serde(default)]
+    pub abstract_nums: Vec<DocxAbstractNum>,
+    /// Every `w:num` instance (numId -> abstractNumId), in document order.
+    #[serde(default)]
+    pub nums: Vec<DocxNum>,
+}
+
+impl DocxNumbering {
+    /// True when nothing was captured (parser saw an empty numbering part).
+    pub fn is_empty(&self) -> bool {
+        self.abstract_nums.is_empty() && self.nums.is_empty()
+    }
+
+    /// The `w:num` with this numId.
+    pub fn num(&self, num_id: u32) -> Option<&DocxNum> {
+        self.nums.iter().find(|n| n.num_id == num_id)
+    }
+
+    /// The `w:abstractNum` with this definition id.
+    pub fn abstract_num(&self, abstract_num_id: u32) -> Option<&DocxAbstractNum> {
+        self.abstract_nums
+            .iter()
+            .find(|a| a.abstract_num_id == abstract_num_id)
+    }
+
+    /// Resolve numId -> abstractNum definition (direct `w:num` link).
+    pub fn abstract_num_for(&self, num_id: u32) -> Option<&DocxAbstractNum> {
+        let num = self.num(num_id)?;
+        self.abstract_num(num.abstract_num_id)
+    }
+
+    /// The level definition a paragraph at (numId, ilvl) renders with.
+    /// OO rule: a level above the last defined one continues the deepest
+    /// definition, so an exact miss falls back to the closest lower level.
+    pub fn level_for(&self, num_id: u32, ilvl: u32) -> Option<&DocxNumLevel> {
+        let abstract_num = self.abstract_num_for(num_id)?;
+        if let Some(exact) = abstract_num.levels.iter().find(|l| l.ilvl == ilvl) {
+            return Some(exact);
+        }
+        abstract_num
+            .levels
+            .iter()
+            .rfind(|l| l.ilvl < ilvl)
+    }
+
+    /// `w:startOverride` for (numId, ilvl) — the concrete restart value.
+    pub fn start_override(&self, num_id: u32, ilvl: u32) -> Option<u32> {
+        self.num(num_id)?
+            .level_overrides
+            .iter()
+            .find(|o| o.ilvl == ilvl)
+            .and_then(|o| o.start_override)
+    }
+}
+
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DocxBody {
@@ -533,6 +693,11 @@ pub struct DocxBody {
     /// anchor_type: "start", "end", or "reference".
     #[serde(default)]
     pub comment_anchors: Vec<(String, String)>,
+    /// Typed `word/numbering.xml` (P2-05): abstractNum definitions and
+    /// numId -> abstractNumId instances, parsed and re-emitted so foreign
+    /// numbering (any numFmt / lvlText / lvlOverride) survives round trips.
+    #[serde(default)]
+    pub numbering: Option<DocxNumbering>,
 }
 
 impl DocxBody {
@@ -549,6 +714,7 @@ impl DocxBody {
             media: Vec::new(),
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
+            numbering: None,
         }
     }
 
@@ -569,6 +735,7 @@ impl DocxBody {
             media: Vec::new(),
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
+            numbering: None,
         }
     }
 
