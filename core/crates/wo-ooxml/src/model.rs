@@ -178,6 +178,8 @@ pub struct XlsxSheetProperties {
     pub print: XlsxPrintSettings,
     /// Cell hyperlinks (`<hyperlinks><hyperlink ref="A1" .../>`).
     pub hyperlinks: Vec<XlsxHyperlink>,
+    /// Conditional formatting (`<conditionalFormatting sqref=...>` blocks).
+    pub conditional_formatting: Vec<XlsxConditionalFormatting>,
 }
 
 /// Worksheet print model (ORM-06 print/PDF parity): page margins, page
@@ -303,6 +305,153 @@ pub struct XlsxHyperlink {
     pub tooltip: Option<String>,
 }
 
+/// A conditional-formatting block (CT_ConditionalFormatting): one or more
+/// rules sharing a `sqref` range list.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxConditionalFormatting {
+    /// Sequence of range references (e.g. "A1:A10" or "A1:A10 C3 E5:E9").
+    pub sqref: String,
+    /// Rules in priority order.
+    pub rules: Vec<XlsxConditionalFormatRule>,
+}
+
+/// A single conditional-format rule (CT_CfRule). Type-specific payloads
+/// (colorScale / dataBar / iconSet) live in `kind`; everything else stays
+/// as optional attributes so the remaining rule kinds round-trip too.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxConditionalFormatRule {
+    /// "cellIs" | "expression" | "colorScale" | "dataBar" | "iconSet" |
+    /// "top10" | "aboveAverage" | "uniqueValues" | "duplicateValues" |
+    /// "containsText" | "notContainsText" | "beginsWith" | "endsWith" |
+    /// "timePeriod" | "containsBlanks" | "notContainsBlanks" |
+    /// "containsErrors" | "notContainsErrors".
+    pub rule_type: String,
+    /// Rule priority; lower numbers evaluate first.
+    pub priority: Option<u32>,
+    /// Stop evaluating further rules for cells this rule matches.
+    pub stop_if_true: bool,
+    /// Index into the styles part `dxfs` collection.
+    pub dxf_id: Option<u32>,
+    /// Comparison operator (cellIs): "greaterThan", "between", ...
+    pub operator: Option<String>,
+    /// Matched text (containsText/beginsWith/...).
+    pub text: Option<String>,
+    /// Date period (timePeriod): "yesterday", "last7Days", ...
+    pub time_period: Option<String>,
+    /// Top/bottom-N rank (top10).
+    pub rank: Option<u32>,
+    /// Top/bottom percentage instead of count (top10).
+    pub percent: Option<bool>,
+    /// Bottom-N instead of top-N (top10).
+    pub bottom: Option<bool>,
+    /// Above (default) or below average (aboveAverage).
+    pub above_average: Option<bool>,
+    /// Formula/threshold texts in document order.
+    pub formulas: Vec<String>,
+    /// Typed payload for the three visual rule kinds.
+    pub kind: XlsxConditionalFormatKind,
+}
+
+/// Type-specific payload of a CF rule.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum XlsxConditionalFormatKind {
+    /// Rule kinds that carry only attributes + formulas.
+    #[default]
+    Plain,
+    /// Three-color (or two-color) gradient scale.
+    ColorScale(XlsxColorScale),
+    /// In-cell bar chart.
+    DataBar(XlsxDataBar),
+    /// Icon overlay per threshold bucket.
+    IconSet(XlsxIconSet),
+}
+
+/// A rule threshold (CT_Cfvo): minimum/maximum/percent/number/formula.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxCfvo {
+    /// "num" | "percent" | "max" | "min" | "formula" | "percentile".
+    pub cfvo_type: String,
+    /// Threshold value/formula (empty for min/max).
+    pub val: Option<String>,
+    /// Greater-than-or-equal (iconSet buckets, default true).
+    pub gte: bool,
+}
+
+/// Color scale (CT_ColorScale): `cfvo` thresholds + one color per step.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxColorScale {
+    /// 2..=3 thresholds (defaults: min → max).
+    pub cfvos: Vec<XlsxCfvo>,
+    /// One color per threshold, same length.
+    pub colors: Vec<XlsxCfColor>,
+}
+
+/// Data bar (CT_DataBar).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxDataBar {
+    /// min + max thresholds.
+    pub cfvos: Vec<XlsxCfvo>,
+    /// Bar color.
+    pub color: Option<XlsxCfColor>,
+    /// Shortest bar as percent of the cell width (default 10).
+    pub min_length: Option<u32>,
+    /// Longest bar as percent of the cell width (default 90).
+    pub max_length: Option<u32>,
+    /// Show the cell value next to the bar (default true).
+    pub show_value: bool,
+}
+
+/// Icon set (CT_IconSet).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxIconSet {
+    /// Built-in set id (default "3TrafficLights1"): 3Arrows, 4RedToBlack,
+    /// 5Quarters, ...
+    pub icon_set: Option<String>,
+    /// Show the cell value next to the icon (default true).
+    pub show_value: bool,
+    /// Interpret thresholds as percent instead of percentiles.
+    pub percent: bool,
+    /// Reverse icon order.
+    pub reverse: bool,
+    /// n thresholds for an n-icon set.
+    pub cfvos: Vec<XlsxCfvo>,
+}
+
+/// A color reference in CF payloads: ARGB hex (`rgb`), a theme palette
+/// entry (+ optional tint) or a legacy indexed palette entry.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxCfColor {
+    /// "RRGGBB" or "AARRGGBB".
+    pub rgb: Option<String>,
+    /// Theme color index.
+    pub theme: Option<u32>,
+    /// Legacy indexed palette entry.
+    pub indexed: Option<u32>,
+    /// Tint applied over the theme/indexed base color.
+    pub tint: Option<f64>,
+}
+
+/// Differential formatting record (CT_Dxf): the style delta a CF rule
+/// applies when it matches, referenced via its index in `dxfs`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct XlsxDxf {
+    pub font: Option<XlsxFont>,
+    pub num_fmt: Option<XlsxNumFmt>,
+    pub fill: Option<XlsxFill>,
+    pub alignment: Option<XlsxAlignment>,
+    pub border: Option<XlsxBorder>,
+    pub protection: Option<XlsxProtection>,
+}
+
 /// A row in a worksheet.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxRow {
@@ -396,10 +545,12 @@ pub struct XlsxStyles {
     pub cell_style_xfs: Vec<XlsxCellStyleXf>,
     /// Cell formats.
     pub cell_xfs: Vec<XlsxCellXf>,
+    /// Differential formats (CF rule styles), indexed by dxfId.
+    pub dxfs: Vec<XlsxDxf>,
 }
 
 /// Number format.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxNumFmt {
     /// Format code.
     pub format_code: String,
@@ -408,7 +559,7 @@ pub struct XlsxNumFmt {
 }
 
 /// Font definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxFont {
     /// Font name.
     pub name: Option<String>,
@@ -427,7 +578,7 @@ pub struct XlsxFont {
 }
 
 /// Fill definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxFill {
     /// Pattern type.
     pub pattern_type: Option<String>,
@@ -438,7 +589,7 @@ pub struct XlsxFill {
 }
 
 /// Border definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxBorder {
     /// Left border.
     pub left: Option<XlsxBorderSide>,
@@ -453,7 +604,7 @@ pub struct XlsxBorder {
 }
 
 /// Border side definition.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxBorderSide {
     /// Style.
     pub style: Option<String>,
@@ -504,7 +655,7 @@ pub struct XlsxCellXf {
 }
 
 /// Cell alignment.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxAlignment {
     /// Horizontal alignment.
     pub horizontal: Option<String>,
@@ -521,7 +672,7 @@ pub struct XlsxAlignment {
 }
 
 /// Cell protection.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct XlsxProtection {
     /// Locked.
     pub locked: bool,

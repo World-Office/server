@@ -1263,3 +1263,305 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
         );
     }
 }
+
+#[test]
+fn gap_xlsx_cf_ext_roundtrip() {
+    // ORM-06: the conditional-formatting extensions — colorScale /
+    // dataBar / iconSet rules plus the dxf (differential format) styles
+    // they reference — were dropped on import, so dashboards lost the
+    // exact visual the author chose. They must now (a) parse into the
+    // typed model, (b) survive an xlsx -> xlsx re-serialization in schema
+    // order, and (c) re-parse to the identical model. Also guards the
+    // styles scoping: dxf fonts/fills/borders must not leak into the
+    // shared styles tables (which would corrupt every style index).
+    let sheet_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetData>
+    <row r="1"><c r="A1" t="str"><v>Region</v></c><c r="B1" t="str"><v>Sales</v></c><c r="C1" t="str"><v>Share</v></c><c r="D1" t="str"><v>Rank</v></c></row>
+    <row r="2"><c r="A2" t="str"><v>North</v></c><c r="B2"><v>91.4</v></c><c r="C2"><v>42.1</v></c><c r="D2"><v>3</v></c></row>
+    <row r="3"><c r="A3" t="str"><v>South</v></c><c r="B3"><v>64.8</v></c><c r="C3"><v>18.4</v></c><c r="D3"><v>7</v></c></row>
+  </sheetData>
+  <mergeCells count="1"><mergeCell ref="A1:D1"/></mergeCells>
+  <conditionalFormatting sqref="B2:B9">
+    <cfRule type="colorScale" priority="1">
+      <colorScale>
+        <cfvo type="min"/>
+        <cfvo type="percentile" val="50"/>
+        <cfvo type="max"/>
+        <color rgb="FFF8696B"/>
+        <color theme="4" tint="0.4"/>
+        <color rgb="FF63BE7B"/>
+      </colorScale>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="C2:C9">
+    <cfRule type="dataBar" priority="2">
+      <dataBar minLength="5" maxLength="95" showValue="0">
+        <cfvo type="num" val="0"/>
+        <cfvo type="num" val="100"/>
+        <color rgb="FF638EC6"/>
+      </dataBar>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="D2:D9">
+    <cfRule type="iconSet" priority="3">
+      <iconSet iconSet="3Arrows" showValue="0" reverse="1">
+        <cfvo type="percent" val="0"/>
+        <cfvo type="percent" val="33" gte="0"/>
+        <cfvo type="percent" val="67"/>
+      </iconSet>
+    </cfRule>
+  </conditionalFormatting>
+  <conditionalFormatting sqref="B2:B9">
+    <cfRule type="cellIs" dxfId="0" priority="4" stopIfTrue="1" operator="greaterThan">
+      <formula>90</formula>
+    </cfRule>
+    <cfRule type="top10" dxfId="1" priority="5" rank="3" percent="1" bottom="1"/>
+  </conditionalFormatting>
+</worksheet>"#;
+    let styles_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1">
+    <numFmt numFmtId="164" formatCode="0.0&quot;%&quot;"/>
+  </numFmts>
+  <fonts count="2">
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><color rgb="FF9C0006"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/><bgColor rgb="FFFFC7CE"/></patternFill></fill>
+  </fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyFont="1"/></cellStyleXfs>
+  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+  <dxfs count="2">
+    <dxf>
+      <font><b/><color rgb="FF9C0006"/></font>
+      <fill><patternFill patternType="solid"><bgColor rgb="FFFFC7CE"/></patternFill></fill>
+    </dxf>
+    <dxf>
+      <numFmt numFmtId="165" formatCode="0.0&quot;%&quot;"/>
+      <alignment horizontal="center" textRotation="45" wrapText="1"/>
+      <border><left style="thin"><color rgb="FF00B050"/></left><right/><top/><bottom/><diagonal/></border>
+      <protection locked="0" hidden="1"/>
+    </dxf>
+  </dxfs>
+</styleSheet>"#;
+    let xlsx = xlsx_from_parts(&[
+        ("xl/worksheets/sheet1.xml", sheet_xml),
+        ("xl/styles.xml", styles_xml),
+    ]);
+
+    // 1. Typed parse: the four CF blocks plus the dxf table.
+    let parsed = wo_ooxml::OoxmlParser::new().parse(&xlsx).unwrap();
+    let sheet = &parsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    let cfs = &sheet.properties.conditional_formatting;
+    assert_eq!(cfs.len(), 4, "all conditionalFormatting blocks must parse");
+
+    // colorScale: three thresholds and three colors, theme colors kept.
+    assert_eq!(cfs[0].sqref, "B2:B9");
+    let cs_rule = &cfs[0].rules[0];
+    assert_eq!(cs_rule.rule_type, "colorScale");
+    assert_eq!(cs_rule.priority, Some(1));
+    let wo_ooxml::model::XlsxConditionalFormatKind::ColorScale(scale) = &cs_rule.kind else {
+        panic!("colorScale rule must carry a colorScale payload");
+    };
+    assert_eq!(scale.cfvos.len(), 3);
+    assert_eq!(scale.cfvos[0].cfvo_type, "min");
+    assert_eq!(scale.cfvos[0].val, None);
+    assert_eq!(scale.cfvos[1].cfvo_type, "percentile");
+    assert_eq!(scale.cfvos[1].val.as_deref(), Some("50"));
+    assert!(scale.cfvos[2].gte, "cfvo defaults to greater-than-or-equal");
+    assert_eq!(scale.colors.len(), 3);
+    assert_eq!(scale.colors[0].rgb.as_deref(), Some("FFF8696B"));
+    assert_eq!(scale.colors[1].theme, Some(4));
+    assert!(
+        (scale.colors[1].tint.unwrap() - 0.4).abs() < 1e-9,
+        "theme tint must parse"
+    );
+    assert_eq!(scale.colors[2].rgb.as_deref(), Some("FF63BE7B"));
+
+    // dataBar: lengths, hidden value, thresholds and bar color.
+    let wo_ooxml::model::XlsxConditionalFormatKind::DataBar(bar) = &cfs[1].rules[0].kind else {
+        panic!("dataBar rule must carry a dataBar payload");
+    };
+    assert_eq!(bar.min_length, Some(5));
+    assert_eq!(bar.max_length, Some(95));
+    assert!(!bar.show_value, "showValue=\"0\" must hide the value");
+    assert_eq!(bar.cfvos.len(), 2);
+    assert_eq!(bar.cfvos[1].cfvo_type, "num");
+    assert_eq!(bar.cfvos[1].val.as_deref(), Some("100"));
+    assert_eq!(bar.color.as_ref().unwrap().rgb.as_deref(), Some("FF638EC6"));
+
+    // iconSet: built-in id, reversed order, and an explicit gte="0".
+    let wo_ooxml::model::XlsxConditionalFormatKind::IconSet(set) = &cfs[2].rules[0].kind else {
+        panic!("iconSet rule must carry an iconSet payload");
+    };
+    assert_eq!(set.icon_set.as_deref(), Some("3Arrows"));
+    assert!(!set.show_value);
+    assert!(!set.percent);
+    assert!(set.reverse);
+    assert_eq!(set.cfvos.len(), 3);
+    assert!(!set.cfvos[1].gte, "gte=\"0\" must be kept");
+
+    // Attribute-only kinds survive on the same block.
+    assert_eq!(cfs[3].sqref, "B2:B9");
+    assert_eq!(cfs[3].rules.len(), 2);
+    let cell_is = &cfs[3].rules[0];
+    assert_eq!(cell_is.rule_type, "cellIs");
+    assert_eq!(cell_is.dxf_id, Some(0));
+    assert_eq!(cell_is.priority, Some(4));
+    assert!(cell_is.stop_if_true);
+    assert_eq!(cell_is.operator.as_deref(), Some("greaterThan"));
+    assert_eq!(cell_is.formulas, vec!["90".to_string()]);
+    assert_eq!(cell_is.kind, wo_ooxml::model::XlsxConditionalFormatKind::Plain);
+    let top10 = &cfs[3].rules[1];
+    assert_eq!(top10.rule_type, "top10");
+    assert_eq!(top10.dxf_id, Some(1));
+    assert_eq!(top10.rank, Some(3));
+    assert_eq!(top10.percent, Some(true));
+    assert_eq!(top10.bottom, Some(true));
+    assert!(top10.formulas.is_empty());
+
+    // dxf styles parse, and do NOT leak into the shared style tables.
+    let styles = &parsed.xlsx_workbook.as_ref().unwrap().styles;
+    assert_eq!(styles.dxfs.len(), 2, "both dxf records must parse");
+    let dxf0 = &styles.dxfs[0];
+    let font = dxf0.font.as_ref().expect("dxf font must parse");
+    assert!(font.b);
+    assert_eq!(font.color.as_deref(), Some("FF9C0006"));
+    let fill = dxf0.fill.as_ref().expect("dxf fill must parse");
+    assert_eq!(fill.pattern_type.as_deref(), Some("solid"));
+    assert_eq!(fill.bg_color.as_deref(), Some("FFFFC7CE"));
+    let dxf1 = &styles.dxfs[1];
+    assert_eq!(
+        dxf1.num_fmt.as_ref().unwrap().format_code,
+        "0.0\"%\"",
+        "escaped dxf format code must unescape to the raw code"
+    );
+    let align = dxf1.alignment.as_ref().unwrap();
+    assert_eq!(align.horizontal.as_deref(), Some("center"));
+    assert_eq!(align.text_rotation, Some(45));
+    assert!(align.wrap_text);
+    assert_eq!(
+        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().style.as_deref(),
+        Some("thin")
+    );
+    assert_eq!(
+        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().color.as_deref(),
+        Some("FF00B050")
+    );
+    let prot = dxf1.protection.as_ref().unwrap();
+    assert!(!prot.locked);
+    assert!(prot.hidden);
+    assert_eq!(styles.fonts.len(), 2, "dxf fonts must not leak into <fonts>");
+    assert_eq!(styles.fills.len(), 3, "dxf fills must not leak into <fills>");
+    assert_eq!(styles.borders.len(), 1, "dxf borders must not leak into <borders>");
+    assert_eq!(
+        styles.num_fmts.len(),
+        1,
+        "dxf numFmts must not leak into <numFmts>"
+    );
+
+    // 2. xlsx -> xlsx: CF blocks re-emit in schema order, the dxf table is
+    //    regenerated after cellXfs.
+    let reser = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx(parsed.xlsx_workbook.as_ref().unwrap())
+        .unwrap();
+    let sheet2 = zip_entry(&reser, "xl/worksheets/sheet1.xml");
+    let p_merge_end = sheet2.find("</mergeCells>").unwrap();
+    let p_cs = sheet2.find(r#"<conditionalFormatting sqref="B2:B9">"#).unwrap();
+    let p_cs_elem = sheet2.find("<colorScale>").unwrap();
+    let p_bar = sheet2.find(r#"<dataBar minLength="5" maxLength="95" showValue="0">"#).unwrap();
+    let p_set = sheet2
+        .find(r#"<iconSet iconSet="3Arrows" showValue="0" reverse="1">"#)
+        .unwrap();
+    let p_cellis = sheet2
+        .find(r#"<cfRule type="cellIs" dxfId="0" priority="4" stopIfTrue="1" operator="greaterThan">"#)
+        .unwrap();
+    let p_formula = sheet2.find("<formula>90</formula>").unwrap();
+    let p_top10 = sheet2
+        .find(r#"<cfRule type="top10" dxfId="1" priority="5" rank="3" percent="1" bottom="1"/>"#)
+        .unwrap();
+    assert!(
+        p_merge_end < p_cs
+            && p_cs < p_cs_elem
+            && p_cs_elem < p_bar
+            && p_bar < p_set
+            && p_set < p_cellis
+            && p_cellis < p_formula
+            && p_formula < p_top10,
+        "conditional formatting must re-emit in document order: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<cfvo type="percentile" val="50"/>"#),
+        "colorScale threshold lost: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<color theme="4" tint="0.4"/>"#),
+        "theme color lost: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<cfvo type="percent" val="33" gte="0"/>"#),
+        "iconSet gte=\"0\" lost: {sheet2}"
+    );
+    let styles2 = zip_entry(&reser, "xl/styles.xml");
+    let p_cellxfs_end = styles2.find("</cellXfs>").unwrap();
+    let p_dxfs = styles2.find(r#"<dxfs count="2">"#).unwrap();
+    assert!(
+        p_cellxfs_end < p_dxfs,
+        "dxfs must re-emit after cellXfs in schema order: {styles2}"
+    );
+    // Inside the dxf table the records keep their child order
+    // (font / numFmt / fill / alignment / border / protection).
+    let dxf_table = &styles2[p_dxfs..];
+    let p_dxf_font_b = dxf_table.find("<b/>").expect("dxf font bold flag lost");
+    let p_dxf_font_color = dxf_table
+        .find(r#"<color rgb="FF9C0006"/>"#)
+        .expect("dxf font color lost");
+    let p_dxf_fill = dxf_table
+        .find(r#"<bgColor rgb="FFFFC7CE"/>"#)
+        .expect("dxf fill color lost");
+    let p_dxf_numfmt = dxf_table
+        .find(r#"<numFmt numFmtId="165" formatCode="0.0&quot;%&quot;"/>"#)
+        .expect("dxf numFmt lost");
+    let p_dxf_align = dxf_table
+        .find(r#"textRotation="45""#)
+        .expect("dxf alignment lost");
+    let p_dxf_border = dxf_table
+        .find(r#"<color rgb="FF00B050"/>"#)
+        .expect("dxf border color lost");
+    let p_dxf_prot = dxf_table
+        .find(r#"<protection locked="0" hidden="1"/>"#)
+        .expect("dxf protection lost");
+    assert!(
+        p_dxf_font_b < p_dxf_font_color
+            && p_dxf_font_color < p_dxf_fill
+            && p_dxf_fill < p_dxf_numfmt
+            && p_dxf_numfmt < p_dxf_align
+            && p_dxf_align < p_dxf_border
+            && p_dxf_border < p_dxf_prot,
+        "dxf children must keep schema order: {styles2}"
+    );
+    assert!(
+        styles2.contains(r#"<fonts count="2">"#)
+            && styles2.contains(r#"<fills count="3">"#)
+            && styles2.contains(r#"<borders count="1">"#),
+        "shared style tables must keep their counts: {styles2}"
+    );
+
+    // 3. Re-parse: the models are identical.
+    let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
+    let rsheet = &reparsed.xlsx_workbook.as_ref().unwrap().sheets[0];
+    assert_eq!(
+        rsheet.properties.conditional_formatting, sheet.properties.conditional_formatting,
+        "conditional-formatting model must survive the round trip"
+    );
+    assert_eq!(
+        reparsed.xlsx_workbook.as_ref().unwrap().styles.dxfs,
+        styles.dxfs,
+        "dxf table must survive the round trip"
+    );
+}
