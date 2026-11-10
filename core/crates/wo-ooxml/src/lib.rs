@@ -10,6 +10,9 @@ pub mod parser;
 pub mod roundtrip;
 pub mod serializer;
 
+#[cfg(test)]
+mod style_chain_tests;
+
 pub use model::builtin_theme_presets;
 pub use model::{
     Bounds, ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme,
