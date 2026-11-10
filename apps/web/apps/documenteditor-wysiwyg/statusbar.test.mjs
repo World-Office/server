@@ -42,7 +42,7 @@ assert.ok(
 )
 assert.ok(i18nSrc.includes('"Statusbar.Zoom": "100%"'), "German Statusbar.Zoom must exist")
 assert.ok(
-  i18nSrc.includes('"Statusbar.TrackChanges": "Änderungen verfolgen"'),
+  i18nSrc.includes('"Statusbar.TrackChanges": "Nachverfolgen von Änderungen"'),
   "German Statusbar.TrackChanges must exist",
 )
 console.log("All i18n keys present\n")
