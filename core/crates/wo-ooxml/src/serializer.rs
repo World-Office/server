@@ -1858,7 +1858,8 @@ impl OoxmlSerializer {
         xml.push_str(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
   <w:body>"#,
         );
 
@@ -2200,9 +2201,12 @@ impl OoxmlSerializer {
             // P4-D02: paragraph-level OMML math hoists out as the bare
             // verbatim m:oMath / m:oMathPara element (never a <w:r>) — the
             // linear m:t text on the marker run is extraction-only and must
-            // not leak back into the XML.
-            if let Some(math) = &run.math {
-                xml.push_str(&math.verbatim);
+            // not leak back into the XML. A run that merely *carries*
+            // nested m:oMath (parsed from w:r content) is not a marker run:
+            // it falls through to serialize_run, which re-emits the math
+            // inside its <w:r> wrapper.
+            if Self::is_math_marker_run(run) {
+                xml.push_str(&run.math.as_ref().expect("checked").verbatim);
                 i += 1;
                 continue;
             }
@@ -2341,6 +2345,33 @@ impl OoxmlSerializer {
         }
         el.push_str(">");
         el
+    }
+
+    /// P4-D02: a pure math marker run — the shape `parse_paragraph` pushes
+    /// for a paragraph-level `m:oMath` / `m:oMathPara` (math + linear
+    /// extraction text, nothing else). Runs parsed from `<w:r>` content
+    /// that carry nested math fail at least one of these checks and
+    /// serialize through `serialize_run` instead, so the math stays inside
+    /// its `<w:r>` wrapper as in the source.
+    fn is_math_marker_run(run: &DocxRun) -> bool {
+        match &run.math {
+            Some(math) => {
+                run.text == math.linear_text
+                    && run.raw_rpr.is_none()
+                    && run.drawing.is_none()
+                    && run.pict.is_none()
+                    && run.footnote_rid.is_none()
+                    && run.image_rid.is_none()
+                    && run.field.is_none()
+                    && run.bookmark.is_none()
+                    && run.sdt.is_none()
+                    && run.revision.is_none()
+                    && run.comment_anchor.is_none()
+                    && run.hyperlink_rid.is_none()
+                    && run.hyperlink_anchor.is_none()
+            }
+            None => false,
+        }
     }
 
     /// Serialize a run. `deleted` marks a run inside a `w:del` (or nested
