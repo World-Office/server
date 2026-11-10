@@ -206,3 +206,174 @@ fn test_aa_coverage_methods_exist() {
     
     assert!(true, "All AA coverage methods should be callable");
 }
+
+// --- Image drawing: bilinear scaling + transparent blend ---
+
+/// Encode a procedurally generated RGBA image as PNG bytes.
+fn encode_test_png(width: u32, height: u32, fill: impl Fn(u32, u32) -> [u8; 4]) -> Vec<u8> {
+    let mut img = image::RgbaImage::new(width, height);
+    for y in 0..height {
+        for x in 0..width {
+            img.put_pixel(x, y, image::Rgba(fill(x, y)));
+        }
+    }
+    let mut bytes = Vec::new();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut bytes),
+        image::ImageFormat::Png,
+    )
+    .unwrap();
+    bytes
+}
+
+#[test]
+fn test_draw_image_bilinear_upscale_interpolates() {
+    // 2x2 source: left column black, right column white.
+    let png = encode_test_png(2, 2, |x, _| {
+        if x == 0 {
+            [0, 0, 0, 255]
+        } else {
+            [255, 255, 255, 255]
+        }
+    });
+    let mut c = Canvas::new(20, 20);
+    c.draw_image(&png, 5.0, 5.0, 10.0, 10.0).unwrap();
+
+    // The middle of the destination must be a grey strictly between black
+    // and white: nearest-neighbour sampling would only produce pure
+    // black/white, bilinear interpolation produces intermediate values.
+    let (r, g, b, _) = c.get_pixel(10, 10);
+    assert!(
+        r > 10 && r < 245 && g > 10 && g < 245 && b > 10 && b < 245,
+        "bilinear upscale should produce intermediate grey at the column boundary, got ({},{},{})",
+        r,
+        g,
+        b
+    );
+    // Edge pixel centres clamp to the source edge columns.
+    let (r_left, _, _, _) = c.get_pixel(5, 5);
+    assert_eq!(r_left, 0, "left edge should sample the black source column");
+    let (r_right, _, _, _) = c.get_pixel(14, 14);
+    assert_eq!(
+        r_right, 255,
+        "right edge should sample the white source column"
+    );
+}
+
+#[test]
+fn test_draw_image_transparent_blend() {
+    let mut c = Canvas::new(16, 16);
+    c.set_fill(Paint::Color(Color::new(1.0, 0.0, 0.0, 1.0)));
+    c.fill_rect(0.0, 0.0, 16.0, 16.0);
+
+    // A fully transparent image must leave the background untouched.
+    let transparent = encode_test_png(4, 4, |_, _| [255, 0, 0, 0]);
+    c.draw_image(&transparent, 0.0, 0.0, 8.0, 8.0).unwrap();
+    let (r, g, b, _) = c.get_pixel(3, 3);
+    assert_eq!(
+        (r, g, b),
+        (255, 0, 0),
+        "fully transparent image must not alter the background"
+    );
+
+    // 50% black over red -> roughly half the red channel (alpha applied
+    // exactly once, not squared).
+    let half = encode_test_png(4, 4, |_, _| [0, 0, 0, 128]);
+    c.draw_image(&half, 8.0, 0.0, 8.0, 8.0).unwrap();
+    let (r, g, b, _) = c.get_pixel(12, 4);
+    assert_eq!((g, b), (0, 0), "black source keeps the other channels off");
+    assert!(
+        r > 100 && r < 160,
+        "50% transparent black over red should halve the red channel, got {}",
+        r
+    );
+}
+
+#[test]
+fn test_draw_image_alpha_gradient_smooth() {
+    // Horizontal alpha ramp: transparent -> opaque white over a red canvas.
+    let png = encode_test_png(8, 1, |x, _| [255, 255, 255, (x * 36) as u8]);
+    let mut c = Canvas::new(16, 16);
+    c.set_fill(Paint::Color(Color::new(1.0, 0.0, 0.0, 1.0)));
+    c.fill_rect(0.0, 0.0, 16.0, 16.0);
+    c.draw_image(&png, 0.0, 0.0, 16.0, 16.0).unwrap();
+
+    // Opacity must increase monotonically from left to right. White over
+    // red leaves red at 255, so whiteness is read from the blue channel
+    // (blue rises toward 255 as the source alpha grows).
+    let mut prev = 0.0_f32;
+    for x in [2u32, 6, 8, 12, 14] {
+        let (_, _, b, _) = c.get_pixel(x, 8);
+        let whiteness = b as f32;
+        assert!(
+            whiteness >= prev - 1.0,
+            "alpha ramp should whiten monotonically at x={}",
+            x
+        );
+        prev = whiteness;
+    }
+}
+
+#[test]
+fn test_draw_image_global_alpha() {
+    let png = encode_test_png(4, 4, |_, _| [0, 0, 255, 255]); // opaque blue
+    let mut c = Canvas::new(16, 16);
+    c.set_fill(Paint::Color(Color::new(1.0, 0.0, 0.0, 1.0)));
+    c.fill_rect(0.0, 0.0, 16.0, 16.0);
+    c.set_global_alpha(0.5);
+    c.draw_image(&png, 0.0, 0.0, 8.0, 8.0).unwrap();
+    let (r, g, b, _) = c.get_pixel(4, 4);
+    assert_eq!(g, 0);
+    assert!(
+        r > 100 && r < 170 && b > 100 && b < 170,
+        "global alpha 0.5 over red should yield a red/blue mix, got ({},{},{})",
+        r,
+        g,
+        b
+    );
+}
+
+#[test]
+fn test_draw_image_respects_transform() {
+    // 4x4 opaque green source drawn at (5,5,10,10) under scale(2,2):
+    // the image must land on screen in the (10,10)..(30,30) area.
+    let png = encode_test_png(4, 4, |_, _| [0, 200, 0, 255]);
+    let mut c = Canvas::new(64, 64);
+    c.set_fill(Paint::Color(Color::new(1.0, 1.0, 1.0, 1.0)));
+    c.fill_rect(0.0, 0.0, 64.0, 64.0);
+    c.scale(2.0, 2.0);
+    c.draw_image(&png, 5.0, 5.0, 10.0, 10.0).unwrap();
+
+    let (r, g, b, _) = c.get_pixel(20, 20);
+    assert_eq!((r, b), (0, 0), "transformed rect interior should be image green");
+    assert!(g > 150, "image green should be present, got {}", g);
+
+    let (r, g, b, _) = c.get_pixel(8, 8);
+    assert_eq!(
+        (r, g, b),
+        (255, 255, 255),
+        "no image pixels outside the transformed rectangle"
+    );
+}
+
+#[test]
+fn test_draw_image_respects_clip() {
+    let png = encode_test_png(8, 8, |_, _| [0, 0, 255, 255]);
+    let mut c = Canvas::new(32, 32);
+    c.set_fill(Paint::Color(Color::new(1.0, 1.0, 1.0, 1.0)));
+    c.fill_rect(0.0, 0.0, 32.0, 32.0);
+    // Clip to the left half; the image spans the whole canvas.
+    c.begin_path();
+    c.rect(0.0, 0.0, 16.0, 32.0);
+    c.clip();
+    c.draw_image(&png, 0.0, 0.0, 32.0, 32.0).unwrap();
+
+    let (_, _, b, _) = c.get_pixel(8, 16);
+    assert_eq!(b, 255, "image is drawn inside the clip region");
+    let (r, g, b, _) = c.get_pixel(24, 16);
+    assert_eq!(
+        (r, g, b),
+        (255, 255, 255),
+        "nothing is drawn outside the clip region"
+    );
+}

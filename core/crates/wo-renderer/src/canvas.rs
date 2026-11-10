@@ -14,6 +14,53 @@ use crate::transform::{AffineTransform, TransformStack};
 /// A single RGBA pixel stored as u32 (0xAARRGGBB).
 type PixelU32 = u32;
 
+/// Bilinearly sample an RGBA8 image at a fractional position.
+///
+/// Texel indices are clamped to the image edges, so sample positions
+/// slightly outside the source resolve to edge texel colours. Returns
+/// non-premultiplied (r, g, b, a) channels scaled to `0.0..=1.0`.
+fn sample_bilinear_rgba(
+    raw: &[u8],
+    width: u32,
+    height: u32,
+    fx: f32,
+    fy: f32,
+) -> (f32, f32, f32, f32) {
+    let w = width as i32;
+    let h = height as i32;
+    let x0 = fx.floor();
+    let y0 = fy.floor();
+    let tx = fx - x0;
+    let ty = fy - y0;
+    let xa = (x0 as i32).clamp(0, w - 1);
+    let xb = (x0 as i32 + 1).clamp(0, w - 1);
+    let ya = (y0 as i32).clamp(0, h - 1);
+    let yb = (y0 as i32 + 1).clamp(0, h - 1);
+
+    let texel = |x: i32, y: i32| -> [f32; 4] {
+        let idx = ((y as u32) * width + x as u32) as usize;
+        let p = &raw[idx * 4..idx * 4 + 4];
+        [p[0] as f32, p[1] as f32, p[2] as f32, p[3] as f32]
+    };
+    let p00 = texel(xa, ya);
+    let p10 = texel(xb, ya);
+    let p01 = texel(xa, yb);
+    let p11 = texel(xb, yb);
+
+    let mut out = [0.0_f32; 4];
+    for c in 0..4 {
+        let top = p00[c] + (p10[c] - p00[c]) * tx;
+        let bottom = p01[c] + (p11[c] - p01[c]) * tx;
+        out[c] = top + (bottom - top) * ty;
+    }
+    (
+        out[0] / 255.0,
+        out[1] / 255.0,
+        out[2] / 255.0,
+        out[3] / 255.0,
+    )
+}
+
 /// Pixel buffer for the canvas.
 #[derive(Debug, Clone)]
 struct PixelBuffer {
@@ -63,6 +110,31 @@ impl PixelBuffer {
             x,
             y,
             0xFF000000 | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32),
+        );
+    }
+
+    /// Transparent src-over blend of a non-premultiplied RGBA source pixel.
+    ///
+    /// `a` is the effective source alpha in `0.0..=1.0` (image texel alpha
+    /// times the global alpha); the destination colour is composited
+    /// beneath the source colour.
+    fn blend_rgba_over(&mut self, x: u32, y: u32, r: f32, g: f32, b: f32, a: f32) {
+        if x >= self.width || y >= self.height || a <= 0.0 {
+            return;
+        }
+        let a = a.clamp(0.0, 1.0);
+        let existing = self.get(x, y);
+        let er = ((existing >> 16) & 0xFF) as f32;
+        let eg = ((existing >> 8) & 0xFF) as f32;
+        let eb = (existing & 0xFF) as f32;
+        let inv = 1.0 - a;
+        let out_r = (r * a * 255.0 + er * inv).round().clamp(0.0, 255.0) as u8;
+        let out_g = (g * a * 255.0 + eg * inv).round().clamp(0.0, 255.0) as u8;
+        let out_b = (b * a * 255.0 + eb * inv).round().clamp(0.0, 255.0) as u8;
+        self.set(
+            x,
+            y,
+            0xFF000000 | ((out_r as u32) << 16) | ((out_g as u32) << 8) | (out_b as u32),
         );
     }
 
@@ -998,8 +1070,16 @@ impl Canvas {
         }
     }
 
-    /// Draw an image onto the canvas at the specified position with the given dimensions.
-    /// The image is scaled to fit the target rectangle.
+    /// Draw an image onto the canvas at the specified position with the
+    /// given dimensions, scaling it with bilinear interpolation and
+    /// compositing it with transparent (src-over) alpha blending.
+    ///
+    /// The destination rectangle is mapped through the current transform;
+    /// each destination pixel centre is inverse-mapped to a fractional
+    /// source position and bilinearly interpolated from the four
+    /// surrounding texels. Fully transparent texels leave the destination
+    /// untouched; partially transparent texels are alpha-blended over the
+    /// existing pixels, scaled by the canvas global alpha.
     ///
     /// # Arguments
     /// * `image_data` - Image bytes (PNG, JPEG, GIF, BMP, TIFF)
@@ -1030,75 +1110,71 @@ impl Canvas {
             .map_err(|e| format!("Failed to decode image: {}", e))?;
 
         let img_rgba = img.to_rgba8();
-        let img_w = img_rgba.width() as u32;
-        let img_h = img_rgba.height() as u32;
+        let img_w = img_rgba.width();
+        let img_h = img_rgba.height();
 
         if img_w == 0 || img_h == 0 {
             return Err("Decoded image has zero dimensions".to_string());
         }
+        let raw = img_rgba.as_raw();
 
-        // Calculate source and destination rectangles
-        let dest_x0 = x.floor() as i32;
-        let dest_y0 = y.floor() as i32;
-        let dest_x1 = (x + w).ceil() as i32;
-        let dest_y1 = (y + h).ceil() as i32;
+        // Map the destination rectangle corners through the current
+        // transform and rasterize the bounding box of the resulting quad.
+        let transform = self.current_transform();
+        let inverse = match transform.invert() {
+            Some(inv) => inv,
+            // A singular transform maps the rectangle to a degenerate area.
+            None => return Ok(()),
+        };
+        let corners = [
+            transform.transform_point(x, y),
+            transform.transform_point(x + w, y),
+            transform.transform_point(x + w, y + h),
+            transform.transform_point(x, y + h),
+        ];
+        let min_x = corners.iter().fold(f32::INFINITY, |m, p| m.min(p.0));
+        let min_y = corners.iter().fold(f32::INFINITY, |m, p| m.min(p.1));
+        let max_x = corners.iter().fold(f32::NEG_INFINITY, |m, p| m.max(p.0));
+        let max_y = corners.iter().fold(f32::NEG_INFINITY, |m, p| m.max(p.1));
 
-        // Clamp to canvas bounds
-        let src_x0 = 0u32;
-        let src_y0 = 0u32;
-        let src_x1 = img_w;
-        let src_y1 = img_h;
+        let px0 = min_x.floor().max(0.0) as u32;
+        let py0 = min_y.floor().max(0.0) as u32;
+        let px1 = (max_x.ceil().max(0.0) as u32).min(self.width);
+        let py1 = (max_y.ceil().max(0.0) as u32).min(self.height);
+        if px0 >= px1 || py0 >= py1 {
+            // Entirely outside the canvas.
+            return Ok(());
+        }
 
-        let mut dest_x = dest_x0.max(0);
-        let mut dest_y = dest_y0.max(0);
-        let mut src_x = (dest_x - dest_x0) as u32 * img_w / (dest_x1 - dest_x0) as u32;
-        let mut src_y = (dest_y - dest_y0) as u32 * img_h / (dest_y1 - dest_y0) as u32;
+        let global_alpha = self.state.global_alpha.clamp(0.0, 1.0);
+        // Clip path is stored in user space; test per pixel centre.
+        let clip = self.clip_path.clone();
+        let fill_rule = self.state.fill_rule;
 
-        // Calculate scaling factors
+        // User-space -> source-texel scale (half-texel-centred sampling).
         let scale_x = img_w as f32 / w;
         let scale_y = img_h as f32 / h;
 
-        for screen_y in dest_y..dest_y1.min(self.height as i32) {
-            let screen_y_u = screen_y as u32;
-            if screen_y_u >= self.height {
-                continue;
-            }
-
-            // Calculate source y position with proper scaling
-            let src_y_pos = ((screen_y - dest_y0) as f32 * scale_y) as u32;
-            if src_y_pos >= img_h {
-                continue;
-            }
-
-            for screen_x in dest_x..dest_x1.min(self.width as i32) {
-                let screen_x_u = screen_x as u32;
-                if screen_x_u >= self.width {
+        for py in py0..py1 {
+            for px in px0..px1 {
+                // Inverse-map the pixel centre back into user space.
+                let (ux, uy) = inverse.transform_point(px as f32 + 0.5, py as f32 + 0.5);
+                // Skip pixel centres outside the destination rectangle.
+                if ux < x || ux >= x + w || uy < y || uy >= y + h {
                     continue;
                 }
-
-                // Calculate source x position with proper scaling
-                let src_x_pos = ((screen_x - dest_x0) as f32 * scale_x) as u32;
-                if src_x_pos >= img_w {
-                    continue;
+                if let Some(clip) = &clip {
+                    if !clip.contains_point(ux, uy, fill_rule) {
+                        continue;
+                    }
                 }
-
-                // Get source pixel
-                let src_idx = (src_y_pos * img_w + src_x_pos) as usize;
-                let raw = img_rgba.as_raw();
-                if src_idx * 4 + 3 >= raw.len() {
-                    continue;
-                }
-
-                let r = raw[src_idx * 4] as f32 / 255.0;
-                let g = raw[src_idx * 4 + 1] as f32 / 255.0;
-                let b = raw[src_idx * 4 + 2] as f32 / 255.0;
-                let a = raw[src_idx * 4 + 3] as f32 / 255.0;
-
-                // Blend with existing pixel
-                if a > 0.0 {
-                    let color = Color::new(r, g, b, a);
-                    self.buffer.blend(screen_x_u, screen_y_u, &color, a);
-                }
+                // Fractional source position for bilinear interpolation.
+                let sx = (ux - x) * scale_x - 0.5;
+                let sy = (uy - y) * scale_y - 0.5;
+                let (r, g, b, a) = sample_bilinear_rgba(raw, img_w, img_h, sx, sy);
+                // Transparent src-over blend (texel alpha x global alpha).
+                self.buffer
+                    .blend_rgba_over(px, py, r, g, b, a * global_alpha);
             }
         }
 
