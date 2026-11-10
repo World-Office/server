@@ -319,6 +319,7 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
                 footnotes_raw: None,
                 comments: Vec::new(),
                 comment_anchors: Vec::new(),
+                numbering: None,
             }),
         };
         let hd = HtmlDocument {
@@ -2941,6 +2942,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             comments,
             comment_anchors: Vec::new(),
             footnotes_raw: None,
+            numbering: None,
         }),
     }
 }

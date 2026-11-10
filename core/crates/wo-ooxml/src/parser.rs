@@ -1393,6 +1393,7 @@ impl OoxmlParser {
                 media: Vec::new(),
                 image_rels: Vec::new(),
                 hyperlink_rels: Vec::new(),
+                numbering: None,
             },
         };
 
@@ -1459,6 +1460,9 @@ impl OoxmlParser {
                 body.footnotes_raw = Some(raw);
             }
         }
+        // Typed numbering part (P2-05): every abstractNum + num of a foreign
+        // numbering.xml is captured so the serializer can re-emit it.
+        body.numbering = self.parse_numbering(archive);
         if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
             if let Ok(rels) = self.parse_relationships(&rels_xml) {
                 body.image_rels.extend(
@@ -1502,7 +1506,98 @@ impl OoxmlParser {
             media: Vec::new(),
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
+            numbering: None,
         }
+    }
+
+    /// Parse `word/numbering.xml` into the typed `DocxNumbering` (P2-05).
+    ///
+    /// Every `w:abstractNum` (with all its `w:lvl` children: start, numFmt,
+    /// lvlText, lvlJc, lvlRestart, pStyle, suff, isLgl, ind) and every
+    /// `w:num` (abstractNumId + lvlOverride/startOverride) is captured, so
+    /// the serializer can re-emit exactly what a foreign producer wrote
+    /// instead of collapsing it to the fixed 8-template. Returns `None`
+    /// when the part is absent or unparseable.
+    fn parse_numbering(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Option<DocxNumbering> {
+        let xml = self.read_zip_entry(archive, "word/numbering.xml").ok()?;
+        let doc = XmlDoc::parse(&xml).ok()?;
+        let mut numbering = DocxNumbering::default();
+        for node in doc.descendants().filter(|n| n.is_element()) {
+            match node.tag_name().name() {
+                "abstractNum" => {
+                    let id = self.attr_ns(node, "abstractNumId")?.parse().ok()?;
+                    let levels = node
+                        .children()
+                        .filter(|c| c.is_element() && c.tag_name().name() == "lvl")
+                        .filter_map(|lvl| self.parse_numbering_level(lvl))
+                        .collect();
+                    numbering.abstract_nums.push(DocxAbstractNum {
+                        abstract_num_id: id,
+                        multi_level_type: self.child_val(node, "multiLevelType"),
+                        name: self.child_val(node, "name"),
+                        style_link: self.child_val(node, "styleLink"),
+                        num_style_link: self.child_val(node, "numStyleLink"),
+                        levels,
+                    });
+                }
+                "num" => {
+                    let id = self.attr_ns(node, "numId")?.parse().ok()?;
+                    let abstract_num_id = self
+                        .child_val(node, "abstractNumId")
+                        .and_then(|v| v.parse().ok())?;
+                    let level_overrides = node
+                        .children()
+                        .filter(|c| c.is_element() && c.tag_name().name() == "lvlOverride")
+                        .map(|o| DocxLvlOverride {
+                            ilvl: self
+                                .attr_ns(o, "ilvl")
+                                .and_then(|v| v.parse().ok())
+                                .unwrap_or(0),
+                            start_override: self
+                                .child_val(o, "startOverride")
+                                .and_then(|v| v.parse().ok()),
+                        })
+                        .collect();
+                    numbering.nums.push(DocxNum {
+                        num_id: id,
+                        abstract_num_id,
+                        level_overrides,
+                    });
+                }
+                _ => {}
+            }
+        }
+        Some(numbering)
+    }
+
+    /// One `w:lvl` of an abstractNum into a `DocxNumLevel`.
+    fn parse_numbering_level(&self, lvl: roxmltree::Node) -> Option<DocxNumLevel> {
+        let ilvl = self.attr_ns(lvl, "ilvl")?.parse().ok()?;
+        // Level indent lives in the level's own w:pPr/w:ind.
+        let ind = lvl
+            .children()
+            .find(|c| c.is_element() && c.tag_name().name() == "pPr")
+            .and_then(|p| p.children().find(|c| c.is_element() && c.tag_name().name() == "ind"));
+        let read_ind = |name: &str| -> Option<i32> {
+            ind.and_then(|i| self.attr_ns(i, name)).and_then(|v| v.parse().ok())
+        };
+        Some(DocxNumLevel {
+            ilvl,
+            start: self.child_val(lvl, "start").and_then(|v| v.parse().ok()),
+            num_fmt: self.child_val(lvl, "numFmt"),
+            lvl_text: self.child_val(lvl, "lvlText"),
+            lvl_jc: self.child_val(lvl, "lvlJc"),
+            lvl_restart: self.child_val(lvl, "lvlRestart").and_then(|v| v.parse().ok()),
+            p_style: self.child_val(lvl, "pStyle"),
+            suff: self.child_val(lvl, "suff"),
+            is_lgl: lvl.children().any(|c| c.is_element() && c.tag_name().name() == "isLgl"),
+            indent_left: read_ind("left"),
+            indent_hanging: read_ind("hanging"),
+            indent_first_line: read_ind("firstLine"),
+        })
     }
 
     /// Parse comments from word/comments.xml and word/commentsExtended.xml
@@ -4698,5 +4793,258 @@ mod tests {
         assert_eq!(rebody.comments[1].text, body.comments[1].text);
         assert_eq!(rebody.comments[1].resolved, body.comments[1].resolved);
         assert_eq!(rebody.comments[1].parent_id, body.comments[1].parent_id);
+    }
+
+    // --- P2-05: data-driven numbering (word/numbering.xml) ----------------
+
+    /// Zip a document.xml + arbitrary extra word/* parts (no comments).
+    fn make_docx_with_parts(parts: &[(&str, &str)]) -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>
+</Types>"#)
+            .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#)
+            .unwrap();
+            for (name, xml) in parts {
+                zip.start_file(*name, zip::write::SimpleFileOptions::default())
+                    .unwrap();
+                zip.write_all(xml.as_bytes()).unwrap();
+            }
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
+    /// Foreign numbering.xml (as a Word/producer other than WO writes it):
+    /// abstractNum ids WO never generates, numFmts beyond decimal|bullet,
+    /// lvlText masks, level indents, a pStyle link and a num with a
+    /// lvlOverride/startRestart. P2-05: this must land in the typed
+    /// DocxNumbering instead of being ignored.
+    #[test]
+    fn test_numbering_foreign_parse() {
+        let numbering_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="100">
+    <w:multiLevelType w:val="hybridMultilevel"/>
+    <w:name w:val="Outline"/>
+    <w:lvl w:ilvl="0"><w:start w:val="3"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl>
+    <w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="lowerLetter"/><w:lvlText w:val="%2)"/><w:lvlJc w:val="left"/><w:suff w:val="space"/><w:pPr><w:ind w:left="1440" w:hanging="360"/></w:pPr></w:lvl>
+    <w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="&#8226;"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="2160" w:hanging="360"/></w:pPr></w:lvl>
+  </w:abstractNum>
+  <w:abstractNum w:abstractNumId="300">
+    <w:multiLevelType w:val="singleLevel"/>
+    <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="Art. %1"/><w:lvlJc w:val="left"/><w:pStyle w:val="ArticleNumber"/><w:isLgl/></w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="42"><w:abstractNumId w:val="100"/>
+    <w:lvlOverride w:ilvl="0"><w:startOverride w:val="9"/></w:lvlOverride>
+  </w:num>
+  <w:num w:numId="44"><w:abstractNumId w:val="300"/></w:num>
+</w:numbering>"#;
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="42"/></w:numPr></w:pPr><w:r><w:t>I</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="42"/></w:numPr></w:pPr><w:r><w:t>a</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="44"/></w:numPr></w:pPr><w:r><w:t>One</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+        let docx = make_docx_with_parts(&[
+            ("word/document.xml", document_xml),
+            ("word/numbering.xml", numbering_xml),
+        ]);
+        let doc = OoxmlParser::new().parse(&docx).unwrap();
+        let body = doc.docx_body.as_ref().unwrap();
+        let numbering = body.numbering.as_ref().expect("numbering captured");
+
+        // All abstractNums, in document order, with metadata + levels.
+        assert_eq!(numbering.abstract_nums.len(), 2);
+        let a100 = numbering.abstract_num(100).unwrap();
+        assert_eq!(a100.multi_level_type.as_deref(), Some("hybridMultilevel"));
+        assert_eq!(a100.name.as_deref(), Some("Outline"));
+        assert_eq!(a100.levels.len(), 3);
+        assert_eq!(a100.levels[0].num_fmt.as_deref(), Some("upperRoman"));
+        assert_eq!(a100.levels[0].lvl_text.as_deref(), Some("%1."));
+        assert_eq!(a100.levels[0].start, Some(3));
+        assert_eq!(a100.levels[0].lvl_jc.as_deref(), Some("left"));
+        assert_eq!(a100.levels[0].indent_left, Some(720));
+        assert_eq!(a100.levels[0].indent_hanging, Some(360));
+        assert!(!a100.levels[0].is_lgl);
+        assert_eq!(a100.levels[1].num_fmt.as_deref(), Some("lowerLetter"));
+        assert_eq!(a100.levels[1].lvl_text.as_deref(), Some("%2)"));
+        assert_eq!(a100.levels[1].suff.as_deref(), Some("space"));
+        assert!(a100.levels[2].is_bullet());
+
+        // num instances: numId -> abstractNumId + lvlOverride startOverride.
+        assert_eq!(numbering.nums.len(), 2);
+        let num42 = numbering.num(42).unwrap();
+        assert_eq!(num42.abstract_num_id, 100);
+        assert_eq!(num42.level_overrides.len(), 1);
+        assert_eq!(num42.level_overrides[0].ilvl, 0);
+        assert_eq!(numbering.start_override(42, 0), Some(9));
+        assert_eq!(numbering.start_override(44, 0), None);
+
+        // Resolution helpers: direct level, OO deep-level fallback, pStyle,
+        // isLgl on the singleLevel definition.
+        let lvl = numbering.level_for(42, 1).unwrap();
+        assert_eq!(lvl.num_fmt.as_deref(), Some("lowerLetter"));
+        let fallback = numbering.level_for(42, 5).unwrap();
+        assert_eq!(fallback.num_fmt.as_deref(), Some("bullet"));
+        assert_eq!(
+            numbering.level_for(44, 0).unwrap().p_style.as_deref(),
+            Some("ArticleNumber")
+        );
+        assert!(numbering.level_for(44, 0).unwrap().is_lgl);
+        assert!(numbering.abstract_num_for(42).is_some());
+        assert!(numbering.abstract_num_for(999).is_none());
+        assert!(!numbering.is_empty());
+    }
+
+    /// P2-05: parse -> serialize -> parse must keep the foreign numbering
+    /// (the pre-P2-05 serializer collapsed it to the fixed 8-template).
+    #[test]
+    fn test_numbering_foreign_round_trip() {
+        let numbering_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="100">
+    <w:multiLevelType w:val="hybridMultilevel"/>
+    <w:lvl w:ilvl="0"><w:start w:val="3"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl>
+    <w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="lowerLetter"/><w:lvlText w:val="%2)"/><w:lvlJc w:val="left"/></w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="42"><w:abstractNumId w:val="100"/>
+    <w:lvlOverride w:ilvl="0"><w:startOverride w:val="9"/></w:lvlOverride>
+  </w:num>
+</w:numbering>"#;
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="42"/></w:numPr></w:pPr><w:r><w:t>I</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+        let docx = make_docx_with_parts(&[
+            ("word/document.xml", document_xml),
+            ("word/numbering.xml", numbering_xml),
+        ]);
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(&docx).unwrap();
+
+        let out = OoxmlSerializer::new().serialize(&doc).unwrap();
+        let reparsed = parser.parse(&out).unwrap();
+        let body = reparsed.docx_body.as_ref().unwrap();
+        let numbering = body.numbering.as_ref().expect("numbering survives");
+
+        assert_eq!(numbering.abstract_nums.len(), 1);
+        let a = &numbering.abstract_nums[0];
+        assert_eq!(a.abstract_num_id, 100);
+        assert_eq!(a.multi_level_type.as_deref(), Some("hybridMultilevel"));
+        assert_eq!(a.levels.len(), 2);
+        assert_eq!(a.levels[0].num_fmt.as_deref(), Some("upperRoman"));
+        assert_eq!(a.levels[0].lvl_text.as_deref(), Some("%1."));
+        assert_eq!(a.levels[0].start, Some(3));
+        assert_eq!(a.levels[0].indent_left, Some(720));
+        assert_eq!(a.levels[1].num_fmt.as_deref(), Some("lowerLetter"));
+        assert_eq!(numbering.nums.len(), 1);
+        assert_eq!(numbering.num(42).unwrap().abstract_num_id, 100);
+        assert_eq!(numbering.start_override(42, 0), Some(9));
+        // Typed equality across the round trip.
+        assert_eq!(&doc.docx_body.as_ref().unwrap().numbering, &Some(numbering.clone()));
+    }
+
+    /// The fixed 8-template remains the fallback for documents without a
+    /// captured numbering part (html->docx path, pinned to numIds 1-8 by
+    /// wo-x2t). Its numFmt values now match the wo-x2t css registry.
+    #[test]
+    fn test_numbering_template_fallback() {
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="4"/></w:numPr></w:pPr><w:r><w:t>i</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+        let docx = make_docx_with_parts(&[("word/document.xml", document_xml)]);
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(&docx).unwrap();
+        assert!(
+            doc.docx_body.as_ref().unwrap().numbering.is_none(),
+            "no numbering part in source -> nothing captured"
+        );
+
+        let out = OoxmlSerializer::new().serialize(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&out[..]);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        zip.by_name("word/numbering.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(xml.contains("<w:num w:numId=\"4\">"));
+        assert!(xml.contains("<w:abstractNum w:abstractNumId=\"4\">"));
+        assert!(
+            xml.contains(r#"<w:numFmt w:val="lowerRoman"/>"#),
+            "template numFmt must match the wo-x2t css registry: {}",
+            xml
+        );
+        assert!(xml.contains(r#"<w:numFmt w:val="lowerLetter"/>"#));
+    }
+
+    /// A captured numbering part is emitted (and registered in content
+    /// types + rels) even when no body paragraph references a numId.
+    #[test]
+    fn test_numbering_emitted_without_body_reference() {
+        let numbering_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="77">
+    <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="ordinal"/><w:lvlText w:val="%1"/></w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="90"><w:abstractNumId w:val="77"/></w:num>
+</w:numbering>"#;
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>No lists here</w:t></w:r></w:p></w:body>
+</w:document>"#;
+        let docx = make_docx_with_parts(&[
+            ("word/document.xml", document_xml),
+            ("word/numbering.xml", numbering_xml),
+        ]);
+        let doc = OoxmlParser::new().parse(&docx).unwrap();
+        let out = OoxmlSerializer::new().serialize(&doc).unwrap();
+        let cursor = std::io::Cursor::new(&out[..]);
+        let mut zip = zip::ZipArchive::new(cursor).unwrap();
+        let mut xml = String::new();
+        zip.by_name("word/numbering.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(xml.contains(r#"<w:abstractNum w:abstractNumId="77">"#));
+        assert!(xml.contains(r#"<w:numFmt w:val="ordinal"/>"#));
+        assert!(xml.contains(r#"<w:num w:numId="90">"#));
+        let mut ct = String::new();
+        zip.by_name("[Content_Types].xml")
+            .unwrap()
+            .read_to_string(&mut ct)
+            .unwrap();
+        assert!(ct.contains("/word/numbering.xml"));
+        let mut rels = String::new();
+        zip.by_name("word/_rels/document.xml.rels")
+            .unwrap()
+            .read_to_string(&mut rels)
+            .unwrap();
+        assert!(rels.contains("numbering"));
     }
 }
