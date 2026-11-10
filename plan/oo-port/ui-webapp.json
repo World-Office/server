@@ -244,9 +244,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/ShapeSettings.js",
   "oo_lines": 2449,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Shape style editor: fill (solid/gradient/pattern/image), line caps/joins/arrows, shadow, checkboxes for advanced geometry. WO only has shape insertion (#shape-dialog picker via selectShape()/createShapeSvg()) and basic applyImageFill/applyImageLine reuse; no shape style panel.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.shapeSettings (P3-U03) + editor.js openShapeSettings/applyShapeSettingsAdvanced — engine-hosted dialog; ctx row data-ctx=ShapeSettings; rail image Advanced link delegates drawing shapes",
+  "notes": "Fill none/solid/gradient (MultiSliderGradient consumer), line color/width/style + caps/joins + begin/end arrows, shadow, geometry checkboxes. Style persists as data-shape-* attrs + inline SVG paint attributes (fill/stroke/stroke-dasharray/linecap/linejoin); arrowheads render as <marker> defs. Gradient fill (linear-gradient background) and shadow (box-shadow) are honest CSS approximations; pattern/image fill and the OO fill registry stay out (WO object model has none). One JSON ledger entry per OK via runCommand(shapeSettings).",
   "oo_layer": "documenteditor"
  },
  {
@@ -974,9 +974,9 @@
   "oo_type": "template",
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/ShapeSettings.template",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Shape style rail/dialog markup absent.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js SHAPE_SETTINGS_SPEC sections fill/line/shadow/geometry rendered by WoDialogEngine.renderSpec (same .dialog-overlay/.dialog conventions as the hand templates)",
+  "notes": "Panel markup generated from the spec data by the P3-U01 engine (data-wo-cmd rows, data-i18n labels); no separate hand template needed.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1245,8 +1245,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/component/HSBColorPicker.js",
   "oo_lines": null,
   "wo_status": "partial",
-  "wo_anchor": "wo-dialogs.js: hsbColorPicker() factory (P3-U01) — H/S/B sliders + hex + preview swatch; hosts a future ExtendedColorDialog spec",
-  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); no consumer dialog spec yet (P3-U03 hosts ExtendedColorDialog).",
+  "wo_anchor": "wo-dialogs.js: hsbColorPicker() factory (P3-U01) — H/S/B sliders + hex + preview swatch; consumed by WO_DIALOG_SPECS.extendedColorDialog (P3-U03)",
+  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); consumer dialog landed in P3-U03 (ExtendedColorDialog spec).",
   "oo_layer": "common"
  },
  {
@@ -1345,8 +1345,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/component/MultiSliderGradient.js",
   "oo_lines": 381,
   "wo_status": "partial",
-  "wo_anchor": "wo-dialogs.js: multiSliderGradient() factory (P3-U01) — draggable stops, track-click add, remove, per-stop color, >=2-stop floor",
-  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); shape/textart fill specs consume it from P3-U03.",
+  "wo_anchor": "wo-dialogs.js: multiSliderGradient() factory (P3-U01) — draggable stops, track-click add, remove, per-stop color, >=2-stop floor; consumed by WO_DIALOG_SPECS.shapeSettings gradient fill (P3-U03)",
+  "notes": "Widget ported into the P3-U01 dialog engine (en+de strings); shape fill consumer landed in P3-U03 (ShapeSettings gradient fill).",
   "oo_layer": "common"
  },
  {
@@ -1754,9 +1754,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/ReviewPopover.js",
   "oo_lines": 1406,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Anchored popover editor for a single comment thread; WO edits comments in the panel + comment-dialog only.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.reviewPopover + editor.js openReviewPopover/applyReviewPopover — comment click emits openReviewPopover; panel anchored via wo-review-popover css + anchorReviewPopover()",
+  "notes": "Anchored single-thread editor on comment click (engine modal keeps DIALOG_IDS Esc/Tab conventions): edit comment text (data-comment), toggle resolved (data-resolved), post reply (asc_addReply equivalent over data-replies), Go to/Delete command rows. Panel-list thread browser unchanged; no per-reviewer colors/avatars, no popover timeline rendering of reply metadata.",
   "oo_layer": "common"
  },
  {
@@ -1914,9 +1914,9 @@
   "oo_type": "view",
   "oo_file": "/tmp/oo-src/common/main/lib/view/ExtendedColorDialog.js",
   "oo_lines": null,
-  "wo_status": "missing",
-  "wo_anchor": null,
-  "notes": "Custom color picker (HSB wheel + RGB/hex fields) absent; colors-dialog ships swatches only.",
+  "wo_status": "partial",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.extendedColorDialog + editor.js openExtendedColorDialog/applyExtendedColorDialog — hsbColorPicker widget section + R/G/B/hex/opacity rows; targets page background and shape fill/line/shadow",
+  "notes": "Custom color dialog hosted from the engine (ledger P3-U03): HSB picker sliders + hex (the P3-U01 widget), explicit R/G/B, hex text, opacity row; apply routes to the captured target with rgba below 100% and svg fill-opacity. No HSB wheel widget, no recent-colors memory, no standalone palette-consumer buttons outside the shape/page targets yet.",
   "oo_layer": "common"
  },
  {
