@@ -1,18 +1,26 @@
 {
- "PTS-T1": {
-  "state": "done",
-  "attempts": 1,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794333531,
-  "attempt_worker": "p2b-glm0"
- },
- "PTS-T2": {
-  "state": "done",
-  "attempts": 3,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 0,
-  "attempt_worker": "salvage"
- }
+  "PTS-T2": {
+    "state": "done",
+    "attempts": 3,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 0,
+    "attempt_worker": "salvage"
+  },
+  "PTS-T3": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794336739,
+    "attempt_worker": "p2b-glm1"
+  },
+  "PTS-T1": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794333531,
+    "attempt_worker": "p2b-glm0"
+  }
 }

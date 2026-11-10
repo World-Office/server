@@ -1,0 +1,17 @@
+{
+  "task": "PTS-T3",
+  "attempt": 1,
+  "worker": "p2b-glm1",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 66.0,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794336739,
+  "outcome": "interrupted",
+  "error": "orchestrator exited mid-attempt; duration is time since dispatch (the exit time is unknown, so this is an upper bound)",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}
