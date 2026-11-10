@@ -2834,7 +2834,6 @@ impl OoxmlSerializer {
         }
         xml.push_str(
             r#"xWindow="0" yWindow="0" windowWidth="19200" windowHeight="12480"/>
-    </workbookView>
   </bookViews>"#,
         );
 
@@ -3259,7 +3258,7 @@ impl OoxmlSerializer {
             ));
             for b in breaks {
                 xml.push_str(&format!(
-                    "\n    <brk id=\"{}\" min=\"{}\" max=\"{}\"{}>",
+                    "\n    <brk id=\"{}\" min=\"{}\" max=\"{}\"{} />",
                     b.id,
                     b.min,
                     b.max,
@@ -3757,10 +3756,12 @@ fn escape_xml(s: &str) -> String {
 /// XML and its rels part agree.
 fn xlsx_hyperlink_rids(sheet: &XlsxSheet) -> Vec<(String, String)> {
     let mut out = Vec::new();
+    let mut external_count = 0usize;
     for hl in &sheet.properties.hyperlinks {
         match hl.target.as_deref() {
             Some(t) if !t.is_empty() => {
-                out.push((format!("rId{}", out.len() + 1), t.to_string()));
+                external_count += 1;
+                out.push((format!("rId{}", external_count), t.to_string()));
             }
             _ => out.push((String::new(), String::new())),
         }

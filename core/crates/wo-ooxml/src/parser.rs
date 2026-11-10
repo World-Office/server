@@ -3343,9 +3343,7 @@ impl OoxmlParser {
                 if let Ok(rels_xml) = self.read_zip_entry(archive, &rels_path) {
                     if let Ok(rels_doc) = XmlDoc::parse(&rels_xml) {
                         for rel_elem in rels_doc.descendants() {
-                            if rel_elem.has_tag_name("Relationship")
-                                && rel_elem.tag_name().namespace() == Some(Self::S_R_NS)
-                            {
+                            if rel_elem.has_tag_name("Relationship") {
                                 if let (Some(id), Some(target)) =
                                     (rel_elem.attribute("Id"), rel_elem.attribute("Target"))
                                 {
