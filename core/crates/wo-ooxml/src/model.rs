@@ -453,7 +453,7 @@ pub struct XlsxDxf {
 }
 
 /// A row in a worksheet.
-#[derive(Debug, Clone, Default,  Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxRow {
     /// Row number (1-based).
     pub r: u32,
@@ -470,7 +470,7 @@ pub struct XlsxRow {
 }
 
 /// A cell in a worksheet.
-#[derive(Debug, Clone, Default,  Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxCell {
     /// Cell reference (e.g., "A1", "B2").
     pub r: String,
@@ -505,7 +505,7 @@ pub enum CellType {
 }
 
 /// Column definition.
-#[derive(Debug, Clone, Default,  Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxCol {
     /// Minimum column index (1-based).
     pub min: u32,
@@ -524,14 +524,14 @@ pub struct XlsxCol {
 }
 
 /// Merged cell range.
-#[derive(Debug, Clone, Default,  Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxMergeCell {
     /// Reference (e.g., "A1:B2").
     pub ref_range: String,
 }
 
 /// Styles collection.
-#[derive(Debug, Clone, Default,  Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct XlsxStyles {
     /// Number formats.
     pub num_fmts: Vec<XlsxNumFmt>,

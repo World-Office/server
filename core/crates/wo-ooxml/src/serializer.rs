@@ -3173,6 +3173,12 @@ impl OoxmlSerializer {
                 if let Some(above) = rule.above_average {
                     xml.push_str(&format!(r#" aboveAverage="{}""#, if above { "1" } else { "0" }));
                 }
+                if rule.formulas.is_empty()
+                    && matches!(rule.kind, XlsxConditionalFormatKind::Plain)
+                {
+                    xml.push_str("/>");
+                    continue;
+                }
                 xml.push('>');
                 match &rule.kind {
                     XlsxConditionalFormatKind::ColorScale(scale) => {
@@ -3481,19 +3487,7 @@ impl OoxmlSerializer {
             ("bottom", &border.bottom),
             ("diagonal", &border.diagonal),
         ] {
-            if let Some(ref s) = side {
-                xml.push_str(&format!(
-                    "\n        <{} style=\"{}\"",
-                    name,
-                    s.style.as_deref().unwrap_or("none"),
-                ));
-                if let Some(ref color) = s.color {
-                    xml.push_str(&format!(r#" color="{}""#, escape_xml(color)));
-                }
-                xml.push_str("/>");
-            } else {
-                xml.push_str(&format!("\n        <{}/>", name));
-            }
+            self.push_border_side(xml, name, side);
         }
         xml.push_str("\n      </border>");
     }
@@ -3941,16 +3935,39 @@ impl OoxmlSerializer {
 
     fn push_border_side(&self, xml: &mut String, name: &str, side: &Option<XlsxBorderSide>) {
         if let Some(ref s) = side {
-            xml.push_str(&format!(
-                r#"
-      <{} style="{}""#,
-                name,
-                s.style.as_deref().unwrap_or("none"),
-            ));
-            if let Some(ref color) = s.color {
-                xml.push_str(&format!(r#" color="{}""#, escape_xml(color)));
+            // Both attributes are optional in CT_BorderSide; omitting them
+            // keeps an empty side parseable back to None (round-trip).
+            match (s.style.as_deref(), s.color.as_deref()) {
+                (None, None) => xml.push_str(&format!(
+                    r#"
+      <{}/>"#,
+                    name,
+                )),
+                (style, color) => {
+                    xml.push_str(&format!(
+                        r#"
+      <{}"#,
+                        name,
+                    ));
+                    if let Some(st) = style {
+                        xml.push_str(&format!(r#" style="{}""#, st));
+                    }
+                    xml.push('>');
+                    // CT_BorderSide carries its color as a child element.
+                    if let Some(c) = color {
+                        xml.push_str(&format!(
+                            r#"
+        <color rgb="{}"/>"#,
+                            escape_xml(c)
+                        ));
+                    }
+                    xml.push_str(&format!(
+                        r#"
+      </{}>"#,
+                        name,
+                    ));
+                }
             }
-            xml.push_str("/>");
         } else {
             xml.push_str(&format!(
                 r#"
