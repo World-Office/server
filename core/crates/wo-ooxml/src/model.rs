@@ -738,6 +738,44 @@ pub struct DocxParagraphProperties {
     pub borders: Option<DocxParagraphBorders>,
 }
 
+impl DocxParagraphProperties {
+    /// Style-chain merge (P2-04): every property set in `over` wins; unset
+    /// properties inherit `self`. Compose layers low → high, e.g.
+    /// `defaults.overlay(&root).overlay(&style).overlay(&direct)`.
+    ///
+    /// Toggle flags (`keep_lines`, `keep_next`, `page_break_before`, `bidi`)
+    /// have no explicit-off representation in the typed subset, so they use
+    /// "set at either layer wins" semantics. Tab stops replace as a set.
+    pub fn overlay(&self, over: &Self) -> Self {
+        Self {
+            alignment: over.alignment.or(self.alignment),
+            indent_left: over.indent_left.or(self.indent_left),
+            indent_right: over.indent_right.or(self.indent_right),
+            indent_first_line: over.indent_first_line.or(self.indent_first_line),
+            indent_hanging: over.indent_hanging.or(self.indent_hanging),
+            spacing_before: over.spacing_before.or(self.spacing_before),
+            spacing_after: over.spacing_after.or(self.spacing_after),
+            spacing_line: over.spacing_line.or(self.spacing_line),
+            spacing_line_rule: over.spacing_line_rule.or(self.spacing_line_rule),
+            keep_lines: self.keep_lines || over.keep_lines,
+            keep_next: self.keep_next || over.keep_next,
+            page_break_before: self.page_break_before || over.page_break_before,
+            outline_level: over.outline_level.or(self.outline_level),
+            tab_stops: if over.tab_stops.is_empty() {
+                self.tab_stops.clone()
+            } else {
+                over.tab_stops.clone()
+            },
+            num_id: over.num_id.or(self.num_id),
+            ilvl: over.ilvl.or(self.ilvl),
+            start_value: over.start_value.or(self.start_value),
+            bidi: self.bidi || over.bidi,
+            shading: over.shading.clone().or_else(|| self.shading.clone()),
+            borders: over.borders.clone().or_else(|| self.borders.clone()),
+        }
+    }
+}
+
 /// Kind of tab stop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -1103,6 +1141,14 @@ pub struct DocxStyles {
     pub paragraph_styles: Vec<DocxParagraphStyle>,
     pub character_styles: Vec<DocxCharacterStyle>,
     pub table_styles: Vec<DocxTableStyle>,
+    /// `w:docDefaults` (P2-04): the lowest layer of the style chain. Every
+    /// resolved paragraph/run property starts from these values.
+    #[serde(default)]
+    pub defaults: DocxDocDefaults,
+    /// `w:latentStyles` (P2-04): Word's built-in-but-undefined styles. They
+    /// carry visibility flags only, never formatting.
+    #[serde(default)]
+    pub latent_styles: DocxLatentStyles,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1112,9 +1158,31 @@ pub struct DocxParagraphStyle {
     pub based_on: Option<String>,
     pub properties: DocxParagraphProperties,
     pub run_properties: DocxRunProperties,
+    /// `w:default="1"` — the default style of its type (used when body
+    /// content names no style).
+    #[serde(default)]
+    pub default_style: bool,
+    /// `w:qFormat` — style shows up in the quick-style gallery.
+    #[serde(default)]
+    pub q_format: bool,
+    /// `w:semiHidden`, `w:locked`, `w:unhideWhenUsed` visibility flags.
+    #[serde(default)]
+    pub semi_hidden: bool,
+    #[serde(default)]
+    pub locked: bool,
+    #[serde(default)]
+    pub unhide_when_used: bool,
+    #[serde(default)]
+    pub ui_priority: Option<u32>,
+    /// `w:link` — paired character style id.
+    #[serde(default)]
+    pub link: Option<String>,
+    /// `w:next` — style of a following paragraph typed after this one.
+    #[serde(default)]
+    pub next: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxRunProperties {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
@@ -1123,18 +1191,324 @@ pub struct DocxRunProperties {
     pub color: Option<String>,
 }
 
+impl DocxRunProperties {
+    /// Style-chain merge (P2-04): every property set in `over` wins; unset
+    /// properties inherit `self`. Compose layers low → high, e.g.
+    /// `defaults.overlay(&root).overlay(&style).overlay(&direct)`.
+    pub fn overlay(&self, over: &Self) -> Self {
+        Self {
+            bold: over.bold.or(self.bold),
+            italic: over.italic.or(self.italic),
+            font: over.font.clone().or_else(|| self.font.clone()),
+            font_size: over.font_size.or(self.font_size),
+            color: over.color.clone().or_else(|| self.color.clone()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocxCharacterStyle {
     pub style_id: String,
     pub name: Option<String>,
     pub based_on: Option<String>,
     pub properties: DocxRunProperties,
+    /// `w:default="1"` — the default character style of its type.
+    #[serde(default)]
+    pub default_style: bool,
+    /// `w:semiHidden`, `w:locked`, `w:unhideWhenUsed` visibility flags.
+    #[serde(default)]
+    pub semi_hidden: bool,
+    #[serde(default)]
+    pub locked: bool,
+    #[serde(default)]
+    pub unhide_when_used: bool,
+    #[serde(default)]
+    pub ui_priority: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocxTableStyle {
     pub style_id: String,
     pub name: Option<String>,
+    /// `w:basedOn` — parent table style (recorded for chain resolution;
+    /// table-level property inheritance lands with `CTableStyleProperties`).
+    #[serde(default)]
+    pub based_on: Option<String>,
+    /// `w:default="1"` — the default table style.
+    #[serde(default)]
+    pub default_style: bool,
+}
+
+/// `w:docDefaults` (P2-04): document-wide default run/paragraph properties
+/// from `w:rPrDefault`/`w:pPrDefault`. Lowest layer of the style chain —
+/// every style overlays these, direct formatting overlays every style.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxDocDefaults {
+    pub run_properties: DocxRunProperties,
+    pub paragraph_properties: DocxParagraphProperties,
+}
+
+/// `w:latentStyles` (P2-04): declarations for Word's built-in styles that
+/// are not defined in styles.xml yet. Latent styles carry visibility flags
+/// only — resolution never pulls formatting from them.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxLatentStyles {
+    /// `w:defSemiHidden` default for every exception below.
+    pub def_semi_hidden: bool,
+    /// `w:defLockedState`.
+    pub def_locked: bool,
+    /// `w:defUnhideWhenUsed`.
+    pub def_unhide_when_used: bool,
+    /// `w:defUiPriority`.
+    pub def_ui_priority: Option<u32>,
+    /// `w:lsdException` entries, one per built-in style name.
+    pub exceptions: Vec<DocxLatentStyleException>,
+}
+
+/// One `w:lsdException` inside `w:latentStyles`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxLatentStyleException {
+    /// Built-in style *name* (e.g. "Balloon Text") — latentStyles are keyed
+    /// by `w:name`, not by styleId.
+    pub name: String,
+    pub semi_hidden: bool,
+    pub locked: bool,
+    pub unhide_when_used: bool,
+    pub ui_priority: Option<u32>,
+}
+
+// --- P2-04: style-chain resolution (docDefaults → basedOn chain → style → direct) ---
+
+/// A fully resolved style chain (P2-04).
+///
+/// Resolution precedence, lowest → highest:
+/// 1. `w:docDefaults` (`rPrDefault` + `pPrDefault`),
+/// 2. the `w:basedOn` ancestor chain, root first (each layer overlays the
+///    previous; a *nearer* ancestor wins on conflicts via first-defined),
+/// 3. the style itself,
+/// 4. for runs: an explicit `w:rStyle` character style overlays the
+///    paragraph chain,
+/// 5. direct formatting (`w:pPr`/`w:rPr` on the paragraph/run itself).
+///
+/// A style that is absent from styles.xml contributes nothing (only the
+/// defaults layer applies) and is flagged via `missing`; a built-in name
+/// declared in `w:latentStyles` is recorded in `latent`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxStyleChain {
+    /// The style the chain was resolved from (as named by the body).
+    pub style_id: Option<String>,
+    /// `w:basedOn` ancestry, root ancestor first, the style itself last.
+    /// Empty when the style is missing or defines no parent.
+    pub ancestry: Vec<String>,
+    /// Fully merged paragraph properties (defaults + chain + direct).
+    pub paragraph_properties: DocxParagraphProperties,
+    /// Fully merged run properties (defaults + chain + character style + direct).
+    pub run_properties: DocxRunProperties,
+    /// The named style id has no `w:style` definition in styles.xml.
+    pub missing: bool,
+    /// A `w:basedOn` cycle was cut during resolution (the repeated style is
+    /// applied once; ancestors beyond the repeat are dropped).
+    pub cycle: bool,
+    /// Latent-style declaration matched for this style, if any.
+    pub latent: Option<DocxLatentStyleException>,
+}
+
+impl DocxStyleChain {
+    /// Convenience: the resolved paragraph properties (already includes
+    /// defaults, the basedOn chain and the direct layer).
+    pub fn paragraph_props(&self) -> &DocxParagraphProperties {
+        &self.paragraph_properties
+    }
+
+    /// Convenience: the resolved run properties (already includes defaults,
+    /// the basedOn chain, the character style and the direct layer).
+    pub fn run_props(&self) -> &DocxRunProperties {
+        &self.run_properties
+    }
+}
+
+/// Maximum `w:basedOn` chain depth — guards against pathological (or
+/// deliberately cyclic) styles.xml documents.
+const DOCX_STYLE_CHAIN_MAX_DEPTH: usize = 64;
+
+impl DocxStyles {
+    /// Look up a paragraph style definition by styleId.
+    pub fn paragraph_style(&self, style_id: &str) -> Option<&DocxParagraphStyle> {
+        self.paragraph_styles.iter().find(|s| s.style_id == style_id)
+    }
+
+    fn character_style(&self, style_id: &str) -> Option<&DocxCharacterStyle> {
+        self.character_styles.iter().find(|s| s.style_id == style_id)
+    }
+
+    /// Latent-style exception by built-in style *name* (exact match).
+    pub fn latent_exception(&self, name: &str) -> Option<&DocxLatentStyleException> {
+        self.latent_styles
+            .exceptions
+            .iter()
+            .find(|e| e.name == name)
+    }
+
+    /// Walk the `w:basedOn` chain from `style_id` upward.
+    ///
+    /// Returns the ids root-ancestor-first with the style itself last.
+    /// Cycles are cut at the first repeat and flagged; `missing` is set when
+    /// the starting style has no definition in styles.xml.
+    fn paragraph_ancestry(&self, style_id: &str) -> (Vec<String>, bool, bool) {
+        let mut chain = Vec::new();
+        let mut visited = std::collections::HashSet::new();
+        let mut current = Some(style_id.to_string());
+        let mut missing = true;
+        let mut cycle = false;
+
+        while let Some(id) = current {
+            if !visited.insert(id.clone()) || chain.len() >= DOCX_STYLE_CHAIN_MAX_DEPTH {
+                cycle = true;
+                break;
+            }
+            let Some(style) = self.paragraph_style(&id) else {
+                // A referenced parent is undefined: the chain ends here.
+                if !chain.is_empty() {
+                    break;
+                }
+                current = None;
+                continue;
+            };
+            missing = false;
+            chain.push(id);
+            current = style.based_on.clone();
+        }
+
+        chain.reverse(); // root ancestor first, the style itself last
+        (chain, missing, cycle)
+    }
+
+    /// Walk the `w:basedOn` chain of a character style (same cut rules as
+    /// [`DocxStyles::paragraph_ancestry`]).
+    fn character_ancestry(&self, style_id: &str) -> Vec<String> {
+        let mut chain = Vec::new();
+        let mut visited = std::collections::HashSet::new();
+        let mut current = Some(style_id.to_string());
+
+        while let Some(id) = current {
+            if !visited.insert(id.clone()) || chain.len() >= DOCX_STYLE_CHAIN_MAX_DEPTH {
+                break;
+            }
+            let Some(style) = self.character_style(&id) else {
+                break;
+            };
+            chain.push(id);
+            current = style.based_on.clone();
+        }
+
+        chain.reverse();
+        chain
+    }
+
+    /// Resolve the full style chain for a paragraph (P2-04).
+    ///
+    /// `style_id` is the `w:pStyle` value (may be absent/undefined — the
+    /// chain then reduces to docDefaults); `direct` is the paragraph's own
+    /// `w:pPr` and wins over every style layer.
+    pub fn resolve_paragraph_chain(
+        &self,
+        style_id: Option<&str>,
+        direct: Option<&DocxParagraphProperties>,
+    ) -> DocxStyleChain {
+        let mut chain = DocxStyleChain {
+            style_id: style_id.map(|s| s.to_string()),
+            paragraph_properties: self.defaults.paragraph_properties.clone(),
+            run_properties: self.defaults.run_properties.clone(),
+            ..DocxStyleChain::default()
+        };
+
+        if let Some(id) = style_id {
+            let (ancestry, missing, cycle) = self.paragraph_ancestry(id);
+            chain.ancestry = ancestry;
+            chain.missing = missing;
+            chain.cycle = cycle;
+
+            for layer_id in &chain.ancestry {
+                if let Some(style) = self.paragraph_style(layer_id) {
+                    chain.paragraph_properties =
+                        chain.paragraph_properties.overlay(&style.properties);
+                    chain.run_properties = chain.run_properties.overlay(&style.run_properties);
+                }
+            }
+
+            // Latent styles are keyed by built-in name; match the id (common
+            // shorthand) or the defining style's w:name.
+            chain.latent = self
+                .latent_exception(id)
+                .or_else(|| {
+                    self.paragraph_style(id)
+                        .and_then(|s| s.name.as_deref())
+                        .and_then(|name| self.latent_exception(name))
+                })
+                .cloned();
+        }
+
+        if let Some(direct) = direct {
+            chain.paragraph_properties = chain.paragraph_properties.overlay(direct);
+        }
+
+        chain
+    }
+
+    /// Resolve the full style chain for a run (P2-04).
+    ///
+    /// Precedence: docDefaults → paragraph style chain → `w:rStyle`
+    /// character-style chain → `direct` (the run's own `w:rPr`).
+    pub fn resolve_run_chain(
+        &self,
+        paragraph_style_id: Option<&str>,
+        character_style_id: Option<&str>,
+        direct: Option<&DocxRunProperties>,
+    ) -> DocxStyleChain {
+        // Paragraph chain first (its rPr applies to every run inside).
+        let mut chain = self.resolve_paragraph_chain(paragraph_style_id, None);
+
+        if let Some(char_id) = character_style_id {
+            for layer_id in self.character_ancestry(char_id) {
+                if let Some(style) = self.character_style(&layer_id) {
+                    chain.run_properties = chain.run_properties.overlay(&style.properties);
+                }
+            }
+            if self.character_style(char_id).is_none() && chain.latent.is_none() {
+                chain.latent = self.latent_exception(char_id).cloned();
+            }
+        }
+
+        if let Some(direct) = direct {
+            chain.run_properties = chain.run_properties.overlay(direct);
+        }
+
+        chain
+    }
+
+    /// Resolved paragraph properties for a style, with `direct` formatting
+    /// applied on top (P2-04 convenience wrapper).
+    pub fn get_paragraph_props(
+        &self,
+        style_id: &str,
+        direct: &DocxParagraphProperties,
+    ) -> DocxParagraphProperties {
+        self.resolve_paragraph_chain(Some(style_id), Some(direct))
+            .paragraph_properties
+    }
+
+    /// Resolved run properties for a paragraph style (+ optional character
+    /// style), with `direct` formatting applied on top (P2-04 convenience
+    /// wrapper).
+    pub fn get_run_props(
+        &self,
+        style_id: &str,
+        character_style_id: Option<&str>,
+        direct: &DocxRunProperties,
+    ) -> DocxRunProperties {
+        self.resolve_run_chain(Some(style_id), character_style_id, Some(direct))
+            .run_properties
+    }
 }
 
 // --- PPTX Presentation Model ---

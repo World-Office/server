@@ -1905,6 +1905,336 @@ impl OoxmlSerializer {
         xml
     }
 
+    /// P2-04: serialize a parsed [`DocxStyles`] back to `word/styles.xml`,
+    /// emitting `w:docDefaults`, `w:latentStyles` and every style definition
+    /// (basedOn/link/next + visibility flags) so a resolved style chain
+    /// survives a parse → serialize cycle. The fixed template used by
+    /// `serialize_docx` is [`OoxmlSerializer::build_styles_xml`].
+    pub fn build_styles_xml_from(&self, styles: &DocxStyles) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+"#,
+        );
+
+        // docDefaults — always emitted (even empty) so the chain's lowest
+        // layer is explicit.
+        xml.push_str("  <w:docDefaults>\n    <w:rPrDefault>\n");
+        let rpr = self.style_rpr_xml(&styles.defaults.run_properties, "      ");
+        if rpr.is_empty() {
+            xml.push_str("      <w:rPr/>\n");
+        } else {
+            xml.push_str(&rpr);
+        }
+        xml.push_str("    </w:rPrDefault>\n    <w:pPrDefault>\n");
+        let ppr = self.style_ppr_xml(&styles.defaults.paragraph_properties, "      ");
+        if ppr.is_empty() {
+            xml.push_str("      <w:pPr/>\n");
+        } else {
+            xml.push_str(&ppr);
+        }
+        xml.push_str("    </w:pPrDefault>\n  </w:docDefaults>\n");
+
+        // latentStyles — emitted when any exception was captured.
+        if !styles.latent_styles.exceptions.is_empty() {
+            let ls = &styles.latent_styles;
+            xml.push_str("  <w:latentStyles");
+            if ls.def_locked {
+                xml.push_str(" w:defLockedState=\"1\"");
+            }
+            if ls.def_semi_hidden {
+                xml.push_str(" w:defSemiHidden=\"1\"");
+            }
+            if ls.def_unhide_when_used {
+                xml.push_str(" w:defUnhideWhenUsed=\"1\"");
+            }
+            if let Some(prio) = ls.def_ui_priority {
+                xml.push_str(&format!(" w:defUiPriority=\"{}\"", prio));
+            }
+            xml.push_str(">\n");
+            for ex in &ls.exceptions {
+                xml.push_str(&format!(
+                    "    <w:lsdException w:name=\"{}\"",
+                    escape_xml(&ex.name)
+                ));
+                if ex.locked {
+                    xml.push_str(" w:locked=\"1\"");
+                }
+                if ex.semi_hidden {
+                    xml.push_str(" w:semiHidden=\"1\"");
+                }
+                if ex.unhide_when_used {
+                    xml.push_str(" w:unhideWhenUsed=\"1\"");
+                }
+                if let Some(prio) = ex.ui_priority {
+                    xml.push_str(&format!(" w:uiPriority=\"{}\"", prio));
+                }
+                xml.push_str("/>\n");
+            }
+            xml.push_str("  </w:latentStyles>\n");
+        }
+
+        // Style definitions, typed order: paragraph, character, table.
+        for style in &styles.paragraph_styles {
+            xml.push_str(&format!(
+                "  <w:style w:type=\"paragraph\" w:styleId=\"{}\"{}>\n",
+                escape_xml(&style.style_id),
+                if style.default_style {
+                    " w:default=\"1\""
+                } else {
+                    ""
+                }
+            ));
+            if let Some(name) = &style.name {
+                xml.push_str(&format!(
+                    "    <w:name w:val=\"{}\"/>\n",
+                    escape_xml(name)
+                ));
+            }
+            if let Some(parent) = &style.based_on {
+                xml.push_str(&format!(
+                    "    <w:basedOn w:val=\"{}\"/>\n",
+                    escape_xml(parent)
+                ));
+            }
+            if let Some(linked) = &style.link {
+                xml.push_str(&format!(
+                    "    <w:link w:val=\"{}\"/>\n",
+                    escape_xml(linked)
+                ));
+            }
+            if let Some(follow) = &style.next {
+                xml.push_str(&format!(
+                    "    <w:next w:val=\"{}\"/>\n",
+                    escape_xml(follow)
+                ));
+            }
+            if let Some(prio) = style.ui_priority {
+                xml.push_str(&format!("    <w:uiPriority w:val=\"{}\"/>\n", prio));
+            }
+            if style.q_format {
+                xml.push_str("    <w:qFormat/>\n");
+            }
+            if style.semi_hidden {
+                xml.push_str("    <w:semiHidden/>\n");
+            }
+            if style.unhide_when_used {
+                xml.push_str("    <w:unhideWhenUsed/>\n");
+            }
+            if style.locked {
+                xml.push_str("    <w:locked/>\n");
+            }
+            let ppr = self.style_ppr_xml(&style.properties, "    ");
+            if !ppr.is_empty() {
+                xml.push_str(&ppr);
+                xml.push('\n');
+            }
+            let rpr = self.style_rpr_xml(&style.run_properties, "    ");
+            if !rpr.is_empty() {
+                xml.push_str(&rpr);
+                xml.push('\n');
+            }
+            xml.push_str("  </w:style>\n");
+        }
+
+        for style in &styles.character_styles {
+            xml.push_str(&format!(
+                "  <w:style w:type=\"character\" w:styleId=\"{}\"{}>\n",
+                escape_xml(&style.style_id),
+                if style.default_style {
+                    " w:default=\"1\""
+                } else {
+                    ""
+                }
+            ));
+            if let Some(name) = &style.name {
+                xml.push_str(&format!(
+                    "    <w:name w:val=\"{}\"/>\n",
+                    escape_xml(name)
+                ));
+            }
+            if let Some(parent) = &style.based_on {
+                xml.push_str(&format!(
+                    "    <w:basedOn w:val=\"{}\"/>\n",
+                    escape_xml(parent)
+                ));
+            }
+            if let Some(prio) = style.ui_priority {
+                xml.push_str(&format!("    <w:uiPriority w:val=\"{}\"/>\n", prio));
+            }
+            if style.semi_hidden {
+                xml.push_str("    <w:semiHidden/>\n");
+            }
+            if style.unhide_when_used {
+                xml.push_str("    <w:unhideWhenUsed/>\n");
+            }
+            if style.locked {
+                xml.push_str("    <w:locked/>\n");
+            }
+            let rpr = self.style_rpr_xml(&style.properties, "    ");
+            if !rpr.is_empty() {
+                xml.push_str(&rpr);
+                xml.push('\n');
+            }
+            xml.push_str("  </w:style>\n");
+        }
+
+        for style in &styles.table_styles {
+            xml.push_str(&format!(
+                "  <w:style w:type=\"table\" w:styleId=\"{}\"{}>\n",
+                escape_xml(&style.style_id),
+                if style.default_style {
+                    " w:default=\"1\""
+                } else {
+                    ""
+                }
+            ));
+            if let Some(name) = &style.name {
+                xml.push_str(&format!(
+                    "    <w:name w:val=\"{}\"/>\n",
+                    escape_xml(name)
+                ));
+            }
+            if let Some(parent) = &style.based_on {
+                xml.push_str(&format!(
+                    "    <w:basedOn w:val=\"{}\"/>\n",
+                    escape_xml(parent)
+                ));
+            }
+            xml.push_str("  </w:style>\n");
+        }
+
+        xml.push_str("</w:styles>");
+        xml
+    }
+
+    /// Typed `DocxRunProperties` → `<w:rPr>` subtree (P2-04 styles emission).
+    /// Returns an empty string when nothing is set.
+    fn style_rpr_xml(&self, rpr: &DocxRunProperties, indent: &str) -> String {
+        let mut body = String::new();
+        if let Some(bold) = rpr.bold {
+            body.push_str(&format!(
+                "{}  <w:b{}/>\n",
+                indent,
+                if bold { "" } else { " w:val=\"0\"" }
+            ));
+        }
+        if let Some(italic) = rpr.italic {
+            body.push_str(&format!(
+                "{}  <w:i{}/>\n",
+                indent,
+                if italic { "" } else { " w:val=\"0\"" }
+            ));
+        }
+        if let Some(font) = &rpr.font {
+            body.push_str(&format!(
+                "{}  <w:rFonts w:ascii=\"{}\" w:hAnsi=\"{}\"/>\n",
+                indent,
+                escape_xml(font),
+                escape_xml(font)
+            ));
+        }
+        if let Some(size) = rpr.font_size {
+            body.push_str(&format!(
+                "{}  <w:sz w:val=\"{}\"/>\n{}  <w:szCs w:val=\"{}\"/>\n",
+                indent, size, indent, size
+            ));
+        }
+        if let Some(color) = &rpr.color {
+            body.push_str(&format!(
+                "{}  <w:color w:val=\"{}\"/>\n",
+                indent,
+                escape_xml(color)
+            ));
+        }
+        if body.is_empty() {
+            return String::new();
+        }
+        format!("{}<w:rPr>\n{}</w:rPr>", indent, body)
+    }
+
+    /// Typed `DocxParagraphProperties` → `<w:pPr>` subtree (P2-04 styles
+    /// emission, same subset the body serializer writes). Returns an empty
+    /// string when nothing is set.
+    fn style_ppr_xml(&self, ppr: &DocxParagraphProperties, indent: &str) -> String {
+        let mut body = String::new();
+        if ppr.keep_next {
+            body.push_str(&format!("{}  <w:keepNext/>\n", indent));
+        }
+        if ppr.keep_lines {
+            body.push_str(&format!("{}  <w:keepLines/>\n", indent));
+        }
+        if ppr.page_break_before {
+            body.push_str(&format!("{}  <w:pageBreakBefore/>\n", indent));
+        }
+        if ppr.bidi {
+            body.push_str(&format!("{}  <w:bidi/>\n", indent));
+        }
+        let mut spacing = String::new();
+        if let Some(before) = ppr.spacing_before {
+            spacing.push_str(&format!(" w:before=\"{}\"", before));
+        }
+        if let Some(after) = ppr.spacing_after {
+            spacing.push_str(&format!(" w:after=\"{}\"", after));
+        }
+        if let Some(line) = ppr.spacing_line {
+            spacing.push_str(&format!(" w:line=\"{}\"", line));
+        }
+        if let Some(rule) = ppr.spacing_line_rule {
+            let rule = match rule {
+                LineSpacingRule::Auto => "auto",
+                LineSpacingRule::Exact => "exact",
+                LineSpacingRule::AtLeast => "atLeast",
+            };
+            spacing.push_str(&format!(" w:lineRule=\"{}\"", rule));
+        }
+        if !spacing.is_empty() {
+            body.push_str(&format!("{}  <w:spacing{}/>\n", indent, spacing));
+        }
+        let mut ind = String::new();
+        if let Some(left) = ppr.indent_left {
+            ind.push_str(&format!(" w:left=\"{}\"", left));
+        }
+        if let Some(right) = ppr.indent_right {
+            ind.push_str(&format!(" w:right=\"{}\"", right));
+        }
+        if let Some(hanging) = ppr.indent_hanging {
+            ind.push_str(&format!(" w:hanging=\"{}\"", hanging));
+        }
+        if let Some(first_line) = ppr.indent_first_line {
+            ind.push_str(&format!(" w:firstLine=\"{}\"", first_line));
+        }
+        if !ind.is_empty() {
+            body.push_str(&format!("{}  <w:ind{}/>\n", indent, ind));
+        }
+        if let Some(alignment) = ppr.alignment {
+            let jc = match alignment {
+                TextAlignment::Left => "left",
+                TextAlignment::Center => "center",
+                TextAlignment::Right => "right",
+                TextAlignment::Both => "both",
+            };
+            body.push_str(&format!("{}  <w:jc w:val=\"{}\"/>\n", indent, jc));
+        }
+        if let Some(outline) = ppr.outline_level {
+            body.push_str(&format!(
+                "{}  <w:outlineLvl w:val=\"{}\"/>\n",
+                indent, outline
+            ));
+        }
+        if let Some(shading) = &ppr.shading {
+            body.push_str(&format!(
+                "{}  <w:shd w:fill=\"{}\"/>\n",
+                indent,
+                escape_xml(shading)
+            ));
+        }
+        if body.is_empty() {
+            return String::new();
+        }
+        format!("{}<w:pPr>\n{}</w:pPr>", indent, body)
+    }
+
     fn build_styles_xml(&self) -> String {
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -3000,6 +3330,14 @@ fn escape_xml(s: &str) -> String {
 #[cfg(test)]
 #[path = "congruence_tests.rs"]
 mod congruence_tests;
+
+// P2-04: style-chain resolution tests (docDefaults / basedOn / latentStyles).
+// Declared here following the congruence_tests precedent because src/lib.rs is
+// outside this task's edit scope; a crate-root `#[cfg(test)] mod
+// style_chain_tests;` in lib.rs composes with this without conflict.
+#[cfg(test)]
+#[path = "style_chain_tests.rs"]
+mod style_chain_tests;
 
 #[cfg(test)]
 mod tests {

@@ -53,6 +53,16 @@ impl OoxmlParser {
             .or_else(|| node.attribute(name))
     }
 
+    /// Read `<w:<name> w:val="..."/>` child element (P2-04). Style
+    /// definition metadata (`w:name`, `w:basedOn`, …) is a *child element*
+    /// carrying `w:val` — not an attribute of `w:style` — so the plain
+    /// attribute readers below always returned None on Word output.
+    fn child_val(&self, node: roxmltree::Node, name: &str) -> Option<String> {
+        node.children()
+            .find(|c| c.is_element() && c.has_tag_name(name))
+            .and_then(|c| self.attr_ns(c, "val").map(|s| s.to_string()))
+    }
+
     /// Parse OOXML data (ZIP bytes) into an OoxmlDocument.
     pub fn parse(&self, data: &[u8]) -> Result<OoxmlDocument> {
         if data.is_empty() {
@@ -2370,6 +2380,67 @@ impl OoxmlParser {
         let mut character_styles = Vec::new();
         let mut table_styles = Vec::new();
 
+        // P2-04: `w:docDefaults` — the lowest layer of the style chain.
+        // `w:rPrDefault/w:rPr` and `w:pPrDefault/w:pPr` are parsed with the
+        // same typed readers used for style definitions.
+        let mut defaults = DocxDocDefaults::default();
+        if let Some(node) = doc.descendants().find(|n| {
+            n.is_element() && n.has_tag_name("docDefaults") && n.tag_name().namespace() == Some(Self::W_NS)
+        }) {
+            for child in node.children() {
+                if !child.is_element() {
+                    continue;
+                }
+                match child.tag_name().name() {
+                    "rPrDefault" => {
+                        if let Some(rpr) = child
+                            .children()
+                            .find(|c| c.is_element() && c.has_tag_name("rPr"))
+                        {
+                            defaults.run_properties = self.parse_style_run_properties_node(&rpr);
+                        }
+                    }
+                    "pPrDefault" => {
+                        if let Some(ppr) = child
+                            .children()
+                            .find(|c| c.is_element() && c.has_tag_name("pPr"))
+                        {
+                            defaults.paragraph_properties = self.parse_paragraph_properties(&ppr);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // P2-04: `w:latentStyles` — built-in style declarations that carry
+        // visibility flags only (never formatting).
+        let mut latent_styles = DocxLatentStyles::default();
+        if let Some(node) = doc.descendants().find(|n| {
+            n.is_element()
+                && n.has_tag_name("latentStyles")
+                && n.tag_name().namespace() == Some(Self::W_NS)
+        }) {
+            latent_styles.def_semi_hidden = self.attr_ns(node, "defSemiHidden") == Some("1");
+            latent_styles.def_locked = self.attr_ns(node, "defLockedState") == Some("1");
+            latent_styles.def_unhide_when_used = self.attr_ns(node, "defUnhideWhenUsed") == Some("1");
+            latent_styles.def_ui_priority = self
+                .attr_ns(node, "defUiPriority")
+                .and_then(|v| v.parse().ok());
+            for child in node.children() {
+                if !child.is_element() || !child.has_tag_name("lsdException") {
+                    continue;
+                }
+                latent_styles.exceptions.push(DocxLatentStyleException {
+                    name: self.attr_ns(child, "name").unwrap_or("").to_string(),
+                    semi_hidden: self.attr_ns(child, "semiHidden") == Some("1"),
+                    locked: self.attr_ns(child, "locked") == Some("1"),
+                    unhide_when_used: self.attr_ns(child, "unhideWhenUsed") == Some("1"),
+                    ui_priority: self.attr_ns(child, "uiPriority").and_then(|v| v.parse().ok()),
+                });
+            }
+        }
+
         for node in doc.descendants() {
             if !node.is_element() {
                 continue;
@@ -2381,8 +2452,40 @@ impl OoxmlParser {
                 continue;
             }
 
-            let name = self.attr_ns(node, "name").map(|s| s.to_string());
-            let based_on = self.attr_ns(node, "basedOn").map(|s| s.to_string());
+            // P2-04: `w:name` / `w:basedOn` are child elements with `w:val`;
+            // the attribute form is kept as a lenient fallback.
+            let name = self.child_val(node, "name").or_else(|| {
+                self.attr_ns(node, "name").map(|s| s.to_string())
+            });
+            let based_on = self.child_val(node, "basedOn").or_else(|| {
+                self.attr_ns(node, "basedOn").map(|s| s.to_string())
+            });
+
+            // P2-04: style definition metadata — default flag plus the
+            // visibility/link child elements of `w:style`.
+            let default_style = self.attr_ns(node, "default") == Some("1");
+            let mut q_format = false;
+            let mut semi_hidden = false;
+            let mut locked = false;
+            let mut unhide_when_used = false;
+            let mut ui_priority = None;
+            let mut link = None;
+            let mut next = None;
+            for child in node.children() {
+                if !child.is_element() {
+                    continue;
+                }
+                match child.tag_name().name() {
+                    "qFormat" => q_format = true,
+                    "semiHidden" => semi_hidden = true,
+                    "locked" => locked = true,
+                    "unhideWhenUsed" => unhide_when_used = true,
+                    "uiPriority" => ui_priority = self.attr_val(child).and_then(|v| v.parse().ok()),
+                    "link" => link = self.attr_val(child).map(|s| s.to_string()),
+                    "next" => next = self.attr_val(child).map(|s| s.to_string()),
+                    _ => {}
+                }
+            }
 
             match style_type {
                 "paragraph" => {
@@ -2393,6 +2496,14 @@ impl OoxmlParser {
                         based_on,
                         properties,
                         run_properties,
+                        default_style,
+                        q_format,
+                        semi_hidden,
+                        locked,
+                        unhide_when_used,
+                        ui_priority,
+                        link,
+                        next,
                     });
                 }
                 "character" => {
@@ -2402,12 +2513,19 @@ impl OoxmlParser {
                         name,
                         based_on,
                         properties: run_properties,
+                        default_style,
+                        semi_hidden,
+                        locked,
+                        unhide_when_used,
+                        ui_priority,
                     });
                 }
                 "table" => {
                     table_styles.push(DocxTableStyle {
                         style_id: style_id.to_string(),
                         name,
+                        based_on,
+                        default_style,
                     });
                 }
                 _ => {}
@@ -2418,6 +2536,8 @@ impl OoxmlParser {
             paragraph_styles,
             character_styles,
             table_styles,
+            defaults,
+            latent_styles,
         }))
     }
 
