@@ -157,6 +157,7 @@
     <button type="button" class="ribbon-tab" data-tab="view" role="tab" aria-selected="false" data-i18n="Tab.View">View</button>
     <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" data-i18n="Tab.Plugins">Plugins</button>
     <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" data-i18n="Tab.AI">AI</button>
+    <button type="button" class="ribbon-tab" data-tab="forms" role="tab" aria-selected="false" data-i18n="Tab.Forms">Forms</button>
     <button type="button" class="ribbon-tab contextual" data-tab="chart-design" role="tab" aria-selected="false" data-i18n="Tab.ChartDesign" hidden>Chart design</button>
     <button type="button" class="ribbon-tab contextual" data-tab="header-footer" role="tab" aria-selected="false" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
     </div>
@@ -889,6 +890,21 @@
     <button type="button" id="btn-create-ai-assistant" data-cmd="createAiAssistant" data-i18n="AI.CreateAssistant">Create AI assistant</button>
     </div>
     </div>
+    <div class="ribbon-page" data-tab="forms" role="group" aria-label="Forms ribbon" data-i18n-aria-label="Tab.Forms">
+    <!-- Forms tab: field palette (text/checkbox/dropdown/date) + view-fill-mode toggle -->
+    <div class="ribbon-row">
+    <div class="rb-group" role="group" aria-label="Form fields">
+    <button type="button" id="btn-text-field" data-cmd="insertTextField" title="Text field" data-i18n-title="Forms.TextFieldTitle" data-i18n="Forms.TextField"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="2" rx="0.5"/><rect x="2" y="7" width="12" height="2" rx="0.5"/><rect x="2" y="11" width="8" height="2" rx="0.5"/></svg></button>
+    <button type="button" id="btn-checkbox-field" data-cmd="insertCheckboxField" title="Checkbox" data-i18n-title="Forms.CheckboxTitle" data-i18n="Forms.Checkbox"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="5" width="4" height="4" rx="0.5"/><polyline points="6,9 8,11 14,5"/></svg></button>
+    <button type="button" id="btn-dropdown-field" data-cmd="insertDropdownField" title="Dropdown" data-i18n-title="Forms.DropdownTitle" data-i18n="Forms.Dropdown"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="5" width="12" height="6" rx="0.5"/><path d="M5 8l3 2 3-2"/><path d="M5 10l3-2 3 2"/></svg></button>
+    <button type="button" id="btn-date-field" data-cmd="insertDateField" title="Date" data-i18n-title="Forms.DateTitle" data-i18n="Forms.Date"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 3V2m1 1V2m5 1V2"/><path d="M2 7h12"/><path d="M5 11h6"/></svg></button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Form mode">
+    <button type="button" id="btn-forms-view-fill" data-cmd="toggleFormDesignMode" title="Toggle design/fill mode" data-i18n-title="Forms.ViewFillModeTitle" data-i18n="Forms.ViewFillMode" aria-pressed="false"></button>
+    </div>
+    </div>
+    </div>
     <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
          by editor.js when a chart vector object is picked. 8 control groups
          operate on the selected img[data-kind='chart'] via its stored spec;
@@ -1362,6 +1378,7 @@
         <button type="button" class="backstage-row" data-pane="new" data-i18n="Menu.New">New</button>
         <button type="button" class="backstage-row" data-pane="open" data-i18n="Menu.Open">Open…</button>
         <button type="button" class="backstage-row" data-pane="save" data-i18n="Menu.Save">Save</button>
+        <button type="button" class="backstage-row" data-pane="save-form" data-i18n="Menu.SaveAsForm">Save as form…</button>
         <button type="button" class="backstage-row" data-pane="export" data-i18n="Menu.Export">Download As</button>
         <div class="backstage-group" data-i18n="FileScreen.GroupInfo">Info</div>
         <button type="button" class="backstage-row" data-pane="info" data-i18n="FileScreen.NavInfo">Info</button>
@@ -1402,6 +1419,11 @@
         <h2 data-i18n="FileScreen.TitleSave">Save</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescSave">Save your changes to the current document.</p>
         <button type="button" class="backstage-primary" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button>
+      </div>
+      <div class="backstage-view" data-pane-view="save-form" hidden>
+        <h2 data-i18n="FileScreen.TitleSaveForm">Save as form</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescSaveForm">Save a copy as a form template (.docxf).</p>
+        <button type="button" id="btn-save-form" class="backstage-primary" data-i18n="Menu.SaveAsForm">Save as form…</button>
       </div>
       <div class="backstage-view" data-pane-view="export" hidden>
         <h2 data-i18n="FileScreen.TitleExport">Download as</h2>
@@ -3613,5 +3635,19 @@
        editor.js (boot tour + event hints + save toasts). aria-live=polite
        so hint text is announced without stealing focus. -->
   <div id="hint-toast" aria-live="polite" aria-label="Hints" data-i18n-aria-label="Hints.Title" hidden></div>
+  <!-- Save as Form dialog -->
+  <div id="save-form-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="save-form-dialog-title">
+    <div class="dialog">
+      <h3 id="save-form-dialog-title" data-i18n="FileScreen.TitleSaveForm">Save as form</h3>
+      <div class="dialog-field">
+        <label for="save-form-name" data-i18n="Backstage.SaveAs.Label">File name</label>
+        <input id="save-form-name" type="text" placeholder="form.docxf" value="">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-save-form-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-save-form-ok" data-i18n="Dialog.Save" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
