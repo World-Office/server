@@ -798,6 +798,9 @@
     <button id="btn-nav-toggle" type="button" data-cmd="toggleNavigation" data-i18n="View.Navigation" aria-expanded="false">Navigation</button>
     <!-- AF7-RIGHT-PANEL: right settings panel toggle (Ctrl+Shift+P, OO convention). -->
     <button id="btn-right-panel-toggle" type="button" data-cmd="toggleRightPanel" data-i18n="View.RightPanel" aria-pressed="false">Settings panel</button>
+    <!-- PTS-T2 (ORM-09 PageThumbnails): left thumbnail rail toggle — wired
+         exactly like btn-right-panel-toggle (data-cmd -> runCommand). -->
+    <button id="btn-thumbnails-toggle" type="button" data-cmd="toggleThumbnails" data-i18n="View.PageThumbnails" aria-pressed="false">Thumbnails</button>
     <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
     <button id="btn-view-headings" type="button" data-i18n="View.Headings" aria-pressed="false">Headings</button>
@@ -1092,6 +1095,15 @@
          aria-label="Document" data-i18n-aria-label="A11y.EditorLabel"></div>
     <!-- Ink canvas overlay for drawing (Draw tab). Positioned absolute over the editor. -->
     <canvas id="ink-canvas" class="ink-canvas" hidden aria-label="Ink drawing canvas"></canvas>
+    <!-- PTS-T2 (ORM-09 PageThumbnails): left thumbnail rail — a vertical
+         strip of engine-rendered page previews (docserver page API, PTS-T1),
+         absolutely positioned inside main like #right-panel. The strip is
+         populated by openThumbnails() in editor.js (one <img data-page=N>
+         per laid-out page). -->
+    <aside id="thumbnails-rail" hidden aria-label="Thumbnails" data-i18n-aria-label="Thumbnails.Title">
+      <div class="thumbnails-title" data-i18n="Thumbnails.Title">Thumbnails</div>
+      <div id="thumbnails-strip"></div>
+    </aside>
     <!-- AF7-RIGHT-PANEL / AF15-RIGHT-PANEL-BUILDOUT: right settings panel —
          48px icon rail + 280px settings body, absolutely positioned inside
          main (position:relative) so it never covers titlebar/ribbon/statusbar.
