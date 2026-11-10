@@ -3332,12 +3332,6 @@ fn escape_xml(s: &str) -> String {
 mod congruence_tests;
 
 // P2-04: style-chain resolution tests (docDefaults / basedOn / latentStyles).
-// Declared here following the congruence_tests precedent because src/lib.rs is
-// outside this task's edit scope; a crate-root `#[cfg(test)] mod
-// style_chain_tests;` in lib.rs composes with this without conflict.
-#[cfg(test)]
-#[path = "style_chain_tests.rs"]
-mod style_chain_tests;
 
 #[cfg(test)]
 mod tests {
