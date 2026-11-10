@@ -1,0 +1,17 @@
+{
+  "task": "P4-D03",
+  "attempt": 2,
+  "worker": "p2b-qwen0",
+  "model": "tud/Qwen3.8-27B",
+  "wall_clock_s": 12.040291818,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794321981,
+  "outcome": "failed",
+  "error": "acceptance gate failed (exit 1): ; work kept on branch tf/P4-D03-rejected-2-1794321980",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

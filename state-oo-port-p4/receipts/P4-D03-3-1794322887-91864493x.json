@@ -1,0 +1,17 @@
+{
+  "task": "P4-D03",
+  "attempt": 3,
+  "worker": "p2b-mis0",
+  "model": "tud/mistral-medium-3.5-128b",
+  "wall_clock_s": 845.750785163,
+  "tokens": 5514768,
+  "turns": 128,
+  "prompt_tokens": 5491251,
+  "completion_tokens": 23517,
+  "ts": 1794322887,
+  "outcome": "failed",
+  "error": "harness: turn cap 128 reached; work kept on branch tf/P4-D03-rejected-3-1794322886",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

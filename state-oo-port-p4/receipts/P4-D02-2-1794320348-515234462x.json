@@ -1,0 +1,17 @@
+{
+  "task": "P4-D02",
+  "attempt": 2,
+  "worker": "p2b-glm3",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 2.76338374,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794320348,
+  "outcome": "failed",
+  "error": "attempt edited files out of scope: apps/web/apps/documenteditor-wysiwyg/editor.js, apps/web/apps/documenteditor-wysiwyg/index.html (allowed: core/crates/wo-ooxml/src/model.rs, core/crates/wo-ooxml/src",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

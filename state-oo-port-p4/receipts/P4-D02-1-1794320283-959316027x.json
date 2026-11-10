@@ -1,0 +1,17 @@
+{
+  "task": "P4-D02",
+  "attempt": 1,
+  "worker": "p2b-glm2",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 1146.047759756,
+  "tokens": 8179597,
+  "turns": 128,
+  "prompt_tokens": 8139962,
+  "completion_tokens": 39635,
+  "ts": 1794320283,
+  "outcome": "failed",
+  "error": "harness: turn cap 128 reached; work kept on branch tf/P4-D02-rejected-1-1794320283",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}
