@@ -1191,10 +1191,216 @@ export const IMAGE_SETTINGS_ADVANCED_SPEC = {
   ],
 };
 
-/** Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
+// ---------------------------------------------------------------------------
+// P3-U03: ShapeSettings (documenteditor view/ShapeSettings.js, 2449 lines) —
+// the shape style editor the ledger ranks #2 missing: fill (none/solid/
+// gradient via the P3-U01 MultiSliderGradient port), line (color/width/style,
+// caps/joins, begin/end arrows) and shadow (color/blur/offset), plus the
+// geometry checkboxes OO exposes for anchored shapes. The behavioral half
+// lives in editor.js (openShapeSettings/applyShapeSettingsAdvanced): the WO
+// object model has no OO fill-registry, so fill/line/shadow persist as
+// data-shape-* attributes + inline SVG paint attributes (fill/stroke/
+// stroke-dasharray) and gradients/shadows are honest CSS approximations
+// (linear-gradient background / box-shadow) — same policy as P3-U02's
+// crop/adjust approximations for rasters.
+// ---------------------------------------------------------------------------
+export const SHAPE_SETTINGS_SPEC = {
+  id: "shape-settings-dialog",
+  title: "Shape — settings",
+  titleKey: "Dialog.ShapeAdvanced.Title",
+  width: 560,
+  okCmd: "shapeSettings",
+  sections: [
+    {
+      title: "Fill",
+      titleKey: "Dialog.ShapeAdvanced.Section.Fill",
+      rows: [
+        { type: "select", key: "fillType", label: "Fill type", labelKey: "Dialog.ShapeAdvanced.FillType",
+          value: "solid",
+          options: [
+            { value: "none", label: "No fill", labelKey: "Dialog.ShapeAdvanced.FillNone" },
+            { value: "solid", label: "Solid color", labelKey: "Dialog.ShapeAdvanced.FillSolid" },
+            { value: "gradient", label: "Gradient", labelKey: "Dialog.ShapeAdvanced.FillGradient" },
+          ], cmd: "shapeFillType" },
+        { type: "color", key: "fill", label: "Fill color", labelKey: "Dialog.ShapeAdvanced.FillColor",
+          value: "#4a6cf7", cmd: "shapeFillColor" },
+        { type: "custom", key: "fillGradient", label: "Gradient stops", labelKey: "Dialog.ShapeAdvanced.Gradient",
+          widget: "multiSliderGradient", cmd: "shapeFillGradient" },
+        { type: "button", key: "fillCustom", label: "Custom fill color…", labelKey: "Dialog.ShapeAdvanced.CustomColor",
+          cmd: "openExtendedColor", value: "shape-fill" },
+      ],
+    },
+    {
+      title: "Line",
+      titleKey: "Dialog.ShapeAdvanced.Section.Line",
+      rows: [
+        { type: "color", key: "line", label: "Line color", labelKey: "Dialog.ShapeAdvanced.LineColor",
+          value: "#4472c4", cmd: "shapeLineColor" },
+        { type: "number", key: "lineWidth", label: "Width (pt)", labelKey: "Dialog.ShapeAdvanced.LineWidth",
+          min: 0, max: 12, step: 0.25, value: 2, cmd: "shapeLineWidth" },
+        { type: "select", key: "lineStyle", label: "Style", labelKey: "Dialog.ShapeAdvanced.LineStyle",
+          value: "solid",
+          options: [
+            { value: "solid", label: "Solid", labelKey: "Widget.BorderStyle.Solid" },
+            { value: "dashed", label: "Dashed", labelKey: "Widget.BorderStyle.Dashed" },
+            { value: "dotted", label: "Dotted", labelKey: "Widget.BorderStyle.Dotted" },
+            { value: "double", label: "Double", labelKey: "Widget.BorderStyle.Double" },
+            { value: "none", label: "No line", labelKey: "Widget.BorderStyle.None" },
+          ], cmd: "shapeLineStyle" },
+        { type: "select", key: "cap", label: "Cap", labelKey: "Dialog.ShapeAdvanced.Cap",
+          value: "flat",
+          options: [
+            { value: "flat", label: "Flat", labelKey: "Dialog.ShapeAdvanced.CapFlat" },
+            { value: "round", label: "Round", labelKey: "Dialog.ShapeAdvanced.CapRound" },
+            { value: "square", label: "Square", labelKey: "Dialog.ShapeAdvanced.CapSquare" },
+          ] },
+        { type: "select", key: "join", label: "Join", labelKey: "Dialog.ShapeAdvanced.Join",
+          value: "round",
+          options: [
+            { value: "round", label: "Round", labelKey: "Dialog.ShapeAdvanced.CapRound" },
+            { value: "bevel", label: "Bevel", labelKey: "Dialog.ShapeAdvanced.JoinBevel" },
+            { value: "miter", label: "Miter", labelKey: "Dialog.ShapeAdvanced.JoinMiter" },
+          ] },
+        { type: "select", key: "arrowBegin", label: "Begin arrow", labelKey: "Dialog.ShapeAdvanced.Begin",
+          value: "none",
+          options: [
+            { value: "none", label: "None", labelKey: "Dialog.ShapeAdvanced.ArrowNone" },
+            { value: "arrow", label: "Arrow", labelKey: "Dialog.ShapeAdvanced.ArrowArrow" },
+            { value: "stealth", label: "Stealth", labelKey: "Dialog.ShapeAdvanced.ArrowStealth" },
+            { value: "diamond", label: "Diamond", labelKey: "Dialog.ShapeAdvanced.ArrowDiamond" },
+            { value: "oval", label: "Oval", labelKey: "Dialog.ShapeAdvanced.ArrowOval" },
+          ], cmd: "shapeArrowBegin" },
+        { type: "select", key: "arrowEnd", label: "End arrow", labelKey: "Dialog.ShapeAdvanced.End",
+          value: "none",
+          options: [
+            { value: "none", label: "None", labelKey: "Dialog.ShapeAdvanced.ArrowNone" },
+            { value: "arrow", label: "Arrow", labelKey: "Dialog.ShapeAdvanced.ArrowArrow" },
+            { value: "stealth", label: "Stealth", labelKey: "Dialog.ShapeAdvanced.ArrowStealth" },
+            { value: "diamond", label: "Diamond", labelKey: "Dialog.ShapeAdvanced.ArrowDiamond" },
+            { value: "oval", label: "Oval", labelKey: "Dialog.ShapeAdvanced.ArrowOval" },
+          ], cmd: "shapeArrowEnd" },
+        { type: "button", key: "lineCustom", label: "Custom line color…", labelKey: "Dialog.ShapeAdvanced.CustomLineColor",
+          cmd: "openExtendedColor", value: "shape-line" },
+      ],
+    },
+    {
+      title: "Shadow",
+      titleKey: "Dialog.ShapeAdvanced.Section.Shadow",
+      rows: [
+        { type: "checkbox", key: "shadowOn", label: "Enable shadow", labelKey: "Dialog.ShapeAdvanced.ShadowOn",
+          value: false, cmd: "shapeShadowOn" },
+        { type: "color", key: "shadowColor", label: "Shadow color", labelKey: "Dialog.ShapeAdvanced.ShadowColor",
+          value: "#000000" },
+        { type: "number", key: "shadowBlur", label: "Blur (px)", labelKey: "Dialog.ShapeAdvanced.ShadowBlur",
+          min: 0, max: 60, step: 1, value: 6 },
+        { type: "number", key: "shadowOffset", label: "Offset (px)", labelKey: "Dialog.ShapeAdvanced.ShadowOffset",
+          min: -60, max: 60, step: 1, value: 4 },
+        { type: "button", key: "shadowCustom", label: "Custom shadow color…", labelKey: "Dialog.ShapeAdvanced.CustomShadowColor",
+          cmd: "openExtendedColor", value: "shape-shadow" },
+      ],
+    },
+    {
+      title: "Geometry",
+      titleKey: "Dialog.ShapeAdvanced.Section.Geometry",
+      rows: [
+        { type: "checkbox", key: "moveWithText", label: "Move object with text",
+          labelKey: "Dialog.ShapeAdvanced.MoveWithText", value: true },
+        { type: "checkbox", key: "lockAspect", label: "Keep aspect ratio",
+          labelKey: "Dialog.ShapeAdvanced.LockAspect", value: false },
+        { type: "checkbox", key: "behindDoc", label: "Behind text",
+          labelKey: "Dialog.ImageAdvanced.WrapBehind", value: false },
+      ],
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// P3-U03: ReviewPopover (common/lib/view/ReviewPopover.js, 1406 lines) — the
+// anchored single-thread comment editor (OO opens it on comment click; the
+// panel list stays the thread browser). Hosted from the same engine so the
+// popover keeps the modal conventions (data-wo-cmd rows, one JSON ledger
+// entry per OK, i18n, DIALOG_IDS Tab trap) — editor.js anchors the built
+// panel next to the clicked comment span (wo-review-popover class + inline
+// left/top) instead of centering it. Rows: edit the comment text, toggle
+// resolved, post a reply (OO asc_addReply equivalent over data-replies),
+// Go to / Delete as command rows.
+// ---------------------------------------------------------------------------
+export const REVIEW_POPOVER_SPEC = {
+  id: "review-popover-dialog",
+  title: "Comment",
+  titleKey: "Dialog.ReviewPopover.Title",
+  width: 380,
+  okCmd: "reviewPopover",
+  sections: [
+    {
+      title: "Thread",
+      titleKey: "Dialog.ReviewPopover.Section.Thread",
+      rows: [
+        { type: "text", key: "author", label: "Author", labelKey: "Dialog.ReviewPopover.Author" },
+        { type: "text", key: "text", label: "Comment", labelKey: "Dialog.ReviewPopover.Text" },
+        { type: "checkbox", key: "resolved", label: "Resolved", labelKey: "Dialog.ReviewPopover.Resolved",
+          value: false },
+        { type: "text", key: "reply", label: "Reply…", labelKey: "Dialog.ReviewPopover.Reply",
+          placeholder: "Add a reply…" },
+        { type: "button", key: "goTo", label: "Go to comment", labelKey: "Dialog.ReviewPopover.GoTo",
+          cmd: "reviewPopoverGoTo" },
+        { type: "button", key: "delete", label: "Delete", labelKey: "Dialog.ReviewPopover.Delete",
+          cmd: "reviewPopoverDelete" },
+      ],
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// P3-U03: ExtendedColorDialog (common/lib/view/ExtendedColorDialog.js) — the
+// custom-color dialog the palette was missing (ui-webapp.json: "no
+// custom-color entry point in palette"). Hosted from the engine with the
+// P3-U01 hsbColorPicker widget as the HSB section plus explicit R/G/B, hex
+// and opacity rows — the ledger's "HSBColorPicker + ExtendedColorDialog" row
+// gets its consumer. editor.js routes the apply to the captured target
+// (page background, shape fill/line/shadow) via the openExtendedColor cmd.
+// ---------------------------------------------------------------------------
+export const EXTENDED_COLOR_DIALOG_SPEC = {
+  id: "extended-color-dialog",
+  title: "Custom color",
+  titleKey: "Dialog.ExtendedColor.Title",
+  width: 420,
+  okCmd: "extendedColor",
+  sections: [
+    {
+      title: "HSB",
+      titleKey: "Dialog.ExtendedColor.Section.HSB",
+      rows: [
+        { type: "custom", key: "hsb", label: "Picker", labelKey: "Dialog.ExtendedColor.Picker",
+          widget: "hsbColorPicker" },
+      ],
+    },
+    {
+      title: "RGB & hex",
+      titleKey: "Dialog.ExtendedColor.Section.RGB",
+      rows: [
+        { type: "number", key: "r", label: "Red (0–255)", labelKey: "Dialog.ExtendedColor.Red",
+          min: 0, max: 255, step: 1, value: 255 },
+        { type: "number", key: "g", label: "Green (0–255)", labelKey: "Dialog.ExtendedColor.Green",
+          min: 0, max: 255, step: 1, value: 255 },
+        { type: "number", key: "b", label: "Blue (0–255)", labelKey: "Dialog.ExtendedColor.Blue",
+          min: 0, max: 255, step: 1, value: 255 },
+        { type: "text", key: "hex", label: "Hex value", labelKey: "Widget.HSB.Hex", value: "#ffffff" },
+        { type: "range", key: "alpha", label: "Opacity (%)", labelKey: "Dialog.ExtendedColor.Alpha",
+          min: 0, max: 100, step: 1, value: 100 },
+      ],
+    },
+  ],
+};
+
+/**
+ * Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
 export const WO_DIALOG_SPECS = {
   tableSettingsAdvanced: TABLE_SETTINGS_ADVANCED_SPEC,
   imageSettingsAdvanced: IMAGE_SETTINGS_ADVANCED_SPEC,
+  shapeSettings: SHAPE_SETTINGS_SPEC,
+  reviewPopover: REVIEW_POPOVER_SPEC,
+  extendedColorDialog: EXTENDED_COLOR_DIALOG_SPEC,
 };
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a

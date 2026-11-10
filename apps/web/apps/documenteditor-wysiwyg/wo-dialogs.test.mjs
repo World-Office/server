@@ -327,4 +327,31 @@ assert.ok(tablePanel.includes('data-wo-widget="tableStyler"'), "table spec consu
 assert.ok(imagePanel.includes('data-wo-cmd="imageSettingsAdvanced"'), "image OK emits its ledger cmd")
 console.log("ok 8 P3-U02 consumer specs export + render through the engine")
 
+// ---------------------------------------------------------------------------
+// 9. P3-U03 — ShapeSettings / ReviewPopover / ExtendedColorDialog specs
+// ---------------------------------------------------------------------------
+assert.equal(mod.WO_DIALOG_SPECS.shapeSettings.id, "shape-settings-dialog")
+assert.equal(mod.WO_DIALOG_SPECS.reviewPopover.id, "review-popover-dialog")
+assert.equal(mod.WO_DIALOG_SPECS.extendedColorDialog.id, "extended-color-dialog")
+const shapePanel = specEngine.renderSpec(mod.WO_DIALOG_SPECS.shapeSettings)
+const popoverPanel = specEngine.renderSpec(mod.WO_DIALOG_SPECS.reviewPopover)
+const extendedPanel = specEngine.renderSpec(mod.WO_DIALOG_SPECS.extendedColorDialog)
+assert.ok(shapePanel.includes('data-wo-cmd="shapeSettings"'), "shape OK emits its ledger cmd")
+assert.ok(shapePanel.includes('data-wo-widget="multiSliderGradient"'), "shape fill consumes the gradient widget")
+for (const key of ["fillType", "fill", "fillGradient", "line", "lineWidth", "lineStyle", "cap", "join",
+                   "arrowBegin", "arrowEnd", "shadowOn", "shadowColor", "shadowBlur", "shadowOffset"]) {
+  assert.ok(shapePanel.includes(`data-wo-row="${key}"`), `shape spec renders row ${key}`)
+}
+for (const cmd of ["shapeFillType", "shapeFillColor", "shapeFillGradient", "shapeLineColor",
+                   "shapeArrowBegin", "shapeShadowOn", "openExtendedColor"]) {
+  assert.ok(shapePanel.includes(`data-wo-cmd="${cmd}"`), `shape spec row carries cmd ${cmd}`)
+}
+assert.ok(popoverPanel.includes('data-wo-cmd="reviewPopover"'), "popover OK emits its ledger cmd")
+for (const cmd of ["reviewPopoverGoTo", "reviewPopoverDelete"]) {
+  assert.ok(popoverPanel.includes(`data-wo-cmd="${cmd}"`), `popover spec carries cmd ${cmd}`)
+}
+assert.ok(extendedPanel.includes('data-wo-cmd="extendedColor"'), "extended color OK emits its ledger cmd")
+assert.ok(extendedPanel.includes('data-wo-widget="hsbColorPicker"'), "extended color consumes the HSB widget")
+console.log("ok 9 P3-U03 shape/review-popover/extended-color specs export + render")
+
 console.log("WO-DIALOGS-PASS")

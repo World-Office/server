@@ -41,12 +41,18 @@ function or markup region).
 | oo_type | rows | full | partial | missing | merged |
 |---|---|---|---|---|---|
 | controller | 41 | 9 | 18 | 9 | 5 |
-| view | 109 | 34 | 37 | 34 | 4 |
+| view | 109 | 34 | 42 | 29 | 4 |
 | model | 3 | 1 | 1 | 1 | 0 |
 | collection | 3 | 2 | 1 | 0 | 0 |
-| template | 27 | 6 | 9 | 10 | 2 |
+| template | 27 | 6 | 12 | 7 | 2 |
 | common-component | 34 | 8 | 17 | 5 | 4 |
-| **total** | **217** | **60** | **83** | **59** | **15** |
+| **total** | **217** | **60** | **91** | **51** | **15** |
+
+(Scoreboard current as of P3-U03: the P3-U01..U03 dialog-engine tasks moved
+`TableSettingsAdvanced` + `ImageSettingsAdvanced` (U02) and `ShapeSettings`
+(view + template), `ReviewPopover`, `ExtendedColorDialog` (U03) from
+`missing` to `partial`; per-type counts re-computed from the JSON, not hand-
+summed.)
 
 Every row carries an extra `oo_layer` field (`documenteditor` 115 rows vs
 `common` 102 rows) so the documenteditor-app surface and the shared
@@ -75,23 +81,26 @@ no independent UI behavior.
 | OO class (view) | lines | What WO cannot do today | wasm calls the panel would drive |
 |---|---|---|---|
 | `ImageSettingsAdvanced` | 3322 | no crop, no brightness/contrast adjust, no rotation dial, no wrap-boundary editing, no replace-from-URL | `asc_ChangeCropState`, `asc_getCropOriginSize`, `asc_getWrapText`, `asc_putAnnotProps` |
-| `ShapeSettings` | 2449 | no shape fill/line/shadow styling panel; WO can only insert fixed SVG shapes (`selectShape()` L3887, `createShapeSvg()` L3946) | `asc_getGradientStops`, `asc_CGradientFill`, `asc_CShadowProperty`, `asc_putStrokeStyle`, `asc_putLinebeginstyle`, `asc_putLineendstyle` |
+| `ShapeSettings` | 2449 | ~~no shape fill/line/shadow styling panel~~ **partial (P3-U03)**: engine-hosted `WO_DIALOG_SPECS.shapeSettings` — fill none/solid/gradient (MultiSliderGradient consumer), line color/width/style + caps/joins + begin/end arrows (`<marker>` defs), shadow, geometry checkboxes; pattern/image fill and the OO fill registry stay out | `asc_getGradientStops`, `asc_CGradientFill`, `asc_CShadowProperty`, `asc_putStrokeStyle`, `asc_putLinebeginstyle`, `asc_putLineendstyle` |
 | `TableSettingsAdvanced` | 2179 | no cell margins, no text-flow-around-table, no repeat-header-row, no border-painting styler | `asc_putBorderStyle`, `asc_putBorderWidth`, `asc_CFormatTableInfo`, `asc_getTableStyleName` |
 | `FormSettings` + `FormsTab` (view 2084 + controller 893) | 2977 | no form modes, role manager, filling status, send-for-signing | `asc_getForm`, `asc_addRole`, `asc_editRole`, `asc_getAllRoles`, `asc_canFillRole` |
 | `TextArtSettings` | 1513 | no WordArt transform gallery / text-art styling | `asc_putStyle`/`asc_setStyle`, `asc_CGradientFill` |
-| `ReviewPopover` | 1406 | no anchored per-thread comment popover (panel-only editing) | `asc_addReply`, comment data class `asc_CCommentDataWord` |
+| `ReviewPopover` | 1406 | ~~no anchored per-thread comment popover~~ **partial (P3-U03)**: comment click opens the engine-hosted `WO_DIALOG_SPECS.reviewPopover` anchored at the span — edit text, toggle resolved, post reply (data-replies), Go to/Delete; no per-reviewer colors/avatars, panel list unchanged | `asc_addReply`, comment data class `asc_CCommentDataWord` |
 | `ChartSettings` remainder + `Charts3DDlg` | 1134+ | no series/data-range/axis/legend/3D editing | `asc_putCategory`, `asc_canChangeAxisType` |
 | `PdfSignDialog` | 657 | no PDF signing flow | `asc_getSigner1`, `asc_getSigner2`, `asc_getSignatureImage` |
 | `FormatSettingsDialog` | 702 | no number-format pattern editor | `asc_CFieldNumberFormatProperty`, `asc_getFormatCode`, `asc_getNumFormatInfo` |
 | `HintManager` | 829 | no onboarding hints | n/a (pure UI) |
 | `ShortcutsEditDialog` | 526 | shortcut re-binding absent | n/a |
 | `Calendar` (widget) | 503 | no custom date picker (native input only) | n/a |
-| `HSBColorPicker` + `ExtendedColorDialog` | — | picker widget ported (P3-U01 `wo-dialogs.js`); no consumer dialog spec yet | `asc_putColor` |
-| `MultiSliderGradient` | 381 | widget ported (P3-U01 `wo-dialogs.js`); shape/textart fill specs pending (P3-U03) | `asc_getGradientStops` |
+| `HSBColorPicker` + `ExtendedColorDialog` | — | picker widget ported (P3-U01 `wo-dialogs.js`); **consumer dialog landed (P3-U03)** — `WO_DIALOG_SPECS.extendedColorDialog` hosts HSB sliders + R/G/B/hex/opacity and routes the picked color to page background / shape fill/line/shadow; no HSB wheel widget, no recent-colors memory | `asc_putColor` |
+| `MultiSliderGradient` | 381 | widget ported (P3-U01 `wo-dialogs.js`); **shape fill consumer landed (P3-U03)** — `WO_DIALOG_SPECS.shapeSettings` gradient fill; textart fill spec still pending | `asc_getGradientStops` |
 | forms/signing tail: `RolesManagerDlg`, `RoleEditDlg`, `RoleDeleteDlg`, `SaveFormDlg`, `SendForSigningSettings`, `FillingStatusSettings`, `MailMergeEmailDlg`, `SignatureSettings`, `SignDialog`, `SignSettingsDialog`, `DocumentAccessDialog`, `RenameDialog`, `CopyWarningDialog`, `TextInputDialog`, `SelectFileDlg`, `CustomizeQuickAccessDialog`, `ShapeShadowDialog`, `ExternalEditor` family, `Draw`, `PageThumbnails` (+`Pages` model), `StyleTitleDialog`, `FootnoteTip`, `SynchronizeTip`, `LoadMask`, `MonacoEditor`, `MaskedField` | — | clustered absences (docxf forms, signing, external editors, ink, thumbnails) | see wasm-api.json rows `asc_getAllRoles`…`asc_getForm`; thumbnails need paginated raster (ORM-04 severity-3) |
 
-61 of 217 rows were `missing` at ORM-09 time; 59 remain (the dialog engine
-below closed the two pure-widget absences). The large-block backlog is the
+61 of 217 rows were `missing` at ORM-09 time; 51 remain (the dialog-engine
+tasks P3-U01..U03 closed eight of them: the two pure-widget absences plus
+`TableSettingsAdvanced`/`ImageSettingsAdvanced` view+template in U02 and
+`ShapeSettings` view+template, `ReviewPopover`, `ExtendedColorDialog` in
+U03). The large-block backlog is the
 first table above
 (`ImageSettingsAdvanced` → `TextArtSettings` ≈ 12.5k lines of OO view code
 without a WO counterpart, plus their 5 templates).
@@ -128,8 +137,34 @@ landed (P3-U02 — `WO_DIALOG_SPECS` in wo-dialogs.js, engine-hosted with
 open-time re-sync from the live selection and one JSON ledger entry per OK
 via `runCommand("tableSettingsAdvanced"/"imageSettingsAdvanced")`; gated by
 `table-advanced.test.mjs` → `TABLE-ADV-PASS` and `image-advanced.test.mjs` →
-`IMAGE-ADV-PASS`). Next: `ShapeSettings`/`ReviewPopover`/
-`ExtendedColorDialog` (P3-U03).
+`IMAGE-ADV-PASS`). `ShapeSettings` + `ReviewPopover` +
+`ExtendedColorDialog` landed (P3-U03, same engine-hosted pattern; gated by
+`shape-review.test.mjs` → `SHAPE-REVIEW-PASS`):
+
+- `WO_DIALOG_SPECS.shapeSettings` — fill none/solid/gradient (the
+  MultiSliderGradient widget gets its first consumer), line
+  color/width/style + caps/joins + begin/end arrows, shadow, geometry
+  checkboxes. editor.js `applyShapeSettingsAdvanced()` persists the payload
+  as `data-shape-*` attributes + inline SVG paint attributes
+  (fill/stroke/stroke-dasharray/linecap/linejoin); arrowheads render as real
+  `<marker>` defs; gradient fills (linear-gradient wrapper background) and
+  shadows (box-shadow) are honest CSS approximations. Open paths: the ctx
+  menu `ShapeSettings` row (shape-only), the rail image "Advanced…" link
+  (delegates drawing shapes), `runCommand("openShapeSettings")`.
+- `WO_DIALOG_SPECS.reviewPopover` — the anchored single-thread comment
+  editor: clicking `span.comment` emits `openReviewPopover` with the thread
+  id, editor.js anchors the built panel next to the span
+  (`wo-review-popover` css + `anchorReviewPopover()`), and the OK payload
+  edits the comment text / toggles resolved / posts a reply through the
+  existing `data-comment`/`data-resolved`/`data-replies` channels (the
+  `asc_addReply` equivalent) — one replayable ledger entry per apply.
+- `WO_DIALOG_SPECS.extendedColorDialog` — the custom-color dialog the
+  palettes were missing (ledger row: "no custom-color entry point"): the
+  `hsbColorPicker` widget section + explicit R/G/B, hex and opacity rows;
+  `openExtendedColor` captures a target (page background, shape
+  fill/line/shadow — the shape spec ships the three entry-point buttons)
+  and `extendedColor` routes the picked color there, rgba below 100% and
+  `fill-opacity` on shapes.
 
 ## What WO already covers well (60 `full` rows)
 
