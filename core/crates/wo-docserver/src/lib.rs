@@ -8,6 +8,7 @@ pub mod collab;
 pub mod config;
 pub mod docx_util;
 pub mod editor_docs;
+pub mod render;
 pub mod static_files;
 pub mod store;
 pub mod wopi;
@@ -1421,6 +1422,20 @@ pub fn create_app(config: DocServerConfig) -> Router {
             post(ai::ai_review_reject),
         )
         .route("/api/documents/{id}/html", get(editor_docs::document_html))
+        // Page-render API (wo-docx-renderer): the external contract is
+        // GET /api/documents/{id}/pages/{n}.png (1-based n) plus
+        // GET /api/documents/{id}/pages/count. axum 0.8's router does not
+        // support dynamic suffixes (`{n}.png`), so the page route is
+        // registered as `/pages/{page}` and the handler strips a trailing
+        // `.png` — both `/pages/3` and `/pages/3.png` resolve.
+        .route(
+            "/api/documents/{id}/pages/count",
+            get(render::page_count),
+        )
+        .route(
+            "/api/documents/{id}/pages/{page}",
+            get(render::page_png),
+        )
         .route("/api/documents/{id}/save", post(editor_docs::save_document))
         .route(
             "/api/documents/{id}/export",
