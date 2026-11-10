@@ -1,0 +1,115 @@
+{
+ "defaults": {
+  "max_attempts": 3,
+  "accept_timeout_s": 7200,
+  "agent_timeout_s": 9000,
+  "retry_delay_s": 60
+ },
+ "tasks": [
+  {
+   "id": "P4-D01",
+   "title": "Rust: DOCX revisions typed \u2014 w:ins/w:del/moveFrom/moveTo spans with author/date round-trip",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 4 item 1 (revisions). ORM-05 Logic/Annotations.cpp row: ins/del/move revisions dropped. P2-06 preserves settings.xml bytes but revision MARKS on runs vanish semantically. Add a typed revision span model: DocxRun revision field (Option<DocxRevision{kind: Insert|Delete|MoveFrom|MoveTo, author, date, id}>) + paragraph-level pPrChange/rPrChange skip is fine (runs only). Parser: read w:ins/w:del wrappers around runs and w:delText as Delete text; serializer re-emits the wrappers so tracked changes survive round-trip MANAGED (not via byte bag) \u2014 remove document.xml from any bag-only thinking, it is already managed. Engine surface: OoxmlDocument exposes revision_count()/revisions() (serde) so the UI track-changes rail can count. Pin with converter_gaps gap_docx_revisions_roundtrip: docx with one w:ins (author='A', date) and one w:del (w:delText 'gone') -> parse -> 2 typed revisions (1 ins 1 del, author A) -> serialize -> reparse -> same 2. Baselines: wo-ooxml 89 lib, converter_gaps 30 passing; keep green.",
+   "acceptance": "PORT-PLAN Phase 4 item 1 (revisions). ORM-05 Logic/Annotations.cpp row: ins/del/move revisions dropped. P2-06 preserves settings.xml bytes but revision MARKS on runs vanish semantically. Add a typed revision span model: DocxRun revision field (Option<DocxRevision{kind: Insert|Delete|MoveFrom|MoveTo, author, date, id}>) + paragraph-level pPrChange/rPrChange skip is fine (runs only). Parser: read w:ins/w:del wrappers around runs and w:delText as Delete text; serializer re-emits the wrappers so tracked changes survive round-trip MANAGED (not via byte bag) \u2014 remove document.xml from any bag-only thinking, it is already managed. Engine surface: OoxmlDocument exposes revision_count()/revisions() (serde) so the UI track-changes rail can count. Pin with converter_gaps gap_docx_revisions_roundtrip: docx with one w:ins (author='A', date) and one w:del (w:delText 'gone') -> parse -> 2 typed revisions (1 ins 1 del, author A) -> serialize -> reparse -> same 2. Baselines: wo-ooxml 89 lib, converter_gaps 30 passing; keep green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'DocxRevision|RevisionKind' core/crates/wo-ooxml/src/model.rs && grep -qE 'w:ins|w:del' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_docx_revisions_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  },
+  {
+   "id": "P4-D02",
+   "title": "Rust: OMML math \u2014 m:oMath/m:oMathPara verbatim + linear text extraction, managed round-trip",
+   "deps": [
+    "P4-D01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 4 item 1 (OMML). ORM-05 Math/oMathContent.h missing \u2014 equations deleted by parse_run fall-through. Two-layer fix: (1) capture: parse arm for m:oMath / m:oMathPara inside runs producing DocxRun::Math{ xml: String (verbatim), linear: String } where linear extracts m:t text in document order with spaces (good enough for search/copy). (2) serialize: re-emit the verbatim xml as a proper m:oMath run child so equations round-trip managed; converter HTML path renders the linear text in a <span class=wo-math> so equations are at least VISIBLE in html output (grep wo-x2t converters.rs html arm \u2014 that file is OUT of scope, instead the html integration point is acceptable via the model: the linear field exists for consumers; do not edit wo-x2t). Pin with converter_gaps gap_docx_math_roundtrip: docx with m:oMath containing m:r/m:t 'x+1' and a fraction -> parse -> Math run with linear containing 'x+1' -> serialize -> reparse -> Math still present with same m:t content. Keep wo-ooxml 89+ / converter_gaps green.",
+   "acceptance": "PORT-PLAN Phase 4 item 1 (OMML). ORM-05 Math/oMathContent.h missing \u2014 equations deleted by parse_run fall-through. Two-layer fix: (1) capture: parse arm for m:oMath / m:oMathPara inside runs producing DocxRun::Math{ xml: String (verbatim), linear: String } where linear extracts m:t text in document order with spaces (good enough for search/copy). (2) serialize: re-emit the verbatim xml as a proper m:oMath run child so equations round-trip managed; converter HTML path renders the linear text in a <span class=wo-math> so equations are at least VISIBLE in html output (grep wo-x2t converters.rs html arm \u2014 that file is OUT of scope, instead the html integration point is acceptable via the model: the linear field exists for consumers; do not edit wo-x2t). Pin with converter_gaps gap_docx_math_roundtrip: docx with m:oMath containing m:r/m:t 'x+1' and a fraction -> parse -> Math run with linear containing 'x+1' -> serialize -> reparse -> Math still present with same m:t content. Keep wo-ooxml 89+ / converter_gaps green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'oMath|Math' core/crates/wo-ooxml/src/model.rs && grep -qE 'm:oMath' core/crates/wo-ooxml/src/parser.rs && grep -q 'gap_docx_math_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  },
+  {
+   "id": "P4-D03",
+   "title": "Rust: Flat OPC entry (single-XML docx) + typed DocxSettings slice (track-changes/protection defaults)",
+   "deps": [
+    "P4-D02"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/",
+    "core/crates/wo-ooxml/src/detector.rs"
+   ],
+   "description": "PORT-PLAN Phase 4 item 1 (DocxFlat 403 lines + Settings.h 1048). (1) Flat OPC: wo-ooxml detector.rs currently sniffs zip OPC only. Add flat detection: input not a zip but starts with optional XML decl/BOM then contains <w:document \u2014 detect as flat WordprocessingML; parse by feeding the raw xml straight into the existing document.xml reader (the parser reads a str, so reuse), and on serialize emit a ZIP package (flat in, zip out is standard modernization \u2014 note it in the ledger). (2) Typed settings slice: parse word/settings.xml (when present) into DocxSettings{ track_changes: bool, rsids: Vec<String> (cap 50), default_tab_stop, auto_hyphenation } exposed on OoxmlDocument; serializer re-emits settings.xml MANAGED from the typed struct plus preserved unknown children via a captured raw tail (cheap: keep original bytes for children we do not model, emit ours first then raw children of the original root). Pin with converter_gaps gap_flat_opc_entry (flat <w:document xml string -> parse -> paragraphs -> serialize -> reparse zip form ok) and gap_settings_typed_roundtrip (settings with w:trackChanges on -> parse -> settings.track_changes true -> serialize -> reparse still true). Keep all green.",
+   "acceptance": "PORT-PLAN Phase 4 item 1 (DocxFlat 403 lines + Settings.h 1048). (1) Flat OPC: wo-ooxml detector.rs currently sniffs zip OPC only. Add flat detection: input not a zip but starts with optional XML decl/BOM then contains <w:document \u2014 detect as flat WordprocessingML; parse by feeding the raw xml straight into the existing document.xml reader (the parser reads a str, so reuse), and on serialize emit a ZIP package (flat in, zip out is standard modernization \u2014 note it in the ledger). (2) Typed settings slice: parse word/settings.xml (when present) into DocxSettings{ track_changes: bool, rsids: Vec<String> (cap 50), default_tab_stop, auto_hyphenation } exposed on OoxmlDocument; serializer re-emits settings.xml MANAGED from the typed struct plus preserved unknown children via a captured raw tail (cheap: keep original bytes for children we do not model, emit ours first then raw children of the original root). Pin with converter_gaps gap_flat_opc_entry (flat <w:document xml string -> parse -> paragraphs -> serialize -> reparse zip form ok) and gap_settings_typed_roundtrip (settings with w:trackChanges on -> parse -> settings.track_changes true -> serialize -> reparse still true). Keep all green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'flat|Flat' core/crates/wo-ooxml/src/detector.rs && grep -qE 'DocxSettings|track_changes' core/crates/wo-ooxml/src/model.rs && grep -q 'gap_flat_opc_entry' core/crates/wo-x2t/tests/converter_gaps.rs && grep -q 'gap_settings_typed_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  },
+  {
+   "id": "P4-X01",
+   "title": "Rust: XLSX pivot grouping + calculated items \u2014 wo-sheet PivotField buckets, cache round-trip",
+   "deps": [
+    "P4-D03"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/",
+    "core/crates/wo-sheet/src/pivot.rs",
+    "core/crates/wo-sheet/src/lib.rs"
+   ],
+   "description": "PORT-PLAN Phase 4 item 2 (xlsx tail). wo-sheet pivot.rs has PivotField/PivotValueField/AggFunc and grouping happens by value equality only. Add: (1) numeric range grouping \u2014 PivotField.group_ranges: Vec<(f64,f64)> (start,end,step semantics: derive buckets start..end by step) applied in the row/column grouping pass so 100 rows of numbers collapse to range buckets; (2) date-period grouping \u2014 group_period: Option<Year|Quarter|Month|Day> bucketing date-ish strings (ISO y-m-d) by period; (3) calculated items \u2014 PivotValueField.formula: Option<String> (e.g. '2*[Sales]') evaluated AFTER aggregation against sibling field totals (tiny evaluator: field refs in [] times scalar +-*/; refuse gracefully -> None if unparsable). wo-ooxml side: parse xl/pivotCache definitions' fieldGrouping (rangePr start/end/step, groupItems) into the typed workbook model so grouping survives round trip (serializer emits them). Pin with converter_gaps gap_xlsx_pivot_grouping: pivot on numeric rows with group ranges 0-100 step 50 -> 2 buckets each summing its rows; calculated field '2*[A]' doubles. wo-sheet baseline 222 \u2014 keep green (pivot tests live in wo-sheet lib tests or a new pivot_group_tests module registered in lib.rs).",
+   "acceptance": "PORT-PLAN Phase 4 item 2 (xlsx tail). wo-sheet pivot.rs has PivotField/PivotValueField/AggFunc and grouping happens by value equality only. Add: (1) numeric range grouping \u2014 PivotField.group_ranges: Vec<(f64,f64)> (start,end,step semantics: derive buckets start..end by step) applied in the row/column grouping pass so 100 rows of numbers collapse to range buckets; (2) date-period grouping \u2014 group_period: Option<Year|Quarter|Month|Day> bucketing date-ish strings (ISO y-m-d) by period; (3) calculated items \u2014 PivotValueField.formula: Option<String> (e.g. '2*[Sales]') evaluated AFTER aggregation against sibling field totals (tiny evaluator: field refs in [] times scalar +-*/; refuse gracefully -> None if unparsable). wo-ooxml side: parse xl/pivotCache definitions' fieldGrouping (rangePr start/end/step, groupItems) into the typed workbook model so grouping survives round trip (serializer emits them). Pin with converter_gaps gap_xlsx_pivot_grouping: pivot on numeric rows with group ranges 0-100 step 50 -> 2 buckets each summing its rows; calculated field '2*[A]' doubles. wo-sheet baseline 222 \u2014 keep green (pivot tests live in wo-sheet lib tests or a new pivot_group_tests module registered in lib.rs).",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'group_ranges|group_period' core/crates/wo-sheet/src/pivot.rs && grep -qE 'formula' core/crates/wo-sheet/src/pivot.rs && grep -q 'gap_xlsx_pivot_grouping' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-sheet --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  },
+  {
+   "id": "P4-P01",
+   "title": "Rust: PPTX typed timing tree + SmartArt managed part",
+   "deps": [
+    "P4-X01"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/lib.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 4 item 2 (pptx tail). (1) Timing tree: parser has parse_pptx_timing_raw (raw string) + AnimationData flat. Add a typed TimingTree{ nodes: Vec<TimeNode{ id, kind: Par|Seq|Anim|Set|Behavior, delay_ms, duration_ms, repeat: Option<u32>, children: Vec<TimeNode> }> } parsed from p:timing (recursive ct_TLTimeNode descend), exposed on Slide, serializer re-emits timing from the tree (raw string becomes derived fallback \u2014 keep raw for fidelity when tree parse fails). (2) SmartArt: diagrams survive only via the P2-06 docx byte bag; for PPTX, make ppt/diagrams/* + ppt/smartArt* MANAGED parts typed as SmartArtData{ layout_xml, data_xml, colors_xml (all raw strings) } referenced from the slide rels, so serializer regenerates them (byte-exact from the raw captures). Pin with converter_gaps gap_pptx_timing_roundtrip: slide with a 2-node p:timing (delay/duration on inner anim node) -> parse -> tree depth 2 with delay values -> serialize -> reparse -> same values; and gap_pptx_smartart_survives: pptx with ppt/diagrams/data1.xml -> parse -> serialize -> zip contains ppt/diagrams/data1.xml byte-same. Keep all green.",
+   "acceptance": "PORT-PLAN Phase 4 item 2 (pptx tail). (1) Timing tree: parser has parse_pptx_timing_raw (raw string) + AnimationData flat. Add a typed TimingTree{ nodes: Vec<TimeNode{ id, kind: Par|Seq|Anim|Set|Behavior, delay_ms, duration_ms, repeat: Option<u32>, children: Vec<TimeNode> }> } parsed from p:timing (recursive ct_TLTimeNode descend), exposed on Slide, serializer re-emits timing from the tree (raw string becomes derived fallback \u2014 keep raw for fidelity when tree parse fails). (2) SmartArt: diagrams survive only via the P2-06 docx byte bag; for PPTX, make ppt/diagrams/* + ppt/smartArt* MANAGED parts typed as SmartArtData{ layout_xml, data_xml, colors_xml (all raw strings) } referenced from the slide rels, so serializer regenerates them (byte-exact from the raw captures). Pin with converter_gaps gap_pptx_timing_roundtrip: slide with a 2-node p:timing (delay/duration on inner anim node) -> parse -> tree depth 2 with delay values -> serialize -> reparse -> same values; and gap_pptx_smartart_survives: pptx with ppt/diagrams/data1.xml -> parse -> serialize -> zip contains ppt/diagrams/data1.xml byte-same. Keep all green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'TimingTree|TimeNode' core/crates/wo-ooxml/src/model.rs && grep -qE 'SmartArt|diagrams' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_pptx_timing_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && grep -q 'gap_pptx_smartart_survives' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  },
+  {
+   "id": "P4-C01",
+   "title": "Rust: collaboration boundary \u2014 asc_CUserInfo/asc_CVersionHistory serde + set/get restriction exports",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-renderer-wasm/src/lib.rs",
+    "core/crates/wo-renderer-wasm/src/collab_tests.rs",
+    "core/crates/wo-renderer-wasm/src/events.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 4 item 4 (collaboration/protection serde, ORM-02 tail). wo-renderer-wasm only \u2014 do NOT touch wo-ooxml or frontend files. Add: (1) serde data classes AscCUserInfo{ id, name, initials, color } and AscCVersionHistoryEntry{ version, author, date, label } (camelCase serde, same conventions as props.rs \u2014 grep how existing asc-style DTOs are spelled and follow); (2) wasm exports set_document_restriction(doc_handle, json) / get_document_restriction(doc_handle) where json = { mode: 'none'|'readOnly'|'comment-only'|'fill-forms'|'track-changes', allow_print, allow_copy } \u2014 stored per document session (session.rs pattern), emitted as a WsEvent (use Other{name:'onRestrictionChange'} or a typed variant \u2014 follow events.rs conventions); (3) content-control role surface: if a set_property kind for content-control exists (grep 'content-control'/'cc-' in props.rs), add role to its json contract, else add kind 'cc-role' storing {id, role: 'none'|'rich-text'|'plain-text'|'picture'|'date'}. Test collab_tests.rs: user info serde round trip camelCase, restriction set/get round trip + event emitted, cc-role set/get. Baseline wasm 206 \u2014 keep green. mod collab_tests registered in lib.rs.",
+   "acceptance": "PORT-PLAN Phase 4 item 4 (collaboration/protection serde, ORM-02 tail). wo-renderer-wasm only \u2014 do NOT touch wo-ooxml or frontend files. Add: (1) serde data classes AscCUserInfo{ id, name, initials, color } and AscCVersionHistoryEntry{ version, author, date, label } (camelCase serde, same conventions as props.rs \u2014 grep how existing asc-style DTOs are spelled and follow); (2) wasm exports set_document_restriction(doc_handle, json) / get_document_restriction(doc_handle) where json = { mode: 'none'|'readOnly'|'comment-only'|'fill-forms'|'track-changes', allow_print, allow_copy } \u2014 stored per document session (session.rs pattern), emitted as a WsEvent (use Other{name:'onRestrictionChange'} or a typed variant \u2014 follow events.rs conventions); (3) content-control role surface: if a set_property kind for content-control exists (grep 'content-control'/'cc-' in props.rs), add role to its json contract, else add kind 'cc-role' storing {id, role: 'none'|'rich-text'|'plain-text'|'picture'|'date'}. Test collab_tests.rs: user info serde round trip camelCase, restriction set/get round trip + event emitted, cc-role set/get. Baseline wasm 206 \u2014 keep green. mod collab_tests registered in lib.rs.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'AscCUserInfo|UserInfo' core/crates/wo-renderer-wasm/src/lib.rs && grep -qE 'set_document_restriction' core/crates/wo-renderer-wasm/src/lib.rs && test -f core/crates/wo-renderer-wasm/src/collab_tests.rs && grep -q 'mod collab_tests' core/crates/wo-renderer-wasm/src/lib.rs && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | grep -q 'test result: ok' && wc -l plan/oo-port/PORT-PLAN.md"
+  }
+ ]
+}
