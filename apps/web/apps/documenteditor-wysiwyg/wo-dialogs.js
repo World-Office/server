@@ -627,7 +627,7 @@ export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradi
 // ---------------------------------------------------------------------------
 // WoDialogEngine
 // ---------------------------------------------------------------------------
-const ROW_CONTROL_TYPES = { text: 1, number: 1, select: 1, checkbox: 1, color: 1 };
+const ROW_CONTROL_TYPES = { text: 1, number: 1, select: 1, checkbox: 1, color: 1, range: 1 };
 
 export class WoDialogEngine {
   constructor(opts = {}) {
@@ -940,7 +940,42 @@ export class WoDialogEngine {
   }
   closeAll() { Array.from(this.dialogs.keys()).forEach((id) => this.close(id)); }
   getValues(id) { return Object.assign({}, this._values(id)); }
-  setValue(id, key, value) { this._values(id)[key] = value; }
+  /**
+   * Set one row value: update the value snapshot AND the mounted control
+   * (input/select/checkbox) or custom widget instance. P3-U02 uses this to
+   * re-sync a dialog from the live document every time it is opened (the OO
+   * views re-read their properties on show); the static index.html dialogs
+   * hand-write the same sync in their open functions.
+   */
+  setValue(id, key, value) {
+    const str = value === undefined || value === null ? "" : String(value);
+    const checked = value === true || value === "true" || value === 1 || value === "1";
+    this._values(id)[key] = str;
+    const handle = this.dialogs.get(id);
+    if (!handle || !handle.el) return;
+    q(handle.el, "[data-wo-key]").forEach((ctl) => {
+      if (ctl.getAttribute("data-wo-key") !== key) return;
+      if (ctl.getAttribute("type") === "checkbox") {
+        if ("checked" in ctl) ctl.checked = checked;
+      } else if ("value" in ctl) {
+        ctl.value = str;
+      }
+    });
+    // Custom-widget rows: route the value through the factory handle (its
+    // setValue re-renders and fires its own onChange → snapshot stays hot).
+    this.widgets.forEach((w) => {
+      if (!w || !w.el || typeof w.setValue !== "function") return;
+      if (w.el.getAttribute("data-wo-key") !== key) return;
+      let n = w.el.parentElement;
+      while (n && n.getAttribute) {
+        if (n.getAttribute("data-wo-dialog") === id) {
+          try { w.setValue(value); } catch (err) { /* widget may reject */ }
+          return;
+        }
+        n = n.parentElement;
+      }
+    });
+  }
   destroy(id) {
     const handle = this.dialogs.get(id);
     if (!handle) return false;
@@ -953,6 +988,214 @@ export class WoDialogEngine {
 }
 // Per-dialog value snapshots live on the instance (not in build closures) so
 // getValues() works from any reference — see the constructor.
+
+// ---------------------------------------------------------------------------
+// P3-U02: consumer dialog specs — the two largest missing OO views hosted
+// from the engine above. Spec data only (strings + row descriptors); the
+// behavioral half lives in editor.js:
+//   - openTableSettingsAdvanced / openImageSettingsAdvanced build+open these
+//     (once) and re-sync the rows from the live selection via engine
+//     setValue(), mirroring how the OO views re-read properties on show;
+//   - runCommand("tableSettingsAdvanced"/"imageSettingsAdvanced") applies the
+//     OK payload — one JSON ledger entry per dialog apply (engine invariant).
+// OO references: documenteditor/main/app/view/TableSettingsAdvanced.js
+// (cell margins/distances, table alignment+indent, text flow around the
+// table, TableStyler-driven borders/shading, repeat-as-header, resize
+// behavior) and view/ImageSettingsAdvanced.js (size, rotation, text wrapping
+// + distances, wrap-boundary entry point, adjust sliders, crop, replace,
+// alt text). Crop/adjust are honest CSS approximations (clip-path/filter —
+// the WO object model has no raster transform engine); repeat-as-header and
+// wrap-around-table are session markers like the banded-rows classes.
+// ---------------------------------------------------------------------------
+export const TABLE_SETTINGS_ADVANCED_SPEC = {
+  id: "table-settings-advanced-dialog",
+  title: "Table — advanced settings",
+  titleKey: "Dialog.TableAdvanced.Title",
+  width: 600,
+  okCmd: "tableSettingsAdvanced",
+  sections: [
+    {
+      title: "Table position",
+      titleKey: "Dialog.TableAdvanced.Section.Position",
+      rows: [
+        { type: "select", key: "align", label: "Table alignment", labelKey: "Dialog.TableAdvanced.Align",
+          value: "left",
+          options: [
+            { value: "left", label: "Left", labelKey: "Dialog.Advanced.Left" },
+            { value: "center", label: "Center", labelKey: "Dialog.Advanced.Center" },
+            { value: "right", label: "Right", labelKey: "Dialog.Advanced.Right" },
+          ] },
+        { type: "number", key: "indent", label: "Indent from left (cm)", labelKey: "Dialog.TableAdvanced.Indent",
+          min: 0, max: 20, step: 0.1, value: 0 },
+        { type: "select", key: "wrap", label: "Text wrapping", labelKey: "Dialog.TableAdvanced.Wrap",
+          value: "inline",
+          options: [
+            { value: "inline", label: "Inline (no wrap)", labelKey: "Dialog.TableAdvanced.WrapInline" },
+            { value: "around", label: "Around", labelKey: "Dialog.TableAdvanced.WrapAround" },
+          ] },
+        { type: "checkbox", key: "moveWithText", label: "Move with text", labelKey: "Dialog.TableAdvanced.MoveWithText",
+          value: true },
+        { type: "checkbox", key: "allowOverlap", label: "Allow overlap", labelKey: "Dialog.TableAdvanced.AllowOverlap",
+          value: false },
+        { type: "number", key: "distTop", label: "Top (mm)", labelKey: "Dialog.Advanced.DistTop",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distBottom", label: "Bottom (mm)", labelKey: "Dialog.Advanced.DistBottom",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distLeft", label: "Left (mm)", labelKey: "Dialog.Advanced.DistLeft",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distRight", label: "Right (mm)", labelKey: "Dialog.Advanced.DistRight",
+          min: 0, max: 500, step: 1, value: 0 },
+      ],
+    },
+    {
+      title: "Default cell margins",
+      titleKey: "Dialog.TableAdvanced.Section.Margins",
+      rows: [
+        { type: "number", key: "marginTop", label: "Top (cm)", labelKey: "Dialog.Advanced.MarginTop",
+          min: 0, max: 5, step: 0.05, value: 0 },
+        { type: "number", key: "marginBottom", label: "Bottom (cm)", labelKey: "Dialog.Advanced.MarginBottom",
+          min: 0, max: 5, step: 0.05, value: 0 },
+        { type: "number", key: "marginLeft", label: "Left (cm)", labelKey: "Dialog.Advanced.MarginLeft",
+          min: 0, max: 5, step: 0.05, value: 0.19 },
+        { type: "number", key: "marginRight", label: "Right (cm)", labelKey: "Dialog.Advanced.MarginRight",
+          min: 0, max: 5, step: 0.05, value: 0.19 },
+      ],
+    },
+    {
+      title: "Borders & shading",
+      titleKey: "Dialog.TableAdvanced.Section.Borders",
+      rows: [
+        // The OO TableStyler port (P3-U01) gets its consumer here: pen +
+        // painted-segment value rides in the OK payload.
+        { type: "custom", key: "styler", label: "Table borders", labelKey: "Dialog.TableAdvanced.Borders",
+          widget: "tableStyler" },
+        { type: "color", key: "shade", label: "Fill", labelKey: "Dialog.TableAdvanced.Shade",
+          value: "#ffffff" },
+      ],
+    },
+    {
+      title: "Rows & behavior",
+      titleKey: "Dialog.TableAdvanced.Section.Rows",
+      rows: [
+        { type: "checkbox", key: "repeatHeader",
+          label: "Repeat as header row at the top of each page",
+          labelKey: "Dialog.TableAdvanced.RepeatHeader", value: false },
+        { type: "checkbox", key: "resizeFit", label: "Resize cells to fit text",
+          labelKey: "Dialog.TableAdvanced.ResizeFit", value: true },
+      ],
+    },
+  ],
+};
+
+export const IMAGE_SETTINGS_ADVANCED_SPEC = {
+  id: "image-settings-advanced-dialog",
+  title: "Image — advanced settings",
+  titleKey: "Dialog.ImageAdvanced.Title",
+  width: 560,
+  okCmd: "imageSettingsAdvanced",
+  sections: [
+    {
+      title: "Size",
+      titleKey: "Dialog.ImageAdvanced.Section.Size",
+      rows: [
+        { type: "number", key: "width", label: "Width (px)", labelKey: "Dialog.ImageAdvanced.Width",
+          min: 16, max: 10000, step: 1, value: 200 },
+        { type: "number", key: "height", label: "Height (px)", labelKey: "Dialog.ImageAdvanced.Height",
+          min: 16, max: 10000, step: 1, value: 150 },
+        { type: "checkbox", key: "keepRatio", label: "Keep ratio", labelKey: "Dialog.ImageAdvanced.KeepRatio",
+          value: true },
+      ],
+    },
+    {
+      title: "Rotation",
+      titleKey: "Dialog.ImageAdvanced.Section.Rotation",
+      rows: [
+        { type: "number", key: "angle", label: "Angle (°)", labelKey: "Dialog.ImageAdvanced.Angle",
+          min: -180, max: 180, step: 5, value: 0 },
+        { type: "button", key: "rotateCw", label: "Rotate 90° clockwise", labelKey: "Dialog.ImageAdvanced.RotateCw",
+          cmd: "imageAdvancedRotate", value: "cw" },
+        { type: "button", key: "rotateCcw", label: "Rotate 90° counter-clockwise", labelKey: "Dialog.ImageAdvanced.RotateCcw",
+          cmd: "imageAdvancedRotate", value: "ccw" },
+      ],
+    },
+    {
+      title: "Text wrapping",
+      titleKey: "Dialog.ImageAdvanced.Section.Wrap",
+      rows: [
+        { type: "select", key: "wrap", label: "Wrapping style", labelKey: "Dialog.ImageAdvanced.Wrap",
+          value: "wrap-inline",
+          options: [
+            { value: "wrap-inline", label: "Inline", labelKey: "Dialog.ImageAdvanced.WrapInline" },
+            { value: "wrap-square", label: "Square", labelKey: "Dialog.ImageAdvanced.WrapSquare" },
+            { value: "wrap-tight", label: "Tight", labelKey: "Dialog.ImageAdvanced.WrapTight" },
+            { value: "wrap-through", label: "Through", labelKey: "Dialog.ImageAdvanced.WrapThrough" },
+            { value: "wrap-top-and-bottom", label: "Top and bottom", labelKey: "Dialog.ImageAdvanced.WrapTopBottom" },
+            { value: "wrap-behind", label: "Behind text", labelKey: "Dialog.ImageAdvanced.WrapBehind" },
+            { value: "wrap-front", label: "In front of text", labelKey: "Dialog.ImageAdvanced.WrapFront" },
+          ] },
+        { type: "number", key: "distTop", label: "Top (mm)", labelKey: "Dialog.Advanced.DistTop",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distBottom", label: "Bottom (mm)", labelKey: "Dialog.Advanced.DistBottom",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distLeft", label: "Left (mm)", labelKey: "Dialog.Advanced.DistLeft",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "number", key: "distRight", label: "Right (mm)", labelKey: "Dialog.Advanced.DistRight",
+          min: 0, max: 500, step: 1, value: 0 },
+        { type: "button", key: "editWrapBoundary", label: "Edit wrap boundary…",
+          labelKey: "Dialog.ImageAdvanced.EditWrapBoundary", cmd: "editWrapBoundary" },
+      ],
+    },
+    {
+      title: "Adjust",
+      titleKey: "Dialog.ImageAdvanced.Section.Adjust",
+      rows: [
+        { type: "range", key: "brightness", label: "Brightness (%)", labelKey: "Dialog.ImageAdvanced.Brightness",
+          min: 20, max: 200, step: 5, value: 100 },
+        { type: "range", key: "contrast", label: "Contrast (%)", labelKey: "Dialog.ImageAdvanced.Contrast",
+          min: 20, max: 200, step: 5, value: 100 },
+        { type: "range", key: "saturation", label: "Saturation (%)", labelKey: "Dialog.ImageAdvanced.Saturation",
+          min: 0, max: 200, step: 5, value: 100 },
+      ],
+    },
+    {
+      title: "Crop (%)",
+      titleKey: "Dialog.ImageAdvanced.Section.Crop",
+      rows: [
+        { type: "range", key: "cropTop", label: "Top (%)", labelKey: "Dialog.Advanced.CropTop",
+          min: 0, max: 45, step: 1, value: 0 },
+        { type: "range", key: "cropBottom", label: "Bottom (%)", labelKey: "Dialog.Advanced.CropBottom",
+          min: 0, max: 45, step: 1, value: 0 },
+        { type: "range", key: "cropLeft", label: "Left (%)", labelKey: "Dialog.Advanced.CropLeft",
+          min: 0, max: 45, step: 1, value: 0 },
+        { type: "range", key: "cropRight", label: "Right (%)", labelKey: "Dialog.Advanced.CropRight",
+          min: 0, max: 45, step: 1, value: 0 },
+      ],
+    },
+    {
+      title: "Replace image",
+      titleKey: "Dialog.ImageAdvanced.Section.Replace",
+      rows: [
+        { type: "text", key: "url", label: "From URL", labelKey: "Dialog.ImageAdvanced.FromUrl",
+          placeholder: "https://…" },
+        { type: "button", key: "replace", label: "Browse file…", labelKey: "Dialog.ImageAdvanced.Browse",
+          cmd: "imageAdvancedReplace" },
+      ],
+    },
+    {
+      title: "Alt text",
+      titleKey: "Dialog.ImageAdvanced.Section.Alt",
+      rows: [
+        { type: "text", key: "alt", label: "Description", labelKey: "Dialog.ImageAdvanced.Alt" },
+      ],
+    },
+  ],
+};
+
+/** Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
+export const WO_DIALOG_SPECS = {
+  tableSettingsAdvanced: TABLE_SETTINGS_ADVANCED_SPEC,
+  imageSettingsAdvanced: IMAGE_SETTINGS_ADVANCED_SPEC,
+};
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a
  *  shared module-level engine so callers without an engine still work. */
@@ -974,6 +1217,7 @@ const WoDialogs = {
   hsbColorPicker,
   multiSliderGradient,
   WO_CUSTOM_WIDGETS,
+  WO_DIALOG_SPECS,
   hsbToHex,
   hexToHsb,
   seedEngineStrings,
