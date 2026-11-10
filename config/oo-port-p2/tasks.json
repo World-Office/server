@@ -1,0 +1,118 @@
+{
+ "defaults": {
+  "max_attempts": 3,
+  "accept_timeout_s": 7200,
+  "agent_timeout_s": 9000,
+  "retry_delay_s": 60
+ },
+ "tasks": [
+  {
+   "id": "P2-01",
+   "title": "Rust: Canvas::draw_image + render DocxBlock::Image (DM-7), emu->px sizing, image_render_tests",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-renderer/src/canvas.rs",
+    "core/crates/wo-renderer/src/model.rs",
+    "core/crates/wo-renderer/Cargo.toml",
+    "core/crates/wo-renderer-wasm/src/layout.rs",
+    "core/crates/wo-renderer-wasm/src/canvas_bridge.rs",
+    "core/crates/wo-renderer-wasm/src/image_render_tests.rs",
+    "core/crates/wo-renderer-wasm/src/lib.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 1 \u2014 Images (ORM-04 Phase A, tagged DM-7). Today image rendering is a literal no-op: wo-renderer-wasm/src/layout.rs line ~58 has `DocxBlock::Image(_) => {}` (in the paragraph loop) and line ~498 has `DocxBlock::Image(_image) => { cursor_y += 20.0 * PT_TO_PX; }` (the \"placeholder for now\" in the block layout loop). wo-ooxml ALREADY parses image bytes: `DocxImage { bytes: Vec<u8>, width_emu, height_emu, wrap_mode }` (core/crates/wo-ooxml/src/model.rs ~line 888), reachable via `docx.images()` and the per-block `DocxBlock::Image(DocxImage)`. wo-raster already has a decoder: `core/crates/wo-raster/src/decoder.rs` \u2014 `ImageDecoder::decode(data) -> Result<RasterImage, String>`, `RasterImage::as_rgba_bytes()`, `:new(width,height,fill)`, plus scaling where it exists. TASKS: (1) In `core/crates/wo-renderer/src/canvas.rs` add `pub fn draw_image(&mut self, x: f32, y: f32, width: f32, height: f32, rgba: &[u8], img_w: u32, img_h: u32)` that blits the RGBA bytes into the canvas pixel buffer at the target rect (nearest-neighbor or bilinear scale to fit), respecting the current clip/transform where trivial; if wo-renderer lacks a pixel buffer abstraction for this, add a minimal `blit_rgba` on whatever surface Canvas holds (look at how draw_rect sets pixels). (2) In wo-renderer-wasm/src/layout.rs replace BOTH no-op sites: for `DocxBlock::Image`, decode `bytes` via wo-raster `ImageDecoder::decode`, compute the target rect from width_emu/height_emu (1 emu = 1/914400 inch; PT_TO_PX is already defined \u2014 convert emu->pt->px), reserve the cursor space (advance by the rendered height like a block), and push a render command so the image actually lands on the page raster. (3) In wo-renderer-wasm/src/canvas_bridge.rs ensure the image pixels get into the exported ImageData the page already produces (the bridge already exports ImageData from the pixel buffer \u2014 make draw_image feed into the same buffer). (4) Add wo-raster (and if needed the `image` crate) as dependencies of wo-renderer (Cargo.toml) \u2014 check the workspace deps in the root Cargo.toml first and reuse them; do NOT add a new external crate not already in the workspace. (5) NEW test module wo-renderer-wasm/src/image_render_tests.rs (`mod image_render_tests;` in lib.rs under #[cfg(test)]): a plain #[test] that builds a minimal docx (parse a tiny docx string containing one inline image via OoxmlParser, or construct the model directly) and asserts layout produces a page whose pixel buffer differs from a no-image baseline in the region where the image should be (i.e. pixels were blitted), plus a second test asserting the emu->px sizing math. Baseline green: `cargo test -p wo-renderer-wasm --lib` currently 189 passing \u2014 stay green. NO wasm signature changes. scope: canvas.rs, wo-renderer-wasm layout.rs, canvas_bridge.rs, wo-renderer Cargo.toml, image_render_tests.rs, plan/oo-port/.",
+   "acceptance": "Canvas::draw_image exists and blits RGBA; both DocxBlock::Image no-op sites in layout.rs render (decode via wo-raster, emu->px rect, cursor advances); image_render_tests.rs has >=2 plain tests incl. one proving pixels differ from no-image baseline; cargo test -p wo-renderer-wasm --lib green (baseline 189).",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f core/crates/wo-renderer/src/canvas.rs && grep -qE 'pub fn draw_image' core/crates/wo-renderer/src/canvas.rs && test -f core/crates/wo-renderer-wasm/src/layout.rs && grep -qE 'DocxBlock::Image' core/crates/wo-renderer-wasm/src/layout.rs && ! grep -qE 'DocxBlock::Image\\(_\\) => \\{\\}' core/crates/wo-renderer-wasm/src/layout.rs && test -f core/crates/wo-renderer-wasm/src/image_render_tests.rs && grep -q 'mod image_render_tests' core/crates/wo-renderer-wasm/src/lib.rs && grep -qE 'pub fn draw_image' core/crates/wo-renderer/src/canvas.rs && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-renderer/src/canvas.rs"
+  },
+  {
+   "id": "P2-02",
+   "title": "Rust: extract Shaper + shaped-run line breaking (Phase B), replaces char_advance",
+   "deps": [
+    "P2-01"
+   ],
+   "scope": [
+    "core/crates/wo-renderer/src/shaping.rs",
+    "core/crates/wo-renderer/src/textlayout.rs",
+    "core/crates/wo-renderer/src/canvas.rs",
+    "core/crates/wo-renderer/src/text.rs",
+    "core/crates/wo-renderer/src/lib.rs",
+    "core/crates/wo-renderer/src/shaping_tests.rs",
+    "core/crates/wo-renderer/Cargo.toml",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 2 \u2014 Shaping + text layout (Phase B). rustybuzz + swash are already dependencies of wo-renderer (Cargo.toml) and `Canvas::draw_text` (core/crates/wo-renderer/src/canvas.rs ~line 634) already does swash-based glyph shaping for single runs. Extract it into a reusable shape engine and replace the current `char_advance`-based line breaking (search canvas.rs / text.rs for `char_advance` and line-breaking loops) with shaped-run breaking so kerning pairs, ligature widths and non-Latin scripts (logical-order clusters) measure correctly. TASKS: (1) NEW module `core/crates/wo-renderer/src/shaping.rs` (`pub mod shaping;` in lib.rs): `pub struct Shaper<'a> { library: &'a FontLibrary, ... }` with `pub fn shape(&self, font: &FontKey/Handle, size_pt: f32, text: &str) -> Result<Vec<ShapedRun>, String>` reusing the swash code from draw_text (extract, don't duplicate); `pub struct ShapedRun { text: String, glyphs: Vec<GlyphPos>, advance: f32, direction: TextDirection }` (define a small TextDirection/enum or reuse existing), plus `shaped_advance` that sums run advances. (2) NEW module `core/crates/wo-renderer/src/textlayout.rs` (`pub mod textlayout;`): `pub fn break_lines(shaper, font, size, width_pt, text) -> Vec<LayoutLine>` that segments text by runs (using wo-unicode tables if helpful for script/bidi boundaries \u2014 wo-unicode workspace crate is available), shapes each run, and breaks at the largest shaped prefix whose advance fits `width_pt` WITHOUT splitting a shaped cluster mid-glyph (carry to next line); the old `char_advance` path in canvas.rs/text.rs should delegate here (or be replaced by a call to break_lines) so displayed and measured metrics agree. (3) Rewire `Canvas::draw_text` (and `draw_text_weighted` if it does its own layout) to consume break_lines output; behavior for existing tests must not regress (baseline: `cargo test -p wo-renderer --lib` + `cargo test -p wo-renderer-wasm --lib` currently 189 passing total). (4) NEW test module wo-renderer/src/shaping_tests.rs with plain #[test]s: a Latin string with a known kerning pair (e.g. \"AV\") has shaped advance != sum of naive glyph advances (proves Shaper actually shapes); a long unbreakable word wraps to the next line at exactly width_pt; a string with a cluster (test with a composed char or CJK contiguous run) never splits mid-glyph; empty/whitespace-only strings yield zero lines of glyphs. NO wasm signature changes. scope: wo-renderer/src/{shaping.rs,textlayout.rs,canvas.rs,text.rs,lib.rs,shaping_tests.rs}, wo-renderer/Cargo.toml, plan/oo-port/.",
+   "acceptance": "wo-renderer/src/shaping.rs has pub struct Shaper + shape() -> Vec<ShapedRun>; textlayout.rs has break_lines -> Vec<LayoutLine>; draw_text consumes break_lines; char_advance line breaking replaced; shaping_tests.rs has >=3 tests (kerning advance != naive sum, long-word wrap, cluster never splits); cargo test -p wo-renderer --lib + -p wo-renderer-wasm --lib green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && test -f core/crates/wo-renderer/src/shaping.rs && grep -qE 'pub struct Shaper|pub fn shape' core/crates/wo-renderer/src/shaping.rs && grep -q 'pub mod shaping' core/crates/wo-renderer/src/lib.rs && test -f core/crates/wo-renderer/src/textlayout.rs && grep -q 'pub mod textlayout' core/crates/wo-renderer/src/lib.rs && grep -qE 'break_lines' core/crates/wo-renderer/src/textlayout.rs && test -f core/crates/wo-renderer/src/shaping_tests.rs && grep -q 'pub mod shaping_tests\\|mod shaping_tests' core/crates/wo-renderer/src/lib.rs && timeout 550 cargo test -p wo-renderer --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-renderer-wasm --lib 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-renderer/src/shaping.rs core/crates/wo-renderer/src/textlayout.rs"
+  },
+  {
+   "id": "P2-03",
+   "title": "Rust: DOCX fields engine \u2014 fldSimple + fldChar begin/separate/end, gap_fields_roundtrip",
+   "deps": [],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "core/crates/wo-x2t/src/converters.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 4 (first engine) \u2014 DOCX fields. Today wo-ooxml has only slivers: parser.rs line ~1704 handles `w:fldSimple` minimally and model.rs has a Field-ish stub. Build a real fields engine. TASKS: (1) In core/crates/wo-ooxml/src/model.rs extend the run/paragraph model to carry complex fields: parse `w:instrText` inside `w:fldChar begin/separate/end` runs into a `DocxField { kind: FieldKind, instruction: String, cached_result: Option<String> }`, with `#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]`; FieldKind = { Simple, Begin, Separate, End, LockedBegin, ... } as the docx spec defines. Keep `w:fldSimple` runs mapping to Simple with their instr + cached run text. (2) In parser.rs parse both forms without breaking existing roundtrips (`cargo test -p wo-ooxml --lib` and the whole workspace must stay green). (3) In serializer.rs re-emit fields structurally (begin/separate/end survive as authored, Simple as fldSimple). (4) Add `gap_fields_roundtrip` test to core/crates/wo-x2t/tests/converter_gaps.rs (follow the file's existing roundtrip() helper pattern): a docx containing PAGE + date + a simple fldSimple field round-trips docx->html->docx keeping the field instruction and cached text (at minimum the field must not be dropped and its instruction must survive). Gate requires this test to exist and pass. scope: wo-ooxml/src/{model.rs,parser.rs,serializer.rs}, wo-ooxml tests, wo-x2t/tests/converter_gaps.rs, plan/oo-port/.",
+   "acceptance": "model.rs has DocxField with FieldKind + instruction + cached_result; parser parses fldSimple + fldChar begin/separate/end; serializer re-emits; gap_fields_roundtrip test exists and passes; cargo test -p wo-ooxml --lib and -p wo-x2t --test converter_gaps green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'pub struct DocxField|FieldKind' core/crates/wo-ooxml/src/model.rs && grep -qE 'instrText|fldChar|fldSimple' core/crates/wo-ooxml/src/parser.rs && grep -qE 'instrText|fldChar|fldSimple' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_fields_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok"
+  },
+  {
+   "id": "P2-04",
+   "title": "Rust: DOCX style-chain resolution \u2014 docDefaults/basedOn/latentStyles precedence",
+   "deps": [
+    "P2-03"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-ooxml/src/style_chain_tests.rs",
+    "core/crates/wo-ooxml/tests/",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 4 (second engine) \u2014 DOCX style-chain resolution. wo-ooxml currently stores styles as a flat bag (search model.rs for `DocxStyles`/`styles:`/`docDefaults` \u2014 the parser has 5 references to docDefaults/latentStyles/pStyle but no resolution). Implement proper style inheritance. TASKS: (1) In core/crates/wo-ooxml/src/model.rs add `DocxStyleChain` (or extend the styles type) that resolves, for a given paragraph/run, the effective formatting by walking `basedOn` up the chain with the correct precedence: run-level direct formatting > character style > paragraph style > linked paragraph/character style > docDefaults > latentStyles. Provide `pub fn get_paragraph_props(&self, style_id: Option<&str>) -> EffectiveParagraphProps` and `pub fn get_run_props(&self, para_style_id: Option<&str>, run_style_id: Option<&str>) -> EffectiveRunProps` returning concrete resolved values (font, size, bold, color, alignment, indent, spacing where present in the styles table) with the same semantics and defaulting as OO's style engine (docDefaults first as the tree root). (2) Parse `docDefaults` + `w:latentStyles` + per-style `w:basedOn` into this structure in parser.rs (parser already touches these \u2014 extend it). (3) Serializer must not lose this structure. (4) Add a NEW plain unit test in wo-ooxml tests (`style_chain_tests.rs` or in congruence_tests.rs following its style): a styles.xml fragment with docDefaults (font Calibri 11), a paragraph style basedOn normal overriding size to 14pt, a character style basedOn that overriding bold => resolved paragraph props are 14pt; run with direct color red overrides resolved bold+color. Baseline `cargo test -p wo-ooxml --lib` stays green. scope: wo-ooxml/src/{model.rs,parser.rs,serializer.rs}, wo-ooxml tests, plan/oo-port/.",
+   "acceptance": "model.rs has DocxStyleChain with get_paragraph_props/get_run_props resolving docDefaults->basedOn->latentStyles precedence; parser parses docDefaults/latentStyles/basedOn; NEW style_chain_tests.rs covers docDefaults font 11 + para basedOn 14pt + run direct color override; cargo test -p wo-ooxml --lib green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'DocxStyleChain|get_paragraph_props|get_run_props' core/crates/wo-ooxml/src/model.rs && grep -qE 'docDefaults|latentStyles|basedOn' core/crates/wo-ooxml/src/parser.rs && test -f core/crates/wo-ooxml/src/style_chain_tests.rs && grep -q 'mod style_chain_tests' core/crates/wo-ooxml/src/lib.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/model.rs"
+  },
+  {
+   "id": "P2-05",
+   "title": "Rust: DOCX data-driven numbering \u2014 all abstractNums, foreign parts, gap_numbering_foreign_roundtrip",
+   "deps": [
+    "P2-04"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-x2t/src/converters.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 4 (third engine) \u2014 DOCX numbering beyond the fixed template. The numbering engine is currently a hardcoded 8-abstractNum template (search wo-ooxml parser.rs / serializer.rs and wo-x2t for the fixed list \u2014 the comment 'fixed 8-abstractNum template' or array of 8 templates). Replace it with a data-driven engine. TASKS: (1) In core/crates/wo-ooxml/src/model.rs add `DocxNumbering { abstract_nums: Vec<DocxAbstractNum>, nums: Vec<DocxNum> }` where `DocxAbstractNum { id, levels: Vec<DocxAbstractNumLevel> }` and each level carries numFmt (decimal, lowerLetter, lowerRoman, bullet, ...), lvlText pattern, start, indent, suff, pStyle linkage \u2014 parsed from numbering.xml (all abstractNum elements, not just 8). `DocxNum { num_id, abstract_num_id, overrides }` links numId->abstractNumId with optional level overrides. (2) parser.rs parses all of numbering.xml into this; serializer re-emits it wholesale (verbatim keep). (3) wo-x2t list rendering (converters.rs) must now consult DocxNumbering for numFmt/lvlText instead of the 8-entry map, including imported/foreign numbering parts (`gap_numbering_foreign_roundtrip`: a docx whose numbering.xml contains MORE than 8 abstractNum entries with non-default formats round-trips docx->html->docx preserving all entries and the correct list markers). Add `gap_numbering_foreign_roundtrip` to core/crates/wo-x2t/tests/converter_gaps.rs. Baseline `cargo test -p wo-x2t --test converter_gaps` = 17 passing, stay green. scope: wo-ooxml/src/{model.rs,parser.rs,serializer.rs}, wo-x2t/src/converters.rs, wo-x2t/tests/converter_gaps.rs, plan/oo-port/.",
+   "acceptance": "model.rs has DocxNumbering { abstract_nums, nums } with per-level numFmt/lvlText; parser reads all abstractNum; serializer re-emits verbatim; converter list rendering consults DocxNumbering (not the 8-entry template); gap_numbering_foreign_roundtrip exists+passes; cargo test -p wo-ooxml --lib and -p wo-x2t --test converter_gaps green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'DocxNumbering|DocxAbstractNum|DocxNum' core/crates/wo-ooxml/src/model.rs && grep -qE 'abstractNum|numFmt|lvlText' core/crates/wo-ooxml/src/parser.rs && grep -qE 'abstractNum|numFmt|lvlText' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_numbering_foreign_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/model.rs"
+  },
+  {
+   "id": "P2-06",
+   "title": "Rust: DOCX bookmarks + hyperlink anchor + sdt + unmanaged-parts bag, 3 gap tests",
+   "deps": [
+    "P2-05"
+   ],
+   "scope": [
+    "core/crates/wo-ooxml/src/model.rs",
+    "core/crates/wo-ooxml/src/parser.rs",
+    "core/crates/wo-ooxml/src/serializer.rs",
+    "core/crates/wo-x2t/tests/converter_gaps.rs",
+    "core/crates/wo-x2t/src/converters.rs",
+    "plan/oo-port/"
+   ],
+   "description": "PORT-PLAN Phase 2 item 4 (tail) \u2014 bookmarks, w:hyperlink w:anchor survival, sdt round-trip, and the unmanaged-parts bag. TASKS: (1) Bookmarks: parse `w:bookmarkStart`/`w:bookmarkEnd` (id, name) in parser.rs into model (`Vec<DocxBookmark>` on the body or paragraph) and re-emit in serializer.rs with ids stable; add `gap_bookmark_anchor_roundtrip` to core/crates/wo-x2t/tests/converter_gaps.rs proving a docx with a named bookmark + a `w:hyperlink w:anchor=\"<name>\"` internal link round-trips docx->html->docx with both the bookmark and the anchor linkalive (use the file's roundtrip() helper). (2) SDT (structured document tags): parse `w:sdt`/`w:sdtPr`/`w:sdtContent` minimally (keep tag type + alias + tag value in model, keep content as normal block children) and re-emit so sdt tags survive a docx round-trip; add `gap_sdt_roundtrip` to converter_gaps.rs (a docx with an sdt block with `<w:alias w:val=\"Name\"/>` + `<w:tag w:val=\"...\"/>` survives). (3) Unmanaged-parts bag: wo-ooxml should retain all zip parts it does not parse (diagrams/embeddings/customXml, `w:pict` VML, `endnotes.xml`, `settings.xml`) so a round-trip re-zips them intact; add `gap_pict_verbatim_roundtrip` to converter_gaps.rs proving a `w:pict` VML block (or settings.xml entry) survives byte-identical through the docx->docx round-trip path (serializer must keep a raw-parts map: part_name -> bytes). Baseline `cargo test -p wo-x2t --test converter_gaps` = 17 passing, stay green. scope: wo-ooxml/src/{model.rs,parser.rs,serializer.rs}, wo-x2t/tests/converter_gaps.rs, plan/oo-port/.",
+   "acceptance": "model.rs has DocxBookmark + sdt model + raw-parts bag (part_name->bytes); serializer re-emits bookmarks with stable ids, sdt tags, and verbatim unmanaged parts; gap_bookmark_anchor_roundtrip + gap_sdt_roundtrip + gap_pict_verbatim_roundtrip exist+pass; cargo test -p wo-ooxml --lib and -p wo-x2t --test converter_gaps green.",
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && grep -qE 'DocxBookmark|bookmarkStart|bookmarkEnd' core/crates/wo-ooxml/src/model.rs && grep -qE 'bookmarkStart|bookmarkEnd' core/crates/wo-ooxml/src/parser.rs && grep -qE 'bookmarkStart|bookmarkEnd' core/crates/wo-ooxml/src/serializer.rs && grep -q 'gap_bookmark_anchor_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && grep -q 'gap_sdt_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && grep -q 'gap_pict_verbatim_roundtrip' core/crates/wo-x2t/tests/converter_gaps.rs && timeout 550 cargo test -p wo-ooxml --lib 2>&1 | grep -q 'test result: ok' && timeout 550 cargo test -p wo-x2t --test converter_gaps 2>&1 | grep -q 'test result: ok' && wc -l core/crates/wo-ooxml/src/model.rs"
+  }
+ ]
+}
