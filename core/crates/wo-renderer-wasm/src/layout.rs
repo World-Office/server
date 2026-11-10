@@ -55,7 +55,9 @@ pub fn flat_paragraphs(body: &DocxBody) -> Vec<BlockPath> {
                     }
                 }
             }
-            DocxBlock::Image(_) => {}
+            DocxBlock::Image(_) => {
+                // Images have no text content, so no paragraph paths
+            }
         }
     }
     out
@@ -126,11 +128,32 @@ pub struct PageLayout {
     pub content_height: f32,
 }
 
+/// A laid-out image on a page.
+#[derive(Debug, Clone)]
+pub struct LaidOutImage {
+    /// Image bytes (PNG, JPEG, etc.)
+    pub bytes: Vec<u8>,
+    /// X position in pixels
+    pub x: f32,
+    /// Y position in pixels
+    pub y: f32,
+    /// Width in pixels
+    pub width: f32,
+    /// Height in pixels
+    pub height: f32,
+    /// Original width in EMUs
+    pub width_emu: u32,
+    /// Original height in EMUs
+    pub height_emu: u32,
+}
+
 /// A fully laid-out page.
 #[derive(Debug, Clone)]
 pub struct LaidOutPage {
     pub layout: PageLayout,
     pub paragraphs: Vec<LaidOutParagraph>,
+    /// Images laid out on this page
+    pub images: Vec<LaidOutImage>,
 }
 
 /// A rectangular highlight for one line of a text selection, in pixels.
@@ -324,6 +347,7 @@ impl LayoutEngine {
         let mut page = LaidOutPage {
             layout: pl.clone(),
             paragraphs: Vec::new(),
+            images: Vec::new(),
         };
         let mut cursor_y = pl.content_y;
 
@@ -335,6 +359,7 @@ impl LayoutEngine {
                         pages.push(LaidOutPage {
                             layout: pl.clone(),
                             paragraphs: std::mem::take(&mut page.paragraphs),
+                            images: std::mem::take(&mut page.images),
                         });
                         cursor_y = pl.content_y;
                     }
@@ -389,6 +414,7 @@ impl LayoutEngine {
                         pages.push(LaidOutPage {
                             layout: pl.clone(),
                             paragraphs: std::mem::take(&mut page.paragraphs),
+                            images: std::mem::take(&mut page.images),
                         });
                         cursor_y = pl.content_y;
                         let (relaid, _) = self.layout_paragraph(
@@ -427,6 +453,7 @@ impl LayoutEngine {
                         pages.push(LaidOutPage {
                             layout: pl.clone(),
                             paragraphs: std::mem::take(&mut page.paragraphs),
+                            images: std::mem::take(&mut page.images),
                         });
                         cursor_y = pl.content_y;
                     }
@@ -458,6 +485,7 @@ impl LayoutEngine {
                             pages.push(LaidOutPage {
                                 layout: pl.clone(),
                                 paragraphs: std::mem::take(&mut page.paragraphs),
+                                images: std::mem::take(&mut page.images),
                             });
                             cursor_y = pl.content_y;
                         }
@@ -495,9 +523,38 @@ impl LayoutEngine {
                     }
                     cursor_y += 12.0 * PT_TO_PX;
                 }
-                DocxBlock::Image(_image) => {
-                    // Image rendering for DM-7; placeholder for now
-                    cursor_y += 20.0 * PT_TO_PX;
+                DocxBlock::Image(image) => {
+                    // Image rendering for DM-7
+                    // Convert EMUs to pixels: emu / 12700 * PT_TO_PX
+                    // where 12700 EMUs = 1 point, PT_TO_PX = 96/72 = 4/3
+                    let emu_to_px = PT_TO_PX / 12700.0;
+                    let img_w_px = image.width_emu as f32 * emu_to_px;
+                    let img_h_px = image.height_emu as f32 * emu_to_px;
+
+                    // Check if image fits on current page
+                    if cursor_y + img_h_px > max_content_y && cursor_y > pl.content_y + 5.0 {
+                        pages.push(LaidOutPage {
+                            layout: pl.clone(),
+                            paragraphs: std::mem::take(&mut page.paragraphs),
+                            images: std::mem::take(&mut page.images),
+                        });
+                        cursor_y = pl.content_y;
+                    }
+
+                    // Create laid-out image and add to current page
+                    let laid_out_image = LaidOutImage {
+                        bytes: image.bytes.clone(),
+                        x: pl.content_x,
+                        y: cursor_y,
+                        width: img_w_px,
+                        height: img_h_px,
+                        width_emu: image.width_emu,
+                        height_emu: image.height_emu,
+                    };
+                    page.images.push(laid_out_image);
+
+                    // Advance cursor
+                    cursor_y += img_h_px;
                 }
             }
         }
@@ -789,6 +846,11 @@ impl LayoutEngine {
             page.layout.width_px as f32,
             page.layout.height_px as f32,
         );
+
+        // Render images first (they go behind text)
+        for img in &page.images {
+            let _ = canvas.draw_image(&img.bytes, img.x, img.y, img.width, img.height);
+        }
 
         for para in &page.paragraphs {
             for line in &para.lines {

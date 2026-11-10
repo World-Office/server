@@ -26,6 +26,7 @@ zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }
+image = { workspace = true }
 
 [features]
 default = ["console_error_panic_hook"]
