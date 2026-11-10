@@ -8,7 +8,8 @@
 //! `editor.js`'s `wsEventDispatcher` fires as named `wo-event:<frame>`
 //! CustomEvents; every other variant rides the plain `wo-event` fan-out only,
 //! and `Other { name, data }` preserves the long tail 1:1 so no OO event can
-//! be lost.
+//! be lost. Phase 3 (P3-E01) adds the named comments/track-changes frames and
+//! the `emitOtherEvent` passthrough for the unnamed remainder.
 //!
 //! Wire shape — one `WsEvent` is one JSON object crossing the boundary
 //! (serde internally tagged: `tag = "event"`, `content = "payload"`):
@@ -147,6 +148,38 @@ pub enum WsEvent {
     RemoveComment { id: String },
     UpdateCommentPosition { id: String, rects: Vec<Rect> },
 
+    // ---- comments & track-changes long tail (Phase 3, P3-E01) ----
+    /// OO `asc_onChangeCommentData` / `asc_onChangeComments` /
+    /// `asc_onChangeCommentLogicalPosition` merged frame: a comment's content
+    /// or anchor changed. `kind` is "data" | "bulk" | "logical_position";
+    /// `id` is "" for the bulk form (the ids ride `data`).
+    CommentChange { id: String, kind: String, data: Value },
+    /// OO `asc_onAddComments` — bulk add (replies/selections arrive as one
+    /// batch).
+    AddComments { ids: Vec<String>, data: Value },
+    /// OO `asc_onRemoveComments` / `asc_onDeleteComment` — bulk removal
+    /// (`RemoveComment` above stays for the single-remove wire compat).
+    RemoveComments { ids: Vec<String> },
+    /// OO `asc_onShowComment` / `asc_onHideComment` (hide rides `show: false`).
+    ShowComment { id: String, show: bool },
+    /// OO `asc_onLockComment` / `asc_onUnLockComment` (unlock rides
+    /// `locked: false`), mirroring `LockDocumentProps`.
+    LockComment {
+        id: String,
+        locked: bool,
+        user_id: Option<String>,
+    },
+    /// OO `asc_onChangeDisplayModeInReview` — `mode` is "off" | "markup" |
+    /// "simpleMarkup" | "original".
+    ChangeDisplayModeInReview { mode: String },
+    /// OO `asc_onShowRevisionsChange` — review/revision pane visibility.
+    ShowRevisionsChange { show: bool },
+    /// OO `asc_onUpdateRevisionsChangesPosition` — revision marker anchors.
+    UpdateRevisionsChangesPosition { rects: Vec<Rect> },
+    /// Track-changes item frame for the OO revision long tail: `id` is the
+    /// revision id, `kind` is "accept" | "reject" | "update" | "move".
+    TrackChange { id: String, kind: String, data: Value },
+
     // ---- proofing / view misc (Phase 2/3) ----
     SpellCheckVariants {
         word: String,
@@ -206,6 +239,19 @@ pub(crate) fn clear_event_sink_for_test() {
     *TEST_SINK.get_or_init(|| Mutex::new(None)).lock().unwrap() = None;
 }
 
+/// Serialize the install/emit/clear sequences of every test that touches the
+/// native test sink — `emit_without_sink_returns_false_and_drops` asserts the
+/// sink is *absent*, so concurrent sink users must not interleave with it.
+#[cfg(test)]
+static TEST_SINK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Hold this guard for the whole install→emit→assert→clear sequence of a
+/// test that uses the native test sink.
+#[cfg(test)]
+pub(crate) fn lock_test_sink() -> std::sync::MutexGuard<'static, ()> {
+    TEST_SINK_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 /// Serialize `ev` to its wire frame and deliver it to the installed sink.
 ///
 /// Returns `true` when a sink consumed the frame, `false` when none is
@@ -252,4 +298,18 @@ pub fn co_authoring_disconnect(reason: &str) {
     let _ = push(WsEvent::CoAuthoringDisconnect {
         reason: reason.to_string(),
     });
+}
+
+/// Long-tail passthrough (P3-E01): push any unnamed OO callback through the
+/// `WsEvent::Other { name, data }` fallback 1:1 — `name` is the OO callback
+/// name and `data_json` its payload verbatim. Non-JSON input degrades to
+/// `null` (never an error). Returns whether a sink consumed the frame (same
+/// contract as `emit_event`).
+#[wasm_bindgen(js_name = emitOtherEvent)]
+pub fn emit_other_event(name: &str, data_json: &str) -> bool {
+    let data: Value = serde_json::from_str(data_json).unwrap_or(Value::Null);
+    push(WsEvent::Other {
+        name: name.to_string(),
+        data,
+    })
 }
