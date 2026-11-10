@@ -16,10 +16,10 @@ const css = readFileSync(resolve(HERE, "style.css"), "utf8");
 
 // --- every .ribbon-page carries exactly two .ribbon-row children -------------
 const TABS = ["home", "insert", "draw", "layout", "references", "collaboration",
-  "protection", "view", "plugins", "ai", "chart-design", "header-footer"];
+  "protection", "view", "plugins", "ai", "forms", "chart-design", "header-footer"];
 const pageRe = /<div class="ribbon-page[^"]*" data-tab="([^"]+)"/g;
 const matches = [...html.matchAll(pageRe)];
-assert.equal(matches.length, TABS.length, "all 12 ribbon pages present");
+assert.equal(matches.length, TABS.length, "all 13 ribbon pages present");
 for (let i = 0; i < matches.length; i++) {
   const tab = matches[i][1];
   const start = matches[i].index;

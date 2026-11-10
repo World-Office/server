@@ -1640,6 +1640,22 @@
     if (isSpanStyle) {
       try { document.execCommand("styleWithCSS", false, "true"); } catch (err) { /* best effort */ }
     }
+    // FX-U1: Forms tab - insert form fields
+    if (cmd === "insertTextField" || cmd === "insertCheckboxField" || cmd === "insertDropdownField" || cmd === "insertDateField") {
+      if (editBlocked()) return;
+      insertFormField(cmd);
+      return;
+    }
+    // FX-U1: Forms tab - toggle design/fill mode
+    if (cmd === "toggleFormDesignMode") {
+      toggleFormDesignMode();
+      return;
+    }
+    // FX-U1: Save as form
+    if (cmd === "saveForm" || (cmd === "openFilePane" && value === "save-form")) {
+      openSaveFormDialog();
+      return;
+    }
     // Loud-stub doctrine at the root: any command that reaches this
     // fallthrough but is not a real browser execCommand (e.g. a stubbed
     // ribbon button) must SAY so instead of failing silently — silent
@@ -2082,7 +2098,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "caption-dialog", "font-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "datetime-dialog", "caption-dialog", "font-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "macro-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog", "save-form-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -15647,5 +15663,116 @@
   document.getElementById("btn-group")?.addEventListener("click", () => combineInk(false));
   document.getElementById("btn-mergeshapes")?.addEventListener("click", () => combineInk(true));
 
-  loadDocument();
+  // FX-U1: Forms tab functions
+  // Track form design mode state
+  let formDesignMode = true;
+
+  function insertFormField(fieldType) {
+    if (editBlocked()) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      setStatus("Place the cursor where you want to insert the field");
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const field = document.createElement("span");
+    field.className = "form-field form-field-" + fieldType.toLowerCase().replace("insert", "").replace("field", "");
+    field.setAttribute("contenteditable", "false");
+    field.setAttribute("data-form-field", fieldType.replace("insert", "").replace("Field", "").toLowerCase());
+    if (fieldType === "insertCheckboxField") {
+      field.innerHTML = '<input type="checkbox" style="pointer-events:auto">';
+    } else if (fieldType === "insertDropdownField") {
+      field.innerHTML = '<select style="pointer-events:auto"><option value="">Option 1</option><option value="">Option 2</option></select>';
+    } else if (fieldType === "insertDateField") {
+      field.innerHTML = '<input type="date" style="pointer-events:auto">';
+    } else {
+      field.innerHTML = '<input type="text" placeholder="Enter text" style="pointer-events:auto">';
+    }
+    range.insertNode(field);
+    range.setStartAfter(field);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+    setStatus("Inserted " + fieldType.replace("insert", "").replace("Field", " field"));
+  }
+
+  function toggleFormDesignMode() {
+    formDesignMode = !formDesignMode;
+    document.body.classList.toggle("forms-design-mode", formDesignMode);
+    const btn = document.getElementById("btn-forms-view-fill");
+    if (btn) btn.setAttribute("aria-pressed", String(formDesignMode));
+    const allFields = document.querySelectorAll(".form-field");
+    allFields.forEach((field) => {
+      const input = field.querySelector("input, select");
+      if (input) {
+        input.style.pointerEvents = formDesignMode ? "auto" : "none";
+      }
+    });
+    setStatus("Form " + (formDesignMode ? "design" : "fill") + " mode " + (formDesignMode ? "on" : "off"));
+  }
+
+  // FX-U1: Save as form dialog
+  function openSaveFormDialog() {
+    const dlg = document.getElementById("save-form-dialog");
+    if (!dlg) return;
+    const nameInput = document.getElementById("save-form-name");
+    if (nameInput) nameInput.value = DOC_NAME.replace(/\.[^.]+$/, "") + ".docxf";
+    dlg.classList.add("open");
+    setStatus("Save as form dialog opened");
+  }
+
+  function closeSaveFormDialog() {
+    const dlg = document.getElementById("save-form-dialog");
+    if (dlg) dlg.classList.remove("open");
+  }
+
+  function saveForm() {
+    const nameInput = document.getElementById("save-form-name");
+    if (!nameInput) return;
+    const fileName = nameInput.value.trim();
+    if (!fileName) {
+      setStatus("Please enter a file name", true);
+      return;
+    }
+    // POST to /api/documents/{id}/save-form
+    const url = api("save-form");
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: fileName,
+        content: editor.innerHTML,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Save failed: " + res.status);
+        return res.json();
+      })
+      .then((data) => {
+        setStatus("Form saved as " + fileName);
+        closeSaveFormDialog();
+      })
+      .catch((err) => {
+        setStatus("Save failed: " + err.message, true);
+        console.error("save-form error:", err);
+      });
+  }
+
+  // Wire up save form dialog buttons
+  document.getElementById("btn-save-form")?.addEventListener("click", openSaveFormDialog);
+  document.getElementById("btn-save-form-ok")?.addEventListener("click", saveForm);
+  document.getElementById("btn-save-form-cancel")?.addEventListener("click", closeSaveFormDialog);
+
+  // FX-U1: Backstage save-form pane handler
+  // Backstage pane switching is handled by the existing backstage machinery
+  // We just need to wire the save-form button
+
+   loadDocument();
 })();

@@ -3139,3 +3139,53 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
   font-size: 12px;
 }
 .wo-grad-btn:hover { background: var(--hover); }
+
+/* FX-U1: Forms tab styles */
+.ribbon-page[data-tab="forms"] .rb { min-width: 32px; }
+#btn-forms-view-fill { min-width: auto; padding: 0 8px; }
+
+/* Form field elements in document */
+.form-field {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  min-width: 60px;
+  background: var(--surface);
+}
+.form-field-text { min-width: 120px; }
+.form-field-checkbox { width: auto; }
+.form-field-dropdown { min-width: 80px; }
+.form-field-date { min-width: 100px; }
+
+/* Design mode indication */
+body.forms-design-mode .form-field {
+  background: #fff0d7;
+  border-color: var(--accent);
+}
+
+/* Design vs fill mode toggle button styling */
+#btn-forms-view-fill[aria-pressed="true"] {
+  background: var(--tab-active-bg);
+  border-bottom-color: transparent;
+}
+
+/* Form field visual styles */
+.form-field-text input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+.form-field-dropdown select {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+.form-field-date input[type="date"] {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+}
