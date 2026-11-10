@@ -2367,6 +2367,133 @@ pub struct SmartArtShape {
     pub data_layout: String,
 }
 
+/// Transform of a `p:grpSp` group (`p:grpSpPr/a:xfrm`): the group's outer
+/// bounds in the parent coordinate space plus the child coordinate-space
+/// mapping (`a:chOff`/`a:chExt`) that places/scales the group's children.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupTransform {
+    /// Group bounding box in the parent coordinate space (`a:off`/`a:ext`).
+    pub bounds: Bounds,
+    /// Child coordinate-space origin (`a:chOff`), when written explicitly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_offset: Option<(i64, i64)>,
+    /// Child coordinate-space extent (`a:chExt`), when written explicitly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_extent: Option<(i64, i64)>,
+}
+
+/// A group shape (`p:grpSp`) — a recursive container of slide shapes with its
+/// own `p:grpSpPr` transform. Grouped shapes were previously dropped at parse
+/// by the direct-children spTree scan (ORM-07 ranked gap #1).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupShape {
+    pub id: String,
+    pub name: String,
+    /// Group transform (outer bounds + child-space `chOff`/`chExt`).
+    pub transform: GroupTransform,
+    /// Child shapes in document order; may contain nested groups.
+    pub children: Vec<GroupChild>,
+    /// Union bounding box of all direct children expressed in this group's
+    /// child coordinate space (computed at parse; used as the effective
+    /// child space when the group carries no explicit chOff/chExt).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_bounds: Option<Bounds>,
+}
+
+/// One entry of a group's child list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum GroupChild {
+    /// A leaf slide shape (`p:sp`, `p:pic`, `p:cxnSp`, ...).
+    Shape(SlideShape),
+    /// A nested `p:grpSp` (recursive SpTree member).
+    Group(Box<GroupShape>),
+}
+
+impl SlideShape {
+    /// Bounding box of any slide shape variant.
+    pub fn bounds(&self) -> Bounds {
+        match self {
+            SlideShape::TextBox(s) => s.bounds,
+            SlideShape::Picture(s) => s.bounds,
+            SlideShape::Placeholder(s) => s.bounds,
+            SlideShape::Table(s) => s.bounds,
+            SlideShape::Connector(s) => s.bounds,
+            SlideShape::Chart(s) => s.bounds,
+            SlideShape::SmartArt(s) => s.bounds,
+        }
+    }
+}
+
+impl GroupShape {
+    /// Union (`min`/`max`) bounding box of all direct children in this group's
+    /// child coordinate space. Nested groups contribute their outer bounds
+    /// (which live in the enclosing child space).
+    pub fn child_bounds_union(&self) -> Option<Bounds> {
+        let mut acc: Option<Bounds> = None;
+        for child in &self.children {
+            let b = match child {
+                GroupChild::Shape(s) => s.bounds(),
+                GroupChild::Group(g) => g.transform.bounds,
+            };
+            acc = Some(match acc {
+                None => b,
+                Some(a) => {
+                    let x = a.x.min(b.x);
+                    let y = a.y.min(b.y);
+                    Bounds {
+                        x,
+                        y,
+                        cx: (a.x + a.cx).max(b.x + b.cx) - x,
+                        cy: (a.y + a.cy).max(b.y + b.cy) - y,
+                    }
+                }
+            });
+        }
+        acc
+    }
+
+    /// Effective child coordinate space: the explicit `chOff`/`chExt` when
+    /// present, otherwise the parsed child bounds union, otherwise the group's
+    /// own bounds (OOXML defaults chOff/chExt to off/ext when absent).
+    pub fn effective_child_space(&self) -> ((i64, i64), (i64, i64)) {
+        if let (Some(off), Some(ext)) =
+            (self.transform.child_offset, self.transform.child_extent)
+        {
+            return (off, ext);
+        }
+        if let Some(cb) = self.child_bounds {
+            return ((cb.x, cb.y), (cb.cx, cb.cy));
+        }
+        (
+            (self.transform.bounds.x, self.transform.bounds.y),
+            (self.transform.bounds.cx, self.transform.bounds.cy),
+        )
+    }
+
+    /// Affine map (sx, sy, tx, ty) from this group's child coordinate space
+    /// into the parent space: `x' = sx*x + tx`, `y' = sy*y + ty`.
+    pub fn child_to_parent_affine(&self) -> (f64, f64, f64, f64) {
+        let (off, ext) = self.effective_child_space();
+        let b = &self.transform.bounds;
+        let sx = if ext.0 != 0 {
+            b.cx as f64 / ext.0 as f64
+        } else {
+            1.0
+        };
+        let sy = if ext.1 != 0 {
+            b.cy as f64 / ext.1 as f64
+        } else {
+            1.0
+        };
+        (
+            sx,
+            sy,
+            b.x as f64 - off.0 as f64 * sx,
+            b.y as f64 - off.1 as f64 * sy,
+        )
+    }
+}
+
 impl ConnectorShapeType {
     pub fn from_name(s: &str) -> Self {
         match s {

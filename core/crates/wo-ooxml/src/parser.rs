@@ -28,6 +28,36 @@ struct OpenField {
 /// OOXML parser.
 pub struct OoxmlParser;
 
+/// Rebuild a slide shape with its bounds mapped through an affine transform
+/// `(sx, sy, tx, ty)` (`x' = sx*x + tx`) — used when flattening `p:grpSp`
+/// groups into the flat slide model.
+fn map_shape_bounds(
+    shape: &SlideShape,
+    (sx, sy, tx, ty): (f64, f64, f64, f64),
+) -> SlideShape {
+    let mx = |v: i64| (v as f64 * sx + tx).round() as i64;
+    let my = |v: i64| (v as f64 * sy + ty).round() as i64;
+    let cx = (shape.bounds().cx as f64 * sx).round() as i64;
+    let cy = (shape.bounds().cy as f64 * sy).round() as i64;
+    let bounds = Bounds {
+        x: mx(shape.bounds().x),
+        y: my(shape.bounds().y),
+        cx,
+        cy,
+    };
+    let mut mapped = shape.clone();
+    match &mut mapped {
+        SlideShape::TextBox(s) => s.bounds = bounds,
+        SlideShape::Picture(s) => s.bounds = bounds,
+        SlideShape::Placeholder(s) => s.bounds = bounds,
+        SlideShape::Table(s) => s.bounds = bounds,
+        SlideShape::Connector(s) => s.bounds = bounds,
+        SlideShape::Chart(s) => s.bounds = bounds,
+        SlideShape::SmartArt(s) => s.bounds = bounds,
+    }
+    mapped
+}
+
 impl OoxmlParser {
     pub fn new() -> Self {
         Self
@@ -555,11 +585,231 @@ impl OoxmlParser {
                             shapes.push(SlideShape::Connector(conn));
                         }
                     }
+                    (Some(ns), "grpSp") if ns == Self::P_NS => {
+                        // ORM-07 ranked gap #1: p:grpSp groups were dropped by
+                        // this direct-children scan. The recursive group tree
+                        // is parsed below; because the flat SlideShape model
+                        // has no Group variant yet (adding one would break
+                        // downstream exhaustive matches), grouped shapes are
+                        // flattened into `shapes` with their bounds mapped
+                        // through the (nested) GrpSpPr transforms. The typed
+                        // tree stays available via `parse_pptx_groups`.
+                        if let Some(group) = self.parse_pptx_group(&child) {
+                            self.flatten_group_shapes(&group, None, &mut shapes);
+                        }
+                    }
                     _ => {}
                 }
             }
         }
         shapes
+    }
+
+    /// Parse a `<p:grpSp>` group shape: `nvGrpSpPr` id/name, the `GrpSpPr`
+    /// transform (outer `off`/`ext` + child-space `chOff`/`chExt`), and the
+    /// recursive child shape tree (`p:sp`, `p:pic`, `p:cxnSp`, nested
+    /// `p:grpSp`). Also computes the child bounding box union.
+    fn parse_pptx_group(&self, grp: &roxmltree::Node) -> Option<GroupShape> {
+        let nv_pr = grp.children().find(|c| {
+            c.is_element()
+                && c.has_tag_name("nvGrpSpPr")
+                && c.tag_name().namespace() == Some(Self::P_NS)
+        });
+        let c_nv_pr = nv_pr.and_then(|nv| {
+            nv.children().find(|c| {
+                c.is_element()
+                    && c.has_tag_name("cNvPr")
+                    && c.tag_name().namespace() == Some(Self::P_NS)
+            })
+        });
+        let id = c_nv_pr
+            .and_then(|n| n.attribute("id"))
+            .unwrap_or("0")
+            .to_string();
+        let name = c_nv_pr
+            .and_then(|n| n.attribute("name"))
+            .unwrap_or("")
+            .to_string();
+
+        let transform = self.parse_pptx_group_transform(grp);
+
+        let mut children = Vec::new();
+        for child in grp.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let local = child.tag_name().name();
+            let ns = child.tag_name().namespace();
+            match (ns, local) {
+                (Some(ns), "sp") if ns == Self::P_NS => {
+                    if let Some(shape) = self.parse_pptx_shape_from_sp(&child) {
+                        children.push(GroupChild::Shape(shape));
+                    }
+                }
+                (Some(ns), "pic") if ns == Self::P_NS => {
+                    if let Some(pic) = self.parse_pptx_picture(&child) {
+                        children.push(GroupChild::Shape(SlideShape::Picture(pic)));
+                    }
+                }
+                (Some(ns), "cxnSp") if ns == Self::P_NS => {
+                    if let Some(conn) = self.parse_pptx_connector(&child) {
+                        children.push(GroupChild::Shape(SlideShape::Connector(conn)));
+                    }
+                }
+                (Some(ns), "grpSp") if ns == Self::P_NS => {
+                    // Recursive SpTree member: nested groups become
+                    // GroupChild::Group and recurse through this same fn.
+                    if let Some(nested) = self.parse_pptx_group(&child) {
+                        children.push(GroupChild::Group(Box::new(nested)));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let mut group = GroupShape {
+            id,
+            name,
+            transform,
+            children,
+            child_bounds: None,
+        };
+        group.child_bounds = group.child_bounds_union();
+        Some(group)
+    }
+
+    /// Parse the group's own `p:grpSpPr/a:xfrm`: outer `a:off`/`a:ext` plus
+    /// the child coordinate-space `a:chOff`/`a:chExt` when written.
+    fn parse_pptx_group_transform(&self, grp: &roxmltree::Node) -> GroupTransform {
+        // The group's own xfrm lives in its direct <p:grpSpPr> child — do not
+        // descend into child shapes (their xfrms would shadow it).
+        let xfrm = grp
+            .children()
+            .find(|c| {
+                c.is_element()
+                    && c.has_tag_name("grpSpPr")
+                    && c.tag_name().namespace() == Some(Self::P_NS)
+            })
+            .and_then(|g| {
+                g.descendants()
+                    .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS))
+            });
+
+        let (mut off, mut ext, mut ch_off, mut ch_ext) = (
+            (0i64, 0i64),
+            (0i64, 0i64),
+            None,
+            None,
+        );
+        if let Some(xfrm) = xfrm {
+            for child in xfrm.children() {
+                if !child.is_element() {
+                    continue;
+                }
+                let local = child.tag_name().name();
+                let attr = |a: &str| child.attribute(a).and_then(|v| v.parse().ok());
+                match local {
+                    "off" => off = (attr("x").unwrap_or(0), attr("y").unwrap_or(0)),
+                    "ext" => ext = (attr("cx").unwrap_or(0), attr("cy").unwrap_or(0)),
+                    "chOff" => ch_off = Some((attr("x").unwrap_or(0), attr("y").unwrap_or(0))),
+                    "chExt" => ch_ext = Some((attr("cx").unwrap_or(0), attr("cy").unwrap_or(0))),
+                    _ => {}
+                }
+            }
+        }
+        GroupTransform {
+            bounds: Bounds {
+                x: off.0,
+                y: off.1,
+                cx: ext.0,
+                cy: ext.1,
+            },
+            child_offset: ch_off,
+            child_extent: ch_ext,
+        }
+    }
+
+    /// Flatten a group tree into leaf `SlideShape`s, mapping every child's
+    /// bounds through the nested group transforms (child space → slide space)
+    /// so grouped shapes survive into the flat slide model instead of
+    /// vanishing at parse.
+    fn flatten_group_shapes(
+        &self,
+        group: &GroupShape,
+        outer: Option<(f64, f64, f64, f64)>,
+        out: &mut Vec<SlideShape>,
+    ) {
+        let inner = group.child_to_parent_affine();
+        let aff = match outer {
+            None => inner,
+            Some((osx, osy, otx, oty)) => (
+                osx * inner.0,
+                osy * inner.1,
+                osx * inner.2 + otx,
+                osy * inner.3 + oty,
+            ),
+        };
+        for child in &group.children {
+            match child {
+                GroupChild::Shape(shape) => out.push(map_shape_bounds(shape, aff)),
+                GroupChild::Group(nested) => self.flatten_group_shapes(nested, Some(aff), out),
+            }
+        }
+    }
+
+    /// Parse the recursive `<p:grpSp>` group tree of every slide of a PPTX
+    /// package (ORM-07 gap #1). Returns one entry per slide, in slide order;
+    /// each entry holds the top-level groups of that slide's spTree in
+    /// document order (nested groups hang off `GroupChild::Group`).
+    pub fn parse_pptx_groups(&self, data: &[u8]) -> Result<Vec<Vec<GroupShape>>> {
+        let cursor = Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid ZIP archive: {}", e),
+        })?;
+
+        // Collect ppt/slides/slideN.xml entries sorted by N (mirrors parse_pptx_slides).
+        let mut slide_entries: Vec<(u32, String)> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name().to_string();
+                if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") {
+                    let idx: u32 = name
+                        .trim_start_matches("ppt/slides/slide")
+                        .trim_end_matches(".xml")
+                        .parse()
+                        .unwrap_or(0);
+                    slide_entries.push((idx, name));
+                }
+            }
+        }
+        slide_entries.sort_by_key(|(idx, _)| *idx);
+
+        let mut per_slide = Vec::new();
+        for (_, entry_name) in &slide_entries {
+            let xml = self.read_zip_entry(&mut archive, entry_name)?;
+            let mut groups = Vec::new();
+            if let Ok(doc) = XmlDoc::parse(&xml) {
+                if let Some(sp_tree) = doc.descendants().find(|n| {
+                    n.has_tag_name("spTree") && n.tag_name().namespace() == Some(Self::P_NS)
+                }) {
+                    for child in sp_tree.children() {
+                        if !child.is_element() {
+                            continue;
+                        }
+                        if child.has_tag_name("grpSp")
+                            && child.tag_name().namespace() == Some(Self::P_NS)
+                        {
+                            if let Some(group) = self.parse_pptx_group(&child) {
+                                groups.push(group);
+                            }
+                        }
+                    }
+                }
+            }
+            per_slide.push(groups);
+        }
+        Ok(per_slide)
     }
 
     fn parse_pptx_transition(&self, slide_elem: roxmltree::Node) -> Option<SlideTransition> {
