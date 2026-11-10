@@ -1,66 +1,74 @@
 {
- "P2B-R02": {
-  "state": "done",
-  "attempts": 1,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794304389,
-  "attempt_worker": "p2b-glm0"
- },
- "P2B-P03": {
-  "state": "done",
-  "attempts": 1,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794305585,
-  "attempt_worker": "p2b-glm1"
- },
- "P2B-X03": {
-  "state": "done",
-  "attempts": 1,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794300762,
-  "attempt_worker": "p2b-glm3"
- },
- "P2B-P01": {
-  "state": "done",
-  "attempts": 3,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794304463,
-  "attempt_worker": "p2b-glm1"
- },
- "P2B-X01": {
-  "state": "done",
-  "attempts": 1,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794298570,
-  "attempt_worker": "p2b-glm1"
- },
- "P2B-R01": {
-  "state": "done",
-  "attempts": 2,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794300762,
-  "attempt_worker": "p2b-mis0"
- },
- "P2B-P02": {
-  "state": "done",
-  "attempts": 2,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 1794307156,
-  "attempt_worker": "p2b-glm1"
- },
- "P2B-X02": {
-  "state": "done",
-  "attempts": 3,
-  "last_error": null,
-  "phase": "gate_passed",
-  "attempt_started_ts": 0,
-  "attempt_worker": "p2b-glm0"
- }
+  "P2B-R02": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794304389,
+    "attempt_worker": "p2b-glm0"
+  },
+  "P2B-X03": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794300762,
+    "attempt_worker": "p2b-glm3"
+  },
+  "P2B-P01": {
+    "state": "done",
+    "attempts": 3,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794304463,
+    "attempt_worker": "p2b-glm1"
+  },
+  "P2B-P03": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794305585,
+    "attempt_worker": "p2b-glm1"
+  },
+  "P2B-R01": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794300762,
+    "attempt_worker": "p2b-mis0"
+  },
+  "P2B-X04": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794308534,
+    "attempt_worker": "p2b-glm2"
+  },
+  "P2B-X01": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794298570,
+    "attempt_worker": "p2b-glm1"
+  },
+  "P2B-X02": {
+    "state": "done",
+    "attempts": 3,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 0,
+    "attempt_worker": "p2b-glm0"
+  },
+  "P2B-P02": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1794307156,
+    "attempt_worker": "p2b-glm1"
+  }
 }
