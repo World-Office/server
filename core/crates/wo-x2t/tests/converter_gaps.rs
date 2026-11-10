@@ -1575,21 +1575,37 @@ fn gap_xlsx_cf_ext_roundtrip() {
 
 /// Build a minimal valid pptx zip around a hand-written ppt/slides/slide1.xml.
 fn pptx_from_slide_xml(slide_xml: &str) -> Vec<u8> {
+    pptx_from_slide_xml_with_parts(slide_xml, &[])
+}
+
+/// Build a minimal valid pptx zip around a hand-written ppt/slides/slide1.xml
+/// plus extra parts (e.g. ppt/tableStyles.xml).
+fn pptx_from_slide_xml_with_parts(slide_xml: &str, parts: &[(&str, &str)]) -> Vec<u8> {
     use std::io::Write;
     use zip::write::SimpleFileOptions;
     let mut buf = Vec::new();
     {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
-            .unwrap();
-        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        let mut content_types = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
-  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
-</Types>"#)
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
+        );
+        if parts
+            .iter()
+            .any(|(name, _)| *name == "ppt/tableStyles.xml")
+        {
+            content_types.push_str(
+                "\n  <Override PartName=\"/ppt/tableStyles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml\"/>",
+            );
+        }
+        content_types.push_str("\n</Types>");
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
             .unwrap();
+        zip.write_all(content_types.as_bytes()).unwrap();
         zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -1620,6 +1636,10 @@ fn pptx_from_slide_xml(slide_xml: &str) -> Vec<u8> {
         zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
             .unwrap();
         zip.write_all(slide_xml.as_bytes()).unwrap();
+        for (name, xml) in parts {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        }
         zip.finish().unwrap();
     }
     buf
@@ -1841,5 +1861,356 @@ fn gap_pptx_group_roundtrip() {
         (cb2.x, cb2.y, cb2.cx, cb2.cy),
         (100000, 200000, 800000, 600000),
         "child bounding box recomputes identically"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// P2B-P03: PPTX slide text bodies — `a:bodyPr` layout (anchor/insets/autofit)
+// + `a:buChar`/`a:buAutoNum`/`a:buNone` bullets, and the `ppt/tableStyles.xml`
+// catalog reader (ORM-07 ranked gaps #4/#5/#10: bullets used to collapse to
+// plain paragraphs and tables lost every rule).
+// ---------------------------------------------------------------------------
+
+/// Slide XML with a text box carrying a full `a:bodyPr` (rtlCol, anchorCtr,
+/// anchor, all four insets, numCol/spcCol, wrap, normAutofit with applied
+/// scale) and a bullet mix — buChar with buClr/buSzPct/buFont helpers,
+/// buAutoNum with startAt and a theme color, buNone — plus a content
+/// placeholder whose bodyPr carries spAutoFit and an alphaLc numbering bullet.
+const TEXTBODY_SLIDE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="11" name="Bullets"/>
+          <p:nvPr/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="100000" y="200000"/>
+            <a:ext cx="3000000" cy="1500000"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr rtlCol="1" anchorCtr="1" anchor="ctr" lIns="91440" tIns="45720" rIns="91440" bIns="45720" numCol="2" spcCol="12700" wrap="square">
+            <a:normAutofit fontScale="87500" lnSpcReduction="5000"/>
+          </a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr>
+              <a:buClr><a:srgbClr val="5B9BD5"/></a:buClr>
+              <a:buSzPct val="100000"/>
+              <a:buFont typeface="Arial" pitchFamily="34" charset="0"/>
+              <a:buChar char="&#8226;"/>
+            </a:pPr>
+            <a:r><a:rPr lang="en-US" sz="1800" b="1"/><a:t>Char bullet</a:t></a:r>
+          </a:p>
+          <a:p>
+            <a:pPr>
+              <a:buClr><a:schemeClr val="accent1"/></a:buClr>
+              <a:buFont typeface="Calibri"/>
+              <a:buAutoNum type="arabicPeriod" startAt="2"/>
+            </a:pPr>
+            <a:r><a:t>Auto number</a:t></a:r>
+          </a:p>
+          <a:p>
+            <a:pPr><a:buNone/></a:pPr>
+            <a:r><a:t>No bullet</a:t></a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="12" name="Subtitle"/>
+          <p:nvPr>
+            <p:ph type="subTitle" idx="1"/>
+          </p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="500000" y="2500000"/>
+            <a:ext cx="4000000" cy="800000"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr anchor="b"><a:spAutoFit/></a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr><a:buAutoNum type="alphaLcParenR"/></a:pPr>
+            <a:r><a:t>Alpha list</a:t></a:r>
+          </a:p>
+          <a:p><a:r><a:t>Second line</a:t></a:r></a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#;
+
+/// `ppt/tableStyles.xml` in the shape corporate decks ship: a default style
+/// id, one `a:tblStyle` with a tblBg fill, a wholeTbl scope carrying tcBdr
+/// borders (scheme + literal colors) plus fillRef/fontRef, banding, and a
+/// firstRow accent override.
+const TABLE_STYLES_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}">
+  <a:tblStyle styleId="{93294377-8074-4D90-B10A-F10A93C39B14}" styleName="Medium Style 2 - Accent 1">
+    <a:tblBg><a:fillClr><a:srgbClr val="1F3864"/></a:fillClr></a:tblBg>
+    <a:wholeTbl>
+      <a:tcBdr>
+        <a:lnL w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:schemeClr val="accent1"/></a:solidFill>
+          <a:prstDash val="solid"/>
+        </a:lnL>
+        <a:lnT w="12700" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:srgbClr val="8EAADB"/></a:solidFill>
+          <a:prstDash val="sysDot"/>
+        </a:lnT>
+      </a:tcBdr>
+      <a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef>
+      <a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>
+    </a:wholeTbl>
+    <a:band1H><a:fillRef idx="3"><a:srgbClr val="D9E2F3"/></a:fillRef></a:band1H>
+    <a:band2H/>
+    <a:firstRow><a:fillRef idx="2"><a:schemeClr val="accent1"/></a:fillRef></a:firstRow>
+    <a:lastRow/>
+    <a:firstCol/>
+    <a:lastCol/>
+  </a:tblStyle>
+</a:tblStyleLst>"#;
+
+#[test]
+fn gap_pptx_textbody_roundtrip() {
+    use wo_ooxml::model::{PptxTableStyles, SlideShape, SlideTextFit, TextBullet};
+    let data = pptx_from_slide_xml_with_parts(
+        TEXTBODY_SLIDE_XML,
+        &[("ppt/tableStyles.xml", TABLE_STYLES_XML)],
+    );
+    let parser = wo_ooxml::OoxmlParser::new();
+
+    // 1. Typed rich text bodies: bodyPr layout + per-paragraph bullets.
+    let per_slide = parser.parse_pptx_text_bodies(&data).unwrap();
+    assert_eq!(per_slide.len(), 1, "one slide entry");
+    let bodies: &Vec<wo_ooxml::model::SlideTextBody> = &per_slide[0];
+    assert_eq!(bodies.len(), 2, "text box + placeholder text bodies");
+    let tb = &bodies[0];
+    assert_eq!(tb.shape_id, "11");
+    let bp = tb.body_pr.as_ref().expect("bodyPr must parse");
+    assert_eq!(bp.anchor.as_deref(), Some("ctr"));
+    assert_eq!(bp.anchor_centered, Some(true));
+    assert_eq!(bp.rtl_columns, Some(true));
+    assert_eq!(bp.wrap.as_deref(), Some("square"));
+    assert_eq!(bp.vert, None, "no vert attribute");
+    assert_eq!(bp.left_inset, Some(91440));
+    assert_eq!(bp.top_inset, Some(45720));
+    assert_eq!(bp.right_inset, Some(91440));
+    assert_eq!(bp.bottom_inset, Some(45720));
+    assert_eq!(bp.num_columns, Some(2));
+    assert_eq!(bp.column_spacing, Some(12700));
+    assert_eq!(
+        bp.autofit,
+        Some(SlideTextFit::NormAutofit {
+            font_scale: Some(87500),
+            line_space_reduction: Some(5000),
+        }),
+        "normAutofit with applied font scale"
+    );
+    assert_eq!(tb.paragraphs.len(), 3);
+    assert_eq!(
+        tb.paragraphs[0].bullet,
+        Some(TextBullet::Char {
+            character: "\u{2022}".to_string(),
+            font: Some("Arial".to_string()),
+            color: Some("5B9BD5".to_string()),
+            scheme_color: None,
+            size_pct: Some(100000),
+        }),
+        "buChar with its buClr/buSzPct/buFont helpers"
+    );
+    assert_eq!(
+        tb.paragraphs[1].bullet,
+        Some(TextBullet::AutoNum {
+            auto_num_type: "arabicPeriod".to_string(),
+            start_at: Some(2),
+            font: Some("Calibri".to_string()),
+            color: None,
+            scheme_color: Some("accent1".to_string()),
+            size_pct: None,
+        }),
+        "buAutoNum with startAt and theme color"
+    );
+    assert_eq!(
+        tb.paragraphs[2].bullet,
+        Some(TextBullet::None),
+        "buNone must survive as an explicit bullet suppression"
+    );
+    assert_eq!(tb.paragraphs[0].paragraph.runs[0].text, "Char bullet");
+    assert!(tb.paragraphs[0].paragraph.runs[0].bold, "run props kept");
+
+    let ph = &bodies[1];
+    assert_eq!(ph.shape_id, "12");
+    let pbp = ph.body_pr.as_ref().expect("placeholder bodyPr");
+    assert_eq!(pbp.anchor.as_deref(), Some("b"));
+    assert_eq!(pbp.autofit, Some(SlideTextFit::ShapeAutofit));
+    assert_eq!(
+        ph.paragraphs[0].bullet,
+        Some(TextBullet::AutoNum {
+            auto_num_type: "alphaLcParenR".to_string(),
+            start_at: None,
+            font: None,
+            color: None,
+            scheme_color: None,
+            size_pct: None,
+        })
+    );
+    assert_eq!(
+        ph.paragraphs[1].bullet, None,
+        "paragraph without pPr has no bullet"
+    );
+
+    // 2. The flat model still parses the same slide (text kept, bullets are
+    //    an additive typed view on top).
+    let cursor = std::io::Cursor::new(data.as_slice());
+    let mut archive = zip::ZipArchive::new(cursor).unwrap();
+    let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+    assert_eq!(pres.slides[0].shapes.len(), 2);
+    let SlideShape::TextBox(flat_tb) = &pres.slides[0].shapes[0] else {
+        panic!("first shape must stay a text box in the flat model");
+    };
+    assert_eq!(flat_tb.id, "11");
+    assert_eq!(flat_tb.text_body.paragraphs.len(), 3);
+    assert_eq!(flat_tb.text_body.paragraphs[0].runs[0].text, "Char bullet");
+
+    // 3. Serialize the slide back with the rich bodies and re-parse: the
+    //    typed model round-trips identically, including bodyPr attribute
+    //    order-independent values and the bullet helpers.
+    let slide_xml = wo_ooxml::OoxmlSerializer::new()
+        .build_slide_xml_with_text_bodies(&pres.slides[0], bodies);
+    assert!(
+        slide_xml.contains("<a:buChar char=\"\u{2022}\"/>"),
+        "buChar must re-emit: {}",
+        &slide_xml[..slide_xml.len().min(4000)]
+    );
+    assert!(
+        slide_xml.contains("<a:buAutoNum type=\"arabicPeriod\" startAt=\"2\"/>"),
+        "buAutoNum with startAt must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buNone/>"),
+        "buNone must re-emit"
+    );
+    assert!(
+        slide_xml.contains("anchor=\"ctr\"")
+            && slide_xml.contains("lIns=\"91440\"")
+            && slide_xml.contains("fontScale=\"87500\""),
+        "bodyPr attributes and normAutofit scale must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buClr><a:schemeClr val=\"accent1\"/></a:buClr>"),
+        "theme-colored bullet must re-emit"
+    );
+    assert!(
+        slide_xml.contains("<a:buFont typeface=\"Arial\"/>"),
+        "bullet font must re-emit"
+    );
+    let out = pptx_from_slide_xml(&slide_xml);
+    let bodies2 = parser.parse_pptx_text_bodies(&out).unwrap();
+    assert_eq!(bodies2.len(), 1);
+    assert_eq!(
+        bodies2[0], *bodies,
+        "rich slide text bodies must survive serialize -> re-parse"
+    );
+
+    // 4. tableStyles.xml: typed catalog read + re-serialize + re-parse.
+    let styles = parser.parse_pptx_table_styles(&data).unwrap();
+    assert_eq!(
+        styles.default_style_id.as_deref(),
+        Some("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"),
+        "tblStyleLst def attribute"
+    );
+    assert_eq!(styles.styles.len(), 1);
+    let style = &styles.styles[0];
+    assert_eq!(style.style_id, "{93294377-8074-4D90-B10A-F10A93C39B14}");
+    assert_eq!(style.style_name.as_deref(), Some("Medium Style 2 - Accent 1"));
+    assert_eq!(style.table_background.as_deref(), Some("1F3864"));
+
+    let whole = style.whole_table.as_ref().expect("wholeTbl must parse");
+    assert_eq!(whole.borders.len(), 2, "tcBdr lines parse in order");
+    assert_eq!(whole.borders[0].edge, "lnL");
+    assert_eq!(whole.borders[0].width, Some(12700));
+    assert_eq!(whole.borders[0].dash.as_deref(), Some("solid"));
+    assert_eq!(whole.borders[0].color, None);
+    assert_eq!(
+        whole.borders[0].scheme_color.as_deref(),
+        Some("accent1"),
+        "scheme-colored border line"
+    );
+    assert_eq!(whole.borders[1].edge, "lnT");
+    assert_eq!(whole.borders[1].color.as_deref(), Some("8EAADB"));
+    assert_eq!(whole.borders[1].scheme_color, None);
+    assert_eq!(whole.borders[1].dash.as_deref(), Some("sysDot"));
+    let fill_ref = whole.fill_ref.as_ref().expect("wholeTbl fillRef");
+    assert_eq!(fill_ref.idx, "1");
+    assert_eq!(fill_ref.scheme_color.as_deref(), Some("accent1"));
+    let font_ref = whole.font_ref.as_ref().expect("wholeTbl fontRef");
+    assert_eq!(font_ref.idx, "minor");
+    assert_eq!(font_ref.scheme_color.as_deref(), Some("lt1"));
+
+    assert!(style.first_row.is_some(), "firstRow override parses");
+    assert_eq!(
+        style.first_row.as_ref().unwrap().fill_ref.as_ref().unwrap().idx,
+        "2"
+    );
+    assert_eq!(
+        style.band1_h.as_ref().unwrap().fill_ref.as_ref().unwrap().color.as_deref(),
+        Some("D9E2F3")
+    );
+    for (label, part) in [
+        ("band2H", &style.band2_h),
+        ("lastRow", &style.last_row),
+        ("firstCol", &style.first_col),
+        ("lastCol", &style.last_col),
+    ] {
+        assert!(part.is_some(), "empty {label} scope must still be present");
+    }
+
+    let styles_xml = wo_ooxml::OoxmlSerializer::new().serialize_pptx_table_styles(&styles);
+    assert!(
+        styles_xml.contains("<a:tblStyleLst xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" def=\"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}\">"),
+        "tblStyleLst root with def must re-emit"
+    );
+    assert!(
+        styles_xml.contains("<a:lnL w=\"12700\">")
+            && styles_xml.contains("<a:schemeClr val=\"accent1\"/>")
+            && styles_xml.contains("<a:prstDash val=\"sysDot\"/>"),
+        "tcBdr borders must re-emit with width/color/dash"
+    );
+    assert!(
+        styles_xml.contains("<a:fontRef idx=\"minor\">"),
+        "fontRef must re-emit its idx"
+    );
+    let out2 = pptx_from_slide_xml_with_parts(
+        "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"/>",
+        &[("ppt/tableStyles.xml", &styles_xml)],
+    );
+    let styles2 = parser.parse_pptx_table_styles(&out2).unwrap();
+    assert_eq!(
+        styles2, styles,
+        "table style catalog must survive serialize -> re-parse"
+    );
+
+    // 5. A package without ppt/tableStyles.xml yields the empty default.
+    let no_styles = pptx_from_slide_xml(
+        "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"/>",
+    );
+    assert_eq!(
+        parser.parse_pptx_table_styles(&no_styles).unwrap(),
+        PptxTableStyles::default()
     );
 }

@@ -1414,7 +1414,16 @@ impl OoxmlParser {
     }
 
     fn parse_pptx_shape_from_sp(&self, sp: &roxmltree::Node) -> Option<SlideShape> {
-        let id = sp.attribute("id").unwrap_or("0").to_string();
+        // The shape id lives on its `p:cNvPr` child (ST_DrawingElementId);
+        // fall back to an id attribute on the sp element itself for
+        // hand-written XML.
+        let id = sp
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr"))
+            .and_then(|n| n.attribute("id"))
+            .or_else(|| sp.attribute("id"))
+            .unwrap_or("0")
+            .to_string();
 
         // Detect shape type: ph (placeholder), sp (auto-shape/textbox)
         let is_placeholder = sp
@@ -1683,9 +1692,8 @@ impl OoxmlParser {
 
         for child in r_node.children() {
             if !child.is_element() {
-                if let Some(t) = child.text() {
-                    text.push_str(t);
-                }
+                // Run text comes only from <a:t> elements; stray text nodes
+                // are just pretty-print indentation between children.
                 continue;
             }
             match child.tag_name().name() {
