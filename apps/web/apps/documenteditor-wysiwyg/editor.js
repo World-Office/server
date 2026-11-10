@@ -653,6 +653,9 @@
       // A save reached the host: any queued offline snapshot is superseded.
       clearOfflineQueue();
       setStatus(t("Status.Saved"));
+      // PTS-T3 (HintManager): transient save confirmation via WoHints —
+      // the toast tier of the hint service (auto-dismisses, once per save).
+      if (window.WoHints) window.WoHints.hintToast(t("Hints.SavedText"));
       notifyHost("saved");
       if (DOC_FORMAT === "odt") {
         // ODT persistence round-trip confirmed by the server: the editor's
@@ -7030,6 +7033,117 @@
       highlightCurrentThumbnail();
     }, { passive: true });
   }
+
+  // ------------------------------------------------------------------
+  // PTS-T3 (ORM-09 HintManager): WoHints — hint/toast service.
+  //
+  // OO's HintManager (common/main/lib/controller/HintManager.js, 829
+  // lines) overlays letter badges on toolbar controls and walks the user
+  // through sections; the ledger carried it as blocked pure-UI long tail.
+  // WoHints is the WO-shaped reduction: a singleton stack in the
+  // bottom-right #hint-toast host with
+  //   showHint(id)    — a registered onboarding hint, once per session,
+  //                     auto-dismissed after its timeout
+  //   hintToast(msg)  — a transient notice (save confirmation, …)
+  //   dismissHints()  — clear the stack (Escape or the ✕ button)
+  // First hints are wired as a staggered boot tour (welcome → find →
+  // thumbnails) plus event hints (first table selection, first save).
+  // OO's keyboard letter-hint overlay (data-hint badge navigation) is
+  // deliberately out of scope — WO dispatches via data-cmd instead.
+  // ------------------------------------------------------------------
+  const WoHints = (function () {
+    const host = document.getElementById("hint-toast");
+    const seen = new Set(); // once per page load, like OO's _needShow
+    const stack = [];
+    // The hint registry: {title, text} are i18n keys. Hints with a delay
+    // form the staggered boot tour; the rest fire from event handlers.
+    const HINTS = {
+      welcome: { title: "Hints.WelcomeTitle", text: "Hints.WelcomeText", delay: 1500, timeout: 8000 },
+      find: { title: "Hints.FindTitle", text: "Hints.FindText", delay: 11000, timeout: 7000 },
+      thumbnails: { title: "Hints.ThumbnailsTitle", text: "Hints.ThumbnailsText", delay: 21000, timeout: 7000 },
+      table: { title: "Hints.TableTitle", text: "Hints.TableText", timeout: 7000 },
+    };
+
+    function dismissHint(item) {
+      const i = stack.indexOf(item);
+      if (i === -1) return;
+      stack.splice(i, 1);
+      if (item.parentNode) item.parentNode.removeChild(item);
+      if (!stack.length && host) host.hidden = true;
+    }
+
+    function hintCard(titleText, bodyText) {
+      const item = document.createElement("div");
+      item.className = "hint-toast-item";
+      item.setAttribute("role", "status");
+      if (titleText) {
+        const title = document.createElement("div");
+        title.className = "hint-toast-title";
+        title.textContent = titleText;
+        item.appendChild(title);
+      }
+      const text = document.createElement("div");
+      text.className = "hint-toast-text";
+      text.textContent = bodyText;
+      item.appendChild(text);
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "hint-toast-close";
+      close.setAttribute("aria-label", t("Hints.Dismiss") || "Dismiss");
+      close.textContent = "✕";
+      close.addEventListener("click", () => dismissHint(item));
+      item.appendChild(close);
+      return item;
+    }
+
+    function pushCard(item, timeout) {
+      if (!host) return;
+      host.hidden = false;
+      host.appendChild(item);
+      stack.push(item);
+      if (timeout) setTimeout(() => dismissHint(item), timeout);
+    }
+
+    function showHint(id) {
+      const spec = HINTS[id];
+      if (!host || !spec || seen.has(id)) return false;
+      seen.add(id);
+      pushCard(hintCard(t(spec.title), t(spec.text)), spec.timeout);
+      return true;
+    }
+
+    function hintToast(message, timeout) {
+      if (!host) return false;
+      pushCard(hintCard("", message), timeout || 2600);
+      return true;
+    }
+
+    function dismissHints() {
+      while (stack.length) dismissHint(stack[stack.length - 1]);
+    }
+
+    // Boot tour: one setTimeout per hint with a delay, in registry order.
+    Object.keys(HINTS).forEach((id) => {
+      if (HINTS[id].delay) setTimeout(() => showHint(id), HINTS[id].delay);
+    });
+
+    // Event hint: the first time the selection lands inside a table cell,
+    // point at the contextual table tools (mirrors OO's section-aware
+    // hints — the bubble appears when the user reaches the surface).
+    document.addEventListener("selectionchange", () => {
+      if (typeof currentTableCell === "function" && currentTableCell()) {
+        setTimeout(() => showHint("table"), 700);
+      }
+    }, { passive: true });
+
+    // Escape clears the visible stack (the ✕ dismisses one card).
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && stack.length) dismissHints();
+    });
+
+    return { showHint, hintToast, dismissHint, dismissHints, HINTS };
+  })();
+  window.WoHints = WoHints;
   const rpLineSpacing = document.getElementById("rp-line-spacing");
   if (rpLineSpacing) rpLineSpacing.addEventListener("change", () => {
     if (READ_ONLY) return;

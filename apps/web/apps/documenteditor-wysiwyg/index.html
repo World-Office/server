@@ -3608,5 +3608,10 @@
       <button type="button" id="btn-objlayout-close" data-i18n="Dialog.Done" class="primary">Done</button>
     </div>
   </div>
+  <!-- PTS-T3 (ORM-09 HintManager): WoHints host — the hint/toast stack in
+       the bottom-right corner, populated by the WoHints service in
+       editor.js (boot tour + event hints + save toasts). aria-live=polite
+       so hint text is announced without stealing focus. -->
+  <div id="hint-toast" aria-live="polite" aria-label="Hints" data-i18n-aria-label="Hints.Title" hidden></div>
 </body>
 </html>

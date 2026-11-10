@@ -45,13 +45,13 @@ format, runtime or named follow-up deliverable — that must land first).
 
 | oo_type | rows | full | partial | hosted | merged | blocked | missing |
 |---|---|---|---|---|---|---|---|
-| controller | 41 | 9 | 18 | 1 | 6 | 7 | 0 |
+| controller | 41 | 9 | 19 | 1 | 6 | 6 | 0 |
 | view | 109 | 34 | 42 | 15 | 5 | 13 | 0 |
 | model | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
 | collection | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
 | template | 27 | 6 | 12 | 2 | 2 | 5 | 0 |
 | common-component | 34 | 8 | 17 | 1 | 7 | 1 | 0 |
-| **total** | **217** | **60** | **91** | **20** | **20** | **26** | **0** |
+| **total** | **217** | **60** | **92** | **20** | **20** | **25** | **0** |
 
 (Scoreboard current as of the P3-U05 ledger closure, rebaselined by the
 oo-pts campaign: the P3-U01..U04
@@ -65,7 +65,13 @@ MonacoEditor), 29 `blocked` with named prerequisites in the notes.
 PTS-T2 then flipped the `PageThumbnails` controller+view rows and the
 `Pages` model row from `blocked` to `hosted` (**20 hosted / 26 blocked**):
 the thumbnails rail runs over the docserver page-render API (PTS-T1,
-wo-docx-renderer raster), not DOM screenshots. Per-type
+wo-docx-renderer raster), not DOM screenshots. PTS-T3 then flipped the
+`HintManager` controller row from `blocked` to `partial` (**92 partial /
+25 blocked**): the WoHints hint/toast service in editor.js (`showHint` /
+`hintToast` / `dismissHints` over the `#hint-toast` host in index.html)
+runs an onboarding boot tour plus event hints and a save toast; OO's
+keyboard letter-hint overlay (`data-hint` badge navigation) is declared
+out of scope — WO dispatches via `data-cmd`. Per-type
 counts re-computed from the JSON, not hand-summed; gated by
 `ui-closure.test.mjs` → `UI-CLOSURE-PASS` and
 `page-thumbnails.test.mjs` → `THUMBNAILS-PASS`.)
@@ -121,12 +127,13 @@ to 0** — `missing` no longer occurs in the JSON (17 `hosted`, 5
 `merged-into-editor.js`, 29 `blocked` with named prerequisites; per-row
 detail in the JSON notes, re-verified by `ui-closure.test.mjs` →
 `UI-CLOSURE-PASS`; the oo-pts PTS-T2 flip moved `PageThumbnails`+`Pages`
-to `hosted`, so 26 remain). The open work is the 26 `blocked` rows (each note names
+to `hosted` and PTS-T3 moved `HintManager` to `partial`, so 25 remain).
+The open work is the 25 `blocked` rows (each note names
 its prerequisite: forms/docxf + roles exports, the signing flow, the
 Phase-4 plugin/iframe runtime
 for the `External*` family, the docserver gateway/cloud for
-`ExternalUsers`/`ExternalLinks`, the Phase-3 long-tail pass for
-`HintManager`) plus the editor.js open/apply wiring for the 17 `hosted`
+`ExternalUsers`/`ExternalLinks`)
+plus the editor.js open/apply wiring for the 17 `hosted`
 specs. The large-block backlog is the
 first table above
 (`ImageSettingsAdvanced` → `TextArtSettings` ≈ 12.5k lines of OO view code
