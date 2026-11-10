@@ -12,6 +12,8 @@ pub mod ops;
 pub mod pivot;
 pub mod validation;
 
+pub use pivot::{AggFunc, FieldGrouping, GroupPeriod, GroupRange, PivotField, PivotValueField};
+
 pub use conditional::{ConditionalResult, apply_conditional_format};
 pub use export::{export_ods, from_ods};
 pub use format::{FormatContext, FormatPattern, format_number, format_value};

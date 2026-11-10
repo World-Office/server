@@ -20,6 +20,64 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use wo_formula::ast::CellValue;
 
+/// Grouping period for date fields in pivot tables.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum GroupPeriod {
+    /// Group by seconds
+    Seconds,
+    /// Group by minutes
+    Minutes,
+    /// Group by hours
+    Hours,
+    /// Group by days
+    Days,
+    /// Group by months
+    Months,
+    /// Group by quarters
+    Quarters,
+    /// Group by years
+    Years,
+}
+
+impl GroupPeriod {
+    /// Human-readable label for this grouping period.
+    pub fn label(&self) -> &'static str {
+        match self {
+            GroupPeriod::Seconds => "Seconds",
+            GroupPeriod::Minutes => "Minutes",
+            GroupPeriod::Hours => "Hours",
+            GroupPeriod::Days => "Days",
+            GroupPeriod::Months => "Months",
+            GroupPeriod::Quarters => "Quarters",
+            GroupPeriod::Years => "Years",
+        }
+    }
+}
+
+/// Grouping range configuration for numeric fields in pivot tables.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GroupRange {
+    /// Start value of the range
+    pub start: f64,
+    /// End value of the range
+    pub end: f64,
+    /// Range size (step)
+    pub step: f64,
+}
+
+/// Grouping configuration for a pivot field.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FieldGrouping {
+    /// No grouping
+    None,
+    /// Group by date/time periods
+    Period(GroupPeriod),
+    /// Group by numeric ranges
+    Ranges(Vec<GroupRange>),
+}
+
 // ============================================================================
 // Data Structures
 // ============================================================================
@@ -67,6 +125,23 @@ pub struct PivotField {
     pub name: String,
     /// Zero-based index into the source data columns.
     pub source_index: usize,
+    /// Grouping configuration for this field (date periods or numeric ranges).
+    #[serde(default = "default_grouping")]
+    pub group_ranges: FieldGrouping,
+    /// Group period for date grouping (alternative to group_ranges).
+    #[serde(default = "default_group_period", skip_serializing_if = "Option::is_none")]
+    pub group_period: Option<GroupPeriod>,
+    /// Formula for calculated items (e.g., "=Sales*0.1" for a 10% tax field).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub formula: Option<String>,
+}
+
+fn default_grouping() -> FieldGrouping {
+    FieldGrouping::None
+}
+
+fn default_group_period() -> Option<GroupPeriod> {
+    None
 }
 
 impl PivotField {
@@ -75,7 +150,20 @@ impl PivotField {
         Self {
             name: name.into(),
             source_index,
+            group_ranges: FieldGrouping::None,
+            group_period: None,
+            formula: None,
         }
+    }
+
+    /// Check if this field has any grouping configuration.
+    pub fn has_grouping(&self) -> bool {
+        !matches!(self.group_ranges, FieldGrouping::None) || self.group_period.is_some()
+    }
+
+    /// Check if this field is a calculated item (has a formula).
+    pub fn has_formula(&self) -> bool {
+        self.formula.is_some()
     }
 }
 
@@ -89,6 +177,9 @@ pub struct PivotValueField {
     /// Optional custom display name (defaults to `"{func} of {field}"`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    /// Formula for calculated value fields (e.g., "=Sum(Sales)*0.1").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub formula: Option<String>,
 }
 
 impl PivotValueField {
@@ -98,6 +189,7 @@ impl PivotValueField {
             field,
             agg_func,
             display_name: None,
+            formula: None,
         }
     }
 
@@ -106,6 +198,11 @@ impl PivotValueField {
         self.display_name
             .clone()
             .unwrap_or_else(|| format!("{} of {}", self.agg_func.label(), self.field.name))
+    }
+
+    /// Check if this value field is a calculated item (has a formula).
+    pub fn has_formula(&self) -> bool {
+        self.formula.is_some() || self.field.has_formula()
     }
 }
 
