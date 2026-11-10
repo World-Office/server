@@ -1382,19 +1382,7 @@ impl OoxmlParser {
 
         let body = match body_node {
             Some(node) => self.parse_body_node(&node, &xml),
-            None => DocxBody {
-                footnotes_raw: None,
-                blocks: Vec::new(),
-                raw_sect_pr: None,
-                header: None,
-                footer: None,
-                comments: Vec::new(),
-                comment_anchors: Vec::new(),
-                media: Vec::new(),
-                image_rels: Vec::new(),
-                hyperlink_rels: Vec::new(),
-                numbering: None,
-            },
+            None => DocxBody::new(),
         };
 
         // Page furniture: resolve the first headerReference/footerReference
@@ -1481,7 +1469,136 @@ impl OoxmlParser {
         body.comments = self.parse_comments(archive)?;
         body.comment_anchors = self.parse_comment_anchors(&xml)?;
 
+        // P2-06: unmanaged-parts bag — every part the serializer does not
+        // re-emit (word/settings.xml, word/endnotes.xml, customXml/*,
+        // diagrams, themes, docProps/app.xml, ...) is captured
+        // byte-for-byte so foreign content survives the round trip.
+        self.capture_unmanaged_parts(archive, &mut body)?;
+
+        // P2-06: typed bookmark catalogue (all w:bookmarkStart markers, in
+        // document order: body, header, footer) for anchor resolution.
+        body.bookmarks = self.collect_bookmarks(&body);
+
         Ok(Some(body))
+    }
+
+    /// True when the serializer re-emits this part itself (P2-06) — only
+    /// everything else belongs in the unmanaged-parts bag.
+    fn is_managed_docx_part(name: &str) -> bool {
+        matches!(
+            name,
+            "[Content_Types].xml"
+                | "_rels/.rels"
+                | "word/document.xml"
+                | "word/_rels/document.xml.rels"
+                | "word/styles.xml"
+                | "docProps/core.xml"
+                | "word/numbering.xml"
+                | "word/footnotes.xml"
+                | "word/comments.xml"
+                | "word/commentsExtended.xml"
+        ) || (name.starts_with("word/header") && name.ends_with(".xml"))
+            || (name.starts_with("word/footer") && name.ends_with(".xml"))
+            || name.starts_with("word/media/")
+    }
+
+    /// P2-06: capture every unmanaged zip part (bytes + content type from
+    /// the source [Content_Types].xml) into `body.unmanaged_parts`.
+    fn capture_unmanaged_parts(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        body: &mut DocxBody,
+    ) -> Result<()> {
+        // (part name "/word/x.xml" -> content type) and (ext -> content type)
+        // from the source package's [Content_Types].xml.
+        let (mut overrides, mut defaults): (Vec<(String, String)>, Vec<(String, String)>) =
+            (Vec::new(), Vec::new());
+        if let Ok(ct_xml) = self.read_zip_entry(archive, "[Content_Types].xml") {
+            if let Ok(ct_doc) = XmlDoc::parse(&ct_xml) {
+                for node in ct_doc.descendants() {
+                    if node.has_tag_name("Override") {
+                        let part = node.attribute("PartName").unwrap_or("").to_string();
+                        let ct = node.attribute("ContentType").unwrap_or("").to_string();
+                        if !part.is_empty() && !ct.is_empty() {
+                            overrides.push((part, ct));
+                        }
+                    } else if node.has_tag_name("Default") {
+                        let ext = node.attribute("Extension").unwrap_or("").to_lowercase();
+                        let ct = node.attribute("ContentType").unwrap_or("").to_string();
+                        if !ext.is_empty() && !ct.is_empty() {
+                            defaults.push((ext, ct));
+                        }
+                    }
+                }
+            }
+        }
+        let names: Vec<String> = archive.file_names().map(|n| n.to_string()).collect();
+        for name in names {
+            if Self::is_managed_docx_part(&name) {
+                continue;
+            }
+            let Some(bytes) = self.read_zip_entry_bytes(archive, &name).ok() else {
+                continue;
+            };
+            let content_type = overrides
+                .iter()
+                .find(|(p, _)| p == &format!("/{}", name))
+                .map(|(_, c)| c.clone())
+                .or_else(|| {
+                    name.rsplit('.')
+                        .next()
+                        .map(|e| e.to_lowercase())
+                        .and_then(|e| defaults.iter().find(|(k, _)| *k == e).map(|(_, c)| c.clone()))
+                });
+            body.unmanaged_parts.push(UnmanagedPart {
+                name,
+                bytes,
+                content_type,
+            });
+        }
+        Ok(())
+    }
+
+    /// P2-06: every bookmarkStart marker run in the document (body blocks
+    /// first, then the header and footer) becomes a catalogue entry — the
+    /// names are what `w:hyperlink w:anchor` resolves against.
+    fn collect_bookmarks(&self, body: &DocxBody) -> Vec<DocxBookmark> {
+        let mut out = Vec::new();
+        let from_blocks = |blocks: &Vec<DocxBlock>, out: &mut Vec<DocxBookmark>| {
+            for block in blocks {
+                match block {
+                    DocxBlock::Paragraph(p) => {
+                        for run in &p.runs {
+                            if let Some(BookmarkMarker::Start(b)) = &run.bookmark {
+                                out.push(b.clone());
+                            }
+                        }
+                    }
+                    DocxBlock::Table(t) => {
+                        for row in &t.rows {
+                            for cell in &row.cells {
+                                for p in &cell.paragraphs {
+                                    for run in &p.runs {
+                                        if let Some(BookmarkMarker::Start(b)) = &run.bookmark {
+                                            out.push(b.clone());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    DocxBlock::Image(_) => {}
+                }
+            }
+        };
+        from_blocks(&body.blocks, &mut out);
+        if let Some(hf) = &body.header {
+            from_blocks(&hf.blocks, &mut out);
+        }
+        if let Some(hf) = &body.footer {
+            from_blocks(&hf.blocks, &mut out);
+        }
+        out
     }
 
     fn parse_body_node(&self, body: &roxmltree::Node, xml: &str) -> DocxBody {
@@ -1495,9 +1612,14 @@ impl OoxmlParser {
                     && c.tag_name().namespace() == Some(Self::W_NS)
             })
             .map(|c| xml[c.range()].to_string());
+        // P2-06: body-level walk records w:sdt block wrappers (range +
+        // verbatim sdtPr) that the flat block list alone cannot express.
+        let mut blocks: Vec<DocxBlock> = Vec::new();
+        let mut sdt_wraps: Vec<DocxSdtWrap> = Vec::new();
+        self.parse_body_children(body, xml, &mut blocks, &mut sdt_wraps);
         DocxBody {
             footnotes_raw: None,
-            blocks: self.parse_block_children(body, xml),
+            blocks,
             raw_sect_pr,
             header: None,
             footer: None,
@@ -1507,6 +1629,59 @@ impl OoxmlParser {
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
             numbering: None,
+            bookmarks: Vec::new(),
+            sdt_wraps,
+            unmanaged_parts: Vec::new(),
+        }
+    }
+
+    /// P2-06: body-level block walk. Same shape as `parse_block_children`
+    /// (which serves headers/footers) but additionally records every
+    /// `w:sdt` content control that wraps blocks as a
+    /// [`DocxSdtWrap`] {start, end, verbatim sdtPr} so the serializer can
+    /// re-apply the wrapper around the right block range.
+    fn parse_body_children(
+        &self,
+        node: &roxmltree::Node,
+        xml: &str,
+        blocks: &mut Vec<DocxBlock>,
+        sdt_wraps: &mut Vec<DocxSdtWrap>,
+    ) {
+        for child in node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            match (child.tag_name().namespace(), child.tag_name().name()) {
+                (Some(Self::W_NS), "p") => {
+                    blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&child, xml)));
+                }
+                (Some(Self::W_NS), "tbl") => {
+                    if let Some(table) = self.parse_table(&child, xml) {
+                        blocks.push(DocxBlock::Table(table));
+                    }
+                }
+                (Some(Self::W_NS), "sdt") => {
+                    let pr = Self::sdt_pr_verbatim(&child, xml);
+                    let start = blocks.len();
+                    if let Some(content) = child.children().find(|c| {
+                        c.is_element()
+                            && c.tag_name().name() == "sdtContent"
+                            && c.tag_name().namespace() == Some(Self::W_NS)
+                    }) {
+                        self.parse_body_children(&content, xml, blocks, sdt_wraps);
+                    }
+                    // A sdt wrapping no blocks carries no content — nothing
+                    // to re-emit (an empty wrapper would be malformed).
+                    if blocks.len() > start {
+                        sdt_wraps.push(DocxSdtWrap {
+                            start,
+                            end: blocks.len() - 1,
+                            pr,
+                        });
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -1864,6 +2039,23 @@ impl OoxmlParser {
                     }
                     runs.push(run);
                 }
+                (Some(Self::W_NS), "bookmarkStart") => {
+                    // P2-06: bookmark ranges become empty marker runs so
+                    // run order (and thus bookmark position) round-trips.
+                    let id = self.attr_ns(child, "id").unwrap_or("").to_string();
+                    let name = self.attr_ns(child, "name").map(|s| s.to_string());
+                    runs.push(DocxRun {
+                        bookmark: Some(BookmarkMarker::Start(DocxBookmark { id, name })),
+                        ..DocxRun::default()
+                    });
+                }
+                (Some(Self::W_NS), "bookmarkEnd") => {
+                    let id = self.attr_ns(child, "id").unwrap_or("").to_string();
+                    runs.push(DocxRun {
+                        bookmark: Some(BookmarkMarker::End(id)),
+                        ..DocxRun::default()
+                    });
+                }
                 (Some(Self::W_NS), "commentRangeStart")
                 | (Some(Self::W_NS), "commentRangeEnd")
                 | (Some(Self::W_NS), "commentReference") => {
@@ -1921,6 +2113,9 @@ impl OoxmlParser {
                     // Hyperlinks contain runs. Capture @r:id so the link
                     // survives a round trip (serializer re-groups runs).
                     let rid = child.attribute((Self::R_NS, "id")).map(|s| s.to_string());
+                    // P2-06: internal links carry w:anchor (a bookmark
+                    // name) instead of r:id — no relationship involved.
+                    let anchor = self.attr_ns(child, "anchor").map(|s| s.to_string());
                     for r in child.children() {
                         if r.is_element()
                             && r.tag_name().name() == "r"
@@ -1928,16 +2123,18 @@ impl OoxmlParser {
                         {
                             let mut run = self.parse_run(&r, xml);
                             run.hyperlink_rid = rid.clone();
+                            if rid.is_none() {
+                                run.hyperlink_anchor = anchor.clone();
+                            }
                             runs.push(run);
                         }
                     }
                 }
                 (Some(Self::W_NS), "sdt") => {
-                    for r in child.descendants() {
-                        if r.has_tag_name("r") && r.tag_name().namespace() == Some(Self::W_NS) {
-                            runs.push(self.parse_run(&r, xml));
-                        }
-                    }
+                    // P2-06: inline content control — marker runs keep the
+                    // verbatim w:sdtPr metadata (alias/tag/id/placeholder)
+                    // and the run order inside w:sdtContent.
+                    self.inline_sdt(&child, xml, &mut runs);
                 }
                 _ => {}
             }
@@ -1952,6 +2149,73 @@ impl OoxmlParser {
             raw_flds,
             fields,
         }
+    }
+
+    /// P2-06: inline `w:sdt` (content control) — emit an open marker run
+    /// carrying the verbatim `w:sdtPr`, inline the direct content of
+    /// `w:sdtContent` (runs, nested sdts, hyperlinks), then a close marker.
+    fn inline_sdt(&self, sdt: &roxmltree::Node, xml: &str, runs: &mut Vec<DocxRun>) {
+        let pr = Self::sdt_pr_verbatim(sdt, xml);
+        runs.push(DocxRun {
+            sdt: Some(SdtMarker::Start { pr }),
+            ..DocxRun::default()
+        });
+        let content_children: Vec<roxmltree::Node> = sdt
+            .children()
+            .find(|c| {
+                c.is_element()
+                    && c.tag_name().name() == "sdtContent"
+                    && c.tag_name().namespace() == Some(Self::W_NS)
+            })
+            .map(|c| c.children().collect())
+            .unwrap_or_default();
+        for c in content_children {
+            if !c.is_element() {
+                continue;
+            }
+            match (c.tag_name().namespace(), c.tag_name().name()) {
+                (Some(Self::W_NS), "r") => runs.push(self.parse_run(&c, xml)),
+                (Some(Self::W_NS), "sdt") => self.inline_sdt(&c, xml, runs),
+                (Some(Self::W_NS), "hyperlink") => {
+                    let rid = c.attribute((Self::R_NS, "id")).map(|s| s.to_string());
+                    let anchor = self.attr_ns(c, "anchor").map(|s| s.to_string());
+                    for r in c.children() {
+                        if r.is_element()
+                            && r.tag_name().name() == "r"
+                            && r.tag_name().namespace() == Some(Self::W_NS)
+                        {
+                            let mut run = self.parse_run(&r, xml);
+                            run.hyperlink_rid = rid.clone();
+                            if rid.is_none() {
+                                run.hyperlink_anchor = anchor.clone();
+                            }
+                            runs.push(run);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        runs.push(DocxRun {
+            sdt: Some(SdtMarker::End),
+            ..DocxRun::default()
+        });
+    }
+
+    /// P2-06: verbatim `<w:sdtPr>` subtree of a `w:sdt` (empty string for a
+    /// bare sdt with no properties).
+    fn sdt_pr_verbatim(sdt: &roxmltree::Node, xml: &str) -> String {
+        sdt.children()
+            .find(|c| {
+                c.is_element()
+                    && c.tag_name().name() == "sdtPr"
+                    && c.tag_name().namespace() == Some(Self::W_NS)
+            })
+            .map(|c| {
+                let r = c.range();
+                xml[r.start..r.end].to_string()
+            })
+            .unwrap_or_default()
     }
 
     fn parse_paragraph_properties(&self, ppr: &roxmltree::Node) -> DocxParagraphProperties {
@@ -2137,7 +2401,11 @@ impl OoxmlParser {
             raw_rpr: None,
             drawing: None,
             hyperlink_rid: None,
+            hyperlink_anchor: None,
             field: None,
+            bookmark: None,
+            sdt: None,
+            pict: None,
         };
 
         for child in r_node.children() {
@@ -2180,6 +2448,13 @@ impl OoxmlParser {
                         run.image_width_emu = extent.attribute("cx").and_then(|v| v.parse().ok());
                         run.image_height_emu = extent.attribute("cy").and_then(|v| v.parse().ok());
                     }
+                }
+                (Some(Self::W_NS), "pict") => {
+                    // P2-06: legacy VML/OLE picture subtree — the typed
+                    // model has no equivalent, so capture it verbatim and
+                    // let the serializer re-emit it unchanged.
+                    let r = child.range();
+                    run.pict = Some(xml[r.start..r.end].to_string());
                 }
                 (Some(Self::W_NS), "fldChar") => {
                     // Fields engine: fldChar begin/separate/end boundaries.

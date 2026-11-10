@@ -652,6 +652,86 @@ impl DocxNumbering {
     }
 }
 
+// --- DOCX bookmarks, sdt, unmanaged parts (P2-06, ORM-05) --------------
+//
+// Three channels that keep foreign DOCX content alive across a
+// parse -> serialize round trip:
+//   * bookmarks — w:bookmarkStart / w:bookmarkEnd pairs (typed; the
+//     positional markers ride empty runs, the catalogue lives on DocxBody)
+//   * sdt — w:sdt content controls (inline: marker runs carrying a verbatim
+//     w:sdtPr; block-level: DocxBody::sdt_wraps block ranges)
+//   * unmanaged — a bag of zip parts the model does not parse (settings,
+//     endnotes, customXml, diagrams, themes, ...) kept byte-identical
+
+/// A document bookmark (`w:bookmarkStart` ... `w:bookmarkEnd` pair).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocxBookmark {
+    /// Numeric identifier (`w:id`) shared by the start/end pair.
+    pub id: String,
+    /// Bookmark name (`w:name`); internal hyperlinks target it via
+    /// `w:hyperlink w:anchor`. Absent for anonymous bookmarks.
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// Which bookmark marker a run carries (P2-06). Bookmarks are paragraph
+/// siblings in OOXML, so — like comment anchors — the markers ride empty
+/// runs to keep their exact position in the run sequence; the serializer
+/// emits the bare `w:bookmarkStart` / `w:bookmarkEnd` elements in place.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BookmarkMarker {
+    /// `<w:bookmarkStart w:id=".." w:name=".."/>`.
+    Start(DocxBookmark),
+    /// `<w:bookmarkEnd w:id=".."/>` — the id matches the opening Start.
+    End(String),
+}
+
+/// Which sdt (structured document tag / content control) marker a run
+/// carries (P2-06). An inline `w:sdt` wraps runs inside a paragraph; the
+/// Start marker carries the verbatim `w:sdtPr` metadata subtree (alias,
+/// tag, id, placeholder) so it survives a round trip byte-for-byte.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SdtMarker {
+    /// `<w:sdt><w:sdtPr>…` — opens the content control (pr is verbatim).
+    Start {
+        /// Verbatim `<w:sdtPr>` subtree (empty string for a bare sdt).
+        pr: String,
+    },
+    /// `</w:sdtContent></w:sdt>` — closes the content control.
+    End,
+}
+
+/// A block-level `w:sdt` (P2-06) wrapping a contiguous range of body
+/// blocks. The serializer re-wraps `blocks[start..=end]` in
+/// `<w:sdt><w:sdtPr>…</w:sdtPr><w:sdtContent>…</w:sdtContent></w:sdt>`,
+/// so nested wraps nest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocxSdtWrap {
+    /// Index of the first wrapped block (inclusive).
+    pub start: usize,
+    /// Index of the last wrapped block (inclusive).
+    pub end: usize,
+    /// Verbatim `<w:sdtPr>` subtree (empty string for a bare sdt).
+    pub pr: String,
+}
+
+/// A zip part the model does not parse (P2-06 unmanaged-parts bag):
+/// word/settings.xml, word/endnotes.xml, customXml/*, diagrams, charts,
+/// themes, docProps/app.xml, ... Captured byte-for-byte at parse time and
+/// re-zipped byte-for-byte at serialize time so foreign content survives.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UnmanagedPart {
+    /// Zip entry path (e.g. "word/settings.xml").
+    pub name: String,
+    /// Raw part bytes (identical to the source archive).
+    pub bytes: Vec<u8>,
+    /// Content type from the source `[Content_Types].xml` (Override, or
+    /// Default by extension). The serializer re-declares it; when absent
+    /// the serializer falls back by extension.
+    #[serde(default)]
+    pub content_type: Option<String>,
+}
+
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DocxBody {
@@ -698,6 +778,20 @@ pub struct DocxBody {
     /// numbering (any numFmt / lvlText / lvlOverride) survives round trips.
     #[serde(default)]
     pub numbering: Option<DocxNumbering>,
+    /// Catalogue of every bookmark in the document (P2-06), in document
+    /// order (body blocks, then header, then footer) — parsed from the
+    /// bookmarkStart marker runs. Converters resolve `w:hyperlink w:anchor`
+    /// targets against the names here.
+    #[serde(default)]
+    pub bookmarks: Vec<DocxBookmark>,
+    /// Block-level `w:sdt` wrappers (P2-06): verbatim sdtPr metadata
+    /// re-applied around contiguous body block ranges on serialize.
+    #[serde(default)]
+    pub sdt_wraps: Vec<DocxSdtWrap>,
+    /// Unmanaged-parts bag (P2-06): zip parts the model does not parse,
+    /// kept byte-identical across the round trip.
+    #[serde(default)]
+    pub unmanaged_parts: Vec<UnmanagedPart>,
 }
 
 impl DocxBody {
@@ -715,6 +809,9 @@ impl DocxBody {
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
             numbering: None,
+            bookmarks: Vec::new(),
+            sdt_wraps: Vec::new(),
+            unmanaged_parts: Vec::new(),
         }
     }
 
@@ -736,6 +833,9 @@ impl DocxBody {
             image_rels: Vec::new(),
             hyperlink_rels: Vec::new(),
             numbering: None,
+            bookmarks: Vec::new(),
+            sdt_wraps: Vec::new(),
+            unmanaged_parts: Vec::new(),
         }
     }
 
@@ -1046,6 +1146,27 @@ pub struct DocxRun {
     /// run order so complex fields survive a round trip.
     #[serde(default)]
     pub field: Option<FieldMarker>,
+    /// Bookmark marker carried by this run (P2-06): a bookmarkStart /
+    /// bookmarkEnd boundary. Runs carrying a marker serialize to the bare
+    /// bookmark element, never to a `<w:r>`, so bookmark position survives.
+    #[serde(default)]
+    pub bookmark: Option<BookmarkMarker>,
+    /// sdt (content control) marker carried by this run (P2-06): the open
+    /// (with verbatim w:sdtPr) or close of an inline `w:sdt`.
+    #[serde(default)]
+    pub sdt: Option<SdtMarker>,
+    /// Verbatim `<w:pict>` subtree captured at parse time (legacy VML
+    /// graphics the typed model cannot represent), re-emitted unchanged so
+    /// pictures survive a parse-serialize cycle.
+    #[serde(default)]
+    pub pict: Option<String>,
+    /// Internal bookmark target (`w:hyperlink w:anchor`) of the enclosing
+    /// hyperlink, set on every inner run at parse time; the serializer
+    /// re-groups consecutive runs sharing an anchor into a single
+    /// `<w:hyperlink w:anchor="…">` wrapper and converters map it to
+    /// `<a href="#…">`.
+    #[serde(default)]
+    pub hyperlink_anchor: Option<String>,
 }
 
 /// Which comment-range marker a run carries (F-102). The id is the numeric

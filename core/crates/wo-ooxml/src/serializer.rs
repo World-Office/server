@@ -38,6 +38,26 @@ fn has_parsed_numbering(body: &DocxBody) -> bool {
         .is_some_and(|n| !n.is_empty())
 }
 
+/// P2-06: fallback content type for an unmanaged bag part when the source
+/// package did not declare one (Override or Default by extension).
+fn unmanaged_part_content_type(name: &str) -> String {
+    match name.rsplit('.').next().map(|e| e.to_ascii_lowercase()) {
+        Some(ext) if ext.len() > 1 && ext.len() <= 5 => match ext.as_str() {
+            "xml" => "application/xml".to_string(),
+            "rels" => {
+                "application/vnd.openxmlformats-package.relationships+xml".to_string()
+            }
+            "png" => "image/png".to_string(),
+            "jpg" | "jpeg" => "image/jpeg".to_string(),
+            "gif" => "image/gif".to_string(),
+            "bmp" => "image/bmp".to_string(),
+            "svg" => "image/svg+xml".to_string(),
+            _ => "application/octet-stream".to_string(),
+        },
+        _ => "application/octet-stream".to_string(),
+    }
+}
+
 /// True when any paragraph (body or table cell) carries numPr — decides
 /// whether the serializer must emit word/numbering.xml and its rel.
 fn body_uses_numbering(body: &DocxBody) -> bool {
@@ -118,6 +138,16 @@ impl OoxmlSerializer {
         // "word/media/image1.png") so run drawings resolve their r:embed.
         if let Some(ref body) = doc.docx_body {
             for part in &body.media {
+                zip.start_file(&part.name, options)?;
+                zip.write_all(&part.bytes)?;
+            }
+        }
+
+        // 4d-2. unmanaged-parts bag (P2-06): foreign parts the model does
+        // not parse (settings.xml, endnotes.xml, customXml/*, diagrams,
+        // themes, ...) re-zipped byte-identically.
+        if let Some(ref body) = doc.docx_body {
+            for part in &body.unmanaged_parts {
                 zip.start_file(&part.name, options)?;
                 zip.write_all(&part.bytes)?;
             }
@@ -1090,6 +1120,19 @@ impl OoxmlSerializer {
             if uses_numbering {
                 extra.push_str("\n  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>");
             }
+            // P2-06: re-declare content types for the unmanaged-parts bag
+            // (source Override type when captured, else an extension guess).
+            for part in &body.unmanaged_parts {
+                let ct = part
+                    .content_type
+                    .clone()
+                    .unwrap_or_else(|| unmanaged_part_content_type(&part.name));
+                extra.push_str(&format!(
+                    "\n  <Override PartName=\"/{0}\" ContentType=\"{1}\"/>",
+                    escape_xml(part.name.trim_start_matches('/')),
+                    escape_xml(&ct)
+                ));
+            }
             let mut exts: Vec<&str> = body
                 .media
                 .iter()
@@ -1384,7 +1427,23 @@ impl OoxmlSerializer {
         );
 
         if let Some(ref body) = doc.docx_body {
-            for block in &body.blocks {
+            // P2-06: block-level w:sdt wrappers re-apply their verbatim
+            // sdtPr around the captured block ranges (nested wraps nest).
+            // Wraps whose range no longer fits (mutated model) are skipped
+            // rather than emitting a malformed wrapper.
+            let valid_wraps: Vec<&DocxSdtWrap> = body
+                .sdt_wraps
+                .iter()
+                .filter(|w| w.start <= w.end && w.end < body.blocks.len())
+                .collect();
+            for (i, block) in body.blocks.iter().enumerate() {
+                for w in valid_wraps.iter().filter(|w| w.start == i) {
+                    xml.push_str("<w:sdt>");
+                    if !w.pr.is_empty() {
+                        xml.push_str(w.pr.as_str());
+                    }
+                    xml.push_str("<w:sdtContent>");
+                }
                 match block {
                     DocxBlock::Paragraph(para) => {
                         xml.push_str(&self.serialize_paragraph(para));
@@ -1396,6 +1455,9 @@ impl OoxmlSerializer {
                         // Image serialization placeholder - full implementation would require
                         // creating w:drawing elements with proper OOXML structure
                     }
+                }
+                for _ in valid_wraps.iter().filter(|w| w.end == i) {
+                    xml.push_str("</w:sdtContent></w:sdt>");
                 }
             }
 
@@ -1607,10 +1669,59 @@ impl OoxmlSerializer {
         }
 
         // Emit runs, grouping consecutive runs that share a hyperlink r:id
-        // into a single <w:hyperlink r:id="..."> wrapper.
+        // into a single <w:hyperlink r:id="..."> wrapper (P2-06: runs
+        // sharing a w:anchor are grouped the same way, with the anchor
+        // attribute instead of r:id).
         let mut i = 0;
         while i < para.runs.len() {
             let run = &para.runs[i];
+            // P2-06: bookmark markers hoist out as bare w:bookmarkStart /
+            // w:bookmarkEnd elements (never a <w:r>), in run order.
+            if let Some(bm) = &run.bookmark {
+                match bm {
+                    BookmarkMarker::Start(b) => {
+                        let mut el = format!(
+                            r#"<w:bookmarkStart w:id="{}""#,
+                            escape_xml(&b.id)
+                        );
+                        if let Some(name) = &b.name {
+                            el.push_str(&format!(r#" w:name="{}""#, escape_xml(name)));
+                        }
+                        el.push_str("/>");
+                        xml.push_str(&el);
+                        i += 1;
+                        continue;
+                    }
+                    BookmarkMarker::End(id) => {
+                        xml.push_str(&format!(
+                            r#"<w:bookmarkEnd w:id="{}"/>"#,
+                            escape_xml(id)
+                        ));
+                        i += 1;
+                        continue;
+                    }
+                }
+            }
+            // P2-06: inline sdt markers open/close the content control
+            // wrapper; the verbatim w:sdtPr rides the Start marker.
+            if let Some(sm) = &run.sdt {
+                match sm {
+                    SdtMarker::Start { pr } => {
+                        xml.push_str("<w:sdt>");
+                        if !pr.is_empty() {
+                            xml.push_str(pr);
+                        }
+                        xml.push_str("<w:sdtContent>");
+                        i += 1;
+                        continue;
+                    }
+                    SdtMarker::End => {
+                        xml.push_str("</w:sdtContent></w:sdt>");
+                        i += 1;
+                        continue;
+                    }
+                }
+            }
             match run.hyperlink_rid.as_deref() {
                 None => {
                     // F-102: comment anchor markers are paragraph-level
@@ -1646,6 +1757,23 @@ impl OoxmlSerializer {
                             continue;
                         }
                         None => {}
+                    }
+                    // P2-06: internal (bookmark-target) hyperlinks group
+                    // consecutive runs sharing w:anchor into one
+                    // <w:hyperlink w:anchor="..."> wrapper.
+                    if let Some(anchor) = run.hyperlink_anchor.as_deref() {
+                        xml.push_str(&format!(
+                            r#"<w:hyperlink w:anchor="{}">"#,
+                            escape_xml(anchor)
+                        ));
+                        while i < para.runs.len()
+                            && para.runs[i].hyperlink_anchor.as_deref() == Some(anchor)
+                        {
+                            xml.push_str(&self.serialize_run(&para.runs[i]));
+                            i += 1;
+                        }
+                        xml.push_str("</w:hyperlink>");
+                        continue;
                     }
                     xml.push_str(&self.serialize_run(run));
                     i += 1;
@@ -1851,6 +1979,12 @@ impl OoxmlSerializer {
             // Verbatim <w:drawing> subtree (captured at parse time) — inline
             // graphics the typed model cannot represent survive a round trip.
             xml.push_str(drawing);
+        }
+
+        if let Some(ref pict) = run.pict {
+            // P2-06: verbatim <w:pict> subtree (legacy VML/OLE graphics) —
+            // re-emitted unchanged so the picture survives a round trip.
+            xml.push_str(pict);
         }
 
         if let Some(rid) = &run.footnote_rid {
@@ -3471,6 +3605,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3505,6 +3642,10 @@ mod tests {
                         hyperlink_rid: None,
                         comment_anchor: None,
                         field: None,
+                        hyperlink_anchor: None,
+                        bookmark: None,
+                        sdt: None,
+                        pict: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -3610,6 +3751,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3645,6 +3789,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -3670,6 +3818,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -3695,6 +3847,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         },
                     ],
                     raw_ppr: None,
@@ -3732,6 +3888,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3767,6 +3926,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3803,6 +3966,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3839,6 +4006,10 @@ mod tests {
                             hyperlink_rid: None,
                             comment_anchor: None,
                             field: None,
+                            hyperlink_anchor: None,
+                            bookmark: None,
+                            sdt: None,
+                            pict: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3877,6 +4048,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3916,6 +4090,10 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            hyperlink_anchor: None,
+                                            bookmark: None,
+                                            sdt: None,
+                                            pict: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3956,6 +4134,10 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            hyperlink_anchor: None,
+                                            bookmark: None,
+                                            sdt: None,
+                                            pict: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -4002,6 +4184,10 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            hyperlink_anchor: None,
+                                            bookmark: None,
+                                            sdt: None,
+                                            pict: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -4042,6 +4228,10 @@ mod tests {
                                             hyperlink_rid: None,
                                             comment_anchor: None,
                                             field: None,
+                                            hyperlink_anchor: None,
+                                            bookmark: None,
+                                            sdt: None,
+                                            pict: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -4562,6 +4752,10 @@ mod tests {
                                     hyperlink_rid: None,
                                     comment_anchor: None,
                                     field: None,
+                                    hyperlink_anchor: None,
+                                    bookmark: None,
+                                    sdt: None,
+                                    pict: None,
                                 },
                                 DocxRun {
                                     footnote_rid: None,
@@ -4945,6 +5139,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -4979,6 +5176,10 @@ mod tests {
                         hyperlink_rid: None,
                         comment_anchor: None,
                         field: None,
+                        hyperlink_anchor: None,
+                        bookmark: None,
+                        sdt: None,
+                        pict: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -5024,6 +5225,9 @@ mod tests {
                 image_rels: vec![],
                 hyperlink_rels: vec![],
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
             }),
         };
         let ser = OoxmlSerializer::new();

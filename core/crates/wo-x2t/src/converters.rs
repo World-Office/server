@@ -320,6 +320,9 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
                 comments: Vec::new(),
                 comment_anchors: Vec::new(),
                 numbering: None,
+                bookmarks: Vec::new(),
+                sdt_wraps: Vec::new(),
+                unmanaged_parts: Vec::new(),
             }),
         };
         let hd = HtmlDocument {
@@ -2943,6 +2946,9 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             comment_anchors: Vec::new(),
             footnotes_raw: None,
             numbering: None,
+            bookmarks: Vec::new(),
+            sdt_wraps: Vec::new(),
+            unmanaged_parts: Vec::new(),
         }),
     }
 }
@@ -3513,20 +3519,33 @@ fn html_inlines_to_docx_runs(
             InlineElement::Link { content, href, .. } => {
                 let mut inner = html_inlines_to_docx_runs(content, media, image_rels, comments);
                 if !inner.is_empty() {
-                    // LEDGER2: real hyperlink — one relationship, runs tagged
-                    // with hyperlink_rid; the serializer regroups consecutive
-                    // tagged runs into a single <w:hyperlink> wrapper.
-                    let rid = format!("rIdLnk{}", image_rels.len() + 1);
-                    image_rels.push(Relationship {
-                        id: rid.clone(),
-                        rel_type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink".to_string(),
-                        target: href.clone(),
-                        target_mode: Some("External".to_string()),
-                    });
-                    for r in &mut inner {
-                        r.hyperlink_rid = Some(rid.clone());
+                    match href.strip_prefix('#') {
+                        // P2-06: fragment link — internal w:hyperlink
+                        // w:anchor targeting a bookmark; no relationship.
+                        Some(anchor) if !anchor.is_empty() => {
+                            for r in &mut inner {
+                                r.hyperlink_anchor = Some(anchor.to_string());
+                            }
+                            runs.extend(inner);
+                        }
+                        // LEDGER2: real hyperlink — one relationship, runs
+                        // tagged with hyperlink_rid; the serializer regroups
+                        // consecutive tagged runs into a single
+                        // <w:hyperlink> wrapper.
+                        _ => {
+                            let rid = format!("rIdLnk{}", image_rels.len() + 1);
+                            image_rels.push(Relationship {
+                                id: rid.clone(),
+                                rel_type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink".to_string(),
+                                target: href.clone(),
+                                target_mode: Some("External".to_string()),
+                            });
+                            for r in &mut inner {
+                                r.hyperlink_rid = Some(rid.clone());
+                            }
+                            runs.extend(inner);
+                        }
                     }
-                    runs.extend(inner);
                 }
             }
             InlineElement::Code { content } => {
@@ -4163,12 +4182,18 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
 
         // LEDGER2: runs tagged with a hyperlink r:id group into one
         // InlineElement::Link (href resolved through body.hyperlink_rels).
-        if let Some(rid) = run.hyperlink_rid.clone() {
+        // P2-06: runs tagged with a w:anchor (internal bookmark link) group
+        // the same way, keyed on "#name" — no relationship involved.
+        let link_key = run
+            .hyperlink_rid
+            .clone()
+            .or_else(|| run.hyperlink_anchor.as_ref().map(|a| format!("#{}", a)));
+        if let Some(key) = link_key {
             match link_open.as_deref() {
-                Some(open) if open == rid => link_buffer.push(element),
+                Some(open) if open == key => link_buffer.push(element),
                 Some(_) | None => {
                     close_link(&mut link_open, &mut link_buffer, &mut result, body);
-                    link_open = Some(rid);
+                    link_open = Some(key);
                     link_buffer = vec![element];
                 }
             }
@@ -4193,12 +4218,17 @@ fn close_link(
     body: &DocxBody,
 ) {
     if let Some(rid) = link_open.take() {
-        let href = body
-            .hyperlink_rels
-            .iter()
-            .find(|r| r.id == rid)
-            .map(|r| r.target.clone())
-            .unwrap_or_default();
+        // P2-06: "#name" keys are internal bookmark links — the href IS the
+        // fragment; r:id keys resolve through body.hyperlink_rels.
+        let href = match rid.strip_prefix('#') {
+            Some(anchor) => format!("#{}", anchor),
+            None => body
+                .hyperlink_rels
+                .iter()
+                .find(|r| r.id == rid)
+                .map(|r| r.target.clone())
+                .unwrap_or_default(),
+        };
         if !link_buffer.is_empty() {
             let content = std::mem::take(link_buffer);
             result.push(InlineElement::Link {
