@@ -324,7 +324,59 @@ assert.ok(editorSrc.includes('p.classList.toggle("widow-control", !!(wd && wd.ch
   "widow/orphan control must toggle the widow-control class")
 console.log("Line-spacing options entry + ps fields complete\n")
 
-// ── (g) No bare console.log anywhere in editor.js ────────────────────
+// ── (g) CHROME-B: Verweise tab labels OO-exact — verb suffix dropped ──
+console.log("Checking References-tab OO-exact labels (no insert/einfügen verb)...")
+const verweiseLabels = {
+  "Toolbar.TocTitle": ["Table of contents", "Inhaltsverzeichnis"],
+  "Toolbar.FootnoteTitle": ["Footnote", "Fußnote"],
+  "Toolbar.BookmarkTitle": ["Bookmark", "Lesezeichen"],
+  "Dialog.Caption.Title": ["Caption", "Beschriftung"],
+  "Toolbar.CrossrefTitle": ["Cross-reference", "Querverweis"],
+}
+for (const [key, [en, de]] of Object.entries(verweiseLabels)) {
+  assert.ok(i18nSrc.includes(`"${key}": "${en}"`),
+    `${key}: en label must be the bare OO noun "${en}" (no 'insert' verb)`)
+  assert.ok(i18nSrc.includes(`"${key}": "${de}"`),
+    `${key}: de label must be the bare OO noun "${de}" (no 'einfügen' verb)`)
+  const occurrences = (i18nSrc.match(new RegExp(`"${key}": "`, "g")) || []).length
+  assert.ok(occurrences === 2, `${key} must exist in BOTH en and de catalogs`)
+}
+// The superseded verb-phrasings must be gone from both catalogs.
+assert.ok(!i18nSrc.includes('"Toolbar.TocTitle": "Insert table of contents"') &&
+  !i18nSrc.includes('"Toolbar.TocTitle": "Inhaltsverzeichnis einfügen"'),
+  "Toolbar.TocTitle must not carry the old insert/einfügen phrasing")
+assert.ok(!i18nSrc.includes('"Toolbar.FootnoteTitle": "Insert footnote"') &&
+  !i18nSrc.includes('"Toolbar.FootnoteTitle": "Fußnote einfügen"'),
+  "Toolbar.FootnoteTitle must not carry the old insert/einfügen phrasing")
+assert.ok(!i18nSrc.includes('"Toolbar.BookmarkTitle": "Insert bookmark"') &&
+  !i18nSrc.includes('"Toolbar.BookmarkTitle": "Lesezeichen einfügen"'),
+  "Toolbar.BookmarkTitle must not carry the old insert/einfügen phrasing")
+assert.ok(!i18nSrc.includes('"Toolbar.CrossrefTitle": "Insert cross-reference"') &&
+  !i18nSrc.includes('"Toolbar.CrossrefTitle": "Querverweis einfügen"'),
+  "Toolbar.CrossrefTitle must not carry the old insert/einfügen phrasing")
+assert.ok(!i18nSrc.includes('"Dialog.Caption.Title": "Insert caption"') &&
+  !i18nSrc.includes('"Dialog.Caption.Title": "Beschriftung einfügen"'),
+  "Dialog.Caption.Title must not carry the old insert/einfügen phrasing")
+// The static en defaults (pre-i18n fallbacks) match the new nouns.
+assert.ok(htmlSrc.includes('title="Table of contents" aria-label="Table of contents"'),
+  "btn-toc static title/aria must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('title="Footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Footnote"'),
+  "btn-footnote static title/aria must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('title="Bookmark" aria-label="Bookmark"'),
+  "btn-bookmark static title/aria must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('title="Cross-reference" aria-label="Cross-reference"'),
+  "btn-crossref static title/aria must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('<h3 id="toc-dialog-title">Table of contents</h3>'),
+  "toc dialog title must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('<h3 id="bookmark-dialog-title">Bookmark</h3>'),
+  "bookmark dialog title must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('<h3 id="crossref-dialog-title">Cross-reference</h3>'),
+  "crossref dialog title must drop the 'Insert' verb")
+assert.ok(htmlSrc.includes('<h3 id="caption-dialog-title" data-i18n="Dialog.Caption.Title">Caption</h3>'),
+  "caption dialog title must drop the 'Insert' verb")
+console.log("References-tab OO-exact labels pinned\n")
+
+// ── (h) No bare console.log anywhere in editor.js ────────────────────
 console.log("Checking console.log ban...")
 assert.ok(!editorSrc.includes("console.log("),
   "editor.js must not contain bare console.log (use console.info + wo: markers)")

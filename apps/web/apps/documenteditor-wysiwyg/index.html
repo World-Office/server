@@ -582,7 +582,7 @@
     <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
     <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
     <button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
-    <button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
+    <button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Cross-reference" aria-label="Cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
     <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
     <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
     <button type="button" id="btn-addtext" data-i18n="Insert.AddText"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3h10M3 8h7M3 13h10M11 6.5l2 2-2 2M13 8.5l-2-2"/></svg> Add text</button>
@@ -749,16 +749,16 @@
     <!-- CHROME2 census: tab 'links' row 1 = TOC/AddText/Footnote/Link/Bookmark/Caption/Crossref/TOF, row 2 = Update Table ×2 -->
     <div class="ribbon-row">
     <span data-wo-id="btn-toc" data-wo-cmd="btn-toc" data-wo-interact="opens:modal">
-      <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+      <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Table of contents" aria-label="Table of contents">☰</button>
     </span>
     <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
     <span data-wo-id="btn-footnote" data-wo-cmd="btn-footnote" data-wo-interact="opens:modal">
-      <button id="btn-footnote" data-cmd="insertFootnote" title="Insert footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Insert footnote">¹</button>
+      <button id="btn-footnote" data-cmd="insertFootnote" title="Footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Footnote">¹</button>
     </span>
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
     <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
     <span data-wo-id="btn-bookmark" data-wo-cmd="btn-bookmark" data-wo-interact="opens:modal">
-      <button id="btn-bookmark" data-cmd="bookmark" data-i18n="Ref.Bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
+      <button id="btn-bookmark" data-cmd="bookmark" data-i18n="Ref.Bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Bookmark" aria-label="Bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
     </span>
     <span data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
       <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
@@ -2673,7 +2673,7 @@
   <!-- Table-of-contents dialog -->
   <div id="toc-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="toc-dialog-title">
     <div class="dialog">
-      <h3 id="toc-dialog-title">Insert table of contents</h3>
+      <h3 id="toc-dialog-title">Table of contents</h3>
       <div class="dialog-field">
         <label for="toc-title">Title</label>
         <input id="toc-title" type="text" placeholder="Table of Contents" value="Table of Contents">
@@ -2771,7 +2771,7 @@
   <!-- Bookmark dialog -->
   <div id="bookmark-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="bookmark-dialog-title">
     <div class="dialog">
-      <h3 id="bookmark-dialog-title">Insert bookmark</h3>
+      <h3 id="bookmark-dialog-title">Bookmark</h3>
       <div class="dialog-field">
         <label for="bookmark-name">Name</label>
         <input id="bookmark-name" type="text" placeholder="e.g. Section1">
@@ -2786,7 +2786,7 @@
   <!-- Cross-reference dialog -->
   <div id="crossref-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="crossref-dialog-title">
     <div class="dialog">
-      <h3 id="crossref-dialog-title">Insert cross-reference</h3>
+      <h3 id="crossref-dialog-title">Cross-reference</h3>
       <div class="dialog-field">
         <label for="crossref-target">Target bookmark</label>
         <select id="crossref-target"></select>
@@ -3068,7 +3068,7 @@
 
   <div id="caption-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="caption-dialog-title">
     <div class="dialog">
-      <h3 id="caption-dialog-title" data-i18n="Dialog.Caption.Title">Insert caption</h3>
+      <h3 id="caption-dialog-title" data-i18n="Dialog.Caption.Title">Caption</h3>
       <div class="dialog-field">
         <label for="caption-text" data-i18n="Dialog.Caption.Caption">Caption</label>
         <input id="caption-text" type="text">
