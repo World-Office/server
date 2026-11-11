@@ -1,0 +1,113 @@
+{
+  "tasks": [
+    {
+      "id": "CHROME-E",
+      "repo": "server",
+      "deps": [],
+      "priority": 10,
+      "title": "chrome: QAT pixel parity — replace inline SVG icons in .qat-strip with the captured OO 9.4 PNG data-URIs",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/qat-strip.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/qat-strip.test.mjs"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node qat-strip.test.mjs 2>&1 | tail -1 | grep QAT-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
+      "note": "Captured OO 9.4 DE quick-access icons (element screenshots, deviceScaleFactor 2, pixel-exact) are on the host at: /tmp/ooicon-qat-btn-save.png, -btn-copy.png, -btn-paste.png, -btn-cut.png, -btn-print.png, -btn-undo.png, -btn-redo.png, -btn-copystyle.png (each ~360-460 bytes). Map: qat-save→btn-save, qat-copy→btn-copy, qat-paste→btn-paste, qat-cut→btn-cut, qat-print→btn-print, qat-undo→btn-undo, qat-redo→btn-redo, qat-format-paint→btn-copystyle.\nDo EXACTLY what the existing 13 chrome icons do (see the 'OO 9.4 chrome parity' block in style.css, classes .oo-ic / .oo-ic-<name> with base64 data-URI background): generate classes .oo-ic-qat-save … .oo-ic-qat-copystyle via `base64 -w0` on those PNGs, then in index.html replace each qat button's inline <svg> child with <span class=\"oo-ic oo-ic-qat-<name>\" aria-hidden=\"true\"></span>. Keep button ids, titles, data-i18n, data-cmd, aria-* — only the pictogram child changes. Size: match the existing qat svg size (15px) via CSS (.toolbar .qat-strip .oo-ic { width:15px; height:15px; display:inline-block; background-size:contain; background-repeat:no-repeat; background-position:center; }).\nUpdate qat-strip.test.mjs: add assertions that style.css contains all 8 .oo-ic-qat-* classes with data:image/png;base64 and that index.html qat buttons contain no inline <svg> anymore. Keep QAT-PASS last line. Full suite must stay green (155 tests)."
+    },
+    {
+      "id": "CHROME-F",
+      "repo": "server",
+      "deps": [
+        "CHROME-E"
+      ],
+      "priority": 8,
+      "title": "chrome: Startseite OO grouping — rb-groups (Schriftart | Absatz | Formatvorlagen) + 'Mehr' overflow menu for the rest, instead of one flat 48-button row",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/home-overflow.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/home-overflow.test.mjs"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node home-overflow.test.mjs 2>&1 | tail -1 | grep OVERFLOW-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node rows-gate.test.mjs tabs.test.mjs audit-i18n.test.mjs home-arrange.test.mjs 2>&1 | grep -c 'not ok' | grep -q '^0$' && echo GATE-OK) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
+      "note": "OO 9.4 DE home ground truth (/tmp/oo-home-full.json): row 1 = font group (Schriftart combo + Schriftgröße combo + vergrößern/verkleinern + Groß-/Kleinschreibung), paragraph group (Aufzählung/Nummerierung/Mehrebenen + Einzug −/+ + Ausrichtung), styles gallery (Standard/Titel/Untertitel/Überschrift 1-3…), then ONE 'Mehr' button (btn-big-more) opening the overflow; row 2 = character formats Fett/Kursiv/Unterstrichen/Durchgestrichen/Hoch/Tief + Hervorhebung + Schriftfarbe + Formatierung löschen.\nWO today (/tmp/wo-home-visible.json): 48 buttons in two flat ribbon-rows, everything visible. Task: restructure the home page into OO rb-groups — row 1: group 'Schriftart' (existing font combo, size combo, grow/shrink, case-change), group 'Absatz' (bullets, numbering, multilevel, indent dec/inc, RTL, alignment options dropdown), group 'Formatvorlagen' (style chips standard/title/subtitle/h1-h3), then a 'Mehr ▾' overflow button (id btn-home-more, i18n Home.More / 'Mehr') whose dropdown lists ALL remaining home controls (lists options, paragraph direction options, find/replace if still in page — no, those moved to topbar in CHROME-D — plus any leftover); row 2: the character format cluster + highlight/fontcolor/clearstyle as today.\nCONSTRAINTS: rows-gate.test.mjs requires EXACTLY TWO .ribbon-row children in the home page — keep 2 rows; groups go INSIDE rows. Overflow dropdown = existing dropdown/overlay pattern (grep for existing ribbon dropdown, e.g. the 'Optionen für …' buttons or btn-big-more equivalents in other tabs; reuse that mechanism, do not build a new one). Every moved button KEEPS its id/data-cmd/data-i18n — only DOM nesting changes. Dropdown items must remain reachable (click opens, items clickable). audit-i18n: dropdown items keep data-i18n.\nNew probe home-overflow.test.mjs (assert/strict static reads): home page has exactly 2 .ribbon-row; row 1 contains the three rb-groups + btn-home-more; btn-home-more has a dropdown container in DOM listing >=10 items; all previously-visible home button ids still exist in DOM (moved, not deleted); suite green → print OVERFLOW-PASS."
+    },
+    {
+      "id": "CHROME-G",
+      "repo": "server",
+      "deps": [
+        "CHROME-E"
+      ],
+      "priority": 6,
+      "title": "chrome: review display-mode dropdown 'Alle Änderungen anzeigen' next to the track-changes statusbar icon (OO 9.4 statusbar)",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/review-mode.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/review-mode.test.mjs"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node review-mode.test.mjs 2>&1 | tail -1 | grep REVIEW-MODE-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node statusbar.test.mjs trackchanges.test.mjs audit-i18n.test.mjs 2>&1 | grep -c 'not ok' | grep -q '^0$' && echo GATE-OK) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
+      "note": "OO 9.4 DE statusbar right side has, next to the review (Nachverfolgen) icon, a dropdown captioned 'Alle Änderungen anzeigen' (Show all changes) — grep i18n.js, keys around 'Alle Änderungen' exist (12 hits) — selecting Simple/All/Final/Original display modes. WO has the sb-track-changes icon only.\nTask: add a statusbar dropdown button (id btn-review-mode, class sb, next to sb-track-changes) showing the current mode caption; options: Alle Änderungen anzeigen / Einfache Änderungen anzeigen / Original anzeigen / Finale Version anzeigen (i18n keys Review.ModeAll/ModeSimple/ModeOriginal/ModeFinal, EN+DE, data-i18n on button + items). State lives in editor.js next to trackChangesOn (reviewDisplayMode, default 'all'); selecting an item applies it: grep editor.js for how tracked changes are RENDERED (insertions/deletions markup classes) — if a display-mode render path exists, wire it; if not, store the mode + notifyHost('reviewMode') and add a data-review-mode attribute on <body> (CSS can then hide/show .tc-del etc. — add minimal CSS rules for the 4 modes using existing class names from the trackchanges renderer; keep default 'all' = current behavior, zero visual change).\nDropdown mechanics: reuse the existing statusbar dropdown pattern (sb-lang caption ▾ opens a menu — grep for its open/close handler and clone it). New probe review-mode.test.mjs: btn-review-mode exists with 4 items + i18n keys EN+DE, editor.js has reviewDisplayMode + body data attribute, CSS rules exist for the 4 modes, statusbar.test/trackchanges stay green → REVIEW-MODE-PASS."
+    },
+    {
+      "id": "LEDGER-H",
+      "repo": "harness",
+      "deps": [],
+      "priority": 9,
+      "title": "ledger: fix toc-dialog L4 demotion (3/6 checks fail: cancel must plant nothing) + verify link-dialog-l4 registration; L4 must stay >=32",
+      "scope": [
+        "census/ledger/toc-dialog-l4.test.mjs",
+        "census/ledger/toc-dialog-l4.json",
+        "census/ledger/build.py",
+        "census/ledger/ledger.json",
+        "census/ledger/LEDGER-REPORT.md"
+      ],
+      "touch": [
+        "census/ledger/toc-dialog-l4.test.mjs",
+        "census/ledger/build.py"
+      ],
+      "accept": "(cd census/ledger && /usr/bin/node toc-dialog-l4.test.mjs 2>&1 | tail -1 | grep 'l4-toc-dialog: OK') && (cd census/ledger && /usr/bin/node link-dialog-l4.test.mjs 2>&1 | tail -1) && (cd census/ledger && /usr/bin/python3.12 build.py 2>&1 | grep -E 'toc-dialog.*at L4' | grep -v 'NOT at L4') && /usr/bin/node -e 'const l=require(\"./census/ledger/ledger.json\");const n=l.features.filter(x=>x.level===4).length;if(n<32){console.error(\"L4=\"+n);process.exit(1)}console.log(\"L4=\"+n)'",
+      "note": "KNOWN DEFECT (verified 2026-11-11 by orchestrator): toc-dialog-l4.test.mjs fails 3/6 checks — 'FAIL cancel plants nothing (single toc) — has=false title=null closed=true' and 2 more; build.py therefore demotes dialog.toc-dialog.l4 to L2 ('NOT at L4 — measured defect'). link-dialog-l4 probe is green (parity 2/2) and build.py already has 9 link-dialog refs — verify it lands at L4 in ledger.json (it does: dialog.link-dialog.l4 listed).\nTask: debug WHY the toc probe's cancel-path check fails — run it, read the artifact toc-dialog-l4.json checks[] and the probe's cancel simulation (stubbed fetch serve pattern, margins-dialog-l4.test.mjs is the template). Fix the PROBE or the WO dialog-cancel behavior so cancel truly plants no TOC: either the probe's expectation is wrong (then fix probe assertion to match OO contract mined from census/census-oo-dialogs.json at runtime — never hardcode) or WO's cancel handler leaks an insert (then fix wo-dialogs/editor.js cancel path in the HARNESS-side test fixture... note repo=harness so only census files; if the bug is in server editor code, report it in the task note instead of touching server). Re-run until 'l4-toc-dialog: OK n/n', then build.py must print 'dialog.toc-dialog.l4 at L4' and L4 count >= 32 (33 if toc returns). Probe filename must stay toc-dialog-l4.test.mjs (build.py guard)."
+    },
+    {
+      "id": "PARITY-R",
+      "repo": "harness",
+      "deps": [
+        "LEDGER-H"
+      ],
+      "priority": 5,
+      "title": "report: refresh PARITY-REPORT.md + ROUNDTRIP-GAPS.md with chrome rounds 2-3 + L4=32+ state; post-campaign docserver image rebuild checklist into ROADMAP",
+      "scope": [
+        "census/PARITY-REPORT.md",
+        "census/ledger/ROUNDTRIP-GAPS.md",
+        "census/PARITY-RUN-LOG.md"
+      ],
+      "touch": [
+        "census/PARITY-REPORT.md",
+        "census/ledger/ROUNDTRIP-GAPS.md"
+      ],
+      "accept": "grep -q 'CHROME-A' census/PARITY-REPORT.md && grep -q 'L4=3' census/PARITY-REPORT.md && git log --oneline -1 | grep -q PARITY-R",
+      "note": "Documentation-only task. Update census/PARITY-REPORT.md: add a 'Chrome parity rounds 2-3 (2026-11-11)' section — round 2 (d3b604e83): tab order Kopf-uF after Plugins, OO-exact draw tooltips, EN leftovers fixed, 10 DE label alignments; round 3 via af campaign oo-chrome4: CHROME-A QAT 2x4 strip, CHROME-B Verweise labels, CHROME-C hf spin steppers (hand-fixed to ribbon position c63705fa2), CHROME-D topbar cluster + home font lead, CHROME-E QAT pixel icons, CHROME-F home Mehr-overflow, CHROME-G review display-mode dropdown; ledger L4 now 32+ (link/equation/field/chart gold added). Update the deviation table: mark resolved items, keep 'Mehr overflow on other tabs (chart-design 28 vs 10)' as the remaining known deviation. Append a line to census/PARITY-RUN-LOG.md. Also append a short 'Post-campaign ops' checklist to census/ledger/ROUNDTRIP-GAPS.md: docserver image rebuild after oo-xwave+oo-chrome4 finalize, FX-U5 ledger flip verification, prod bundle redeploy of editor-ui."
+    }
+  ]
+}
