@@ -1,5 +1,5 @@
 /**
- * AF3-STATUSBAR: Status bar live indicators test
+ * SB-X: Status bar OO templateIds test
  * Node.js built-in test runner (node:assert, zero dependencies).
  */
 import { strict as assert } from "node:assert"
@@ -12,7 +12,7 @@ const editorSrc = readFileSync(editorPath, "utf-8")
 const htmlSrc = readFileSync(htmlPath, "utf-8")
 const i18nSrc = readFileSync(i18nPath, "utf-8")
 
-console.log("Running AF3-STATUSBAR tests...\n")
+console.log("Running SB-X tests...\n")
 
 // 1. Check all required statusbar elements exist in index.html
 console.log("Checking statusbar elements in index.html...")
@@ -93,7 +93,7 @@ assert.ok(
   "updateCounts must update sb-word-count",
 )
 assert.ok(
-  editorSrc.includes(".split(/") && editorSrc.includes(".filter(Boolean"),
+  editorSrc.includes(".split(/" ) && editorSrc.includes(".filter(Boolean"),
   "Word count must split on whitespace and filter empty strings",
 )
 
@@ -123,5 +123,68 @@ assert.ok(
 )
 console.log("Event listeners are properly wired\n")
 
-console.log("All AF3-STATUSBAR tests passed!\n")
-console.log("AF3-STATUSBAR-PASS")
+// 8. SB-X: Check OO templateIds for statusbar elements
+console.log("Checking OO templateIds for statusbar elements...")
+
+// Goto-page box: sb-page-count
+assert.ok(
+  htmlSrc.includes('id="sb-page-count"') && 
+  htmlSrc.match(/id="sb-page-count"[^>]*data-wo-id="[^"]*"/),
+  "sb-page-count must have data-wo-id attribute"
+)
+
+// Zoom in/out + zoom-to-page/width
+assert.ok(
+  htmlSrc.includes('id="btn-zoom-in"') && 
+  htmlSrc.match(/id="btn-zoom-in"[^>]*data-wo-id="[^"]*"/),
+  "btn-zoom-in must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="btn-zoom-out"') && 
+  htmlSrc.match(/id="btn-zoom-out"[^>]*data-wo-id="[^"]*"/),
+  "btn-zoom-out must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="btn-zoom-fitpage"') && 
+  htmlSrc.match(/id="btn-zoom-fitpage"[^>]*data-wo-id="[^"]*"/),
+  "btn-zoom-fitpage must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="btn-zoom-fit"') && 
+  htmlSrc.match(/id="btn-zoom-fit"[^>]*data-wo-id="[^"]*"/),
+  "btn-zoom-fit must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="btn-zoom-reset"') && 
+  htmlSrc.match(/id="btn-zoom-reset"[^>]*data-wo-id="[^"]*"/),
+  "btn-zoom-reset must have data-wo-id attribute (zoom to 100%)"
+)
+
+// Info: sb-word-count
+assert.ok(
+  htmlSrc.includes('id="sb-word-count"') && 
+  htmlSrc.match(/id="sb-word-count"[^>]*data-wo-id="[^"]*"/),
+  "sb-word-count must have data-wo-id attribute"
+)
+
+// Content language: sb-lang, doc-lang, sb-doc-lang
+assert.ok(
+  htmlSrc.includes('id="sb-lang"') && 
+  htmlSrc.match(/id="sb-lang"[^>]*data-wo-id="[^"]*"/),
+  "sb-lang must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="doc-lang"') && 
+  htmlSrc.match(/id="doc-lang"[^>]*data-wo-id="[^"]*"/),
+  "doc-lang must have data-wo-id attribute"
+)
+assert.ok(
+  htmlSrc.includes('id="sb-doc-lang"') && 
+  htmlSrc.match(/id="sb-doc-lang"[^>]*data-wo-id="[^"]*"/),
+  "sb-doc-lang must have data-wo-id attribute"
+)
+
+console.log("All OO templateIds are present for statusbar elements\n")
+
+console.log("All SB-X tests passed!")
+console.log("ok")
