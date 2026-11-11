@@ -14349,6 +14349,8 @@
   // File > Protect: reuse the Protection-tab protection dialog.
   const fileProtectBtn = document.getElementById("btn-fileprotect");
   if (fileProtectBtn) fileProtectBtn.addEventListener("click", () => { closeAllMenus(); protectDialog(); });
+  const addPasswordBtn = document.getElementById("btn-add-password");
+  if (addPasswordBtn) addPasswordBtn.addEventListener("click", () => { closeAllMenus(); protectDialog(); });
 
   // File > Info: live document statistics when opened.
   function docStats() {
