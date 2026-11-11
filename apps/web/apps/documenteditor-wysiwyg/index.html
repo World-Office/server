@@ -230,7 +230,7 @@
          Kopieren/Einfügen/Ausschneiden + Drucken/Rückgängig/Wiederholen/
          Format übertragen on every tab), so row 1 starts at the Font group
          directly after the strip. -->
-    <div class="rb-group" role="group" aria-label="Font">
+    <div class="rb-group" role="group" aria-label="Font" data-i18n-aria-label="Aria.Font">
     <select id="font-family" class="toolbar-select rb bare"  title="Font family" data-i18n-title="Toolbar.FontFamilyTitle" aria-label="Font family">
       <option value="" selected>Default</option>
       <option value="Arial">Arial</option>
@@ -303,7 +303,7 @@
     <button type="button" id="btn-font-dialog" class="rb group-launch" title="Font dialog" data-i18n-title="Home.FontDialogTitle" aria-label="Font dialog" data-i18n-aria-label="Home.FontDialogTitle" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3.5h9M4 7h6.5M4 10.5h4"/><path d="M13 12.5h-4v4"/></svg></button>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Paragraph">
+    <div class="rb-group" role="group" aria-label="Paragraph" data-i18n-aria-label="Aria.Paragraph">
     <button class="rb" data-cmd="insertUnorderedList"  title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="4" cy="4" r="1.4"/><circle cx="4" cy="8" r="1.4"/><circle cx="4" cy="12" r="1.4"/><path d="M7 4h7M7 8h7M7 12h7" stroke="currentColor" stroke-width="1.75"/></svg></button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.BulletStyleOptions" aria-label="Bullet style options">▾</button>
@@ -371,6 +371,15 @@
       </ul>
     </span>
     </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" aria-label="More" data-i18n-aria-label="Home.More"><span data-i18n="Home.More">More</span>▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="bold" data-i18n="Toolbar.Bold">Bold</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="italic" data-i18n="Toolbar.Italic">Italic</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="underline" data-i18n="Toolbar.Underline">Underline</button></li>
+      </ul>
+    </span>
     </div>
     <div class="ribbon-row">
     <div class="rb-group" role="group" aria-label="Font character styles">
