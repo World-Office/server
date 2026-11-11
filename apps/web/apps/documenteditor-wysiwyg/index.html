@@ -1386,8 +1386,8 @@
        messages are announced to screen readers as they change. -->
   <footer class="statusbar">
     <div class="sb-cluster sb-cluster-left">
-      <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf">Page 1 of 0</span>
-      <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount"><span class="oo-ic oo-ic-btn-word-count" aria-hidden="true"></span><span id="sb-word-count-label" aria-hidden="true"></span>0 words</button>
+      <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf" data-wo-id="btn-goto-page" data-wo-cmd="gotoPage" data-wo-interact="direct">Page 1 of 0</span>
+      <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount" data-wo-id="btn-fileinfo" data-wo-cmd="btn-fileinfo" data-wo-interact="opens:panel"><span class="oo-ic oo-ic-btn-word-count" aria-hidden="true"></span><span id="sb-word-count-label" aria-hidden="true"></span>0 words</button>
       <!-- OO parity: persistent save-state indicator ("Alle Änderungen gespeichert") -->
       <span id="sb-save-state" class="sb status-meta" role="status" aria-live="polite" data-i18n="Statusbar.Saved">All changes saved</span>
     </div>
@@ -1401,41 +1401,41 @@
            multiple-pages | fit-page | fit-width | zoom- | slider | zoom+ | Zoom N% -->
       <!-- Language indicator (OO parity): mirrors the document/spellcheck
            language; click opens the settings dialog language row. -->
-      <button type="button" id="sb-lang" class="sb status-meta" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Document language" aria-label="Document language">English (United States) <span aria-hidden="true">▾</span></button>
+      <button type="button" id="sb-lang" class="sb status-meta" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Document language" aria-label="Document language" data-wo-id="btn-lang" data-wo-cmd="setLang" data-wo-interact="opens:panel">English (United States) <span aria-hidden="true">▾</span></button>
       <!-- Document language select: drives spellcheck + the editor lang attr
            (visually folded into sb-lang; kept in the DOM for the settings flow). -->
-      <select id="doc-lang" class="sb sb-hidden-native" title="Document language" aria-label="Document language">
+      <select id="doc-lang" class="sb sb-hidden-native" title="Document language" aria-label="Document language" data-wo-id="btn-doc-lang" data-wo-cmd="setDocLang" data-wo-interact="direct">
         <option value="en-US" selected>English (United States)</option>
         <option value="en-GB">English (United Kingdom)</option>
         <option value="de-DE">Deutsch (Deutschland)</option>
       </select>
-      <button class="sb menu-trigger caret-btn sb-hidden-native" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
-      <button type="button" id="sb-doc-lang" class="sb sb-icon" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Dokumentsprache" aria-label="Document language"><span class="oo-ic oo-ic-btn-ic-doclang" aria-hidden="true"></span></button>
-      <button type="button" id="sb-doc-spell" class="sb sb-icon" role="status" aria-live="polite" aria-pressed="false" title="Check spelling" aria-label="Check spelling" data-i18n="Statusbar.Spellcheck" data-i18n-title="Statusbar.Spellcheck" data-i18n-aria-label="Statusbar.Spellcheck"><span class="oo-ic oo-ic-btn-ic-docspell" aria-hidden="true"></span></button>
-      <button id="sb-track-changes" class="sb sb-icon" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges"><span class="oo-ic oo-ic-btn-ic-review" aria-hidden="true"></span></button>
-      <select id="sb-review-display-mode" class="sb sb-select" title="Display mode for reviewing changes" aria-label="Display mode for reviewing changes" data-i18n="Statusbar.DisplayMode" data-i18n-aria-label="Statusbar.DisplayMode">
+      <button class="sb menu-trigger caret-btn sb-hidden-native" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options" data-wo-id="btn-lang-caret" data-wo-cmd="langOptions" data-wo-interact="opens:menu">▾</button>
+      <button type="button" id="sb-doc-lang" class="sb sb-icon" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Dokumentsprache" aria-label="Document language" data-wo-id="btn-content-lang" data-wo-cmd="setContentLang" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-ic-doclang" aria-hidden="true"></span></button>
+      <button type="button" id="sb-doc-spell" class="sb sb-icon" role="status" aria-live="polite" aria-pressed="false" title="Check spelling" aria-label="Check spelling" data-i18n="Statusbar.Spellcheck" data-i18n-title="Statusbar.Spellcheck" data-i18n-aria-label="Statusbar.Spellcheck" data-wo-id="btn-spellcheck" data-wo-cmd="setSpellcheck" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-ic-docspell" aria-hidden="true"></span></button>
+      <button id="sb-track-changes" class="sb sb-icon" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges" data-wo-id="btn-track-changes" data-wo-cmd="setTrackChanges" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-ic-review" aria-hidden="true"></span></button>
+      <select id="sb-review-display-mode" class="sb sb-select" title="Display mode for reviewing changes" aria-label="Display mode for reviewing changes" data-i18n="Statusbar.DisplayMode" data-i18n-aria-label="Statusbar.DisplayMode" data-wo-id="btn-review-display" data-wo-cmd="setReviewDisplay" data-wo-interact="direct">
         <option value="simple" data-i18n="Statusbar.DisplayMode.Simple">Simple Markup</option>
         <option value="final" data-i18n="Statusbar.DisplayMode.Final">Final</option>
         <option value="review" selected data-i18n="Statusbar.DisplayMode.Review">All Markup</option>
         <option value="original" data-i18n="Statusbar.DisplayMode.Original">Original</option>
       </select>
-      <button class="sb sb-icon" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false"><span class="oo-ic oo-ic-btn-multiple-pages" aria-hidden="true"></span></button>
-      <button class="sb sb-icon" id="btn-zoom-fitpage" data-i18n-title="View.FitPage" data-i18n-aria-label="View.FitPage" title="Fit to page" aria-label="Fit to page"><span class="oo-ic oo-ic-btn-ic-zoomtopage" aria-hidden="true"></span></button>
-      <button class="sb sb-zoom-square" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width" aria-pressed="false"><span class="oo-ic oo-ic-btn-ic-zoomtowidth" aria-hidden="true"></span></button>
+      <button class="sb sb-icon" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false" data-wo-id="btn-multipage" data-wo-cmd="setMultiplePages" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-multiple-pages" aria-hidden="true"></span></button>
+      <button class="sb sb-icon" id="btn-zoom-fitpage" data-i18n-title="View.FitPage" data-i18n-aria-label="View.FitPage" title="Fit to page" aria-label="Fit to page" data-wo-id="btn-zoom-fitpage" data-wo-cmd="zoomToPage" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-ic-zoomtopage" aria-hidden="true"></span></button>
+      <button class="sb sb-zoom-square" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width" aria-pressed="false" data-wo-id="btn-zoom-fit" data-wo-cmd="zoomToWidth" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-ic-zoomtowidth" aria-hidden="true"></span></button>
       <span class="sb-sep" aria-hidden="true"></span>
       <!-- Zoom cluster: − / slider / + / %. The slider is the live zoom
            control (50%..200%, matches applyZoom). -->
-      <button class="sb sb-zoom-square" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><span class="oo-ic oo-ic-btn-zoomdown" aria-hidden="true"></span></button>
+      <button class="sb sb-zoom-square" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus" data-wo-id="btn-zoom-out" data-wo-cmd="zoomOut" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-zoomdown" aria-hidden="true"></span></button>
       <!-- CHROME5-POLISH-ACCENTS: the slider is the live zoom control
            (50%..200%, matches applyZoom); id sb-zoom-slider, aria-label
            i18n'd (Statusbar.ZoomSlider) so the label localizes. -->
       <span class="sb" id="zoom-wrap">
       <input type="range" id="sb-zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
-             title="Zoom" aria-label="Zoom slider" data-i18n-aria-label="Statusbar.ZoomSlider">
+             title="Zoom" aria-label="Zoom slider" data-i18n-aria-label="Statusbar.ZoomSlider" data-wo-id="btn-zoom-slider" data-wo-cmd="setZoom" data-wo-interact="direct">
       </span>
-      <button class="sb sb-zoom-square" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><span class="oo-ic oo-ic-btn-zoomup" aria-hidden="true"></span></button>
-      <button class="sb sb-zoom-square sb-hidden-native" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
-      <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
+      <button class="sb sb-zoom-square" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus" data-wo-id="btn-zoom-in" data-wo-cmd="zoomIn" data-wo-interact="direct"><span class="oo-ic oo-ic-btn-zoomup" aria-hidden="true"></span></button>
+      <button class="sb sb-zoom-square sb-hidden-native" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0" data-wo-id="btn-zoom-reset" data-wo-cmd="zoomReset" data-wo-interact="direct">100%</button>
+      <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom" data-wo-id="btn-zoom-label" data-wo-cmd="displayZoom" data-wo-interact="status">100%</span>
     </div>
   </footer>
 
