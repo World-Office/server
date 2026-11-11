@@ -155,8 +155,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/controller/FormsTab.js",
   "oo_lines": 893,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_getOForm/asc_getAllRoles/asc_addRole/asc_editRole/asc_MoveToFillingForm/asc_IsAllRequiredFormsFilled all wo_missing",
-  "notes": "P3-U05: blocked on the docxf/OForm engine layer — OO's form-filling tab drives asc_GetOForm ×6, asc_MoveToFillingForm ×4, asc_getAllRoles ×3, role highlight/restriction calls, all wo_missing in ORM-01, and ORM-05's content-control engine is unwrap-only (CSdt partial; CSdtComboBox/CSdtCheckBox missing). Named prerequisites: Phase-1/3 roles exports (PORT-PLAN D3) + ORM-05 sdt engine.",
+  "wo_anchor": "editor.js: Forms tab cmd dispatch (insertTextField/insertCheckboxField/insertDropdownField/insertDateField + toggleFormDesignMode); index.html: ribbon-page data-tab=\"forms\"",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — OO's form-filling tab drives asc_GetOForm ×6, asc_MoveToFillingForm ×4, asc_getAllRoles ×3, role highlight/restriction calls, all wo_missing in ORM-01, and ORM-05's content-control engine is unwrap-only (CSdt partial; CSdtComboBox/CSdtCheckBox missing). Named prerequisites: Phase-1/3 roles exports (PORT-PLAN D3) + ORM-05 sdt engine. FX: FX-U1 hosts the Forms tab (ribbon-page data-tab=\"forms\", field-palette dispatch, design/fill toggleFormDesignMode) and FX-U2 hosts its role duties (rolesManager/formSettings specs over asc_get_all_roles/asc_add_role/asc_edit_role); OO's asc_GetOForm/asc_MoveToFillingForm plumbing is replaced by WO's DOM form-field store (declared divergence). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -265,8 +265,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FormSettings.js",
   "oo_lines": 2084,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the FormsTab controller row (OForm/roles exports wo_missing in ORM-01)",
-  "notes": "P3-U05: blocked on the docxf/OForm engine layer — role assignment, field fixing, required highlighting and filling status all need the OForm model + asc_getAllRoles/asc_addRole/asc_editRole exports (wo_missing, ORM-01) and ORM-05's content-control engine. WO's cc-dialog is the only related surface today.",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.formSettings (\"form-settings-dialog\") + editor.js openFormSettings/applyFormSettings",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — role assignment, field fixing, required highlighting and filling status all need the OForm model + asc_getAllRoles/asc_addRole/asc_editRole exports (wo_missing, ORM-01) and ORM-05's content-control engine. WO's cc-dialog is the only related surface today. FX: FX-U2 hosts role assignment, required/fill-mode fixing and per-field settings in the engine-hosted form-settings-dialog (formFields widget over the WO field store; asc_get_all_roles/asc_edit_role wired in editor.js). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -325,8 +325,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FormsTab.js",
   "oo_lines": 1032,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the FormsTab controller row (OForm/roles exports wo_missing in ORM-01)",
-  "notes": "P3-U05: blocked on the docxf/OForm engine layer — the field palette (text/combo/checkbox/radio/date/image/complex) inserts form fields that WO's content-control path cannot model yet (ORM-05: CSdtComboBox/CSdtCheckBox missing; #cc-dialog covers plain/rich/date/checkbox only).",
+  "wo_anchor": "index.html: Forms field palette (btn-text-field/btn-checkbox-field/btn-dropdown-field/btn-date-field, data-cmd insert*) + editor.js insertFormField()",
+  "notes": "P3-U05: blocked on the docxf/OForm engine layer — the field palette (text/combo/checkbox/radio/date/image/complex) inserts form fields that WO's content-control path cannot model yet (ORM-05: CSdtComboBox/CSdtCheckBox missing; #cc-dialog covers plain/rich/date/checkbox only). FX: FX-U1 hosts the field palette (text/checkbox/dropdown/date) plus the design/fill toggle over WO's DOM form-field model; OO's radio/image/complex-field palette entries stay out (four core types modeled) —  FX-U5 verdict: partial. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -495,8 +495,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SignatureSettings.js",
   "oo_lines": 492,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_GetOForm/asc_onUpdateSignatures wo_missing (OO view drives them)",
-  "notes": "P3-U05: blocked on the signature workflow — digital-signature line insertion + signing need the OForm/signature exports (asc_GetOForm, asc_onUpdateSignatures, role exports — wo_missing, ORM-01). The common SignDialog/PdfSignDialog share the same prerequisite (see those rows).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.signatureSettings (\"signature-settings-dialog\") + editor.js openSignatureSettings/signatureSettingsOk (woSigners over asc_get_signers/asc_set_signers)",
+  "notes": "P3-U05: blocked on the signature workflow — digital-signature line insertion + signing need the OForm/signature exports (asc_GetOForm, asc_onUpdateSignatures, role exports — wo_missing, ORM-01). The common SignDialog/PdfSignDialog share the same prerequisite (see those rows). FX: FX-U4 hosts the signature-line insertion + signer roster in the engine-hosted signature-settings-dialog; woSigners talks asc_get_signers/asc_set_signers (wasm-first, JS fallback), replacing OO's asc_GetOForm/asc_onUpdateSignatures plumbing. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -735,8 +735,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RolesManagerDlg.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole wo_missing (member_of OForm)",
-  "notes": "P3-U05: blocked on the role exports — the role manager lists/edits OForm roles via asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole, all wo_missing in ORM-01 (member_of OForm). Named prerequisite: Phase-1/3 roles exports (PORT-PLAN D3, apply_structure_op).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.rolesManager (\"roles-manager-dialog\") + editor.js openRolesManager/rolesManagerOk (woRoles asc_get_all_roles/asc_add_role/asc_edit_role/asc_remove_role)",
+  "notes": "P3-U05: blocked on the role exports — the role manager lists/edits OForm roles via asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole, all wo_missing in ORM-01 (member_of OForm). Named prerequisite: Phase-1/3 roles exports (PORT-PLAN D3, apply_structure_op). FX: FX-U2 hosts the role manager (list/add/edit/delete) over the woRoles engine (asc_get_all_roles/asc_add_role/asc_edit_role/asc_remove_role, wasm-first with JS fallback). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -745,8 +745,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RoleEditDlg.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_addRole/asc_editRole wo_missing (member_of OForm)",
-  "notes": "P3-U05: blocked on asc_addRole/asc_editRole (wo_missing, ORM-01) — role add/edit needs the OForm role model on the wasm boundary (PORT-PLAN D3 typed ops).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.roleEdit (\"role-edit-dialog\") + editor.js openRoleEdit/applyRoleEdit (woRolesEdit over asc_add_role/asc_edit_role)",
+  "notes": "P3-U05: blocked on asc_addRole/asc_editRole (wo_missing, ORM-01) — role add/edit needs the OForm role model on the wasm boundary (PORT-PLAN D3 typed ops). FX: FX-U2 hosts add/edit in the role-edit-dialog over woRolesEdit (asc_add_role/asc_edit_role, wasm-first + JS fallback). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -755,8 +755,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/RoleDeleteDlg.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_removeRole wo_missing (member_of OForm)",
-  "notes": "P3-U05: blocked on asc_removeRole (wo_missing, ORM-01) — role delete confirm needs the same OForm role model as RoleEditDlg.",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.roleDelete (\"role-delete-dialog\") + editor.js applyRoleDelete (woRolesRemove over asc_remove_role)",
+  "notes": "P3-U05: blocked on asc_removeRole (wo_missing, ORM-01) — role delete confirm needs the same OForm role model as RoleEditDlg. FX: FX-U2 hosts the delete confirmation in the role-delete-dialog over woRolesRemove (asc_remove_role). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -765,8 +765,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SaveFormDlg.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_DownloadAs/asc_CDownloadOptions wo_missing; ORM-05 records the docxf format gap",
-  "notes": "P3-U05: blocked on the docxf format layer — save-as-form (.docxf) needs the OForm serialization the format layer does not have (ORM-05: content-control engine unwrap-only) plus asc_DownloadAs/asc_CDownloadOptions (wo_missing, ORM-01). Named prerequisite: Phase-2 ORM-05 sdt/docxf engine.",
+  "wo_anchor": "editor.js: openSaveFormDialog/saveForm + index.html #save-form-dialog (backstage btn-save-form); docserver POST /api/documents/{id}/save-form (core/crates/wo-docserver render.rs)",
+  "notes": "P3-U05: blocked on the docxf format layer — save-as-form (.docxf) needs the OForm serialization the format layer does not have (ORM-05: content-control engine unwrap-only) plus asc_DownloadAs/asc_CDownloadOptions (wo_missing, ORM-01). Named prerequisite: Phase-2 ORM-05 sdt/docxf engine. FX: FX-U1 hosts the save-as-form route (backstage btn-save-form → #save-form-dialog → editor.js saveForm() POST /api/documents/{id}/save-form, .docxf default name, empty-name validation); WO posts the editor HTML payload instead of serializing OO's OForm package, so .docxf serialization fidelity stays a named divergence —  FX-U5 verdict: partial. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -775,8 +775,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/SendForSigningSettings.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_getAllRoles/asc_GetOForm/asc_onUpdateSignatures wo_missing; OO view drives these directly",
-  "notes": "P3-U05: blocked on the signing workflow — the signing rail needs OForm + role exports (asc_getAllRoles, asc_getColor/asc_getSettings, asc_onUpdateSignatures — wo_missing, ORM-01) and the signature flow (see the SignDialog/PdfSignDialog rows). Named prerequisite: roles exports + PDF signing surface (Phase 4).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.sendForSigningSettings (\"send-for-signing-dialog\") + editor.js openSendForSigning/sendForSigningSend (signRecipients widget)",
+  "notes": "P3-U05: blocked on the signing workflow — the signing rail needs OForm + role exports (asc_getAllRoles, asc_getColor/asc_getSettings, asc_onUpdateSignatures — wo_missing, ORM-01) and the signature flow (see the SignDialog/PdfSignDialog rows). Named prerequisite: roles exports + PDF signing surface (Phase 4). FX: FX-U4 hosts the signing rail (recipients picker + status line over woSigners asc_get_signers/asc_set_signers); no e-mail/SMTP transport behind the send step (UI surface only — same honest split as the mail-merge-email-dialog row). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -785,8 +785,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/view/FillingStatusSettings.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_canFillRole/asc_getFillingStatus wo_missing (member_of OForm)",
-  "notes": "P3-U05: blocked on asc_canFillRole/asc_getFillingStatus (wo_missing, ORM-01) + the OForm model — the filling-completion status rail cannot compute per-role fill state without them.",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.fillingStatus (\"filling-status-dialog\") + editor.js openFillingStatus/fillingStatusOk (asc_can_fill_role/asc_get_filling_status)",
+  "notes": "P3-U05: blocked on asc_canFillRole/asc_getFillingStatus (wo_missing, ORM-01) + the OForm model — the filling-completion status rail cannot compute per-role fill state without them. FX: FX-U3 hosts the completion rail (state + filled/open counts + per-role breakdown, role switch re-gated through asc_can_fill_role) over the live fill store. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1045,8 +1045,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/FormSettings.template",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the FormSettings view row",
-  "notes": "P3-U05: blocked with the FormSettings view on the docxf/OForm engine layer (OForm/roles exports wo_missing in ORM-01; ORM-05 sdt engine). The rail markup would be an engine-hosted spec once the model lands.",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.formSettings (\"form-settings-dialog\") — spec-rendered with the view",
+  "notes": "P3-U05: blocked with the FormSettings view on the docxf/OForm engine layer (OForm/roles exports wo_missing in ORM-01; ORM-05 sdt engine). The rail markup would be an engine-hosted spec once the model lands. FX: FX-U2's form-settings-dialog spec renders the rail markup (formFields widget rows); no hand template needed. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1105,8 +1105,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/SignatureSettings.template",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the SignatureSettings view row",
-  "notes": "P3-U05: blocked with the SignatureSettings view on the signature workflow (OForm/signature exports wo_missing, ORM-01).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.signatureSettings (\"signature-settings-dialog\") — spec-rendered with the view",
+  "notes": "P3-U05: blocked with the SignatureSettings view on the signature workflow (OForm/signature exports wo_missing, ORM-01). FX: FX-U4's signature-settings-dialog spec renders the rail markup (line insert + signer rows); no hand template needed. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1115,8 +1115,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/RolesManagerDlg.template",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the RolesManagerDlg view row",
-  "notes": "P3-U05: blocked with the RolesManagerDlg view on the role exports (asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole wo_missing, ORM-01).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.rolesManager (\"roles-manager-dialog\") — spec-rendered with the view",
+  "notes": "P3-U05: blocked with the RolesManagerDlg view on the role exports (asc_getAllRoles/asc_addRole/asc_editRole/asc_removeRole wo_missing, ORM-01). FX: FX-U2's roles-manager-dialog spec renders the roster markup (list + add/edit/delete rows); no hand template needed. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1125,8 +1125,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/SendForSigningSettings.template",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the SendForSigningSettings view row",
-  "notes": "P3-U05: blocked with the SendForSigningSettings view on the signing workflow (OForm/role exports wo_missing, ORM-01; signature flow, Phase 4).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.sendForSigningSettings (\"send-for-signing-dialog\") — spec-rendered with the view",
+  "notes": "P3-U05: blocked with the SendForSigningSettings view on the signing workflow (OForm/role exports wo_missing, ORM-01; signature flow, Phase 4). FX: FX-U4's send-for-signing-dialog spec renders the rail markup (recipients + status rows); no hand template needed. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1135,8 +1135,8 @@
   "oo_file": "/tmp/oo-src/documenteditor/main/app/template/FillingStatusSettings.template",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the FillingStatusSettings view row",
-  "notes": "P3-U05: blocked with the FillingStatusSettings view on asc_canFillRole/asc_getFillingStatus + the OForm model (wo_missing, ORM-01).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.fillingStatus (\"filling-status-dialog\") — spec-rendered with the view",
+  "notes": "P3-U05: blocked with the FillingStatusSettings view on asc_canFillRole/asc_getFillingStatus + the OForm model (wo_missing, ORM-01). FX: FX-U3's filling-status-dialog spec renders the status markup (breakdown + refresh rows); no hand template needed. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "documenteditor"
  },
  {
@@ -1325,8 +1325,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/component/MaskedField.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the FormsTab controller row (form-filling feature, OForm/roles exports wo_missing in ORM-01)",
-  "notes": "P3-U05: blocked with the forms family — masked input fields (zip/date masks) exist for OO's form-filling workflow, which needs the docxf/OForm engine layer (ORM-01 roles exports + ORM-05 sdt engine).",
+  "wo_anchor": "editor.js: fill overlay over span.wo-form-field[data-kind=date|zip] (woMaskedTarget mask editor, typed digits land in data-value)",
+  "notes": "P3-U05: blocked with the forms family — masked input fields (zip/date masks) exist for OO's form-filling workflow, which needs the docxf/OForm engine layer (ORM-01 roles exports + ORM-05 sdt engine). FX: FX-U3 closes the form-filling masks (date ____-__-__ and zip masks on span.wo-form-field via the FX-U1 field markup + FX-U3 fill overlay); OO's general MaskedField component (arbitrary mask patterns + keypress filtering over any input) stays out —  FX-U5 verdict: partial. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "common"
  },
  {
@@ -2005,8 +2005,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/view/SignDialog.js",
   "oo_lines": 398,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_getSigner1/asc_getSigner2/asc_getSignatureImage wo_missing",
-  "notes": "P3-U05: blocked on the signature flow — signing-step dialog needs the signer/signature-image exports (asc_getSigner1/asc_getSigner2/asc_getSignatureImage, wo_missing, ORM-01) and a signing surface (Phase 4).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.signDialog (\"sign-dialog\") + editor.js openSignDialog/signDialogOk (woSigners)",
+  "notes": "P3-U05: blocked on the signature flow — signing-step dialog needs the signer/signature-image exports (asc_getSigner1/asc_getSigner2/asc_getSignatureImage, wo_missing, ORM-01) and a signing surface (Phase 4). FX: FX-U4 hosts the signing step (signer picker + signature image + date in the sign-dialog spec over woSigners asc_get_signers); no cryptographic signing is performed (UI surface only — declared divergence). FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "common"
  },
  {
@@ -2015,8 +2015,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/view/SignSettingsDialog.js",
   "oo_lines": null,
   "wo_status": "blocked",
-  "wo_anchor": "same prerequisite as the SignDialog row (signature flow exports wo_missing in ORM-01)",
-  "notes": "P3-U05: blocked on the signature flow — signature-line settings (name/title/date placeholders) need the same OForm/signature exports as SignDialog (wo_missing, ORM-01).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.signSettingsDialog (\"sign-settings-dialog\") + editor.js openSignSettings/signSettingsOk",
+  "notes": "P3-U05: blocked on the signature flow — signature-line settings (name/title/date placeholders) need the same OForm/signature exports as SignDialog (wo_missing, ORM-01). FX: FX-U4 hosts signature-line settings (name/title/date placeholders) in the engine-hosted sign-settings-dialog; the WO_DIALOG_SPECS.signSettingsDialog alias matches the OO component name. FX-U5 verdict: hosted. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "common"
  },
  {
@@ -2025,8 +2025,8 @@
   "oo_file": "/tmp/oo-src/common/main/lib/view/PdfSignDialog.js",
   "oo_lines": 657,
   "wo_status": "blocked",
-  "wo_anchor": "wasm-api.json (ORM-01): asc_getSigner1/asc_getSigner2/asc_getSignatureImage wo_missing; no PDF signing surface",
-  "notes": "P3-U05: blocked on the PDF signing flow — asc_getSigner1/asc_getSigner2/asc_getSignatureImage are wo_missing in ORM-01 and WO's word renderer has no PDF signing surface (named divergence candidate: OO's PDF sign path targets its PDF engine).",
+  "wo_anchor": "wo-dialogs.js WO_DIALOG_SPECS.pdfSignDialog (\"pdf-sign-dialog\") + editor.js openPdfSignDialog/pdfSignConfirm/pdfSignerPick",
+  "notes": "P3-U05: blocked on the PDF signing flow — asc_getSigner1/asc_getSigner2/asc_getSignatureImage are wo_missing in ORM-01 and WO's word renderer has no PDF signing surface (named divergence candidate: OO's PDF sign path targets its PDF engine). FX: FX-U4 hosts the confirm surface (signer picker + confirm step in the pdf-sign-dialog spec); WO still has no PDF signing pipeline, so OO's PDF-engine signing target stays a named divergence —  FX-U5 verdict: partial. FX-U5 ledger note: the status flip to hosted/partial is gated on the ui-webapp.md scoreboard rebaseline — that file sits outside this task's edit scope while ui-closure.test.mjs check 6 + hints.test.mjs check 7 pin the md total row to the JSON counts.",
   "oo_layer": "common"
  },
  {
