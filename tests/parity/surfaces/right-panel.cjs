@@ -24,14 +24,14 @@
 //      fixtures the contract runner uses; paragraph/mailmerge are always
 //      available. Fixture planting runs LAST (it rewrites #editor.innerHTML
 //      and must not perturb the plain census above).
-//   5. KNOWN-GAP retirements (FX-U3): OO source sections whose "candidate
-//      KNOWN-GAP" entry in right-panel-floors.json went stale because WO
-//      shipped the real counterpart. filling-status-settings is retired
-//      since FX-U3: the source-align leg stops crediting the divergence
-//      and instead asserts the FillingStatusSettings dialog (Forms tab →
-//      Filling status, asc_can_fill_role/asc_get_filling_status driven)
-//      exists AND opens in the served editor. signature-settings and
-//      send-for-signing-settings stay declared divergences (kept loud).
+//   5. KNOWN-GAP retirements (FX-U3/FX-U4): OO source sections whose
+//      "candidate KNOWN-GAP" entry in right-panel-floors.json went stale
+//      because WO shipped the real counterpart. filling-status-settings is
+//      retired since FX-U3 and signature-settings + send-for-signing-
+//      settings since FX-U4: the source-align leg stops crediting the
+//      divergence and instead asserts the real dialog counterparts (Forms
+//      tab → Filling status / Signatures group) exist AND open in the
+//      served editor (leg 5b). No OO right-panel section stays a gap.
 //
 // Usage: node tests/parity/surfaces/right-panel.cjs
 //   env WO_OO_CENSUS — census-oo-deep.json location (default: harness
@@ -59,7 +59,7 @@ const CFG = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'right-panel-f
 const SECTIONS = Object.keys(CFG.floors);
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-// ── KNOWN-GAP retirements (FX-U3) ─────────────────────────────────────
+// ── KNOWN-GAP retirements (FX-U3/FX-U4) ───────────────────────────────
 // right-panel-floors.json still declares these OO sections "candidate
 // KNOWN-GAP (keep loud)". Where the WO UI has since shipped the real
 // counterpart surface, the gap is RETIRED here: the source-align leg no
@@ -67,7 +67,8 @@ const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 // reference data and stays untouched) and instead demands the live
 // counterpart — asserted against the served editor in leg 5b. A retirement
 // without a working counterpart FAILS the surface (the gap is loud again).
-// Still kept loud (NOT retired): signature-settings, send-for-signing-settings.
+// Retired: filling-status-settings (FX-U3), signature-settings +
+// send-for-signing-settings (FX-U4). Nothing is kept loud any more.
 const RETIRED_KNOWN_GAPS = {
   fillingstatus: {
     section: 'filling-status-settings',
@@ -75,6 +76,22 @@ const RETIRED_KNOWN_GAPS = {
     buttonId: 'btn-filling-status',
     dialogId: 'filling-status-dialog',
     specKey: 'fillingStatus',
+    formsTab: 'forms',
+  },
+  signature: {
+    section: 'signature-settings',
+    note: 'FX-U4 retired the KNOWN-GAP: SignatureSettings dialog (Forms tab → Signatures → Signature line, btn-signature-settings / signature-settings-dialog, inserts div.wo-signature-line[data-signers], asc_get_signers driven) is the WO counterpart',
+    buttonId: 'btn-signature-settings',
+    dialogId: 'signature-settings-dialog',
+    specKey: 'signatureSettings',
+    formsTab: 'forms',
+  },
+  sendforsigning: {
+    section: 'send-for-signing-settings',
+    note: 'FX-U4 retired the KNOWN-GAP: SendForSigningSettings dialog (Forms tab → Signatures → Send for signing, btn-send-for-signing / send-for-signing-dialog, recipients multi-select from roles + message, sendForSigningSend → toast + status line) is the WO counterpart',
+    buttonId: 'btn-send-for-signing',
+    dialogId: 'send-for-signing-dialog',
+    specKey: 'sendForSigning',
     formsTab: 'forms',
   },
 };
@@ -309,10 +326,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         if (woRail.includes(id)) continue;
         const retired = RETIRED_KNOWN_GAPS[id];
         if (retired) {
-          // KNOWN-GAP retired (FX-U3): the divergence entry in the floors
-          // JSON is stale — the dialog now exists, so the surface must NOT
-          // wave the section through any more. Leg 5b verifies the live
-          // counterpart; until then this counts as unresolved.
+          // KNOWN-GAP retired (FX-U3/FX-U4): the divergence entry in the
+          // floors JSON is stale — the dialog now exists, so the surface
+          // must NOT wave the section through any more. Leg 5b verifies
+          // the live counterpart; until then this counts as unresolved.
           results.srcAlign.retiredGaps.push({ section: s, id: id, note: retired.note });
           continue;
         }
@@ -329,7 +346,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }
     }
 
-    // ── 5b. retired KNOWN-GAP counterparts (FX-U3) ──────────────────────
+    // ── 5b. retired KNOWN-GAP counterparts (FX-U3/FX-U4) ─────────────────
     // Every retired gap must have its REAL WO counterpart in the served
     // editor: the launcher button, the engine spec (window.WoDialogs
     // .WO_DIALOG_SPECS) and a dialog that actually opens with its widget

@@ -892,8 +892,359 @@ export function formFields(root, opts = {}) {
   return handle;
 }
 
-/** Spec row type "custom" → widget factory registry. */
-export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradient, roleList, roleDeleteInfo, formFields, fillingStatus };
+// ---------------------------------------------------------------------------
+// FX-U4: signature wave widgets — the signing-workflow dialog bodies.
+//   signerPicker   single pick over the asc_get_signers roster
+//                  (SignatureSettings line insert + PdfSignDialog confirm)
+//   signRolePick   single pick over the document roles (SignDialog)
+//   signRecipients multi pick over the document roles (SendForSigningSettings)
+//   signerEditor   SignSettingsDialog roster editor (pick/add/remove; the
+//                  dialog's name/title/email/instructions rows bind the pick)
+// All four follow the fillingStatus conventions: headless-capable models
+// (getValue/setValue/select without a DOM), editor→widget setValue syncs are
+// SILENT (only user picks fire opts.onChange → the engine cmd emit, so a
+// sync never loops back over the wo-command bus), unknown ids are ignored,
+// and handle.el = root so editor.js can find the mounted instance by
+// data-wo-key + data-wo-dialog ancestor.
+// ---------------------------------------------------------------------------
+const SIGN_PICK_KINDS = { signers: 1, roles: 1 };
+
+/** Normalize one pick-list source. Signers render name + title/email +
+ *  signed-date; roles render the palette swatch + name + assignee. */
+function signPickNormalize(kind, list) {
+  if (!SIGN_PICK_KINDS[kind]) return [];
+  return (Array.isArray(list) ? list : [])
+    .filter((it) => it && typeof it.id === "string" && it.id !== "")
+    .map((it) => (kind === "roles"
+      ? {
+        id: it.id,
+        name: String(it.name == null || it.name === "" ? it.id : it.name),
+        sub: String(it.user || ""),
+        date: "",
+        color: String(it.color || ""),
+      }
+      : {
+        id: it.id,
+        name: String(it.name == null || it.name === "" ? it.id : it.name),
+        sub: String(it.title || it.email || ""),
+        date: String(it.date || ""),
+        color: "",
+      }));
+}
+
+function signPickKnown(state, id) {
+  return state.items.some((it) => it.id === id);
+}
+
+/** Drives the three pick widgets (single over signers / single over roles /
+ *  multi over roles) off one body so the delegated handlers and the
+ *  headless contract stay identical between them. */
+function signPickFactory(widgetName, cfg) {
+  const multi = cfg.multi === true;
+  return function (root, opts = {}) {
+    const state = {
+      items: signPickNormalize(cfg.kind, opts[cfg.kind]),
+      selected: "",
+      picked: [],
+    };
+    if (typeof opts.selected === "string" && signPickKnown(state, opts.selected)) state.selected = opts.selected;
+    if (multi) {
+      state.picked = (Array.isArray(opts.picked) ? opts.picked : [])
+        .map(String)
+        .filter((id) => signPickKnown(state, id));
+    }
+    const handle = {
+      widget: widgetName,
+      el: null,
+      getValue() {
+        const value = { [cfg.kind]: state.items.map((it) => Object.assign({}, it)) };
+        if (multi) value.picked = state.picked.slice();
+        else value.selected = state.selected;
+        return value;
+      },
+      /** Re-sync from the live document (editor side). Silent — see the
+       *  factory note. Unknown picks are dropped. */
+      setValue(next) {
+        const blob = next && typeof next === "object" ? next : {};
+        if (Array.isArray(blob[cfg.kind])) {
+          state.items = signPickNormalize(cfg.kind, blob[cfg.kind]);
+          if (state.selected && !signPickKnown(state, state.selected)) state.selected = "";
+          state.picked = state.picked.filter((id) => signPickKnown(state, id));
+        }
+        if (!multi && typeof blob.selected === "string" && signPickKnown(state, blob.selected)) state.selected = blob.selected;
+        if (multi && Array.isArray(blob.picked)) {
+          state.picked = blob.picked.map(String).filter((id) => signPickKnown(state, id));
+        }
+        paint();
+        fire(false);
+        return handle;
+      },
+      /** User pick (single lists). Unknown/empty ids are ignored. */
+      select(id) {
+        const want = String(id == null ? "" : id);
+        if (!signPickKnown(state, want)) return handle;
+        state.selected = want;
+        paint();
+        fire(true);
+        return handle;
+      },
+      /** User toggle (multi list). Unknown ids are ignored. */
+      toggle(id) {
+        const want = String(id == null ? "" : id);
+        if (!signPickKnown(state, want)) return handle;
+        const at = state.picked.indexOf(want);
+        if (at === -1) state.picked.push(want);
+        else state.picked.splice(at, 1);
+        paint();
+        fire(true);
+        return handle;
+      },
+      destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+    };
+    const mounted = !!root && hasDom();
+    function fire(userPick) {
+      if (!userPick) return; // editor→widget syncs stay off the cmd bus
+      if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+      if (typeof CustomEvent === "function" && mounted && typeof root.dispatchEvent === "function") {
+        try {
+          root.dispatchEvent(new CustomEvent("wo-dialog-change", { detail: { widget: widgetName, value: handle.getValue() } }));
+        } catch (err) { /* headless */ }
+      }
+    }
+    if (!mounted) return handle; // headless: pure model only
+    const t = opts.t;
+    const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+
+    root.setAttribute("data-wo-widget-root", widgetName);
+    function paint() {
+      if (!mounted) return;
+      if (state.items.length === 0) {
+        root.innerHTML = '<span class="wo-sign-pick-none" data-i18n="' + escHtml(cfg.i18nNone) + '">' +
+          escHtml(tr(cfg.i18nNone, cfg.noneText)) + "</span>";
+        return;
+      }
+      if (multi) {
+        root.innerHTML =
+          '<div class="wo-sign-recipients" role="group" aria-label="' + escHtml(tr(cfg.i18nLabel, cfg.labelText)) + '">' +
+          state.items.map((it) =>
+            '<label class="wo-sign-recipient" data-wo-sign-recipient="' + escHtml(it.id) + '">' +
+              '<input type="checkbox" data-wo-sign-toggle="' + escHtml(it.id) + '"' +
+              (state.picked.indexOf(it.id) !== -1 ? " checked" : "") + " />" +
+              '<span class="wo-role-swatch" style="background-color:#' + escHtml(it.color || "808080") + '" aria-hidden="true"></span>' +
+              '<span class="wo-sign-recipient-name">' + escHtml(it.name) + "</span>" +
+              '<span class="wo-sign-recipient-sub">' + escHtml(it.sub) + "</span>" +
+            "</label>"
+          ).join("") + "</div>";
+        return;
+      }
+      root.innerHTML =
+        '<div class="wo-sign-pick-list" role="listbox" aria-label="' + escHtml(tr(cfg.i18nLabel, cfg.labelText)) + '">' +
+        state.items.map((it) =>
+          '<button type="button" class="wo-sign-pick-chip' + (it.id === state.selected ? " wo-sign-pick-selected" : "") + '"' +
+          ' data-wo-sign-pick="' + escHtml(it.id) + '" role="option" aria-selected="' + (it.id === state.selected) + '">' +
+            (it.color
+              ? '<span class="wo-role-swatch" style="background-color:#' + escHtml(it.color) + '" aria-hidden="true"></span>'
+              : "") +
+            '<span class="wo-sign-pick-name">' + escHtml(it.name) + "</span>" +
+            '<span class="wo-sign-pick-sub">' + escHtml(it.sub) + "</span>" +
+            '<span class="wo-sign-pick-date">' + escHtml(it.date) + "</span>" +
+          "</button>"
+        ).join("") + "</div>";
+    }
+    on(root, "click", (ev) => {
+      const chip = ev.target && typeof ev.target.closest === "function" ? ev.target.closest("[data-wo-sign-pick]") : null;
+      if (!chip) return;
+      handle.select(chip.getAttribute("data-wo-sign-pick"));
+    });
+    on(root, "change", (ev) => {
+      const target = ev && ev.target;
+      if (!target || typeof target.getAttribute !== "function") return;
+      const id = target.getAttribute("data-wo-sign-toggle");
+      if (id === null) return;
+      handle.toggle(id);
+    });
+    paint();
+    handle.el = root;
+    return handle;
+  };
+}
+
+/** signerPicker — the asc_get_signers roster, one chip per signer
+ *  (SignatureSettings + PdfSignDialog). */
+export const signerPicker = signPickFactory("signerPicker", {
+  kind: "signers",
+  multi: false,
+  i18nNone: "Widget.SignerPicker.None",
+  noneText: "No signers yet — add one in Signature setup",
+  i18nLabel: "Dialog.SignatureSettings.Signer",
+  labelText: "Signer",
+});
+
+/** signRolePick — the document roles, one chip per role (SignDialog). */
+export const signRolePick = signPickFactory("signRolePick", {
+  kind: "roles",
+  multi: false,
+  i18nNone: "Widget.SignRolePick.None",
+  noneText: "No roles yet — add roles first",
+  i18nLabel: "Dialog.Sign.Role",
+  labelText: "Sign as (role)",
+});
+
+/** signRecipients — checkbox per role, several may be picked
+ *  (SendForSigningSettings). */
+export const signRecipients = signPickFactory("signRecipients", {
+  kind: "roles",
+  multi: true,
+  i18nNone: "Widget.SignRecipients.None",
+  noneText: "No roles yet — add roles first",
+  i18nLabel: "Dialog.SendForSigning.Recipients",
+  labelText: "Recipients",
+});
+
+// ---------------------------------------------------------------------------
+// signerEditor — SignSettingsDialog body: the asc_get_signers roster with
+// pick/add/remove. The dialog's name/title/email/instructions rows bind the
+// picked signer (editor.js loads the rows on every user change and patches
+// the roster back on OK). New signers start with a usable unique id and a
+// non-empty name — the asc_set_signers contract rejects empty ids/names and
+// duplicate ids, so a fresh signer must never fail the round trip.
+// ---------------------------------------------------------------------------
+export function signerEditor(root, opts = {}) {
+  const state = {
+    signers: signPickNormalize("signers", opts.signers),
+    selected: -1,
+  };
+  state.selected = typeof opts.selected === "number" && opts.selected >= 0 && opts.selected < state.signers.length
+    ? opts.selected
+    : (state.signers.length ? 0 : -1);
+  function nextSignerId() {
+    let n = 1;
+    const taken = new Set(state.signers.map((s) => s.id));
+    while (taken.has("signer-" + n)) n++;
+    return "signer-" + n;
+  }
+  const handle = {
+    widget: "signerEditor",
+    el: null,
+    getValue() {
+      return { signers: state.signers.map((s) => Object.assign({}, s)), selected: state.selected };
+    },
+    /** Re-sync from the live roster (editor side). Silent — see the
+     *  factory note; unknown selections clamp to the first signer. */
+    setValue(next) {
+      const blob = next && typeof next === "object" ? next : {};
+      if (Array.isArray(blob.signers)) {
+        state.signers = signPickNormalize("signers", blob.signers);
+        if (state.selected >= state.signers.length) state.selected = state.signers.length ? state.signers.length - 1 : -1;
+      }
+      if (typeof blob.selected === "number" && blob.selected >= 0 && blob.selected < state.signers.length) {
+        state.selected = blob.selected;
+      }
+      paint();
+      fire(false);
+      return handle;
+    },
+    /** User pick. */
+    select(index) {
+      if (typeof index !== "number" || index < 0 || index >= state.signers.length) return handle;
+      state.selected = index;
+      paint();
+      fire(true);
+      return handle;
+    },
+    /** User add: a usable blank signer (unique id + non-empty name). */
+    add() {
+      const signer = {
+        id: nextSignerId(),
+        name: "Signer " + (state.signers.length + 1),
+        title: "",
+        email: "",
+        instructions: "",
+        date: "",
+        image: "",
+      };
+      state.signers.push(signer);
+      state.selected = state.signers.length - 1;
+      paint();
+      fire(true);
+      return handle;
+    },
+    /** User remove of the picked signer. */
+    remove() {
+      if (state.selected < 0 || state.selected >= state.signers.length) return handle;
+      state.signers.splice(state.selected, 1);
+      if (state.selected >= state.signers.length) state.selected = state.signers.length ? state.signers.length - 1 : -1;
+      paint();
+      fire(true);
+      return handle;
+    },
+    destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+  };
+  const mounted = !!root && hasDom();
+  function fire(userPick) {
+    if (!userPick) return; // editor→widget syncs stay off the cmd bus
+    if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+    if (typeof CustomEvent === "function" && mounted && typeof root.dispatchEvent === "function") {
+      try {
+        root.dispatchEvent(new CustomEvent("wo-dialog-change", { detail: { widget: "signerEditor", value: handle.getValue() } }));
+      } catch (err) { /* headless */ }
+    }
+  }
+  if (!mounted) return handle; // headless: pure model only
+  const t = opts.t;
+  const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+
+  root.setAttribute("data-wo-widget-root", "signerEditor");
+  function paint() {
+    if (!mounted) return;
+    const picked = state.selected >= 0 && state.selected < state.signers.length ? state.signers[state.selected] : null;
+    root.innerHTML =
+      (state.signers.length === 0
+        ? '<span class="wo-signer-none" data-i18n="Widget.SignerEditor.None">' + escHtml(tr("Widget.SignerEditor.None", "No signers yet")) + "</span>"
+        : '<div class="wo-signer-list" role="listbox" aria-label="' + escHtml(tr("Dialog.SignSettings.Section", "Signers")) + '">' +
+          state.signers.map((s, i) =>
+            '<button type="button" class="wo-sign-pick-chip' + (i === state.selected ? " wo-sign-pick-selected" : "") + '"' +
+            ' data-wo-signer-pick="' + i + '" role="option" aria-selected="' + (i === state.selected) + '">' +
+              '<span class="wo-sign-pick-name">' + escHtml(s.name) + "</span>" +
+              '<span class="wo-sign-pick-sub">' + escHtml(s.title || s.email) + "</span>" +
+              '<span class="wo-sign-pick-date">' + escHtml(s.date) + "</span>" +
+            "</button>"
+          ).join("") + "</div>") +
+      '<div class="wo-signer-actions">' +
+        '<button type="button" class="wo-dlg-btn" data-wo-signer-add data-i18n="Widget.SignerEditor.Add">' + escHtml(tr("Widget.SignerEditor.Add", "Add signer")) + "</button>" +
+        '<button type="button" class="wo-dlg-btn" data-wo-signer-remove' + (picked ? "" : " disabled") + ' data-i18n="Widget.SignerEditor.Remove">' + escHtml(tr("Widget.SignerEditor.Remove", "Remove")) + "</button>" +
+      "</div>";
+  }
+  on(root, "click", (ev) => {
+    const target = ev && ev.target;
+    if (!target || typeof target.closest !== "function") return;
+    if (target.closest("[data-wo-signer-add]")) { handle.add(); return; }
+    if (target.closest("[data-wo-signer-remove]")) { handle.remove(); return; }
+    const chip = target.closest("[data-wo-signer-pick]");
+    if (!chip) return;
+    const idx = parseInt(chip.getAttribute("data-wo-signer-pick"), 10);
+    if (!isNaN(idx)) handle.select(idx);
+  });
+  paint();
+  handle.el = root;
+  return handle;
+}
+
+/** Spec row type "custom" → widget factory registry (signature wave added
+ *  by FX-U4: signerPicker / signRolePick / signRecipients / signerEditor). */
+export const WO_CUSTOM_WIDGETS = {
+  tableStyler,
+  hsbColorPicker,
+  multiSliderGradient,
+  roleList,
+  roleDeleteInfo,
+  formFields,
+  signerPicker,
+  signRolePick,
+  signRecipients,
+  signerEditor,
+  fillingStatus,
+};
 
 // ---------------------------------------------------------------------------
 // Widget 7: fillingStatus — FX-U3 FillingStatusSettings body. Renders the
@@ -2286,6 +2637,114 @@ export const FILLING_STATUS_SPEC = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// FX-U4: signature wave specs — SignDialog, SignSettingsDialog,
+// SignatureSettings, SendForSigningSettings, PdfSignDialog. Specs only; the
+// behavioral half (open/sync/apply, wasm-first woSigners get/set over
+// asc_get_signers/asc_set_signers, signature-line painting) lives in
+// editor.js. No crypto: the signing workflow state is editor-side (documented
+// divergence, honest like HintManager).
+// ---------------------------------------------------------------------------
+export const SIGNATURE_SETTINGS_SPEC = {
+  id: "signature-settings-dialog",
+  title: "Signature line",
+  titleKey: "Dialog.SignatureSettings.Title",
+  width: 520,
+  okCmd: "signatureSettingsOk",
+  sections: [
+    {
+      title: "Signature line",
+      titleKey: "Dialog.SignatureSettings.Section",
+      rows: [
+        { type: "custom", key: "lineSigner", label: "Signer", labelKey: "Dialog.SignatureSettings.Signer",
+          widget: "signerPicker", cmd: "signatureSignerPick" },
+        { type: "text", key: "lineLabel", label: "Label", labelKey: "Dialog.SignatureSettings.Label", value: "" },
+      ],
+    },
+  ],
+};
+
+export const SIGN_SETTINGS_SPEC = {
+  id: "sign-settings-dialog",
+  title: "Signature setup",
+  titleKey: "Dialog.SignSettings.Title",
+  width: 560,
+  okCmd: "signSettingsOk",
+  sections: [
+    {
+      title: "Signers",
+      titleKey: "Dialog.SignSettings.Section",
+      rows: [
+        { type: "custom", key: "signers", label: "Signers", labelKey: "Dialog.SignSettings.Section",
+          widget: "signerEditor", cmd: "signerEditorChange" },
+        { type: "text", key: "name", label: "Name", labelKey: "Dialog.SignSettings.Name", value: "" },
+        { type: "text", key: "title", label: "Title", labelKey: "Dialog.SignSettings.TitleField", value: "" },
+        { type: "text", key: "email", label: "Email", labelKey: "Dialog.SignSettings.Email", value: "" },
+        { type: "text", key: "instructions", label: "Instructions", labelKey: "Dialog.SignSettings.Instructions", value: "" },
+      ],
+    },
+  ],
+};
+
+export const SIGN_DIALOG_SPEC = {
+  id: "sign-dialog",
+  title: "Sign",
+  titleKey: "Dialog.Sign.Title",
+  width: 480,
+  okCmd: "signDialogOk",
+  sections: [
+    {
+      title: "Sign",
+      titleKey: "Dialog.Sign.Section",
+      rows: [
+        { type: "custom", key: "role", label: "Sign as (role)", labelKey: "Dialog.Sign.Role",
+          widget: "signRolePick", cmd: "signRolePick" },
+        { type: "text", key: "drawnName", label: "Drawn name", labelKey: "Dialog.Sign.DrawnName", value: "" },
+      ],
+    },
+  ],
+};
+
+export const SEND_FOR_SIGNING_SPEC = {
+  id: "send-for-signing-dialog",
+  title: "Send for signing",
+  titleKey: "Dialog.SendForSigning.Title",
+  width: 520,
+  okCmd: "sendForSigningSend",
+  sections: [
+    {
+      title: "Send for signing",
+      titleKey: "Dialog.SendForSigning.Section",
+      rows: [
+        { type: "custom", key: "recipients", label: "Recipients", labelKey: "Dialog.SendForSigning.Recipients",
+          widget: "signRecipients", cmd: "signRecipientsChange" },
+        { type: "text", key: "message", label: "Message", labelKey: "Dialog.SendForSigning.Message", value: "" },
+      ],
+    },
+  ],
+};
+
+export const PDF_SIGN_SPEC = {
+  id: "pdf-sign-dialog",
+  title: "Sign PDF",
+  titleKey: "Dialog.PdfSign.Title",
+  width: 480,
+  okCmd: "pdfSignConfirm",
+  sections: [
+    {
+      title: "Sign PDF",
+      titleKey: "Dialog.PdfSign.Section",
+      rows: [
+        { type: "custom", key: "pdfSigner", label: "Signer", labelKey: "Dialog.PdfSign.Signer",
+          widget: "signerPicker", cmd: "pdfSignerPick" },
+        { type: "text", key: "reason", label: "Reason", labelKey: "Dialog.PdfSign.Reason", value: "" },
+        { type: "text", key: "location", label: "Location", labelKey: "Dialog.PdfSign.Location", value: "" },
+        { type: "checkbox", key: "confirm", label: "I confirm this signature", labelKey: "Dialog.PdfSign.Confirm", value: false },
+      ],
+    },
+  ],
+};
+
 /**
  * Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
 export const WO_DIALOG_SPECS = {
@@ -2313,6 +2772,15 @@ export const WO_DIALOG_SPECS = {
   roleDelete: ROLE_DELETE_SPEC,
   formSettings: FORM_SETTINGS_SPEC,
   fillingStatus: FILLING_STATUS_SPEC,
+  signatureSettings: SIGNATURE_SETTINGS_SPEC,
+  signSettings: SIGN_SETTINGS_SPEC,
+  // OO component-name aliases (SignSettingsDialog / SendForSigningSettings)
+  // alongside the short keys — both resolve to the same spec objects.
+  signSettingsDialog: SIGN_SETTINGS_SPEC,
+  signDialog: SIGN_DIALOG_SPEC,
+  sendForSigning: SEND_FOR_SIGNING_SPEC,
+  sendForSigningSettings: SEND_FOR_SIGNING_SPEC,
+  pdfSignDialog: PDF_SIGN_SPEC,
 };
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a

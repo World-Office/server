@@ -3204,6 +3204,110 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
 .wo-form-field-required { justify-self: center; }
 .wo-form-fields-empty { color: var(--muted); font-size: 12px; }
 
+/* FX-U4: signature wave — the signature LINE in the document
+   (div.wo-signature-line[data-signers]) + the signing status line
+   (div.wo-signing-status). Editor-side workflow state (no crypto). */
+.wo-signature-line {
+  display: block;
+  margin: 10px 0;
+  min-height: 44px;
+  user-select: none;
+}
+.wo-signature-line .wo-signature-line-body {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 240px;
+  border-bottom: 1px dotted var(--text);
+  padding: 0 6px 2px 18px;
+  position: relative;
+}
+.wo-signature-line .wo-signature-line-x {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.wo-signature-line .wo-signature-line-name {
+  min-width: 120px;
+  font-family: "Segoe Script", "Comic Sans MS", cursive, serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.wo-signature-line .wo-signature-line-caption {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.wo-signature-line-signed .wo-signature-line-name { color: var(--accent); }
+.wo-signing-status {
+  display: block;
+  margin: 8px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* FX-U4: signature wave dialog widgets (signerPicker chips, signRolePick,
+   signRecipients checkboxes, signerEditor roster) — reuse the FX-U2 role
+   chip geometry. */
+.wo-sign-pick-list, .wo-signer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+.wo-sign-pick-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+.wo-sign-pick-chip:hover { background: var(--hover); }
+.wo-sign-pick-chip.wo-sign-pick-selected { border-color: var(--accent); }
+.wo-sign-pick-name { font-weight: 600; }
+.wo-sign-pick-sub { color: var(--muted); font-size: 11px; }
+.wo-sign-pick-date { margin-left: auto; color: var(--muted); font-size: 11px; }
+.wo-sign-pick-none, .wo-signer-none { color: var(--muted); font-size: 12px; }
+.wo-signer-actions { display: flex; gap: 8px; margin-top: 8px; }
+.wo-sign-recipients {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+.wo-sign-recipient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+}
+.wo-sign-recipient:hover { background: var(--hover); }
+.wo-sign-recipient-name { font-weight: 600; }
+.wo-sign-recipient-sub { margin-left: auto; color: var(--muted); font-size: 11px; }
+
 /* Form field elements in document */
 .form-field {
   display: inline-block;
