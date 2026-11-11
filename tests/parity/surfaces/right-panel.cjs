@@ -24,6 +24,14 @@
 //      fixtures the contract runner uses; paragraph/mailmerge are always
 //      available. Fixture planting runs LAST (it rewrites #editor.innerHTML
 //      and must not perturb the plain census above).
+//   5. KNOWN-GAP retirements (FX-U3): OO source sections whose "candidate
+//      KNOWN-GAP" entry in right-panel-floors.json went stale because WO
+//      shipped the real counterpart. filling-status-settings is retired
+//      since FX-U3: the source-align leg stops crediting the divergence
+//      and instead asserts the FillingStatusSettings dialog (Forms tab →
+//      Filling status, asc_can_fill_role/asc_get_filling_status driven)
+//      exists AND opens in the served editor. signature-settings and
+//      send-for-signing-settings stay declared divergences (kept loud).
 //
 // Usage: node tests/parity/surfaces/right-panel.cjs
 //   env WO_OO_CENSUS — census-oo-deep.json location (default: harness
@@ -50,6 +58,26 @@ const boot = require('../_boot.cjs');
 const CFG = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'right-panel-floors.json'), 'utf8'));
 const SECTIONS = Object.keys(CFG.floors);
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+// ── KNOWN-GAP retirements (FX-U3) ─────────────────────────────────────
+// right-panel-floors.json still declares these OO sections "candidate
+// KNOWN-GAP (keep loud)". Where the WO UI has since shipped the real
+// counterpart surface, the gap is RETIRED here: the source-align leg no
+// longer credits the stale divergence entry (the JSON is captured
+// reference data and stays untouched) and instead demands the live
+// counterpart — asserted against the served editor in leg 5b. A retirement
+// without a working counterpart FAILS the surface (the gap is loud again).
+// Still kept loud (NOT retired): signature-settings, send-for-signing-settings.
+const RETIRED_KNOWN_GAPS = {
+  fillingstatus: {
+    section: 'filling-status-settings',
+    note: 'FX-U3 retired the KNOWN-GAP: FillingStatusSettings dialog (Forms tab → Filling status, btn-filling-status / filling-status-dialog, asc_can_fill_role/asc_get_filling_status driven) is the WO counterpart',
+    buttonId: 'btn-filling-status',
+    dialogId: 'filling-status-dialog',
+    specKey: 'fillingStatus',
+    formsTab: 'forms',
+  },
+};
 
 function ooCensusPath() {
   const cands = [];
@@ -265,7 +293,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       for (const c of cands) if (fs.existsSync(c)) return JSON.parse(fs.readFileSync(c, 'utf8'));
       return null; // missing reference: report and fail (source-anchoring is mandatory)
     })();
-    results.srcAlign = { ref: null, ooSections: [], none: [], missingFromWO: [], woExtensions: [], divergent: [] };
+    results.srcAlign = { ref: null, ooSections: [], none: [], missingFromWO: [], woExtensions: [], divergent: [], retiredGaps: [] };
     if (!ref) {
       results.srcAlign.error = 'oo-reference.json not found — set WO_OO_REF';
       rc = 1;
@@ -279,6 +307,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const id = normId(s.replace(/-settings$/, ''));
         results.srcAlign.ooSections.push(s);
         if (woRail.includes(id)) continue;
+        const retired = RETIRED_KNOWN_GAPS[id];
+        if (retired) {
+          // KNOWN-GAP retired (FX-U3): the divergence entry in the floors
+          // JSON is stale — the dialog now exists, so the surface must NOT
+          // wave the section through any more. Leg 5b verifies the live
+          // counterpart; until then this counts as unresolved.
+          results.srcAlign.retiredGaps.push({ section: s, id: id, note: retired.note });
+          continue;
+        }
         if (known[id]) { results.srcAlign.divergent.push({ section: s, note: known[id] }); continue; }
         results.srcAlign.missingFromWO.push(s);
         rc = 1; // OO ships a right-panel section WO silently lacks
@@ -290,6 +327,47 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         results.srcAlign.woExtensions.push({ section: name, note: 'UNDECLARED' });
         rc = 1;
       }
+    }
+
+    // ── 5b. retired KNOWN-GAP counterparts (FX-U3) ──────────────────────
+    // Every retired gap must have its REAL WO counterpart in the served
+    // editor: the launcher button, the engine spec (window.WoDialogs
+    // .WO_DIALOG_SPECS) and a dialog that actually opens with its widget
+    // mounted. Missing/any dead piece → the gap is loud again → FAIL.
+    results.retiredGaps = {};
+    for (const [id, gap] of Object.entries(RETIRED_KNOWN_GAPS)) {
+      const entry = { section: gap.section, ok: false };
+      try {
+        const tab = await page.$(`.ribbon-tab[data-tab="${gap.formsTab}"]`);
+        const btn = await page.$(`#${gap.buttonId}`);
+        if (!tab || !btn) throw new Error(`#${gap.buttonId} or the ${gap.formsTab} ribbon tab not found`);
+        await tab.click();
+        await sleep(250);
+        await btn.click();
+        await sleep(350);
+        entry.opened = await page.evaluate((dlgId) => {
+          const dlg = document.querySelector(`[data-wo-dialog="${dlgId}"]`);
+          const widget = document.querySelector(`[data-wo-dialog="${dlgId}"] [data-wo-widget-root]`);
+          return {
+            dialog: !!(dlg && dlg.classList.contains('open')),
+            widget: !!widget,
+            widgetKind: widget ? widget.getAttribute('data-wo-widget-root') : null,
+            spec: !!(window.WoDialogs && window.WoDialogs.WO_DIALOG_SPECS && window.WoDialogs.WO_DIALOG_SPECS.fillingStatus),
+          };
+        }, gap.dialogId);
+        // close it again (cancel) so the legs below start clean
+        await page.evaluate((dlgId) => {
+          const cancel = document.querySelector(`#${dlgId}-cancel`) || document.querySelector(`#${dlgId} [data-wo-cancel]`);
+          if (cancel) cancel.click();
+        }, gap.dialogId);
+        await sleep(200);
+        entry.ok = !!(entry.opened.dialog && entry.opened.widget && entry.opened.spec);
+      } catch (e) {
+        entry.error = String((e && e.message) || e).split('\n')[0];
+        entry.ok = false;
+      }
+      if (!entry.ok) rc = 1;
+      results.retiredGaps[id] = entry;
     }
 
     // ── 4b. selection gating (contextual sections live, like OO) ─────
@@ -441,9 +519,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (results.srcAlign.error) console.log(`FAIL  source-align — ${results.srcAlign.error}`);
     else {
       for (const d of results.srcAlign.divergent) console.log(`ok    source-align OO section "${d.section}" declared divergence: ${d.note}`);
+      for (const g of results.srcAlign.retiredGaps) console.log(`retired source-align OO section "${g.section}" KNOWN-GAP: ${g.note}`);
       for (const w of results.srcAlign.woExtensions.filter((e) => e.section)) console.log(`ok    source-align WO extension "${w.section}": ${w.note}`);
       for (const m of results.srcAlign.missingFromWO) console.log(`FAIL  source-align OO section "${m}" has NO WO counterpart and is NOT a declared divergence`);
     }
+  }
+  for (const [id, g] of Object.entries(results.retiredGaps || {})) {
+    if (g.error) console.log(`FAIL  retired-gap ${id.padEnd(14)} — ${g.error}`);
+    else if (!g.ok) console.log(`FAIL  retired-gap ${id.padEnd(14)} — counterpart missing: ${JSON.stringify(g.opened)}`);
+    else console.log(`ok    retired-gap ${id.padEnd(14)} "${g.section}" covered by ${g.opened.widgetKind} (dialog open, spec present)`);
   }
   process.exit(rc);
 })().catch((e) => { console.error('right-panel FAIL:', e); process.exit(1); });

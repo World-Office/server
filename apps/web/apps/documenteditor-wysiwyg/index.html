@@ -933,6 +933,7 @@
     <div class="rb-group" role="group" aria-label="Form roles and settings">
     <button type="button" id="btn-roles-manager" data-cmd="openRolesManager" title="Form roles" data-i18n-title="Forms.RolesTitle" data-i18n="Forms.Roles">Roles</button>
     <button type="button" id="btn-form-settings" data-cmd="openFormSettings" title="Form settings" data-i18n-title="Forms.FormSettingsTitle" data-i18n="Forms.FormSettings">Form settings</button>
+    <button type="button" id="btn-filling-status" data-cmd="openFillingStatus" title="Filling status" data-i18n-title="Forms.FillingStatusTitle" data-i18n="Forms.FillingStatus">Filling status</button>
     </div>
     </div>
     </div>
@@ -3695,5 +3696,10 @@
       </div>
     </div>
   </div>
+  <!-- FX-U3 MaskedField fill overlay: floats below a clicked masked form
+       field (span.wo-form-field[data-kind=date]/[data-kind=zip]) and hosts
+       the masked input (____-__-__ / _____); typed digits land in the
+       field span's data-value. editor.js fills/re-uses this host. -->
+  <div id="wo-fill-overlay" hidden></div>
 </body>
 </html>

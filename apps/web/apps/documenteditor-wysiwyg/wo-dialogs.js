@@ -893,7 +893,163 @@ export function formFields(root, opts = {}) {
 }
 
 /** Spec row type "custom" → widget factory registry. */
-export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradient, roleList, roleDeleteInfo, formFields };
+export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradient, roleList, roleDeleteInfo, formFields, fillingStatus };
+
+// ---------------------------------------------------------------------------
+// Widget 7: fillingStatus — FX-U3 FillingStatusSettings body. Renders the
+// asc_get_filling_status answer (state + filled/open counts + per-role
+// breakdown) with the active fill role switcher, whose pick re-gates
+// through asc_can_fill_role. Model: {status, totalFields, filledFields,
+// requiredLeft, roles[], roleList[], active, canFill, user} — setValue()/
+// select()/getValue() work headless like the other factories. onChange
+// fires ONLY on a user pick (select) — setValue is the editor→widget sync
+// direction and firing it back would loop the wo-command bus.
+// ---------------------------------------------------------------------------
+const FILLING_STATES = ["empty", "filling", "complete"];
+
+function fsNormStatus(blob) {
+  const b = blob && typeof blob === "object" ? blob : {};
+  const roles = (Array.isArray(b.roles) ? b.roles : [])
+    .filter((r) => r && typeof r.roleId === "string")
+    .map((r) => ({
+      roleId: r.roleId,
+      name: String(r.name == null ? r.roleId : r.name),
+      totalFields: Math.max(0, Number(r.totalFields) || 0),
+      filledFields: Math.max(0, Number(r.filledFields) || 0),
+      requiredLeft: Math.max(0, Number(r.requiredLeft) || 0),
+      complete: r.complete === true,
+    }));
+  const roleList = (Array.isArray(b.roleList) ? b.roleList : [])
+    .filter((r) => r && typeof r.id === "string")
+    .map((r) => ({ id: r.id, name: String(r.name == null ? r.id : r.name), color: String(r.color || ""), user: String(r.user || "") }));
+  return {
+    status: FILLING_STATES.indexOf(b.status) !== -1 ? b.status : "empty",
+    totalFields: Math.max(0, Number(b.totalFields) || 0),
+    filledFields: Math.max(0, Number(b.filledFields) || 0),
+    requiredLeft: Math.max(0, Number(b.requiredLeft) || 0),
+    roles: roles,
+    roleList: roleList,
+    active: typeof b.active === "string" ? b.active : "",
+    canFill: b.canFill === true,
+    user: String(b.user == null ? "" : b.user),
+  };
+}
+
+export function fillingStatus(root, opts = {}) {
+  const state = fsNormStatus(opts);
+  const handle = {
+    widget: "fillingStatus",
+    el: null,
+    getValue() {
+      return {
+        status: state.status,
+        totalFields: state.totalFields,
+        filledFields: state.filledFields,
+        requiredLeft: state.requiredLeft,
+        roles: state.roles.map((r) => Object.assign({}, r)),
+        roleList: state.roleList.map((r) => Object.assign({}, r)),
+        active: state.active,
+        canFill: state.canFill,
+        user: state.user,
+      };
+    },
+    /** Re-sync from the asc_get_filling_status blob (editor side). Silent:
+     *  see the onChange note above. */
+    setValue(next) {
+      const normed = fsNormStatus(next);
+      Object.keys(normed).forEach((k) => { state[k] = normed[k]; });
+      paint();
+      fire(false);
+      return handle;
+    },
+    /** Role switcher pick (user action): re-gated by editor.js through
+     *  asc_can_fill_role; unknown role ids are ignored. */
+    select(roleId) {
+      const id = String(roleId == null ? "" : roleId);
+      if (!id) return handle;
+      const known = state.roleList.some((r) => r.id === id) || state.roles.some((r) => r.roleId === id);
+      if (!known) return handle;
+      state.active = id;
+      paint();
+      fire(true);
+      return handle;
+    },
+    destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+  };
+  const mounted = !!root && hasDom();
+  function fire(userPick) {
+    if (!userPick) return; // editor→widget syncs stay off the cmd bus
+    if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+    if (typeof CustomEvent === "function" && mounted && typeof root.dispatchEvent === "function") {
+      try {
+        root.dispatchEvent(new CustomEvent("wo-dialog-change", { detail: { widget: "fillingStatus", value: handle.getValue() } }));
+      } catch (err) { /* headless */ }
+    }
+  }
+  if (!mounted) return handle; // headless: pure model only
+  const t = opts.t;
+  const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+
+  root.setAttribute("data-wo-widget-root", "fillingStatus");
+  function roleColor(roleId) {
+    const hit = state.roleList.find((r) => r.id === roleId);
+    return hit && hit.color ? hit.color : "808080";
+  }
+  function paint() {
+    if (!mounted) return;
+    const openCount = Math.max(state.totalFields - state.filledFields, 0);
+    const stateKey = "Widget.FillingStatus." + state.status.charAt(0).toUpperCase() + state.status.slice(1);
+    const stateDefault = { empty: "Not started", filling: "Filling", complete: "Complete" }[state.status] || state.status;
+    const switcher = state.roleList.length === 0
+      ? '<span class="wo-filling-noroles" data-i18n="Widget.FillingStatus.NoRoles">' + escHtml(tr("Widget.FillingStatus.NoRoles", "No roles yet — add roles first")) + "</span>"
+      : '<label class="wo-filling-switch-label" for="wo-filling-switch" data-i18n="Dialog.FillingStatus.ActiveRole">' + escHtml(tr("Dialog.FillingStatus.ActiveRole", "Active role")) + "</label>" +
+        '<select id="wo-filling-switch" class="wo-filling-switch" data-wo-filling-switch aria-label="' + escHtml(tr("Dialog.FillingStatus.ActiveRole", "Active role")) + '">' +
+          state.roleList.map((r) =>
+            '<option value="' + escHtml(r.id) + '"' + (r.id === state.active ? " selected" : "") + ">" + escHtml(r.name) + "</option>"
+          ).join("") +
+        "</select>";
+    root.innerHTML =
+      '<div class="wo-filling-state" data-wo-filling-state="' + escHtml(state.status) + '">' +
+        '<span class="wo-filling-state-label" data-i18n="' + escHtml(stateKey) + '">' + escHtml(tr(stateKey, stateDefault)) + "</span>" +
+        '<span class="wo-filling-counts">' +
+          '<span class="wo-filling-count-filled" data-i18n="Widget.FillingStatus.Filled">' + escHtml(tr("Widget.FillingStatus.Filled", "Filled")) + " " + state.filledFields + "</span>" +
+          '<span class="wo-filling-count-open" data-i18n="Widget.FillingStatus.Open">' + escHtml(tr("Widget.FillingStatus.Open", "Open")) + " " + openCount + "</span>" +
+        "</span>" +
+      "</div>" +
+      '<div class="wo-filling-switch-row">' + switcher + "</div>" +
+      '<div class="wo-filling-gate' + (state.canFill ? " wo-filling-gate-ok" : "") + '" data-wo-filling-gate="' + (state.canFill ? "1" : "0") + '" data-i18n="' +
+        escHtml(state.canFill ? "Widget.FillingStatus.CanFill" : "Widget.FillingStatus.CannotFill") + '">' +
+        escHtml(state.canFill ? tr("Widget.FillingStatus.CanFill", "You can fill this role") : tr("Widget.FillingStatus.CannotFill", "Not fillable with your user")) +
+      "</div>" +
+      '<div class="wo-filling-roles" role="table" aria-label="' + escHtml(tr("Dialog.FillingStatus.Section", "Filling status")) + '">' +
+        (state.roles.length === 0
+          ? '<span class="wo-filling-roles-empty" data-i18n="Widget.FillingStatus.NoRoles">' + escHtml(tr("Widget.FillingStatus.NoRoles", "No roles yet — add roles first")) + "</span>"
+          : state.roles.map((r) =>
+            '<div class="wo-filling-role-row" data-wo-filling-role="' + escHtml(r.roleId) + '" role="row">' +
+              '<span class="wo-role-swatch" style="background-color:#' + escHtml(roleColor(r.roleId)) + '" aria-hidden="true"></span>' +
+              '<span class="wo-filling-role-name">' + escHtml(r.name) + "</span>" +
+              '<span class="wo-filling-role-counts">' + escHtml(tr("Widget.FillingStatus.Filled", "Filled")) + " " + r.filledFields + " / " + r.totalFields + "</span>" +
+              '<span class="wo-filling-role-complete"' + (r.complete ? ' data-wo-complete="1" data-i18n="Widget.FillingStatus.CompleteMark"' : ' data-wo-complete="0" data-i18n="Widget.FillingStatus.Open"') + ">" +
+                escHtml(r.complete ? tr("Widget.FillingStatus.CompleteMark", "complete") : tr("Widget.FillingStatus.Open", "Open") + " " + r.requiredLeft) +
+              "</span>" +
+            "</div>"
+          ).join("")) +
+      "</div>";
+  }
+  on(root, "change", (ev) => {
+    const target = ev && ev.target;
+    if (!target || typeof target.getAttribute !== "function") return;
+    if (target.getAttribute("data-wo-filling-switch") === null) return;
+    handle.select(target.value);
+  });
+  paint();
+  // Mounted handles expose their root so editor.js can find the widget in
+  // engine.widgets by data-wo-key (same convention as tableStyler & co.) —
+  // without it the dialog sync falls back to the snapshot handle, which
+  // never repaints the switcher.
+  handle.el = root;
+  return handle;
+}
 
 // ---------------------------------------------------------------------------
 // WoDialogEngine
@@ -2103,6 +2259,33 @@ export const FORM_SETTINGS_SPEC = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// FX-U3: FillingStatusSettings — the form completion view. The fillingStatus
+// widget renders the asc_get_filling_status answer (state + filled/open
+// counts + per-role breakdown) and hosts the active-role switcher; its
+// user pick emits fillingRoleSwitch (re-gated through asc_can_fill_role in
+// editor.js). Refresh re-syncs the counts from the live fill store.
+// ---------------------------------------------------------------------------
+export const FILLING_STATUS_SPEC = {
+  id: "filling-status-dialog",
+  title: "Filling status",
+  titleKey: "Dialog.FillingStatus.Title",
+  width: 520,
+  okCmd: "fillingStatusOk",
+  sections: [
+    {
+      title: "Filling status",
+      titleKey: "Dialog.FillingStatus.Section",
+      rows: [
+        { type: "custom", key: "status", label: "Filling status", labelKey: "Dialog.FillingStatus.Section",
+          widget: "fillingStatus", cmd: "fillingRoleSwitch" },
+        { type: "button", key: "fillingRefresh", label: "Refresh", labelKey: "Dialog.FillingStatus.Refresh",
+          cmd: "openFillingStatus" },
+      ],
+    },
+  ],
+};
+
 /**
  * Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
 export const WO_DIALOG_SPECS = {
@@ -2129,6 +2312,7 @@ export const WO_DIALOG_SPECS = {
   roleEdit: ROLE_EDIT_SPEC,
   roleDelete: ROLE_DELETE_SPEC,
   formSettings: FORM_SETTINGS_SPEC,
+  fillingStatus: FILLING_STATUS_SPEC,
 };
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a
