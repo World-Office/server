@@ -65,6 +65,24 @@ assert.ok(/aria-pressed="false"/.test(cell("qat-format-paint")),
 assert.ok(!cell("qat-print").includes("aria-keyshortcuts"),
   "print cell claims no shortcut (browser default Ctrl+P untouched)");
 
+// --- pixel parity: PNG data-URIs, no inline SVG -------------------------------
+// Every QAT button carries a PNG icon via .oo-ic-qat-* class, no inline <svg>.
+assert.ok(!strip.includes("<svg"), "qat-strip must not contain any inline <svg>");
+for (const id of ORDER) {
+  assert.ok(strip.includes(`oo-ic-qat-${id.replace("qat-", "")}`),
+    `${id} must carry an oo-ic-qat-* icon span`);
+}
+// style.css must contain the 8 .oo-ic-qat-* classes with PNG data-URIs.
+for (const id of ORDER) {
+  const className = `.oo-ic-qat-${id.replace("qat-", "")}`;
+  const pattern = `${className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{background-image:\\s*url\\(data:image/png;base64`;
+  assert.ok(css.includes(className) && css.includes(`data:image/png;base64`),
+    `style.css must contain ${className} with data:image/png;base64`);
+}
+// .toolbar .qat-strip .oo-ic sizing rule exists.
+assert.ok(/\.toolbar \.qat-strip \.oo-ic\s*\{/.test(css),
+  "CSS must style .toolbar .qat-strip .oo-ic for icon sizing");
+
 // --- CSS: 2 columns x 4 rows grid, strip fixed, page shrinks ----------------
 const stripCss = css.match(/\.toolbar \.qat-strip\s*\{[^}]*\}/);
 assert.ok(stripCss, ".toolbar .qat-strip grid rule exists");
