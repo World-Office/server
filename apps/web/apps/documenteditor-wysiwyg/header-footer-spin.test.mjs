@@ -40,36 +40,36 @@ assert.ok(
 
 // Header from top label with i18n
 assert.ok(
-  htmlSrc.includes('data-i18n="HF.HeaderFromTop"'),
-  "HF.HeaderFromTop i18n label must exist for header offset"
+  htmlSrc.includes('data-i18n="HF.HeaderAbove"'),
+  "HF.HeaderAbove i18n label must exist for header offset (OO 9.4: Kopfzeile oberhalb)"
 )
 
 // Footer from bottom label with i18n
 assert.ok(
-  htmlSrc.includes('data-i18n="HF.FooterFromBottom"'),
-  "HF.FooterFromBottom i18n label must exist for footer offset"
+  htmlSrc.includes('data-i18n="HF.FooterBelow"'),
+  "HF.FooterBelow i18n label must exist for footer offset (OO 9.4: Fußzeile von unten)"
 )
 
 // ── Translations in i18n.js ────────────────────────────────────────
 
 // English translations
 assert.ok(
-  i18nSrc.includes('"HF.HeaderFromTop": "Header from Top"'),
-  "HF.HeaderFromTop English translation must exist"
+  i18nSrc.includes('"HF.HeaderAbove": "Header from top"'),
+  "HF.HeaderAbove English translation must exist"
 )
 assert.ok(
-  i18nSrc.includes('"HF.FooterFromBottom": "Footer from Bottom"'),
-  "HF.FooterFromBottom English translation must exist"
+  i18nSrc.includes('"HF.FooterBelow": "Footer from bottom"'),
+  "HF.FooterBelow English translation must exist"
 )
 
 // German translations
 assert.ok(
-  i18nSrc.includes('"HF.HeaderFromTop": "Kopfzeile von oben"'),
-  "HF.HeaderFromTop German translation must exist"
+  i18nSrc.includes('"HF.HeaderAbove": "Kopfzeile oberhalb"'),
+  "HF.HeaderAbove German translation must exist"
 )
 assert.ok(
-  i18nSrc.includes('"HF.FooterFromBottom": "Fußzeile von unten"'),
-  "HF.FooterFromBottom German translation must exist"
+  i18nSrc.includes('"HF.FooterBelow": "Fußzeile von unten"'),
+  "HF.FooterBelow German translation must exist"
 )
 
 // ── Handler reads the offset values ────────────────────────────────

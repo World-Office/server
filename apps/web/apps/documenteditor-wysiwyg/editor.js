@@ -10511,6 +10511,16 @@
     const c = document.getElementById("btn-" + id + "-close");
     if (c) c.addEventListener("click", () => closeOverlayDialog(id + "-dialog"));
   }
+  // CHROME-C: ribbon spin steppers apply header/footer offset live (OO parity)
+  for (const [inp, tag] of [["hf-header-offset", "header"], ["hf-footer-offset", "footer"]]) {
+    const el = document.getElementById(inp);
+    if (el) el.addEventListener("input", () => {
+      const v = parseFloat(el.value);
+      if (isNaN(v)) return;
+      const page = editor.querySelector(":scope > " + tag + ".page-" + tag);
+      if (page) { if (tag === "header") page.style.paddingTop = v + "mm"; else page.style.paddingBottom = v + "mm"; }
+    });
+  }
 
   // ── OO-parity option modals round 2 ──────────────────────────────────────
   // drop-cap / line numbers / hyphenation / watermark / page color / theme

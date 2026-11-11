@@ -3440,3 +3440,8 @@ body.forms-design-mode .form-field {
 #sb-lang .caret, #sb-lang [aria-hidden] { font-size: 9px; opacity: .7; margin-left: 2px; }
 /* OO shows "Zoom 100%" — prefix via CSS keeps applyZoom's textContent = "100%" */
 #sb-zoom-label::before { content: "Zoom "; }
+
+/* CHROME-C: header/footer spin steppers in the header-footer ribbon row */
+.ribbon-page .hf-spin { display: inline-flex; align-items: center; gap: 4px; margin: 0 6px; }
+.ribbon-page .hf-spin label { font-size: 12px; white-space: nowrap; }
+.ribbon-page .hf-spin input[type="number"] { width: 52px; padding: 2px 4px; font-size: 12px; }

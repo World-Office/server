@@ -1057,8 +1057,8 @@
     <div class="ribbon-row">
     <button type="button" data-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button>
     <button type="button" data-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button>
-    <button type="button" data-cmd="toggleHeaderFromTop" data-i18n="HF.HeaderFromTop">Header from Top</button>
-    <button type="button" data-cmd="toggleFooterFromBottom" data-i18n="HF.FooterFromBottom">Footer from Bottom</button>
+    <span class="hf-spin"><label for="hf-header-offset" data-i18n="HF.HeaderAbove" data-i18n-title="HF.HeaderAbove">Header from top</label><input id="hf-header-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal" data-i18n-title="HF.HeaderAbove" aria-label="Header from top"></span>
+    <span class="hf-spin"><label for="hf-footer-offset" data-i18n="HF.FooterBelow" data-i18n-title="HF.FooterBelow">Footer from bottom</label><input id="hf-footer-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal" data-i18n-title="HF.FooterBelow" aria-label="Footer from bottom"></span>
     <button type="button" data-cmd="toggleSameAsPrev" data-i18n="HF.SameAsPrev">Same as previous</button>
     </div>
     </div>
@@ -2207,14 +2207,6 @@
       <div class="dialog-field">
         <label for="hf-different-first">Different first page</label>
         <input id="hf-different-first" type="checkbox">
-      </div>
-      <div class="dialog-field">
-        <label for="hf-header-offset" data-i18n="HF.HeaderFromTop">Header from Top</label>
-        <input id="hf-header-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal">
-      </div>
-      <div class="dialog-field">
-        <label for="hf-footer-offset" data-i18n="HF.FooterFromBottom">Footer from Bottom</label>
-        <input id="hf-footer-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal">
       </div>
       <div class="dialog-actions">
         <button id="btn-headerfooter-close" data-i18n="Dialog.Cancel">Cancel</button>
