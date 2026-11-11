@@ -1775,15 +1775,24 @@ mod tests {
         assert!(series.trendlines[0].show_r_squared);
         assert_eq!(series.error_bars.len(), 1);
         assert_eq!(series.error_bars[0].direction, ErrorBarDirection::Y);
-        assert_eq!(series.error_bars[0].value_type, ErrorBarValueType::Percentage);
+        assert_eq!(
+            series.error_bars[0].value_type,
+            ErrorBarValueType::Percentage
+        );
         assert_eq!(series.error_bars[0].value, Some(5.0));
         assert_eq!(chart.axes.len(), 2);
         assert_eq!(chart.axes[0].position, AxisPosition::Bottom);
         assert!(!chart.axes[0].show_gridlines);
         assert_eq!(chart.axes[0].title.as_deref(), Some("Quarter"));
         assert_eq!(chart.axes[1].position, AxisPosition::Left);
-        assert_eq!(chart.legend.as_ref().map(|l| l.position), Some(LegendPosition::Bottom));
-        assert_eq!(chart.title.as_ref().map(|t| t.text.as_str()), Some("Quarterly Revenue"));
+        assert_eq!(
+            chart.legend.as_ref().map(|l| l.position),
+            Some(LegendPosition::Bottom)
+        );
+        assert_eq!(
+            chart.title.as_ref().map(|t| t.text.as_str()),
+            Some("Quarterly Revenue")
+        );
         assert!(chart.data_labels.as_ref().unwrap().visible);
 
         // The bridge is symmetric: re-encoding decodes to the same chart.

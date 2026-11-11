@@ -129,7 +129,10 @@ pub struct PivotField {
     #[serde(default = "default_grouping")]
     pub group_ranges: FieldGrouping,
     /// Group period for date grouping (alternative to group_ranges).
-    #[serde(default = "default_group_period", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default = "default_group_period",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub group_period: Option<GroupPeriod>,
     /// Formula for calculated items (e.g., "=Sales*0.1" for a 10% tax field).
     #[serde(default, skip_serializing_if = "Option::is_none")]
