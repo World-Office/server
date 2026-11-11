@@ -480,7 +480,7 @@ select option { background: var(--bg); color: var(--text); }
 }
 .toolbar .qat-strip button.qat svg { width: 15px; height: 15px; }
 .toolbar .qat-strip button.qat[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.toolbar > .ribbon-page.active { width: auto; min-width: 0; flex: 1 1 0; }
+.toolbar > .ribbon-page.active { width: auto; min-width: 0; flex: 1 1 0; order: 1; }
 @media (max-width: 760px) {
   /* Tiny windows: keep the strip usable by letting only the icons cluster
      show in the titlebar name slot. */
@@ -507,10 +507,38 @@ select option { background: var(--bg); color: var(--text); }
   margin: 0 3px;
   align-self: center;
 }
-/* Right-edge tool cluster (collapse/theme/find/fullscreen) pins to the
-   row's right margin. When the row wraps (narrow windows) the cluster
-   lands right-pinned on its own line — OO's two-row ribbon shape. */
+/* CHROME-D topbar right zone (.toolbar-tools): the Home ribbon's right-edge
+   tool cluster (Find · Replace · Collapse · Fullscreen · Theme) as a
+   persistent band zone pinned to the RIGHT edge — the mirror of the
+   left-edge QAT strip. Flex `order` neutralizes the zone's DOM slot
+   (between two .ribbon-page siblings): the active page takes order 1, the
+   zone order 2, so it renders after the page on EVERY tab. The 22px right
+   padding is dead space where the band's absolutely-positioned chevron
+   scroll buttons land (they overlap nothing). */
+/* Selection group keeps the row's right margin pinned (OO census: select-all
+   lands at the right edge of Home row 2). */
 .ribbon-row .rb-edge { margin-left: auto; }
+.toolbar .toolbar-tools {
+  order: 2;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  align-self: stretch;
+  padding: 5px 22px 5px 3px;
+  margin-left: 3px;
+  border-left: 1px solid var(--border);
+}
+.toolbar .toolbar-tools .rb {
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbar .toolbar-tools .rb svg { width: 16px; height: 16px; }
 .menu-bar { position: relative; display: flex; align-items: center; gap: 6px; }
 .titlebar .qa {
   border: none;
@@ -838,9 +866,6 @@ select option { background: var(--bg); color: var(--text); }
 /* Text-only ribbon buttons (Layout row 2): icon + label inline. */
 .ribbon-page button:not(.rb):not(.caret-btn):not(.menu-trigger):not(.ribbon-tab):not(.titlebar-fs) svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .ribbon-page button:not(.rb):not(.caret-btn):not(.menu-trigger):not(.ribbon-tab):not(.titlebar-fs):has(svg) { display: inline-flex; align-items: center; gap: 4px; }
-/* Right-edge cluster: two 24px elset cols side by side (rb-grid would stack
-   them — OO's replace/select-all pattern is a horizontal pair of pairs). */
-.ribbon-row .rb-edge.rb-grid { flex-direction: row; align-items: center; gap: 8px; }
 /* Paste sits in a plain one-button group — same 24px pitch as the grids. */
 .ribbon-row .rb-group > .rb { width: 24px; height: 24px; padding: 0; }
 .ribbon-row .rb-group > .rb svg { width: 16px; height: 16px; }
