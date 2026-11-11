@@ -59,10 +59,7 @@ fn phase1_priority_frames_match_editor_js_registry() {
             },
             "can_undo_redo",
         ),
-        (
-            WsEvent::ZoomChanged { scale: 1.5 },
-            "zoom_changed",
-        ),
+        (WsEvent::ZoomChanged { scale: 1.5 }, "zoom_changed"),
         (
             WsEvent::CurrentPage {
                 page: 2,
@@ -208,8 +205,14 @@ fn toolbar_state_wire_keys_are_snake_case() {
 
 #[test]
 fn both_zoom_frames_are_distinct_variants() {
-    assert_eq!(frame(&WsEvent::ZoomChanged { scale: 2.0 })["event"], "zoom_changed");
-    assert_eq!(frame(&WsEvent::ZoomChange { scale: 2.0 })["event"], "zoom_change");
+    assert_eq!(
+        frame(&WsEvent::ZoomChanged { scale: 2.0 })["event"],
+        "zoom_changed"
+    );
+    assert_eq!(
+        frame(&WsEvent::ZoomChange { scale: 2.0 })["event"],
+        "zoom_change"
+    );
     assert_eq!(
         serde_json::from_value::<WsEvent>(frame(&WsEvent::ZoomChange { scale: 2.0 })).unwrap(),
         WsEvent::ZoomChange { scale: 2.0 }
@@ -225,7 +228,10 @@ fn other_fallback_preserves_name_and_data() {
     let j = frame(&ev);
     assert_eq!(j["event"], "other");
     assert_eq!(j["payload"]["name"], "img_wrap_style_changed");
-    assert_eq!(j["payload"]["data"], serde_json::json!({ "style": "square" }));
+    assert_eq!(
+        j["payload"]["data"],
+        serde_json::json!({ "style": "square" })
+    );
     assert_eq!(serde_json::from_value::<WsEvent>(j).unwrap(), ev);
 }
 
@@ -289,8 +295,14 @@ fn frames_round_trip_through_serde() {
             lang: "en-US".into(),
         },
         WsEvent::UpdateScrolls {
-            h: ScrollState { pos: 0.0, max: 100.0 },
-            v: ScrollState { pos: 5.0, max: 1000.0 },
+            h: ScrollState {
+                pos: 0.0,
+                max: 100.0,
+            },
+            v: ScrollState {
+                pos: 5.0,
+                max: 1000.0,
+            },
         },
         WsEvent::PluginEvent {
             guid: "g".into(),

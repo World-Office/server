@@ -17,7 +17,11 @@ fn test_fill_aa_coverage_basic() {
 
     // Background should still be white at (0,0)
     let (r, g, b, _) = c.get_pixel(0, 0);
-    assert_eq!((r, g, b), (255, 255, 255), "AA fill should not affect background");
+    assert_eq!(
+        (r, g, b),
+        (255, 255, 255),
+        "AA fill should not affect background"
+    );
 }
 
 #[test]
@@ -30,7 +34,10 @@ fn test_fill_aa_coverage_rectangle() {
 
     // Center should be filled (black or near black)
     let (r, g, b, _) = c.get_pixel(50, 50);
-    assert!(r < 100 && g < 100 && b < 100, "AA fill rectangle center should be dark");
+    assert!(
+        r < 100 && g < 100 && b < 100,
+        "AA fill rectangle center should be dark"
+    );
 }
 
 #[test]
@@ -68,7 +75,7 @@ fn test_stroke_aa_coverage_width() {
 fn test_clip_aa_coverage() {
     // Test AA clip path
     let mut c = Canvas::new(100, 100);
-    
+
     // Set up a clip path
     c.begin_path();
     c.rect(20.0, 20.0, 60.0, 60.0);
@@ -84,12 +91,15 @@ fn test_rasterize_path_aa_fill() {
     c.set_fill(Paint::Color(Color::BLACK));
     let mut path = PathBuilder::new();
     path.rect(20.0, 20.0, 60.0, 60.0);
-    
+
     c.rasterize_path_aa(&path, false, 1.0);
 
     // Center should be filled
     let (r, g, b, _) = c.get_pixel(50, 50);
-    assert!(r < 100 && g < 100 && b < 100, "AA rasterize fill should work");
+    assert!(
+        r < 100 && g < 100 && b < 100,
+        "AA rasterize fill should work"
+    );
 }
 
 #[test]
@@ -99,7 +109,7 @@ fn test_rasterize_path_aa_stroke() {
     let mut path = PathBuilder::new();
     path.move_to(10.0, 50.0);
     path.line_to(90.0, 50.0);
-    
+
     c.rasterize_path_aa(&path, true, 3.0);
 
     // Should not panic
@@ -127,7 +137,10 @@ fn test_aa_rasterization_with_transform() {
             }
         }
     }
-    assert!(found_dark, "AA fill with transform should produce dark pixels");
+    assert!(
+        found_dark,
+        "AA fill with transform should produce dark pixels"
+    );
 }
 
 #[test]
@@ -143,7 +156,10 @@ fn test_fill_rule_even_odd_aa() {
 
     // Center should be filled (even-odd with one path = filled)
     let (r, g, b, _) = c.get_pixel(50, 50);
-    assert!(r < 100 && g < 100 && b < 100, "Even-odd AA fill: single rect should be filled");
+    assert!(
+        r < 100 && g < 100 && b < 100,
+        "Even-odd AA fill: single rect should be filled"
+    );
 }
 
 #[test]
@@ -185,25 +201,25 @@ fn test_stroke_joins_aa() {
 fn test_aa_coverage_methods_exist() {
     // Verify that all AA coverage methods exist and are callable
     let mut c = Canvas::new(100, 100);
-    
+
     // These should all compile and be callable
     c.begin_path();
     c.rect(10.0, 10.0, 10.0, 10.0);
     c.fill_aa_coverage();
-    
+
     c.begin_path();
     c.move_to(10.0, 10.0);
     c.line_to(20.0, 20.0);
     c.stroke_aa_coverage();
-    
+
     c.begin_path();
     c.rect(10.0, 10.0, 10.0, 10.0);
     c.clip_aa_coverage();
-    
+
     let path = PathBuilder::new();
     c.rasterize_path_aa(&path, false, 1.0);
     c.rasterize_path_aa(&path, true, 1.0);
-    
+
     assert!(true, "All AA coverage methods should be callable");
 }
 
@@ -345,7 +361,11 @@ fn test_draw_image_respects_transform() {
     c.draw_image(&png, 5.0, 5.0, 10.0, 10.0).unwrap();
 
     let (r, g, b, _) = c.get_pixel(20, 20);
-    assert_eq!((r, b), (0, 0), "transformed rect interior should be image green");
+    assert_eq!(
+        (r, b),
+        (0, 0),
+        "transformed rect interior should be image green"
+    );
     assert!(g > 150, "image green should be present, got {}", g);
 
     let (r, g, b, _) = c.get_pixel(8, 8);

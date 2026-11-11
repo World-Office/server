@@ -126,9 +126,15 @@ fn doc_defaults_parsed_from_styles_xml() {
         Some("Times New Roman")
     );
     assert_eq!(styles.defaults.run_properties.font_size, Some(24));
-    assert_eq!(styles.defaults.run_properties.color.as_deref(), Some("333333"));
+    assert_eq!(
+        styles.defaults.run_properties.color.as_deref(),
+        Some("333333")
+    );
     // pPrDefault: w:spacing after/line/lineRule.
-    assert_eq!(styles.defaults.paragraph_properties.spacing_after, Some(200));
+    assert_eq!(
+        styles.defaults.paragraph_properties.spacing_after,
+        Some(200)
+    );
     assert_eq!(styles.defaults.paragraph_properties.spacing_line, Some(276));
     assert_eq!(
         styles.defaults.paragraph_properties.spacing_line_rule,
@@ -149,7 +155,10 @@ fn based_on_chain_resolves_through_ancestors() {
     let styles = rich_styles();
     let chain = styles.resolve_paragraph_chain(Some("Heading1"), None);
     // Ancestry is root-first, the style itself last.
-    assert_eq!(chain.ancestry, vec!["Normal".to_string(), "Heading1".to_string()]);
+    assert_eq!(
+        chain.ancestry,
+        vec!["Normal".to_string(), "Heading1".to_string()]
+    );
     assert!(!chain.missing && !chain.cycle);
     // Heading1's own layer: bold + sz 36.
     assert_eq!(chain.run_properties.bold, Some(true));
@@ -173,7 +182,11 @@ fn nearest_layer_wins_over_distant_layers() {
     let chain = styles.resolve_paragraph_chain(Some("Heading2"), None);
     assert_eq!(
         chain.ancestry,
-        vec!["Normal".to_string(), "Heading1".to_string(), "Heading2".to_string()]
+        vec![
+            "Normal".to_string(),
+            "Heading1".to_string(),
+            "Heading2".to_string()
+        ]
     );
     assert_eq!(chain.run_properties.italic, Some(true));
     assert_eq!(chain.run_properties.bold, Some(true));
@@ -192,7 +205,10 @@ fn direct_formatting_wins_over_style_chain() {
     let chain = styles.resolve_paragraph_chain(Some("Heading1"), Some(&direct));
     // Direct layer overrides the chain…
     assert_eq!(chain.paragraph_properties.spacing_after, Some(0));
-    assert_eq!(chain.paragraph_properties.alignment, Some(TextAlignment::Center));
+    assert_eq!(
+        chain.paragraph_properties.alignment,
+        Some(TextAlignment::Center)
+    );
     // …but only where it is set: everything else still inherits.
     assert_eq!(chain.paragraph_properties.spacing_before, Some(480));
     assert!(chain.paragraph_properties.keep_next);
@@ -318,7 +334,10 @@ fn latent_styles_parsed_and_matched() {
     assert_eq!(styles.latent_styles.exceptions.len(), 2);
 
     let balloon = styles.latent_exception("Balloon Text").unwrap();
-    assert!(!balloon.semi_hidden, "explicit lsdException overrides the default");
+    assert!(
+        !balloon.semi_hidden,
+        "explicit lsdException overrides the default"
+    );
     assert_eq!(balloon.ui_priority, Some(39));
     assert!(styles.latent_exception("header").unwrap().locked);
     assert!(styles.latent_exception("Not Declared").is_none());
@@ -399,10 +418,7 @@ fn overlay_merge_semantics() {
         ..DocxParagraphProperties::default()
     };
     assert_eq!(base.overlay(&over_tabs).tab_stops.len(), 1);
-    assert_eq!(
-        base.overlay(&over_tabs).tab_stops[0].pos,
-        1440
-    );
+    assert_eq!(base.overlay(&over_tabs).tab_stops[0].pos, 1440);
 
     let rbase = DocxRunProperties {
         bold: Some(false),
@@ -456,7 +472,10 @@ fn serializer_round_trips_style_chain() {
     // Latent styles survive.
     assert!(reparsed.latent_styles.def_semi_hidden);
     assert_eq!(
-        reparsed.latent_exception("Balloon Text").unwrap().ui_priority,
+        reparsed
+            .latent_exception("Balloon Text")
+            .unwrap()
+            .ui_priority,
         Some(39)
     );
     // Style metadata survives.
@@ -498,18 +517,28 @@ fn serializer_builtin_styles_xml_resolves() {
     let styles = parse_styles_xml(&styles_xml);
 
     assert_eq!(styles.defaults.run_properties.font_size, Some(24));
-    assert_eq!(styles.defaults.paragraph_properties.spacing_after, Some(200));
+    assert_eq!(
+        styles.defaults.paragraph_properties.spacing_after,
+        Some(200)
+    );
 
     let chain = styles.resolve_paragraph_chain(Some("Heading1"), None);
     assert_eq!(chain.run_properties.bold, Some(true));
     assert_eq!(chain.run_properties.font_size, Some(36));
-    assert_eq!(chain.run_properties.font.as_deref(), Some("Times New Roman"));
+    assert_eq!(
+        chain.run_properties.font.as_deref(),
+        Some("Times New Roman")
+    );
     assert_eq!(chain.paragraph_properties.spacing_before, Some(480));
     // ListNumber → ListParagraph → Normal: two basedOn hops.
     let list = styles.resolve_paragraph_chain(Some("ListNumber"), None);
     assert_eq!(
         list.ancestry,
-        vec!["Normal".to_string(), "ListParagraph".to_string(), "ListNumber".to_string()]
+        vec![
+            "Normal".to_string(),
+            "ListParagraph".to_string(),
+            "ListNumber".to_string()
+        ]
     );
     assert_eq!(list.run_properties.font_size, Some(24));
     // The default-flagged Normal is discoverable for body content that

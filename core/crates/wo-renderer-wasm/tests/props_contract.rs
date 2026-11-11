@@ -5,9 +5,9 @@
 
 use wo_renderer_wasm::props::{
     WasmBorder, WasmBorderStyle, WasmBullet, WasmColor, WasmColorKind, WasmFill, WasmFillType,
-    WasmImageProperty, WasmLineSpacingRule, WasmPageMargins, WasmPaddings, WasmParagraphFrame,
+    WasmImageProperty, WasmLineSpacingRule, WasmPaddings, WasmPageMargins, WasmParagraphFrame,
     WasmParagraphProperty, WasmParagraphShd, WasmParagraphSpacing, WasmRect, WasmRunFormat,
-    WasmShapeProperty, WasmShadowProperty, WasmStroke, WasmTabStop, WasmTabStopAlign,
+    WasmShadowProperty, WasmShapeProperty, WasmStroke, WasmTabStop, WasmTabStopAlign,
     WasmTextAlignment, WasmTextBorders, WasmUnderlineStyle, WasmVerticalAlignment,
 };
 
@@ -40,7 +40,10 @@ fn run_format_wire_is_camel_case_points_units() {
 
 #[test]
 fn enum_wire_values_match_oo_vocabulary() {
-    assert_eq!(serde_json::to_string(&WasmTextAlignment::Justify).unwrap(), "\"justify\"");
+    assert_eq!(
+        serde_json::to_string(&WasmTextAlignment::Justify).unwrap(),
+        "\"justify\""
+    );
     assert_eq!(
         serde_json::to_string(&WasmLineSpacingRule::OnePointFive).unwrap(),
         "\"onePointFive\""

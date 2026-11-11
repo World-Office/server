@@ -45,8 +45,9 @@ use std::sync::{Mutex, OnceLock};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wo_ooxml::model::{
-    DocxBlock, DocxBorder, DocxBody, DocxParagraph, DocxParagraphBorders, DocxParagraphProperties,
-    DocxRun, LineSpacingRule, TabStop, TabStopKind, TextAlignment, UnderlineType, VerticalAlignment,
+    DocxBlock, DocxBody, DocxBorder, DocxParagraph, DocxParagraphBorders, DocxParagraphProperties,
+    DocxRun, LineSpacingRule, TabStop, TabStopKind, TextAlignment, UnderlineType,
+    VerticalAlignment,
 };
 
 /// Per-document store for property kinds without a typed document-model
@@ -335,8 +336,16 @@ impl WasmBorder {
         let color = self.color.trim_start_matches('#').to_ascii_uppercase();
         DocxBorder {
             style: self.style.to_wire().to_string(),
-            size: if self.size == 0 { None } else { Some(self.size) },
-            space: if self.space == 0 { None } else { Some(self.space) },
+            size: if self.size == 0 {
+                None
+            } else {
+                Some(self.size)
+            },
+            space: if self.space == 0 {
+                None
+            } else {
+                Some(self.space)
+            },
             color: if color == "AUTO" { None } else { Some(color) },
         }
     }
@@ -579,13 +588,10 @@ impl WasmParagraphProperty {
                     })
                     .collect(),
             ),
-            shd: props
-                .shading
-                .as_ref()
-                .map(|fill| WasmParagraphShd {
-                    fill: Some(fill.clone()),
-                    ..Default::default()
-                }),
+            shd: props.shading.as_ref().map(|fill| WasmParagraphShd {
+                fill: Some(fill.clone()),
+                ..Default::default()
+            }),
             borders: Some(WasmTextBorders::from_docx(props.borders.as_ref())),
             frame: None,
             can_add_table: None,
@@ -730,13 +736,23 @@ impl WasmRunFormat {
         WasmRunFormat {
             bold: Some(r.bold),
             italic: Some(r.italic),
-            underline: Some(r.underline.map(WasmUnderlineStyle::from_model).unwrap_or_default()),
+            underline: Some(
+                r.underline
+                    .map(WasmUnderlineStyle::from_model)
+                    .unwrap_or_default(),
+            ),
             strikethrough: Some(r.strikethrough),
             double_strikethrough: Some(r.double_strikethrough),
             font_name: r.font.clone(),
             font_size: r.font_size.map(|hp| hp as f64 / 2.0),
-            color: r.color.clone().map(|c| format!("#{}", c.to_ascii_uppercase())),
-            highlight: r.highlight.clone().map(|c| format!("#{}", c.to_ascii_uppercase())),
+            color: r
+                .color
+                .clone()
+                .map(|c| format!("#{}", c.to_ascii_uppercase())),
+            highlight: r
+                .highlight
+                .clone()
+                .map(|c| format!("#{}", c.to_ascii_uppercase())),
             small_caps: Some(r.small_caps),
             all_caps: Some(r.all_caps),
             vertical_alignment: r.vertical_alignment.map(WasmVerticalAlignment::from_model),
@@ -1049,8 +1065,8 @@ fn run_target_index(para: &DocxParagraph, doc_handle: u32) -> Option<usize> {
 #[wasm_bindgen]
 pub fn set_property(doc_handle: u32, kind: &str, json: &str) -> Result<String, String> {
     let kind = normalize_kind(kind)?;
-    let value: serde_json::Value = serde_json::from_str(json)
-        .map_err(|e| format!("Invalid {kind} property JSON: {e}"))?;
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("Invalid {kind} property JSON: {e}"))?;
     match kind.as_str() {
         "run" => set_run(doc_handle, &value),
         "paragraph" => set_paragraph(doc_handle, &value),
@@ -1180,7 +1196,9 @@ fn set_paragraph(doc_handle: u32, value: &serde_json::Value) -> Result<String, S
     if body.blocks.is_empty() {
         return Err(empty_body_err());
     }
-    let pidx = super::get_cursor(doc_handle).para.min(body.blocks.len() - 1);
+    let pidx = super::get_cursor(doc_handle)
+        .para
+        .min(body.blocks.len() - 1);
     let para = match body.blocks.get_mut(pidx) {
         Some(DocxBlock::Paragraph(p)) => p,
         Some(DocxBlock::Table(_)) => {
@@ -1267,7 +1285,10 @@ fn set_paragraph(doc_handle: u32, value: &serde_json::Value) -> Result<String, S
         }
         if let Some(borders) = &p.borders {
             let docx = borders.to_docx();
-            if docx.top.is_some() || docx.bottom.is_some() || docx.left.is_some() || docx.right.is_some()
+            if docx.top.is_some()
+                || docx.bottom.is_some()
+                || docx.left.is_some()
+                || docx.right.is_some()
             {
                 props.borders = Some(docx);
             } else {
@@ -1294,13 +1315,13 @@ fn set_border(doc_handle: u32, value: &serde_json::Value) -> Result<String, Stri
     if body.blocks.is_empty() {
         return Err(empty_body_err());
     }
-    let pidx = super::get_cursor(doc_handle).para.min(body.blocks.len() - 1);
+    let pidx = super::get_cursor(doc_handle)
+        .para
+        .min(body.blocks.len() - 1);
     let para = match body.blocks.get_mut(pidx) {
         Some(DocxBlock::Paragraph(p)) => p,
         Some(DocxBlock::Table(_)) => {
-            return Err(
-                "cursor is inside a table; borders need a paragraph".to_string(),
-            )
+            return Err("cursor is inside a table; borders need a paragraph".to_string())
         }
         _ => return Err(empty_body_err()),
     };
@@ -1343,7 +1364,9 @@ fn set_color(doc_handle: u32, value: &serde_json::Value) -> Result<String, Strin
     if body.blocks.is_empty() {
         return Err(empty_body_err());
     }
-    let pidx = super::get_cursor(doc_handle).para.min(body.blocks.len() - 1);
+    let pidx = super::get_cursor(doc_handle)
+        .para
+        .min(body.blocks.len() - 1);
     let para = match body.blocks.get_mut(pidx) {
         Some(DocxBlock::Paragraph(p)) => p,
         Some(DocxBlock::Table(_)) => {

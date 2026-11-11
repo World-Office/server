@@ -79,7 +79,9 @@ pub enum WsEvent {
     },
     /// OO `asc_onFocusObject` — `kind` is "text" | "image" | "chart" |
     /// "table" | "control" (toolbar context switching).
-    FocusObject { kind: String },
+    FocusObject {
+        kind: String,
+    },
     /// Collapsed `asc_onBold`/`asc_onItalic`/`asc_onFontSize`/… family.
     ToolbarState {
         bold: Option<bool>,
@@ -94,10 +96,14 @@ pub enum WsEvent {
         text_color: Option<String>,
     },
     /// OO `asc_onZoomChanged`.
-    ZoomChanged { scale: f64 },
+    ZoomChanged {
+        scale: f64,
+    },
     /// Legacy bare `onZoom` frame. Kept a distinct variant from
     /// `ZoomChanged` so old UI consumers still match (ORM-02 §4).
-    ZoomChange { scale: f64 },
+    ZoomChange {
+        scale: f64,
+    },
     /// OO `asc_onCurrentPage` — page indicator.
     CurrentPage {
         page: u32,
@@ -107,14 +113,24 @@ pub enum WsEvent {
 
     // ---- document lifecycle & history (Phase 1) ----
     /// OO `asc_onDocumentContentReady`.
-    DocumentContentReady { pages: u32 },
+    DocumentContentReady {
+        pages: u32,
+    },
     /// OO `asc_onDocumentModifiedChanged` — drives `notifyHost("editing"|"saved")`.
-    DocumentModifiedChanged { modified: bool },
+    DocumentModifiedChanged {
+        modified: bool,
+    },
     /// OO `asc_onCanUndo` / `asc_onCanRedo` ride the same frame.
-    CanUndoRedo { undo: bool, redo: bool },
+    CanUndoRedo {
+        undo: bool,
+        redo: bool,
+    },
     /// OO `asc_onError` — the richest OO funnel (41 fire sites in the word
     /// bundle).
-    Error { code: i32, message: String },
+    Error {
+        code: i32,
+        message: String,
+    },
     /// OO `asc_onStartAction` / `asc_onEndAction` pair (end rides `begin: false`).
     LongAction {
         begin: bool,
@@ -122,13 +138,19 @@ pub enum WsEvent {
         text: String,
     },
     /// OO `asc_onDownloadUrl` — export/download URL handoff.
-    DownloadUrl { url: String },
+    DownloadUrl {
+        url: String,
+    },
 
     // ---- co-editing (Phase 1) ----
     /// OO `asc_onCoAuthoringDisconnect` — session-loss banner.
-    CoAuthoringDisconnect { reason: String },
+    CoAuthoringDisconnect {
+        reason: String,
+    },
     /// OO `asc_onAuthParticipantsChanged` — presence chips / foreign carets.
-    AuthParticipantsChanged { users: Vec<Collaborator> },
+    AuthParticipantsChanged {
+        users: Vec<Collaborator>,
+    },
     ForeignCursor {
         show: bool,
         user_id: String,
@@ -143,25 +165,47 @@ pub enum WsEvent {
     },
 
     // ---- review / comments (Phase 2) ----
-    TrackRevisionsChange { on: bool },
-    AddComment { id: String, data: Value },
-    RemoveComment { id: String },
-    UpdateCommentPosition { id: String, rects: Vec<Rect> },
+    TrackRevisionsChange {
+        on: bool,
+    },
+    AddComment {
+        id: String,
+        data: Value,
+    },
+    RemoveComment {
+        id: String,
+    },
+    UpdateCommentPosition {
+        id: String,
+        rects: Vec<Rect>,
+    },
 
     // ---- comments & track-changes long tail (Phase 3, P3-E01) ----
     /// OO `asc_onChangeCommentData` / `asc_onChangeComments` /
     /// `asc_onChangeCommentLogicalPosition` merged frame: a comment's content
     /// or anchor changed. `kind` is "data" | "bulk" | "logical_position";
     /// `id` is "" for the bulk form (the ids ride `data`).
-    CommentChange { id: String, kind: String, data: Value },
+    CommentChange {
+        id: String,
+        kind: String,
+        data: Value,
+    },
     /// OO `asc_onAddComments` — bulk add (replies/selections arrive as one
     /// batch).
-    AddComments { ids: Vec<String>, data: Value },
+    AddComments {
+        ids: Vec<String>,
+        data: Value,
+    },
     /// OO `asc_onRemoveComments` / `asc_onDeleteComment` — bulk removal
     /// (`RemoveComment` above stays for the single-remove wire compat).
-    RemoveComments { ids: Vec<String> },
+    RemoveComments {
+        ids: Vec<String>,
+    },
     /// OO `asc_onShowComment` / `asc_onHideComment` (hide rides `show: false`).
-    ShowComment { id: String, show: bool },
+    ShowComment {
+        id: String,
+        show: bool,
+    },
     /// OO `asc_onLockComment` / `asc_onUnLockComment` (unlock rides
     /// `locked: false`), mirroring `LockDocumentProps`.
     LockComment {
@@ -171,14 +215,24 @@ pub enum WsEvent {
     },
     /// OO `asc_onChangeDisplayModeInReview` — `mode` is "off" | "markup" |
     /// "simpleMarkup" | "original".
-    ChangeDisplayModeInReview { mode: String },
+    ChangeDisplayModeInReview {
+        mode: String,
+    },
     /// OO `asc_onShowRevisionsChange` — review/revision pane visibility.
-    ShowRevisionsChange { show: bool },
+    ShowRevisionsChange {
+        show: bool,
+    },
     /// OO `asc_onUpdateRevisionsChangesPosition` — revision marker anchors.
-    UpdateRevisionsChangesPosition { rects: Vec<Rect> },
+    UpdateRevisionsChangesPosition {
+        rects: Vec<Rect>,
+    },
     /// Track-changes item frame for the OO revision long tail: `id` is the
     /// revision id, `kind` is "accept" | "reject" | "update" | "move".
-    TrackChange { id: String, kind: String, data: Value },
+    TrackChange {
+        id: String,
+        kind: String,
+        data: Value,
+    },
 
     // ---- collaboration / protection (Phase 4, P4-C01) ----
     /// OO `asc_onChangeRestrictions` — the document-protection mode flipped.
@@ -196,18 +250,29 @@ pub enum WsEvent {
         variants: Vec<String>,
         lang: String,
     },
-    TextLanguage { lang: String },
+    TextLanguage {
+        lang: String,
+    },
     UpdateScrolls {
         h: ScrollState,
         v: ScrollState,
     },
     /// OO `asc_onContextMenu` — mirrors editor.js's existing `ctx-menu`
     /// CustomEvent path.
-    ContextMenu { screen: Pos, on_object: bool },
-    PluginEvent { guid: String, data: Value },
+    ContextMenu {
+        screen: Pos,
+        on_object: bool,
+    },
+    PluginEvent {
+        guid: String,
+        data: Value,
+    },
     /// 1:1 fallback for the long tail (the ~176 events beyond the named
     /// variants): the OO callback name and its payload survive verbatim.
-    Other { name: String, data: Value },
+    Other {
+        name: String,
+        data: Value,
+    },
 }
 
 /// Installed JS sink: the single closure every pushed frame is delivered to.

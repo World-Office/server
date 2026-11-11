@@ -5,9 +5,9 @@
 //! Registered via `#[cfg(test)] mod props_tests;`.
 
 #[cfg(test)]
-use super::*;
-#[cfg(test)]
 use super::props::*;
+#[cfg(test)]
+use super::*;
 #[cfg(test)]
 use wo_ooxml::model::{
     DocxBorder, LineSpacingRule, TabStopKind, TextAlignment, UnderlineType, VerticalAlignment,
@@ -181,7 +181,10 @@ fn props_wasm_border_wire_and_model_roundtrip() {
         WasmBorderStyle::from_model("wibble"),
         WasmBorderStyle::Single
     );
-    assert_eq!(WasmBorderStyle::from_model("dotDash"), WasmBorderStyle::DotDash);
+    assert_eq!(
+        WasmBorderStyle::from_model("dotDash"),
+        WasmBorderStyle::DotDash
+    );
 }
 
 // ── set_property / get_property: model-backed kinds ──────────────────
@@ -210,10 +213,7 @@ fn props_set_get_run_roundtrip() {
     assert_eq!(para.runs[0].font_size, Some(28), "14pt == 28 half-points");
     assert_eq!(para.runs[0].font.as_deref(), Some("Georgia"));
     assert_eq!(para.runs[0].color.as_deref(), Some("FF0000"));
-    assert_eq!(
-        para.runs[0].underline,
-        Some(UnderlineType::DashDot)
-    );
+    assert_eq!(para.runs[0].underline, Some(UnderlineType::DashDot));
     assert_eq!(
         para.runs[0].vertical_alignment,
         Some(VerticalAlignment::Superscript)
@@ -253,7 +253,10 @@ fn props_set_run_clears_raw_rpr() {
         DocxBlock::Paragraph(p) => p,
         _ => panic!("paragraph expected"),
     };
-    assert!(para.runs[0].raw_rpr.is_none(), "typed edit must clear raw_rpr");
+    assert!(
+        para.runs[0].raw_rpr.is_none(),
+        "typed edit must clear raw_rpr"
+    );
     assert!(!para.runs[0].bold);
 
     release_document(handle).ok();
@@ -333,7 +336,10 @@ fn props_set_get_paragraph_roundtrip() {
     assert_eq!(para.properties.tab_stops[0].kind, TabStopKind::Decimal);
     assert_eq!(para.properties.shading.as_deref(), Some("#DDEEFF"));
     assert_eq!(
-        para.properties.borders.as_ref().and_then(|b| b.top.as_ref()),
+        para.properties
+            .borders
+            .as_ref()
+            .and_then(|b| b.top.as_ref()),
         Some(&DocxBorder {
             style: "double".to_string(),
             size: Some(4),
@@ -359,15 +365,26 @@ fn props_paragraph_line_spacing_rule_mapping() {
     let handle = 5005u32;
     inject(handle, simple_body("spaced"));
 
-    set_property(handle, "paragraph", r#"{"spacingLineRule": "onePointFive"}"#)
-        .expect("set 1.5x");
+    set_property(
+        handle,
+        "paragraph",
+        r#"{"spacingLineRule": "onePointFive"}"#,
+    )
+    .expect("set 1.5x");
     let body = extract_body(handle).unwrap();
     let para = match &body.blocks[0] {
         DocxBlock::Paragraph(p) => p,
         _ => panic!("paragraph expected"),
     };
-    assert_eq!(para.properties.spacing_line_rule, Some(LineSpacingRule::AtLeast));
-    assert_eq!(para.properties.spacing_line, Some(360), "1.5x implies 360 twips");
+    assert_eq!(
+        para.properties.spacing_line_rule,
+        Some(LineSpacingRule::AtLeast)
+    );
+    assert_eq!(
+        para.properties.spacing_line,
+        Some(360),
+        "1.5x implies 360 twips"
+    );
 
     let v = json(&get_property(handle, "paragraph").unwrap());
     assert_eq!(v["spacingLineRule"], "onePointFive");
@@ -384,7 +401,10 @@ fn props_paragraph_line_spacing_rule_mapping() {
         DocxBlock::Paragraph(p) => p,
         _ => panic!("paragraph expected"),
     };
-    assert_eq!(para.properties.spacing_line_rule, Some(LineSpacingRule::Exact));
+    assert_eq!(
+        para.properties.spacing_line_rule,
+        Some(LineSpacingRule::Exact)
+    );
     assert_eq!(para.properties.spacing_line, Some(300));
 
     release_document(handle).ok();
@@ -409,8 +429,14 @@ fn props_set_get_border_roundtrip() {
         _ => panic!("paragraph expected"),
     };
     let borders = para.properties.borders.as_ref().expect("borders stored");
-    assert_eq!(borders.bottom.as_ref().unwrap().color.as_deref(), Some("0000FF"));
-    assert!(borders.left.as_ref().unwrap().color.is_none(), "auto has no target");
+    assert_eq!(
+        borders.bottom.as_ref().unwrap().color.as_deref(),
+        Some("0000FF")
+    );
+    assert!(
+        borders.left.as_ref().unwrap().color.is_none(),
+        "auto has no target"
+    );
     assert!(borders.top.is_none());
 
     let got = get_property(handle, "border").expect("get border");
@@ -525,7 +551,12 @@ fn props_kind_case_insensitive_and_aliased() {
     assert!(set_property(handle, "RUN", r#"{"bold": true}"#).is_ok());
     assert!(set_property(handle, "RunFormat", r#"{"italic": true}"#).is_ok());
     assert!(set_property(handle, "ParagraphProperty", r#"{"keepNext": true}"#).is_ok());
-    assert!(set_property(handle, "TextBorders", r#"{"top": {"style": "hair", "size": 1, "space": 0, "color": "auto"}}"#).is_ok());
+    assert!(set_property(
+        handle,
+        "TextBorders",
+        r#"{"top": {"style": "hair", "size": 1, "space": 0, "color": "auto"}}"#
+    )
+    .is_ok());
     let v = json(&get_property(handle, "run").unwrap());
     assert_eq!(v["bold"], true);
     assert_eq!(v["italic"], true);

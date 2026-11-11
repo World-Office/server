@@ -1028,10 +1028,7 @@ impl DocxNumbering {
         if let Some(exact) = abstract_num.levels.iter().find(|l| l.ilvl == ilvl) {
             return Some(exact);
         }
-        abstract_num
-            .levels
-            .iter()
-            .rfind(|l| l.ilvl < ilvl)
+        abstract_num.levels.iter().rfind(|l| l.ilvl < ilvl)
     }
 
     /// `w:startOverride` for (numId, ilvl) — the concrete restart value.
@@ -1188,7 +1185,7 @@ impl Default for DocxProtection {
 
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct DocxBody{
+pub struct DocxBody {
     /// Blocks preserving document order (paragraphs and tables interleaved)
     pub blocks: Vec<DocxBlock>,
     /// Embedded media parts (word/media/*) so converters can emit data-URI
@@ -2197,11 +2194,15 @@ const DOCX_STYLE_CHAIN_MAX_DEPTH: usize = 64;
 impl DocxStyles {
     /// Look up a paragraph style definition by styleId.
     pub fn paragraph_style(&self, style_id: &str) -> Option<&DocxParagraphStyle> {
-        self.paragraph_styles.iter().find(|s| s.style_id == style_id)
+        self.paragraph_styles
+            .iter()
+            .find(|s| s.style_id == style_id)
     }
 
     fn character_style(&self, style_id: &str) -> Option<&DocxCharacterStyle> {
-        self.character_styles.iter().find(|s| s.style_id == style_id)
+        self.character_styles
+            .iter()
+            .find(|s| s.style_id == style_id)
     }
 
     /// Latent-style exception by built-in style *name* (exact match).
@@ -2808,9 +2809,7 @@ impl GroupShape {
     /// present, otherwise the parsed child bounds union, otherwise the group's
     /// own bounds (OOXML defaults chOff/chExt to off/ext when absent).
     pub fn effective_child_space(&self) -> ((i64, i64), (i64, i64)) {
-        if let (Some(off), Some(ext)) =
-            (self.transform.child_offset, self.transform.child_extent)
-        {
+        if let (Some(off), Some(ext)) = (self.transform.child_offset, self.transform.child_extent) {
             return (off, ext);
         }
         if let Some(cb) = self.child_bounds {
@@ -3775,7 +3774,9 @@ pub fn apply_scheme_color_transforms(hex: &str, modifiers: &[SchemeClrTransform]
     }
     format!(
         "{:02X}{:02X}{:02X}",
-        rgb[0].round() as i32, rgb[1].round() as i32, rgb[2].round() as i32
+        rgb[0].round() as i32,
+        rgb[1].round() as i32,
+        rgb[2].round() as i32
     )
 }
 
@@ -4449,9 +4450,11 @@ impl ChartSpace {
                 if plot.kind == ChartPlotKind::Scatter || plot.kind == ChartPlotKind::Bubble {
                     // x/y pairs: the x value becomes the point category.
                     let xs = ser.x_values.as_ref().map(|d| &d.points);
-                    let ys = ser.y_values.as_ref().map(|d| &d.points).or_else(|| {
-                        ser.values.as_ref().map(|d| &d.points)
-                    });
+                    let ys = ser
+                        .y_values
+                        .as_ref()
+                        .map(|d| &d.points)
+                        .or_else(|| ser.values.as_ref().map(|d| &d.points));
                     if let (Some(xs), Some(ys)) = (xs, ys) {
                         for i in 0..xs.len().max(ys.len()) {
                             let x = xs.get(i).and_then(|p| p.value);
@@ -4485,13 +4488,22 @@ impl ChartSpace {
                     "visible": true,
                 });
                 if let Some(ref color) = ser.fill_color {
-                    series["color"] = serde_json::json!(format!("#{}", color.trim_start_matches('#')));
+                    series["color"] =
+                        serde_json::json!(format!("#{}", color.trim_start_matches('#')));
                 }
                 if !ser.trendlines.is_empty() {
-                    series["trendlines"] = serde_json::json!(ser.trendlines.iter().map(trendline_value).collect::<Vec<_>>());
+                    series["trendlines"] = serde_json::json!(ser
+                        .trendlines
+                        .iter()
+                        .map(trendline_value)
+                        .collect::<Vec<_>>());
                 }
                 if !ser.error_bars.is_empty() {
-                    series["error_bars"] = serde_json::json!(ser.error_bars.iter().map(err_bar_value).collect::<Vec<_>>());
+                    series["error_bars"] = serde_json::json!(ser
+                        .error_bars
+                        .iter()
+                        .map(err_bar_value)
+                        .collect::<Vec<_>>());
                 }
                 series_values.push(series);
             }

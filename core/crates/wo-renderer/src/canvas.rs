@@ -423,12 +423,7 @@ impl PixelBuffer {
     }
 
     /// Compute signed distance from point to line segment.
-    fn point_to_segment_distance(
-        &self,
-        p: (f32, f32),
-        a: (f32, f32),
-        b: (f32, f32),
-    ) -> f32 {
+    fn point_to_segment_distance(&self, p: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
         let abx = b.0 - a.0;
         let aby = b.1 - a.1;
         let apx = p.0 - a.0;
@@ -465,7 +460,7 @@ impl PixelBuffer {
     fn distance_to_coverage(&self, distance: f32) -> f32 {
         // Normalize distance to pixel scale
         let abs_dist = distance.abs();
-        
+
         // Smoothstep: 0 at distance >= 0.5, 1 at distance <= -0.5, smooth transition in between
         if abs_dist >= 0.5 {
             0.0
@@ -1215,7 +1210,8 @@ impl Canvas {
                     .iter()
                     .map(|&(x, y)| transform.transform_point(x, y))
                     .collect();
-                self.buffer.fill_polygon_aa_coverage(&transformed, &color, alpha);
+                self.buffer
+                    .fill_polygon_aa_coverage(&transformed, &color, alpha);
             }
         }
         self.current_path.clear();
@@ -1258,12 +1254,7 @@ impl Canvas {
     /// Anti-aliased rasterize a path with explicit coverage control.
     /// This is a general-purpose rasterization entry point that computes
     /// subpixel coverage for paths, strokes, and clips.
-    pub fn rasterize_path_aa(
-        &mut self,
-        path: &PathBuilder,
-        is_stroke: bool,
-        line_width: f32,
-    ) {
+    pub fn rasterize_path_aa(&mut self, path: &PathBuilder, is_stroke: bool, line_width: f32) {
         let alpha = self.state.global_alpha;
         let color = match is_stroke {
             true => self.paint_color(&self.state.stroke_paint),
@@ -1286,9 +1277,11 @@ impl Canvas {
                     .collect();
 
                 if is_stroke {
-                    self.buffer.stroke_lines_aa(&transformed, &color, alpha, line_width);
+                    self.buffer
+                        .stroke_lines_aa(&transformed, &color, alpha, line_width);
                 } else if subpath.is_closed {
-                    self.buffer.fill_polygon_aa_coverage(&transformed, &color, alpha);
+                    self.buffer
+                        .fill_polygon_aa_coverage(&transformed, &color, alpha);
                 }
             }
         }

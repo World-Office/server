@@ -1428,14 +1428,8 @@ pub fn create_app(config: DocServerConfig) -> Router {
         // support dynamic suffixes (`{n}.png`), so the page route is
         // registered as `/pages/{page}` and the handler strips a trailing
         // `.png` — both `/pages/3` and `/pages/3.png` resolve.
-        .route(
-            "/api/documents/{id}/pages/count",
-            get(render::page_count),
-        )
-        .route(
-            "/api/documents/{id}/pages/{page}",
-            get(render::page_png),
-        )
+        .route("/api/documents/{id}/pages/count", get(render::page_count))
+        .route("/api/documents/{id}/pages/{page}", get(render::page_png))
         .route("/api/documents/{id}/save", post(editor_docs::save_document))
         .route(
             "/api/documents/{id}/export",

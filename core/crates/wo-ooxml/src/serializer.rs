@@ -33,9 +33,7 @@ fn strip_hf_refs(sect_pr: &str) -> String {
 /// P2-05 signal that numbering.xml must be emitted even when no body
 /// paragraph happens to reference a numId.
 fn has_parsed_numbering(body: &DocxBody) -> bool {
-    body.numbering
-        .as_ref()
-        .is_some_and(|n| !n.is_empty())
+    body.numbering.as_ref().is_some_and(|n| !n.is_empty())
 }
 
 /// P2-06: fallback content type for an unmanaged bag part when the source
@@ -44,9 +42,7 @@ fn unmanaged_part_content_type(name: &str) -> String {
     match name.rsplit('.').next().map(|e| e.to_ascii_lowercase()) {
         Some(ext) if ext.len() > 1 && ext.len() <= 5 => match ext.as_str() {
             "xml" => "application/xml".to_string(),
-            "rels" => {
-                "application/vnd.openxmlformats-package.relationships+xml".to_string()
-            }
+            "rels" => "application/vnd.openxmlformats-package.relationships+xml".to_string(),
             "png" => "image/png".to_string(),
             "jpg" | "jpeg" => "image/jpeg".to_string(),
             "gif" => "image/gif".to_string(),
@@ -177,10 +173,7 @@ impl OoxmlSerializer {
         // re-emitted data-driven (all abstractNums, numFmt, lvlText,
         // lvlOverride); the fixed 8-template stays as the html->docx fallback.
         if let Some(ref body) = doc.docx_body {
-            let parsed_numbering = body
-                .numbering
-                .as_ref()
-                .filter(|n| !n.is_empty());
+            let parsed_numbering = body.numbering.as_ref().filter(|n| !n.is_empty());
             if body_uses_numbering(body) || parsed_numbering.is_some() {
                 zip.start_file("word/numbering.xml", options)?;
                 let xml = match parsed_numbering {
@@ -1265,7 +1258,10 @@ impl OoxmlSerializer {
                             (None, None) => String::new(),
                         };
                         if !fill_color.is_empty() {
-                            xml.push_str(&format!("\n          <a:solidFill>{}</a:solidFill>", fill_color));
+                            xml.push_str(&format!(
+                                "\n          <a:solidFill>{}</a:solidFill>",
+                                fill_color
+                            ));
                         }
                         if let Some(ref dash) = border.dash {
                             xml.push_str(&format!(
@@ -1290,14 +1286,12 @@ impl OoxmlSerializer {
                         escape_xml(&style_ref.idx)
                     ));
                     match (&style_ref.color, &style_ref.scheme_color) {
-                        (Some(c), _) => xml.push_str(&format!(
-                            "<a:srgbClr val=\"{}\"/>",
-                            escape_xml(c)
-                        )),
-                        (None, Some(c)) => xml.push_str(&format!(
-                            "<a:schemeClr val=\"{}\"/>",
-                            escape_xml(c)
-                        )),
+                        (Some(c), _) => {
+                            xml.push_str(&format!("<a:srgbClr val=\"{}\"/>", escape_xml(c)))
+                        }
+                        (None, Some(c)) => {
+                            xml.push_str(&format!("<a:schemeClr val=\"{}\"/>", escape_xml(c)))
+                        }
                         (None, None) => {}
                     }
                     xml.push_str(&format!("</{}>", ref_name));
@@ -1332,9 +1326,7 @@ impl OoxmlSerializer {
         xml.push_str(&format!(
             "\n{c}    <a:chOff x=\"{chx}\" y=\"{chy}\"/>\n{c}    <a:chExt cx=\"{chcx}\" cy=\"{chcy}\"/>"
         ));
-        xml.push_str(&format!(
-            "\n{i}    </a:xfrm>\n{i}  </p:grpSpPr>"
-        ));
+        xml.push_str(&format!("\n{i}    </a:xfrm>\n{i}  </p:grpSpPr>"));
 
         for child in &group.children {
             match child {
@@ -1525,8 +1517,16 @@ impl OoxmlSerializer {
         xml.push_str("\n          <a:pPr>");
         let color = match bullet {
             TextBullet::None => None,
-            TextBullet::Char { color, scheme_color, .. }
-            | TextBullet::AutoNum { color, scheme_color, .. } => match (color, scheme_color) {
+            TextBullet::Char {
+                color,
+                scheme_color,
+                ..
+            }
+            | TextBullet::AutoNum {
+                color,
+                scheme_color,
+                ..
+            } => match (color, scheme_color) {
                 (Some(c), _) => Some(format!("<a:srgbClr val=\"{}\"/>", escape_xml(c))),
                 (None, Some(c)) => Some(format!("<a:schemeClr val=\"{}\"/>", escape_xml(c))),
                 (None, None) => None,
@@ -1606,8 +1606,7 @@ impl OoxmlSerializer {
                 extra.push_str("\n  <Override PartName=\"/word/comments.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml\"/>");
                 extra.push_str("\n  <Override PartName=\"/word/commentsExtended.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml\"/>");
             }
-            let uses_numbering =
-                body_uses_numbering(body) || has_parsed_numbering(body);
+            let uses_numbering = body_uses_numbering(body) || has_parsed_numbering(body);
             if uses_numbering {
                 extra.push_str("\n  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>");
             }
@@ -2213,10 +2212,7 @@ impl OoxmlSerializer {
             if let Some(bm) = &run.bookmark {
                 match bm {
                     BookmarkMarker::Start(b) => {
-                        let mut el = format!(
-                            r#"<w:bookmarkStart w:id="{}""#,
-                            escape_xml(&b.id)
-                        );
+                        let mut el = format!(r#"<w:bookmarkStart w:id="{}""#, escape_xml(&b.id));
                         if let Some(name) = &b.name {
                             el.push_str(&format!(r#" w:name="{}""#, escape_xml(name)));
                         }
@@ -2226,10 +2222,7 @@ impl OoxmlSerializer {
                         continue;
                     }
                     BookmarkMarker::End(id) => {
-                        xml.push_str(&format!(
-                            r#"<w:bookmarkEnd w:id="{}"/>"#,
-                            escape_xml(id)
-                        ));
+                        xml.push_str(&format!(r#"<w:bookmarkEnd w:id="{}"/>"#, escape_xml(id)));
                         i += 1;
                         continue;
                     }
@@ -2346,8 +2339,8 @@ impl OoxmlSerializer {
         // Parse-derived fields are already materialized above — either as a
         // verbatim fldSimple subtree or as fldChar/instrText marker runs — so
         // they are skipped to avoid duplicating the field.
-        let fields_materialized = !para.raw_flds.is_empty()
-            || para.runs.iter().any(|r| r.field.is_some());
+        let fields_materialized =
+            !para.raw_flds.is_empty() || para.runs.iter().any(|r| r.field.is_some());
         if !fields_materialized {
             for field in &para.fields {
                 xml.push_str(&Self::field_to_xml(field));
@@ -2847,10 +2840,7 @@ impl OoxmlSerializer {
                 }
             ));
             if let Some(name) = &style.name {
-                xml.push_str(&format!(
-                    "    <w:name w:val=\"{}\"/>\n",
-                    escape_xml(name)
-                ));
+                xml.push_str(&format!("    <w:name w:val=\"{}\"/>\n", escape_xml(name)));
             }
             if let Some(parent) = &style.based_on {
                 xml.push_str(&format!(
@@ -2859,16 +2849,10 @@ impl OoxmlSerializer {
                 ));
             }
             if let Some(linked) = &style.link {
-                xml.push_str(&format!(
-                    "    <w:link w:val=\"{}\"/>\n",
-                    escape_xml(linked)
-                ));
+                xml.push_str(&format!("    <w:link w:val=\"{}\"/>\n", escape_xml(linked)));
             }
             if let Some(follow) = &style.next {
-                xml.push_str(&format!(
-                    "    <w:next w:val=\"{}\"/>\n",
-                    escape_xml(follow)
-                ));
+                xml.push_str(&format!("    <w:next w:val=\"{}\"/>\n", escape_xml(follow)));
             }
             if let Some(prio) = style.ui_priority {
                 xml.push_str(&format!("    <w:uiPriority w:val=\"{}\"/>\n", prio));
@@ -2909,10 +2893,7 @@ impl OoxmlSerializer {
                 }
             ));
             if let Some(name) = &style.name {
-                xml.push_str(&format!(
-                    "    <w:name w:val=\"{}\"/>\n",
-                    escape_xml(name)
-                ));
+                xml.push_str(&format!("    <w:name w:val=\"{}\"/>\n", escape_xml(name)));
             }
             if let Some(parent) = &style.based_on {
                 xml.push_str(&format!(
@@ -2951,10 +2932,7 @@ impl OoxmlSerializer {
                 }
             ));
             if let Some(name) = &style.name {
-                xml.push_str(&format!(
-                    "    <w:name w:val=\"{}\"/>\n",
-                    escape_xml(name)
-                ));
+                xml.push_str(&format!("    <w:name w:val=\"{}\"/>\n", escape_xml(name)));
             }
             if let Some(parent) = &style.based_on {
                 xml.push_str(&format!(
@@ -3358,10 +3336,7 @@ impl OoxmlSerializer {
 
     /// Serialize a parsed `a:fmtScheme` (fill/line/effect/bg-fill tables).
     fn build_fmt_scheme_xml(&self, fs: &FmtScheme) -> String {
-        let mut xml = format!(
-            "\n    <a:fmtScheme name=\"{}\">",
-            escape_xml(&fs.name)
-        );
+        let mut xml = format!("\n    <a:fmtScheme name=\"{}\">", escape_xml(&fs.name));
         // The schema requires exactly three entries per table; empty tables
         // fall back to the minimal solid-white placeholder triple so the
         // output stays schema-valid.
@@ -3387,7 +3362,9 @@ impl OoxmlSerializer {
         for style in fs.effect_styles.iter() {
             match &style.raw {
                 // Verbatim capture from the source document: lossless.
-                Some(raw) => xml.push_str(&format!("\n        <a:effectStyle>{}</a:effectStyle>", raw)),
+                Some(raw) => {
+                    xml.push_str(&format!("\n        <a:effectStyle>{}</a:effectStyle>", raw))
+                }
                 // Effects are modeled shallowly (presence only), so styles
                 // without a capture re-emit an empty a:effectLst marker.
                 None => xml.push_str("\n        <a:effectStyle><a:effectLst/> </a:effectStyle>"),
@@ -4085,8 +4062,10 @@ impl OoxmlSerializer {
 
                 // Formula (+ dynamic-array spill attributes, ORM-06).
                 if let Some(ref f) = cell.f {
-                    xml.push_str(r#">
-        <f"#);
+                    xml.push_str(
+                        r#">
+        <f"#,
+                    );
                     if let Some(da) = dyn_array {
                         if da.aca {
                             xml.push_str(r#" aca="1""#);
@@ -4194,16 +4173,21 @@ impl OoxmlSerializer {
                     xml.push_str(&format!(r#" rank="{}""#, rank));
                 }
                 if let Some(percent) = rule.percent {
-                    xml.push_str(&format!(r#" percent="{}""#, if percent { "1" } else { "0" }));
+                    xml.push_str(&format!(
+                        r#" percent="{}""#,
+                        if percent { "1" } else { "0" }
+                    ));
                 }
                 if let Some(bottom) = rule.bottom {
                     xml.push_str(&format!(r#" bottom="{}""#, if bottom { "1" } else { "0" }));
                 }
                 if let Some(above) = rule.above_average {
-                    xml.push_str(&format!(r#" aboveAverage="{}""#, if above { "1" } else { "0" }));
+                    xml.push_str(&format!(
+                        r#" aboveAverage="{}""#,
+                        if above { "1" } else { "0" }
+                    ));
                 }
-                if rule.formulas.is_empty()
-                    && matches!(rule.kind, XlsxConditionalFormatKind::Plain)
+                if rule.formulas.is_empty() && matches!(rule.kind, XlsxConditionalFormatKind::Plain)
                 {
                     xml.push_str("/>");
                     continue;
@@ -4400,7 +4384,10 @@ impl OoxmlSerializer {
   </headerFooter>"#,
             );
         }
-        for (tag, breaks) in [("rowBreaks", &print.row_breaks), ("colBreaks", &print.col_breaks)] {
+        for (tag, breaks) in [
+            ("rowBreaks", &print.row_breaks),
+            ("colBreaks", &print.col_breaks),
+        ] {
             if breaks.is_empty() {
                 continue;
             }
@@ -4475,7 +4462,10 @@ impl OoxmlSerializer {
 
     /// A CF threshold (`<cfvo type=".." val=".."/>`).
     fn push_xlsx_cfvo(xml: &mut String, cfvo: &XlsxCfvo) {
-        xml.push_str(&format!("\n        <cfvo type=\"{}\"", escape_xml(&cfvo.cfvo_type)));
+        xml.push_str(&format!(
+            "\n        <cfvo type=\"{}\"",
+            escape_xml(&cfvo.cfvo_type)
+        ));
         if let Some(ref val) = cfvo.val {
             xml.push_str(&format!(r#" val="{}""#, escape_xml(val)));
         }
@@ -4540,10 +4530,16 @@ impl OoxmlSerializer {
                     escape_xml(pt)
                 ));
                 if let Some(ref fg) = fill.fg_color {
-                    xml.push_str(&format!("\n          <fgColor rgb=\"{}\"/>", escape_xml(fg)));
+                    xml.push_str(&format!(
+                        "\n          <fgColor rgb=\"{}\"/>",
+                        escape_xml(fg)
+                    ));
                 }
                 if let Some(ref bg) = fill.bg_color {
-                    xml.push_str(&format!("\n          <bgColor rgb=\"{}\"/>", escape_xml(bg)));
+                    xml.push_str(&format!(
+                        "\n          <bgColor rgb=\"{}\"/>",
+                        escape_xml(bg)
+                    ));
                 }
                 xml.push_str("\n        </patternFill>");
             }
@@ -4626,7 +4622,12 @@ impl OoxmlSerializer {
             None => xml.push_str("\n      <c:layout/>"),
             Some(ref layout) => {
                 xml.push_str("\n      <c:layout>\n        <c:manualLayout>");
-                for (name, v) in [("x", layout.x), ("y", layout.y), ("w", layout.w), ("h", layout.h)] {
+                for (name, v) in [
+                    ("x", layout.x),
+                    ("y", layout.y),
+                    ("w", layout.w),
+                    ("h", layout.h),
+                ] {
                     if let Some(v) = v {
                         push_chart_num(&mut xml, 5, name, v);
                     }
@@ -5346,7 +5347,11 @@ fn push_chart_dlbls(xml: &mut String, indent: usize, dlbls: &ChartDLbls) {
     }
     xml.push_str(&format!("\n{}<c:dLbls>", pad));
     if let Some(ref code) = dlbls.number_format {
-        let linked = if dlbls.source_linked == Some(true) { "1" } else { "0" };
+        let linked = if dlbls.source_linked == Some(true) {
+            "1"
+        } else {
+            "0"
+        };
         xml.push_str(&format!(
             "\n    <c:numFmt formatCode=\"{}\" sourceLinked=\"{}\"/>",
             escape_xml(code),
@@ -5366,7 +5371,12 @@ fn push_chart_dlbls(xml: &mut String, indent: usize, dlbls: &ChartDLbls) {
 }
 
 /// The cached points of a `c:strCache` / `c:numCache` body.
-fn push_chart_cache_points(xml: &mut String, indent: usize, points: &[ChartStrPt], values: &[ChartNumPt]) {
+fn push_chart_cache_points(
+    xml: &mut String,
+    indent: usize,
+    points: &[ChartStrPt],
+    values: &[ChartNumPt],
+) {
     let pad = " ".repeat(indent * 2);
     // Interleave string and numeric points by their idx so both caches
     // render through one ordered loop.
@@ -5455,7 +5465,15 @@ fn push_chart_categories(xml: &mut String, indent: usize, cat: &ChartCategories)
                 "\n    <c:numRef>\n      <c:f>{}</c:f>",
                 escape_xml(formula)
             ));
-            push_chart_cache(xml, 3, "c:numCache", &cat.format_code, &cat.pt_count, &cat.points, &[]);
+            push_chart_cache(
+                xml,
+                3,
+                "c:numCache",
+                &cat.format_code,
+                &cat.pt_count,
+                &cat.points,
+                &[],
+            );
             xml.push_str("\n    </c:numRef>");
         }
         (Some(formula), false) => {
@@ -5467,7 +5485,15 @@ fn push_chart_categories(xml: &mut String, indent: usize, cat: &ChartCategories)
             xml.push_str("\n    </c:strRef>");
         }
         (None, _) if numeric => {
-            push_chart_cache(xml, 2, "c:numLit", &cat.format_code, &cat.pt_count, &cat.points, &[]);
+            push_chart_cache(
+                xml,
+                2,
+                "c:numLit",
+                &cat.format_code,
+                &cat.pt_count,
+                &cat.points,
+                &[],
+            );
         }
         (None, _) => {
             push_chart_cache(xml, 2, "c:strLit", &None, &cat.pt_count, &cat.points, &[]);
@@ -5646,10 +5672,20 @@ fn push_chart_plot(xml: &mut String, plot: &ChartPlot) {
             }
         }
         ChartPlotKind::Radar => {
-            push_chart_str(xml, 4, "radarStyle", plot.radar_style.as_deref().unwrap_or("standard"));
+            push_chart_str(
+                xml,
+                4,
+                "radarStyle",
+                plot.radar_style.as_deref().unwrap_or("standard"),
+            );
         }
         ChartPlotKind::Scatter => {
-            push_chart_str(xml, 4, "scatterStyle", plot.scatter_style.as_deref().unwrap_or("lineMarker"));
+            push_chart_str(
+                xml,
+                4,
+                "scatterStyle",
+                plot.scatter_style.as_deref().unwrap_or("lineMarker"),
+            );
         }
         _ => {}
     }
@@ -5669,10 +5705,7 @@ fn push_chart_plot(xml: &mut String, plot: &ChartPlot) {
         push_chart_num(xml, 3, "gapWidth", f64::from(v));
     }
     if let Some(v) = plot.overlap {
-        xml.push_str(&format!(
-            "\n        <c:overlap val=\"{}\"/>",
-            v
-        ));
+        xml.push_str(&format!("\n        <c:overlap val=\"{}\"/>", v));
     }
     if let Some(v) = plot.first_slice_ang {
         push_chart_num(xml, 3, "firstSliceAng", f64::from(v));
@@ -5746,7 +5779,11 @@ fn push_chart_axis(xml: &mut String, axis: &ChartAxis) {
         );
     }
     if let Some(ref code) = axis.number_format {
-        let linked = if axis.number_format_source_linked == Some(true) { "1" } else { "0" };
+        let linked = if axis.number_format_source_linked == Some(true) {
+            "1"
+        } else {
+            "0"
+        };
         xml.push_str(&format!(
             "\n        <c:numFmt formatCode=\"{}\" sourceLinked=\"{}\"/>",
             escape_xml(code),

@@ -44,10 +44,9 @@ fn asc_c_user_info_serde_round_trips_camel_case() {
     assert_eq!(back, user);
 
     // An OO-shaped payload (exactly what Main.js builds) deserializes 1:1.
-    let from_ui: AscCUserInfo = serde_json::from_str(
-        r#"{"id":"uid-7","name":"Grace","initials":"GH","color":"FF7F00"}"#,
-    )
-    .expect("OO payload parses");
+    let from_ui: AscCUserInfo =
+        serde_json::from_str(r#"{"id":"uid-7","name":"Grace","initials":"GH","color":"FF7F00"}"#)
+            .expect("OO payload parses");
     assert_eq!(from_ui.id, "uid-7");
     assert_eq!(from_ui.initials, "GH");
 }
@@ -203,8 +202,8 @@ fn restriction_rejects_unknown_mode_and_bad_json() {
         r#"{"mode":"none","allowPrint":true,"allowCopy":true}"#
     );
 
-    let err = set_document_restriction(H6, "not json")
-        .expect_err("non-JSON input must be rejected");
+    let err =
+        set_document_restriction(H6, "not json").expect_err("non-JSON input must be rejected");
     assert!(err.contains("Invalid restriction JSON"), "err: {err}");
 
     let err = set_document_restriction(H6, r#"{"allowPrint":true}"#)
@@ -241,8 +240,7 @@ fn restriction_defaults_and_per_document_isolation() {
 
 #[test]
 fn cc_role_set_get_round_trip() {
-    let stored =
-        set_cc_role(H3, r#"{"id":"cc-1","role":"plain-text"}"#).expect("set_cc_role");
+    let stored = set_cc_role(H3, r#"{"id":"cc-1","role":"plain-text"}"#).expect("set_cc_role");
     assert_eq!(stored, r#"{"id":"cc-1","role":"plain-text"}"#);
     assert_eq!(
         get_cc_role(H3, "cc-1").expect("get_cc_role"),
@@ -253,7 +251,10 @@ fn cc_role_set_get_round_trip() {
     for role in ["none", "rich-text", "picture", "date"] {
         let json = format!(r#"{{"id":"cc-2","role":"{role}"}}"#);
         let stored = set_cc_role(H3, &json).expect("set_cc_role");
-        assert!(stored.contains(&format!(r#""role":"{role}""#)), "role {role}");
+        assert!(
+            stored.contains(&format!(r#""role":"{role}""#)),
+            "role {role}"
+        );
     }
 
     // Unset control → "null" (props store-backed convention).

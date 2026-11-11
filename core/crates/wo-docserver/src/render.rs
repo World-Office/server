@@ -16,9 +16,7 @@
 //! (docxf or docx) under its document id.
 
 use axum::extract::{Path, State};
-use axum::http::{
-    header, HeaderMap, HeaderName, HeaderValue, StatusCode,
-};
+use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use std::io::{Read as _, Write as _};
@@ -33,10 +31,9 @@ fn valid_doc_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 255
         && !id.starts_with('.')
-        && id.chars().all(|c| {
-            c.is_ascii_alphanumeric()
-                || matches!(c, '.' | '_' | '-' | '$' | '!')
-        })
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '$' | '!'))
 }
 
 /// PNG render settings: A4 pages rasterized at 150 dpi (the renderer's
@@ -147,19 +144,15 @@ pub fn docx_to_docxf(data: &[u8]) -> Vec<u8> {
 
 /// Re-zip a package with its `[Content_Types].xml` rewritten (`from` →
 /// `to`); entry order and compression are preserved.
-fn rewrite_content_types(
-    data: &[u8],
-    from: &str,
-    to: &str,
-) -> Result<Vec<u8>, anyhow::Error> {
+fn rewrite_content_types(data: &[u8], from: &str, to: &str) -> Result<Vec<u8>, anyhow::Error> {
     let cursor = std::io::Cursor::new(data);
     let mut archive = zip::ZipArchive::new(cursor)?;
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i)?;
         let name = entry.name().to_string();
-        let options = zip::write::SimpleFileOptions::default()
-            .compression_method(entry.compression());
+        let options =
+            zip::write::SimpleFileOptions::default().compression_method(entry.compression());
         let mut bytes = Vec::new();
         entry.read_to_end(&mut bytes)?;
         out.start_file(name.as_str(), options)?;
@@ -225,9 +218,7 @@ fn parse_page(raw: &str) -> Result<u32, AppError> {
         .parse()
         .map_err(|_| AppError::BadRequest(format!("Invalid page number: {raw}")))?;
     if page == 0 {
-        return Err(AppError::BadRequest(
-            "Page number must be 1-based".into(),
-        ));
+        return Err(AppError::BadRequest("Page number must be 1-based".into()));
     }
     Ok(page)
 }
@@ -384,12 +375,7 @@ mod tests {
 
     async fn get(app: &axum::Router, uri: &str) -> axum::http::Response<Body> {
         app.clone()
-            .oneshot(
-                Request::builder()
-                    .uri(uri)
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+            .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
             .await
             .unwrap()
     }
@@ -493,21 +479,29 @@ mod tests {
 
         // Page 0 and non-numeric pages are 400.
         assert_eq!(
-            get(&app, "/api/documents/guard.docx/pages/0.png").await.status(),
+            get(&app, "/api/documents/guard.docx/pages/0.png")
+                .await
+                .status(),
             StatusCode::BAD_REQUEST
         );
         assert_eq!(
-            get(&app, "/api/documents/guard.docx/pages/abc.png").await.status(),
+            get(&app, "/api/documents/guard.docx/pages/abc.png")
+                .await
+                .status(),
             StatusCode::BAD_REQUEST
         );
 
         // Unknown document is 404.
         assert_eq!(
-            get(&app, "/api/documents/missing.docx/pages/1.png").await.status(),
+            get(&app, "/api/documents/missing.docx/pages/1.png")
+                .await
+                .status(),
             StatusCode::NOT_FOUND
         );
         assert_eq!(
-            get(&app, "/api/documents/missing.docx/pages/count").await.status(),
+            get(&app, "/api/documents/missing.docx/pages/count")
+                .await
+                .status(),
             StatusCode::NOT_FOUND
         );
 
@@ -578,10 +572,16 @@ mod tests {
         let (app, dir) = test_app_with_store("unused", b"").await;
         let form_app = save_form_app(&form_cfg(&dir));
 
-        let resp = post_body(&form_app, "/api/documents/form.docxf/save-form", docxf.clone())
-            .await;
+        let resp = post_body(
+            &form_app,
+            "/api/documents/form.docxf/save-form",
+            docxf.clone(),
+        )
+        .await;
         assert_eq!(resp.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024).await.unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
         let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(v["ok"], true);
         assert_eq!(v["id"], "form.docxf");
@@ -599,7 +599,9 @@ mod tests {
         // ...while every GET treats it as docx: page render + count.
         let png = get(&app, "/api/documents/form.docxf/pages/1.png").await;
         assert_eq!(png.status(), StatusCode::OK);
-        let png_bytes = axum::body::to_bytes(png.into_body(), 16 * 1024 * 1024).await.unwrap();
+        let png_bytes = axum::body::to_bytes(png.into_body(), 16 * 1024 * 1024)
+            .await
+            .unwrap();
         assert!(
             png_bytes.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']),
             "docxf page 1 must render to a real PNG"
@@ -623,7 +625,9 @@ mod tests {
         )
         .await;
         assert_eq!(resp.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024).await.unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
         let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(v["format"], "docx");
         assert!(!is_docxf_package(
@@ -646,9 +650,13 @@ mod tests {
 
         // Path traversal must be rejected before it can touch the filesystem.
         assert_eq!(
-            post_body(&form_app, "/api/documents/%2e%2e%2fetc%2fpasswd/save-form", make_minimal_docx())
-                .await
-                .status(),
+            post_body(
+                &form_app,
+                "/api/documents/%2e%2e%2fetc%2fpasswd/save-form",
+                make_minimal_docx()
+            )
+            .await
+            .status(),
             StatusCode::BAD_REQUEST
         );
         // Empty body is 400...
@@ -660,13 +668,21 @@ mod tests {
         );
         // ...and a non-package payload is 422.
         assert_eq!(
-            post_body(&form_app, "/api/documents/x.docx/save-form", b"not a zip".to_vec())
-                .await
-                .status(),
+            post_body(
+                &form_app,
+                "/api/documents/x.docx/save-form",
+                b"not a zip".to_vec()
+            )
+            .await
+            .status(),
             StatusCode::UNPROCESSABLE_ENTITY
         );
         assert!(
-            crate::store::DocStore::new(&dir).get_content("x.docx").await.unwrap().is_none(),
+            crate::store::DocStore::new(&dir)
+                .get_content("x.docx")
+                .await
+                .unwrap()
+                .is_none(),
             "rejected packages must not be stored"
         );
 
@@ -677,17 +693,20 @@ mod tests {
     /// through the same docx pipeline — the read path is the conversion.
     #[tokio::test]
     async fn test_page_render_treats_stored_docxf_as_docx() {
-        let (app, dir) =
-            test_app_with_store("filled-form.docxf", &make_minimal_docxf()).await;
+        let (app, dir) = test_app_with_store("filled-form.docxf", &make_minimal_docxf()).await;
 
         let resp = get(&app, "/api/documents/filled-form.docxf/pages/1").await;
         assert_eq!(resp.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(resp.into_body(), 16 * 1024 * 1024).await.unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 16 * 1024 * 1024)
+            .await
+            .unwrap();
         assert!(bytes.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']));
 
         let count = get(&app, "/api/documents/filled-form.docxf/pages/count").await;
         assert_eq!(count.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(count.into_body(), 1024 * 1024).await.unwrap();
+        let bytes = axum::body::to_bytes(count.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
         let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert!(v["pages"].as_u64().unwrap_or(0) >= 1);
 

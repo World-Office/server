@@ -14,13 +14,13 @@ pub mod props;
 pub mod session;
 pub mod stub_model;
 
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::{Cursor, Read, Write};
 use std::sync::Mutex;
 use std::sync::OnceLock;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
@@ -3948,8 +3948,7 @@ pub fn spell_suggest(word: &str, lang: &str) -> String {
 #[wasm_bindgen]
 pub fn spell_check_variants(word: &str, lang: &str) -> String {
     let variants_json = spell_suggest(word, lang);
-    let variants: Vec<String> =
-        serde_json::from_str(&variants_json).unwrap_or_else(|_| Vec::new());
+    let variants: Vec<String> = serde_json::from_str(&variants_json).unwrap_or_else(|_| Vec::new());
     let _ = push(WsEvent::SpellCheckVariants {
         word: word.to_string(),
         variants: variants.clone(),
@@ -4205,9 +4204,7 @@ impl RestrictionMode {
         Some(match norm.as_str() {
             "none" | "" => RestrictionMode::None,
             "readonly" | "read-only" | "read" => RestrictionMode::ReadOnly,
-            "comment-only" | "commentonly" | "comments" | "comment" => {
-                RestrictionMode::CommentOnly
-            }
+            "comment-only" | "commentonly" | "comments" | "comment" => RestrictionMode::CommentOnly,
             "fill-forms" | "fillforms" | "fill-form" | "forms" => RestrictionMode::FillForms,
             "track-changes" | "trackchanges" | "review" => RestrictionMode::TrackChanges,
             _ => return None,
@@ -4580,7 +4577,10 @@ fn form_filling_allowed(doc_handle: u32) -> bool {
         .get(&doc_handle)
         .map(|r| r.mode)
         .unwrap_or(RestrictionMode::None);
-    !matches!(mode, RestrictionMode::ReadOnly | RestrictionMode::CommentOnly)
+    !matches!(
+        mode,
+        RestrictionMode::ReadOnly | RestrictionMode::CommentOnly
+    )
 }
 
 /// Whether `user_id` may fill fields of `role`: the role exists, the
@@ -4645,13 +4645,8 @@ pub fn asc_edit_role(doc_handle: u32, role_id: &str, json: &str) -> Result<Strin
 
     let name = match raw.get("name") {
         Some(v) => {
-            let name = validate_role_name(
-                v.as_str().ok_or("Role patch `name` must be a string")?,
-            )?;
-            if list
-                .iter()
-                .any(|r| r.name == name && r.id != role_id)
-            {
+            let name = validate_role_name(v.as_str().ok_or("Role patch `name` must be a string")?)?;
+            if list.iter().any(|r| r.name == name && r.id != role_id) {
                 return Err(format!("Role name already in use: {name:?}"));
             }
             Some(name)
@@ -4702,11 +4697,9 @@ pub fn asc_edit_role(doc_handle: u32, role_id: &str, json: &str) -> Result<Strin
 #[wasm_bindgen(js_name = asc_removeRole)]
 pub fn asc_remove_role(doc_handle: u32, role_id: &str) -> Result<String, String> {
     let mut roles = form_roles_store().lock().unwrap();
-    let list = roles.get_mut(&doc_handle).ok_or_else(|| {
-        format!(
-            "Unknown role id: {role_id:?} (document has no roles)"
-        )
-    })?;
+    let list = roles
+        .get_mut(&doc_handle)
+        .ok_or_else(|| format!("Unknown role id: {role_id:?} (document has no roles)"))?;
     let idx = role_index(list, role_id).ok_or_else(|| format!("Unknown role id: {role_id:?}"))?;
     let role = list.remove(idx);
     if list.is_empty() {
@@ -4833,10 +4826,8 @@ pub fn asc_get_filling_status(doc_handle: u32) -> Result<String, String> {
 
     let mut role_statuses = Vec::with_capacity(roles.len());
     for role in &roles {
-        let under_role: Vec<&OFormFieldFill> = fills
-            .values()
-            .filter(|f| f.role_id == role.id)
-            .collect();
+        let under_role: Vec<&OFormFieldFill> =
+            fills.values().filter(|f| f.role_id == role.id).collect();
         let filled = under_role.iter().filter(|f| !f.value.is_empty()).count() as u32;
         let required_left = under_role
             .iter()
@@ -4913,9 +4904,11 @@ pub fn asc_get_signers(doc_handle: u32) -> Result<String, String> {
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+mod collab_tests;
+#[cfg(test)]
 mod events_tests;
 #[cfg(test)]
-mod collab_tests;
+mod image_render_tests;
 #[cfg(test)]
 mod navigation_tests;
 #[cfg(test)]
@@ -4932,8 +4925,6 @@ mod session_tests;
 mod spell_variants_tests;
 #[cfg(test)]
 mod table_interaction_tests;
-#[cfg(test)]
-mod image_render_tests;
 
 #[cfg(test)]
 mod tests {
@@ -5761,7 +5752,10 @@ mod oform_tests {
         assert!(s.contains("\"name\":\"Buyer\""), "wire: {s}");
         assert!(s.contains("\"color\":\"6C8EBF\""), "wire: {s}");
         assert!(s.contains("\"user\":\"uid-42\""), "wire: {s}");
-        assert!(!s.contains("role_id") && !s.contains("user_"), "no snake_case: {s}");
+        assert!(
+            !s.contains("role_id") && !s.contains("user_"),
+            "no snake_case: {s}"
+        );
         let back: AscRole = serde_json::from_str(&s).expect("deserialize");
         assert_eq!(back, role);
     }
@@ -5866,14 +5860,25 @@ mod oform_tests {
         let id: String = serde_json::from_str::<AscRole>(&seeded).expect("role").id;
 
         let removed = asc_remove_role(H, &id).expect("remove");
-        assert_eq!(serde_json::from_str::<AscRole>(&removed).expect("json").name, "Buyer");
+        assert_eq!(
+            serde_json::from_str::<AscRole>(&removed)
+                .expect("json")
+                .name,
+            "Buyer"
+        );
 
         assert_eq!(asc_get_all_roles(H).expect("list"), "[]");
         assert!(asc_remove_role(H, &id).is_err(), "second remove errors");
-        assert!(asc_remove_role(4_040_002, &id).is_err(), "unknown doc errors");
+        assert!(
+            asc_remove_role(4_040_002, &id).is_err(),
+            "unknown doc errors"
+        );
         // Freed ids may be reused: removing role-1 lets the next add take it.
         let again = asc_add_role(H, "Buyer", "").expect("re-add");
-        assert_eq!(serde_json::from_str::<AscRole>(&again).expect("json").id, "role-1");
+        assert_eq!(
+            serde_json::from_str::<AscRole>(&again).expect("json").id,
+            "role-1"
+        );
     }
 
     // ── asc_canFillRole ──────────────────────────────────────────────
@@ -5888,8 +5893,14 @@ mod oform_tests {
         let assigned_id = serde_json::from_str::<AscRole>(&assigned).expect("json").id;
         asc_edit_role(H, &assigned_id, r#"{"user":"uid-42"}"#).expect("assign");
 
-        assert!(asc_can_fill_role(H, &open.id, "uid-7").expect("bool"), "open role: anyone");
-        assert!(asc_can_fill_role(H, &open.id, "").expect("bool"), "open role: anonymous");
+        assert!(
+            asc_can_fill_role(H, &open.id, "uid-7").expect("bool"),
+            "open role: anyone"
+        );
+        assert!(
+            asc_can_fill_role(H, &open.id, "").expect("bool"),
+            "open role: anonymous"
+        );
         assert!(
             asc_can_fill_role(H, &assigned_id, "uid-42").expect("bool"),
             "assignee fills their role"
@@ -5971,8 +5982,7 @@ mod oform_tests {
 
         // An empty value clears the content but keeps the registration
         // (and forgets who filled it).
-        asc_fill_field(H, "field-2", &closed_id, "signed", false, "uid-42")
-            .expect("assignee fill");
+        asc_fill_field(H, "field-2", &closed_id, "signed", false, "uid-42").expect("assignee fill");
         let cleared: OFormFieldFill = serde_json::from_str(
             &asc_fill_field(H, "field-2", &closed_id, "", false, "uid-42").expect("clear"),
         )
@@ -5988,7 +5998,10 @@ mod oform_tests {
         // Role slice lookup, resolved against the status blob passed in —
         // never against a shadowed outer binding.
         fn role_status<'a>(st: &'a OFormFillingStatus, id: &str) -> &'a OFormRoleStatus {
-            st.roles.iter().find(|r| r.role_id == id).expect("role in breakdown")
+            st.roles
+                .iter()
+                .find(|r| r.role_id == id)
+                .expect("role in breakdown")
         }
         let buyer = asc_add_role(H, "Buyer", "").expect("role");
         let buyer = serde_json::from_str::<AscRole>(&buyer).expect("json");
@@ -5999,14 +6012,20 @@ mod oform_tests {
             serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
         assert_eq!(st.status, "empty");
         assert_eq!(st.total_fields, 0);
-        assert!(st.roles.iter().all(|r| r.complete), "no fields → vacuously complete");
+        assert!(
+            st.roles.iter().all(|r| r.complete),
+            "no fields → vacuously complete"
+        );
 
         // Register the buyer's required field without filling it yet.
         asc_fill_field(H, "f-1", &buyer.id, "", true, "u").expect("register");
         let st: OFormFillingStatus =
             serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
         assert_eq!(st.status, "empty", "registered but nothing filled");
-        assert_eq!((st.total_fields, st.filled_fields, st.required_left), (1, 0, 1));
+        assert_eq!(
+            (st.total_fields, st.filled_fields, st.required_left),
+            (1, 0, 1)
+        );
         assert!(!role_status(&st, &buyer.id).complete);
 
         // Fill it → complete (the only required field is satisfied).
@@ -6015,7 +6034,10 @@ mod oform_tests {
         let st: OFormFillingStatus =
             serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
         assert_eq!(st.status, "complete");
-        assert_eq!((st.total_fields, st.filled_fields, st.required_left), (2, 2, 0));
+        assert_eq!(
+            (st.total_fields, st.filled_fields, st.required_left),
+            (2, 2, 0)
+        );
         assert_eq!(
             (
                 role_status(&st, &buyer.id).filled_fields,
@@ -6063,7 +6085,10 @@ mod oform_tests {
         let st: OFormFillingStatus =
             serde_json::from_str(&asc_get_filling_status(H).expect("status")).expect("blob");
         assert_eq!(st.roles.len(), 1);
-        assert_eq!(st.roles[0].total_fields, 1, "field now tracked under the new role");
+        assert_eq!(
+            st.roles[0].total_fields, 1,
+            "field now tracked under the new role"
+        );
     }
 
     // ── asc_setSigners / asc_getSigners ──────────────────────────────
@@ -6071,7 +6096,11 @@ mod oform_tests {
     #[test]
     fn signers_round_trip_and_validate() {
         const H: u32 = 4_090_001;
-        assert_eq!(asc_get_signers(H).expect("default"), "[]", "unset → empty list");
+        assert_eq!(
+            asc_get_signers(H).expect("default"),
+            "[]",
+            "unset → empty list"
+        );
 
         let json = r#"[
             {"id":"s-1","name":"Ada Lovelace","date":"2026-11-10","image":""},
@@ -6079,21 +6108,31 @@ mod oform_tests {
              "image":"data:image/png;base64,AAA"}
         ]"#;
         let stored = asc_set_signers(H, json).expect("set");
-        assert_eq!(asc_get_signers(H).expect("get"), stored, "canonical round trip");
+        assert_eq!(
+            asc_get_signers(H).expect("get"),
+            stored,
+            "canonical round trip"
+        );
         let signers: Vec<AscSigner> = serde_json::from_str(&stored).expect("array");
         assert_eq!(signers.len(), 2);
         assert_eq!(signers[0].name, "Ada Lovelace");
         assert_eq!(signers[1].image, "data:image/png;base64,AAA");
 
-        let dup = asc_set_signers(H, r#"[{"id":"s-1","name":"A"},{"id":"s-1","name":"B"}]"#)
-            .unwrap_err();
+        let dup =
+            asc_set_signers(H, r#"[{"id":"s-1","name":"A"},{"id":"s-1","name":"B"}]"#).unwrap_err();
         assert!(dup.contains("Duplicate signer id"), "err: {dup}");
         let no_id = asc_set_signers(H, r#"[{"id":"  ","name":"A"}]"#).unwrap_err();
         assert!(no_id.contains("must not be empty"), "err: {no_id}");
         let no_name = asc_set_signers(H, r#"[{"id":"s-9"}]"#).unwrap_err();
         assert!(no_name.contains("name"), "err: {no_name}");
         // A failed set leaves the previous list untouched.
-        assert_eq!(asc_get_signers(H).expect("get").matches("Ada Lovelace").count(), 1);
+        assert_eq!(
+            asc_get_signers(H)
+                .expect("get")
+                .matches("Ada Lovelace")
+                .count(),
+            1
+        );
         // Replacing wholesale (not appending) is the OO contract.
         asc_set_signers(H, r#"[{"id":"s-3","name":"Only One"}]"#).expect("replace");
         let signers: Vec<AscSigner> =
@@ -6101,4 +6140,3 @@ mod oform_tests {
         assert_eq!(signers.len(), 1);
     }
 }
-

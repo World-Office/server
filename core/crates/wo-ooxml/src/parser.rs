@@ -93,34 +93,33 @@ fn rewrite_docxf_zip(data: &[u8], to_docxf: bool) -> Result<Vec<u8>> {
             message: format!("ZIP entry {i}: {e}"),
         })?;
         let name = entry.name().to_string();
-        let options = zip::write::SimpleFileOptions::default()
-            .compression_method(entry.compression());
+        let options =
+            zip::write::SimpleFileOptions::default().compression_method(entry.compression());
         let mut bytes = Vec::new();
-        entry.read_to_end(&mut bytes).map_err(|e| CoreError::Parse {
-            format: "ooxml".into(),
-            message: format!("Cannot read {name}: {e}"),
-        })?;
-        out.start_file(name.as_str(), options).map_err(|e| {
-            CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
-        })?;
+        entry
+            .read_to_end(&mut bytes)
+            .map_err(|e| CoreError::Parse {
+                format: "ooxml".into(),
+                message: format!("Cannot read {name}: {e}"),
+            })?;
+        out.start_file(name.as_str(), options)
+            .map_err(|e| CoreError::Serialization(format!("ooxml: cannot write {name}: {e}")))?;
         if name == "[Content_Types].xml" {
             let xml = String::from_utf8_lossy(&bytes);
             std::io::Write::write_all(
                 &mut out,
                 convert_docxf_content_types(&xml, to_docxf).as_bytes(),
             )
-            .map_err(|e| {
-                CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
-            })?;
+            .map_err(|e| CoreError::Serialization(format!("ooxml: cannot write {name}: {e}")))?;
         } else {
             std::io::Write::write_all(&mut out, &bytes).map_err(|e| {
                 CoreError::Serialization(format!("ooxml: cannot write {name}: {e}"))
             })?;
         }
     }
-    let finished = out.finish().map_err(|e| {
-        CoreError::Serialization(format!("ooxml: cannot finish ZIP: {e}"))
-    })?;
+    let finished = out
+        .finish()
+        .map_err(|e| CoreError::Serialization(format!("ooxml: cannot finish ZIP: {e}")))?;
     Ok(finished.into_inner())
 }
 
@@ -162,10 +161,7 @@ pub struct OoxmlParser;
 /// Rebuild a slide shape with its bounds mapped through an affine transform
 /// `(sx, sy, tx, ty)` (`x' = sx*x + tx`) — used when flattening `p:grpSp`
 /// groups into the flat slide model.
-fn map_shape_bounds(
-    shape: &SlideShape,
-    (sx, sy, tx, ty): (f64, f64, f64, f64),
-) -> SlideShape {
+fn map_shape_bounds(shape: &SlideShape, (sx, sy, tx, ty): (f64, f64, f64, f64)) -> SlideShape {
     let mx = |v: i64| (v as f64 * sx + tx).round() as i64;
     let my = |v: i64| (v as f64 * sy + ty).round() as i64;
     let cx = (shape.bounds().cx as f64 * sx).round() as i64;
@@ -258,10 +254,7 @@ impl OoxmlParser {
         // normalize its content-type register before detection so the
         // package flows through the exact DOCX path (same reader/writer,
         // forms-aware content type is the only difference).
-        let format = detect_ooxml_format(&convert_docxf_content_types(
-            &ct_xml,
-            false,
-        ));
+        let format = detect_ooxml_format(&convert_docxf_content_types(&ct_xml, false));
 
         // Parse content types
         let content_types = self.parse_content_types(&ct_doc);
@@ -844,16 +837,12 @@ impl OoxmlParser {
                     && c.tag_name().namespace() == Some(Self::P_NS)
             })
             .and_then(|g| {
-                g.descendants()
-                    .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS))
+                g.descendants().find(|n| {
+                    n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS)
+                })
             });
 
-        let (mut off, mut ext, mut ch_off, mut ch_ext) = (
-            (0i64, 0i64),
-            (0i64, 0i64),
-            None,
-            None,
-        );
+        let (mut off, mut ext, mut ch_off, mut ch_ext) = ((0i64, 0i64), (0i64, 0i64), None, None);
         if let Some(xfrm) = xfrm {
             for child in xfrm.children() {
                 if !child.is_element() {
@@ -1037,8 +1026,9 @@ impl OoxmlParser {
             .children()
             .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::P_NS))
             .or_else(|| {
-                sp.children()
-                    .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS))
+                sp.children().find(|n| {
+                    n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS)
+                })
             })?;
 
         let shape_id = sp
@@ -1129,9 +1119,7 @@ impl OoxmlParser {
             match child.tag_name().name() {
                 "noAutofit" => Some(SlideTextFit::None),
                 "normAutofit" => Some(SlideTextFit::NormAutofit {
-                    font_scale: child
-                        .attribute("fontScale")
-                        .and_then(|v| v.parse().ok()),
+                    font_scale: child.attribute("fontScale").and_then(|v| v.parse().ok()),
                     line_space_reduction: child
                         .attribute("lnSpcReduction")
                         .and_then(|v| v.parse().ok()),
@@ -1209,7 +1197,9 @@ impl OoxmlParser {
             }),
             "buAutoNum" => Some(TextBullet::AutoNum {
                 auto_num_type: bullet_elem.attribute("type").unwrap_or("").to_string(),
-                start_at: bullet_elem.attribute("startAt").and_then(|v| v.parse().ok()),
+                start_at: bullet_elem
+                    .attribute("startAt")
+                    .and_then(|v| v.parse().ok()),
                 font,
                 color,
                 scheme_color,
@@ -1267,10 +1257,7 @@ impl OoxmlParser {
             };
 
             styles.push(PptxTableStyle {
-                style_id: style_node
-                    .attribute("styleId")
-                    .unwrap_or("")
-                    .to_string(),
+                style_id: style_node.attribute("styleId").unwrap_or("").to_string(),
                 style_name: style_node.attribute("styleName").map(|s| s.to_string()),
                 table_background: style_node
                     .children()
@@ -1303,7 +1290,10 @@ impl OoxmlParser {
     /// `a:band1H`, ...): `a:tcBdr` borders + `a:fillRef`/`a:fontRef`.
     fn parse_pptx_table_style_part(&self, part: &roxmltree::Node) -> PptxTableStylePart {
         let mut borders = Vec::new();
-        if let Some(tc_bdr) = part.children().find(|n| n.is_element() && n.has_tag_name("tcBdr")) {
+        if let Some(tc_bdr) = part
+            .children()
+            .find(|n| n.is_element() && n.has_tag_name("tcBdr"))
+        {
             for line in tc_bdr.children() {
                 if !line.is_element() {
                     continue;
@@ -2166,7 +2156,7 @@ impl OoxmlParser {
                     // Get diagram type from chart or diagram properties
                     let mut diag_type = "SmartArt".to_string();
                     let mut layout = "".to_string();
-                    
+
                     // Try to find diagram-specific attributes
                     if let Some(dgm) = gd.children().find(|c| c.has_tag_name("relIds")) {
                         // In a real SmartArt, we'd parse the diagram definition XML
@@ -2174,7 +2164,7 @@ impl OoxmlParser {
                         diag_type = "SmartArt Diagram".to_string();
                         layout = "Default".to_string();
                     }
-                    
+
                     Some((diag_type, layout))
                 } else {
                     None
@@ -2349,19 +2339,19 @@ impl OoxmlParser {
             return Ok(None);
         }
         let xml = self.read_zip_entry(archive, "word/settings.xml")?;
-        
+
         // Try to parse as XML
         match XmlDoc::parse(&xml) {
             Ok(doc) => {
                 let root = doc.root_element();
                 let w_ns = Self::W_NS;
-                
+
                 let mut settings = DocxSettings::default();
                 settings.raw_xml = Some(xml.clone());
-                
+
                 // Parse w:trackRevisions
                 for child in root.children() {
-                    if child.has_tag_name("trackRevisions") 
+                    if child.has_tag_name("trackRevisions")
                         && child.tag_name().namespace() == Some(w_ns)
                     {
                         if let Some(val) = child.attribute((w_ns, "val")) {
@@ -2370,9 +2360,9 @@ impl OoxmlParser {
                             settings.track_changes = Some(val.parse::<bool>().unwrap_or_default());
                         }
                     }
-                    
+
                     // Parse w:documentProtection
-                    if child.has_tag_name("documentProtection") 
+                    if child.has_tag_name("documentProtection")
                         && child.tag_name().namespace() == Some(w_ns)
                     {
                         if let Some(edit) = child.attribute((w_ns, "edit")) {
@@ -2382,7 +2372,7 @@ impl OoxmlParser {
                         }
                     }
                 }
-                
+
                 // If we found any typed fields, use the typed struct; otherwise keep raw_xml only
                 if settings.track_changes.is_some() || settings.protection.is_some() {
                     Ok(Some(settings))
@@ -2471,7 +2461,12 @@ impl OoxmlParser {
                     name.rsplit('.')
                         .next()
                         .map(|e| e.to_lowercase())
-                        .and_then(|e| defaults.iter().find(|(k, _)| *k == e).map(|(_, c)| c.clone()))
+                        .and_then(|e| {
+                            defaults
+                                .iter()
+                                .find(|(k, _)| *k == e)
+                                .map(|(_, c)| c.clone())
+                        })
                 });
             body.unmanaged_parts.push(UnmanagedPart {
                 name,
@@ -2679,9 +2674,13 @@ impl OoxmlParser {
         let ind = lvl
             .children()
             .find(|c| c.is_element() && c.tag_name().name() == "pPr")
-            .and_then(|p| p.children().find(|c| c.is_element() && c.tag_name().name() == "ind"));
+            .and_then(|p| {
+                p.children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "ind")
+            });
         let read_ind = |name: &str| -> Option<i32> {
-            ind.and_then(|i| self.attr_ns(i, name)).and_then(|v| v.parse().ok())
+            ind.and_then(|i| self.attr_ns(i, name))
+                .and_then(|v| v.parse().ok())
         };
         Some(DocxNumLevel {
             ilvl,
@@ -2689,10 +2688,14 @@ impl OoxmlParser {
             num_fmt: self.child_val(lvl, "numFmt"),
             lvl_text: self.child_val(lvl, "lvlText"),
             lvl_jc: self.child_val(lvl, "lvlJc"),
-            lvl_restart: self.child_val(lvl, "lvlRestart").and_then(|v| v.parse().ok()),
+            lvl_restart: self
+                .child_val(lvl, "lvlRestart")
+                .and_then(|v| v.parse().ok()),
             p_style: self.child_val(lvl, "pStyle"),
             suff: self.child_val(lvl, "suff"),
-            is_lgl: lvl.children().any(|c| c.is_element() && c.tag_name().name() == "isLgl"),
+            is_lgl: lvl
+                .children()
+                .any(|c| c.is_element() && c.tag_name().name() == "isLgl"),
             indent_left: read_ind("left"),
             indent_hanging: read_ind("hanging"),
             indent_first_line: read_ind("firstLine"),
@@ -2931,9 +2934,7 @@ impl OoxmlParser {
                                 if open.has_separate {
                                     if let Some(parent) = open_fields.last_mut() {
                                         if parent.has_separate {
-                                            parent
-                                                .cached_result
-                                                .push_str(&open.cached_result);
+                                            parent.cached_result.push_str(&open.cached_result);
                                         }
                                     }
                                 }
@@ -3819,7 +3820,9 @@ impl OoxmlParser {
         // same typed readers used for style definitions.
         let mut defaults = DocxDocDefaults::default();
         if let Some(node) = doc.descendants().find(|n| {
-            n.is_element() && n.has_tag_name("docDefaults") && n.tag_name().namespace() == Some(Self::W_NS)
+            n.is_element()
+                && n.has_tag_name("docDefaults")
+                && n.tag_name().namespace() == Some(Self::W_NS)
         }) {
             for child in node.children() {
                 if !child.is_element() {
@@ -3857,7 +3860,8 @@ impl OoxmlParser {
         }) {
             latent_styles.def_semi_hidden = self.attr_ns(node, "defSemiHidden") == Some("1");
             latent_styles.def_locked = self.attr_ns(node, "defLockedState") == Some("1");
-            latent_styles.def_unhide_when_used = self.attr_ns(node, "defUnhideWhenUsed") == Some("1");
+            latent_styles.def_unhide_when_used =
+                self.attr_ns(node, "defUnhideWhenUsed") == Some("1");
             latent_styles.def_ui_priority = self
                 .attr_ns(node, "defUiPriority")
                 .and_then(|v| v.parse().ok());
@@ -3870,7 +3874,9 @@ impl OoxmlParser {
                     semi_hidden: self.attr_ns(child, "semiHidden") == Some("1"),
                     locked: self.attr_ns(child, "locked") == Some("1"),
                     unhide_when_used: self.attr_ns(child, "unhideWhenUsed") == Some("1"),
-                    ui_priority: self.attr_ns(child, "uiPriority").and_then(|v| v.parse().ok()),
+                    ui_priority: self
+                        .attr_ns(child, "uiPriority")
+                        .and_then(|v| v.parse().ok()),
                 });
             }
         }
@@ -3888,12 +3894,12 @@ impl OoxmlParser {
 
             // P2-04: `w:name` / `w:basedOn` are child elements with `w:val`;
             // the attribute form is kept as a lenient fallback.
-            let name = self.child_val(node, "name").or_else(|| {
-                self.attr_ns(node, "name").map(|s| s.to_string())
-            });
-            let based_on = self.child_val(node, "basedOn").or_else(|| {
-                self.attr_ns(node, "basedOn").map(|s| s.to_string())
-            });
+            let name = self
+                .child_val(node, "name")
+                .or_else(|| self.attr_ns(node, "name").map(|s| s.to_string()));
+            let based_on = self
+                .child_val(node, "basedOn")
+                .or_else(|| self.attr_ns(node, "basedOn").map(|s| s.to_string()));
 
             // P2-04: style definition metadata — default flag plus the
             // visibility/link child elements of `w:style`.
@@ -4182,7 +4188,9 @@ impl OoxmlParser {
                             .children()
                             .filter(|c| c.is_element() && c.tag_name().name() == "gs")
                             .map(|gs| ThemeGradientStop {
-                                position: gs.attribute("pos").and_then(|v| v.parse::<i64>().ok())
+                                position: gs
+                                    .attribute("pos")
+                                    .and_then(|v| v.parse::<i64>().ok())
                                     .map(|v| v as f64 / 100_000.0),
                                 color: self.parse_theme_color_ref(&gs),
                             })
@@ -4464,18 +4472,8 @@ impl OoxmlParser {
                 && child.tag_name().namespace() == Some(Self::P_NS)
             {
                 for slot in [
-                    "bg1",
-                    "tx1",
-                    "bg2",
-                    "tx2",
-                    "accent1",
-                    "accent2",
-                    "accent3",
-                    "accent4",
-                    "accent5",
-                    "accent6",
-                    "hlink",
-                    "folHlink",
+                    "bg1", "tx1", "bg2", "tx2", "accent1", "accent2", "accent3", "accent4",
+                    "accent5", "accent6", "hlink", "folHlink",
                 ] {
                     if let Some(v) = child.attribute(slot) {
                         clr_map.set_slot(slot, v);
@@ -4612,8 +4610,9 @@ impl OoxmlParser {
         node: roxmltree::Node<'a, 'input>,
         name: &str,
     ) -> Option<roxmltree::Node<'a, 'input>> {
-        node.children()
-            .find(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::C_NS))
+        node.children().find(|n| {
+            n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::C_NS)
+        })
     }
 
     /// Direct child in the drawingml (main) namespace.
@@ -4621,8 +4620,9 @@ impl OoxmlParser {
         node: roxmltree::Node<'a, 'input>,
         name: &str,
     ) -> Option<roxmltree::Node<'a, 'input>> {
-        node.children()
-            .find(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::A_NS))
+        node.children().find(|n| {
+            n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::A_NS)
+        })
     }
 
     fn c_children<'a, 'input>(
@@ -4630,13 +4630,19 @@ impl OoxmlParser {
         name: &str,
     ) -> Vec<roxmltree::Node<'a, 'input>> {
         node.children()
-            .filter(|n| n.is_element() && n.has_tag_name(name) && n.tag_name().namespace() == Some(Self::C_NS))
+            .filter(|n| {
+                n.is_element()
+                    && n.has_tag_name(name)
+                    && n.tag_name().namespace() == Some(Self::C_NS)
+            })
             .collect()
     }
 
     /// Text of the first `c:<name>` child, trimmed.
     fn c_child_text(node: roxmltree::Node, name: &str) -> Option<String> {
-        Self::c_child(node, name).and_then(|n| n.text()).map(|t| t.trim().to_string())
+        Self::c_child(node, name)
+            .and_then(|n| n.text())
+            .map(|t| t.trim().to_string())
     }
 
     fn attr_f64(node: roxmltree::Node, name: &str) -> Option<f64> {
@@ -4903,12 +4909,16 @@ impl OoxmlParser {
         } else {
             sp_pr
         };
-        let fill = scope
-            .children()
-            .find(|n| n.is_element() && n.has_tag_name("solidFill") && n.tag_name().namespace() == Some(Self::A_NS))?;
-        let srgb = fill
-            .children()
-            .find(|n| n.is_element() && n.has_tag_name("srgbClr") && n.tag_name().namespace() == Some(Self::A_NS))?;
+        let fill = scope.children().find(|n| {
+            n.is_element()
+                && n.has_tag_name("solidFill")
+                && n.tag_name().namespace() == Some(Self::A_NS)
+        })?;
+        let srgb = fill.children().find(|n| {
+            n.is_element()
+                && n.has_tag_name("srgbClr")
+                && n.tag_name().namespace() == Some(Self::A_NS)
+        })?;
         srgb.attribute("val").map(|v| v.to_string())
     }
 
@@ -4926,14 +4936,16 @@ impl OoxmlParser {
         if let Some(str_ref) = Self::c_child(cat, "strRef") {
             node.formula = Self::c_child_text(str_ref, "f");
             if let Some(cache) = Self::c_child(str_ref, "strCache") {
-                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                node.pt_count =
+                    Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
                 node.points = Self::parse_str_points(cache);
             }
         } else if let Some(multi) = Self::c_child(cat, "multiLvlStrRef") {
             node.multi_level = true;
             node.formula = Self::c_child_text(multi, "f");
             if let Some(cache) = Self::c_child(multi, "multiLvlStrCache") {
-                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                node.pt_count =
+                    Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
                 // Flatten every level's points, keeping document order.
                 for lvl in Self::c_children(cache, "lvl") {
                     node.points.extend(Self::parse_str_points(lvl));
@@ -4944,7 +4956,8 @@ impl OoxmlParser {
             let cache = Self::c_child(num_ref, "numCache");
             if let Some(cache) = cache {
                 node.format_code = Self::c_child_text(cache, "formatCode");
-                node.pt_count = Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
+                node.pt_count =
+                    Self::c_child(cache, "ptCount").and_then(|n| Self::attr_u32(n, "val"));
                 node.points = Self::parse_str_points(cache);
             }
         } else if let Some(lit) = Self::c_child(cat, "strLit") {
@@ -4959,7 +4972,11 @@ impl OoxmlParser {
             .into_iter()
             .map(|pt| ChartStrPt {
                 idx: Self::attr_u32(pt, "idx").unwrap_or(0),
-                value: pt.children().find(|n| n.has_tag_name("v")).and_then(|n| n.text()).map(|t| t.trim().to_string()),
+                value: pt
+                    .children()
+                    .find(|n| n.has_tag_name("v"))
+                    .and_then(|n| n.text())
+                    .map(|t| t.trim().to_string()),
             })
             .collect()
     }
@@ -4997,7 +5014,8 @@ impl OoxmlParser {
             number_format: Self::c_child(dlbls, "numFmt")
                 .and_then(|n| n.attribute("formatCode"))
                 .map(|v| v.to_string()),
-            source_linked: Self::c_child(dlbls, "numFmt").and_then(|n| Self::attr_bool(n, "sourceLinked")),
+            source_linked: Self::c_child(dlbls, "numFmt")
+                .and_then(|n| Self::attr_bool(n, "sourceLinked")),
             position: Self::child_val_str(dlbls, "dLblPos"),
             show_legend_key: Self::child_val_bool(dlbls, "showLegendKey").unwrap_or(false),
             show_val: Self::child_val_bool(dlbls, "showVal").unwrap_or(false),
@@ -5010,7 +5028,8 @@ impl OoxmlParser {
 
     fn parse_trendline(tl: roxmltree::Node) -> ChartTrendline {
         ChartTrendline {
-            trendline_type: Self::child_val_str(tl, "trendlineType").unwrap_or_else(|| "linear".to_string()),
+            trendline_type: Self::child_val_str(tl, "trendlineType")
+                .unwrap_or_else(|| "linear".to_string()),
             order: Self::child_val_u32(tl, "order"),
             period: Self::child_val_u32(tl, "period"),
             forward: Self::child_val_f64(tl, "forward"),
@@ -5029,19 +5048,20 @@ impl OoxmlParser {
             let cache = Self::c_child(val, "numRef")
                 .and_then(|r| Self::c_child(r, "numCache"))
                 .or_else(|| Self::c_child(val, "numLit"));
-            cache
-                .and_then(|cache| {
-                    Self::c_children(cache, "pt")
-                        .first()
-                        .and_then(|pt| pt.children().find(|n| n.has_tag_name("v")))
-                        .and_then(|n| n.text())
-                        .and_then(|t| t.trim().parse::<f64>().ok())
-                })
+            cache.and_then(|cache| {
+                Self::c_children(cache, "pt")
+                    .first()
+                    .and_then(|pt| pt.children().find(|n| n.has_tag_name("v")))
+                    .and_then(|n| n.text())
+                    .and_then(|t| t.trim().parse::<f64>().ok())
+            })
         });
         ChartErrBar {
             direction: Self::child_val_str(eb, "errDir").unwrap_or_else(|| "y".to_string()),
-            err_bar_type: Self::child_val_str(eb, "errBarType").unwrap_or_else(|| "both".to_string()),
-            err_val_type: Self::child_val_str(eb, "errValType").unwrap_or_else(|| "fixedVal".to_string()),
+            err_bar_type: Self::child_val_str(eb, "errBarType")
+                .unwrap_or_else(|| "both".to_string()),
+            err_val_type: Self::child_val_str(eb, "errValType")
+                .unwrap_or_else(|| "fixedVal".to_string()),
             no_end_cap: Self::child_val_bool(eb, "noEndCap").unwrap_or(false),
             value,
         }
@@ -5183,8 +5203,7 @@ impl OoxmlParser {
             properties.file_sharing = workbook_elem
                 .children()
                 .find(|n| {
-                    n.has_tag_name("fileSharing")
-                        && n.tag_name().namespace() == Some(Self::S_NS)
+                    n.has_tag_name("fileSharing") && n.tag_name().namespace() == Some(Self::S_NS)
                 })
                 .map(|fs| XlsxFileSharing {
                     read_only_recommended: Self::parse_xlsx_flag(fs, "readOnlyRecommended"),
@@ -5458,17 +5477,11 @@ impl OoxmlParser {
                 {
                     let mut setup = XlsxPageSetup {
                         paper_size: elem.attribute("paperSize").and_then(|v| v.parse().ok()),
-                        orientation: elem
-                            .attribute("orientation")
-                            .map(|v| v.to_string()),
+                        orientation: elem.attribute("orientation").map(|v| v.to_string()),
                         scale: elem.attribute("scale").and_then(|v| v.parse().ok()),
                         page_order: elem.attribute("pageOrder").map(|v| v.to_string()),
-                        fit_to_width: elem
-                            .attribute("fitToWidth")
-                            .and_then(|v| v.parse().ok()),
-                        fit_to_height: elem
-                            .attribute("fitToHeight")
-                            .and_then(|v| v.parse().ok()),
+                        fit_to_width: elem.attribute("fitToWidth").and_then(|v| v.parse().ok()),
+                        fit_to_height: elem.attribute("fitToHeight").and_then(|v| v.parse().ok()),
                         first_page_number: elem
                             .attribute("firstPageNumber")
                             .and_then(|v| v.parse().ok()),
@@ -5513,20 +5526,24 @@ impl OoxmlParser {
                 } else if elem.has_tag_name("rowBreaks")
                     && elem.tag_name().namespace() == Some(Self::S_NS)
                 {
-                    for brk_elem in elem
-                        .descendants()
-                        .filter(|n| n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS))
-                    {
-                        sheet_properties.print.row_breaks.push(Self::parse_xlsx_brk(brk_elem));
+                    for brk_elem in elem.descendants().filter(|n| {
+                        n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS)
+                    }) {
+                        sheet_properties
+                            .print
+                            .row_breaks
+                            .push(Self::parse_xlsx_brk(brk_elem));
                     }
                 } else if elem.has_tag_name("colBreaks")
                     && elem.tag_name().namespace() == Some(Self::S_NS)
                 {
-                    for brk_elem in elem
-                        .descendants()
-                        .filter(|n| n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS))
-                    {
-                        sheet_properties.print.col_breaks.push(Self::parse_xlsx_brk(brk_elem));
+                    for brk_elem in elem.descendants().filter(|n| {
+                        n.has_tag_name("brk") && n.tag_name().namespace() == Some(Self::S_NS)
+                    }) {
+                        sheet_properties
+                            .print
+                            .col_breaks
+                            .push(Self::parse_xlsx_brk(brk_elem));
                     }
                 }
             }
@@ -5560,10 +5577,7 @@ impl OoxmlParser {
                     && cf_elem.tag_name().namespace() == Some(Self::S_NS)
                 {
                     let mut block = XlsxConditionalFormatting {
-                        sqref: cf_elem
-                            .attribute("sqref")
-                            .unwrap_or_default()
-                            .to_string(),
+                        sqref: cf_elem.attribute("sqref").unwrap_or_default().to_string(),
                         rules: Vec::new(),
                     };
                     for rule_elem in cf_elem.children().filter(|n| n.is_element()) {
@@ -5670,9 +5684,10 @@ impl OoxmlParser {
                     Some(r) => r.to_string(),
                     None => continue,
                 };
-                if let Some(f_elem) = cell_elem.children().find(|n| {
-                    n.has_tag_name("f") && n.tag_name().namespace() == Some(Self::S_NS)
-                }) {
+                if let Some(f_elem) = cell_elem
+                    .children()
+                    .find(|n| n.has_tag_name("f") && n.tag_name().namespace() == Some(Self::S_NS))
+                {
                     if f_elem.attribute("t") == Some("array") {
                         sheet_properties.dynamic_arrays.push(XlsxDynamicArray {
                             cell_ref: cell_ref.clone(),
@@ -5687,7 +5702,9 @@ impl OoxmlParser {
                     }
                 }
                 if let Some(vm) = cell_elem.attribute("vm").and_then(|v| v.parse().ok()) {
-                    sheet_properties.rich_value_refs.push(XlsxRichValueRef { cell_ref, vm });
+                    sheet_properties
+                        .rich_value_refs
+                        .push(XlsxRichValueRef { cell_ref, vm });
                 }
             }
 
@@ -5728,7 +5745,10 @@ impl OoxmlParser {
     /// Parse a `<brk id=".." min=".." max=".." man=".."/>` page break.
     fn parse_xlsx_brk(elem: roxmltree::Node) -> XlsxBrk {
         XlsxBrk {
-            id: elem.attribute("id").and_then(|v| v.parse().ok()).unwrap_or(0),
+            id: elem
+                .attribute("id")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
             min: elem
                 .attribute("min")
                 .and_then(|v| v.parse().ok())
@@ -5777,9 +5797,9 @@ impl OoxmlParser {
         };
         for child in elem.children().filter(|n| n.is_element()) {
             match child.tag_name().name() {
-                "formula" => {
-                    rule.formulas.push(child.text().unwrap_or_default().to_string())
-                }
+                "formula" => rule
+                    .formulas
+                    .push(child.text().unwrap_or_default().to_string()),
                 "colorScale" => {
                     rule.kind =
                         XlsxConditionalFormatKind::ColorScale(Self::parse_xlsx_color_scale(child));
@@ -7696,7 +7716,10 @@ mod tests {
         assert_eq!(numbering.num(42).unwrap().abstract_num_id, 100);
         assert_eq!(numbering.start_override(42, 0), Some(9));
         // Typed equality across the round trip.
-        assert_eq!(&doc.docx_body.as_ref().unwrap().numbering, &Some(numbering.clone()));
+        assert_eq!(
+            &doc.docx_body.as_ref().unwrap().numbering,
+            &Some(numbering.clone())
+        );
     }
 
     /// The fixed 8-template remains the fallback for documents without a
@@ -7886,31 +7909,48 @@ mod tests {
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>
 </Types>"#).unwrap();
-            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>"#).unwrap();
-            zip.start_file("xl/workbook.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file("xl/workbook.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets>
 </workbook>"#).unwrap();
-            zip.start_file("xl/_rels/workbook.xml.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file(
+                "xl/_rels/workbook.xml.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
 </Relationships>"#).unwrap();
-            zip.start_file("xl/worksheets/sheet1.xml", zip::write::SimpleFileOptions::default()).unwrap();
-            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            zip.start_file(
+                "xl/worksheets/sheet1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <sheetData>
     <row r="1"><c r="A1" t="str"><v>Quarter</v></c><c r="B1" t="str"><v>Revenue</v></c></row>
     <row r="2"><c r="A2" t="str"><v>Q1</v></c><c r="B2"><v>120.5</v></c></row>
     <row r="3"><c r="A3" t="str"><v>Q2</v></c><c r="B3"><v>135.25</v></c></row>
   </sheetData>
-</worksheet>"#).unwrap();
-            zip.start_file("xl/charts/chart1.xml", zip::write::SimpleFileOptions::default()).unwrap();
+</worksheet>"#,
+            )
+            .unwrap();
+            zip.start_file(
+                "xl/charts/chart1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(chart_xml.as_bytes()).unwrap();
             zip.finish().unwrap();
         }
@@ -7936,7 +7976,11 @@ mod tests {
         assert_eq!(title.overlay, Some(false));
 
         let plot = space.primary_plot().unwrap();
-        assert_eq!(plot.kind, ChartPlotKind::Column, "barDir=col is a column chart");
+        assert_eq!(
+            plot.kind,
+            ChartPlotKind::Column,
+            "barDir=col is a column chart"
+        );
         assert_eq!(plot.grouping.as_deref(), Some("clustered"));
         assert_eq!(plot.gap_width, Some(150));
         assert_eq!(plot.overlap, Some(-27));
@@ -7971,7 +8015,11 @@ mod tests {
         assert_eq!(ser.error_bars.len(), 1);
         assert_eq!(ser.error_bars[0].direction, "y");
         assert_eq!(ser.error_bars[0].err_val_type, "percentage");
-        assert_eq!(ser.error_bars[0].value, Some(5.0), "magnitude must come from the numLit point");
+        assert_eq!(
+            ser.error_bars[0].value,
+            Some(5.0),
+            "magnitude must come from the numLit point"
+        );
 
         assert_eq!(space.chart.plot_area.axes.len(), 2);
         let cat_ax = &space.chart.plot_area.axes[0];
@@ -8009,13 +8057,19 @@ mod tests {
         let mut zip = zip::ZipArchive::new(cursor).unwrap();
         assert!(zip.by_name("xl/charts/chart1.xml").is_ok());
         let mut ct = String::new();
-        zip.by_name("[Content_Types].xml").unwrap().read_to_string(&mut ct).unwrap();
+        zip.by_name("[Content_Types].xml")
+            .unwrap()
+            .read_to_string(&mut ct)
+            .unwrap();
         assert!(
             ct.contains(r#"<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>"#),
             "chart content type must be re-declared: {ct}"
         );
         let mut rels = String::new();
-        zip.by_name("xl/_rels/workbook.xml.rels").unwrap().read_to_string(&mut rels).unwrap();
+        zip.by_name("xl/_rels/workbook.xml.rels")
+            .unwrap()
+            .read_to_string(&mut rels)
+            .unwrap();
         assert!(
             rels.contains(r#"Target="charts/chart1.xml""#)
                 && rels.contains("officeDocument/2006/relationships/chart"),
@@ -8024,7 +8078,10 @@ mod tests {
 
         // Re-parse: the typed graph is identical (round trip, no byte bag).
         let reparsed = OoxmlParser::new().parse_xlsx_book(&out).unwrap();
-        assert_eq!(reparsed.charts, book.charts, "chart graph must survive the round trip");
+        assert_eq!(
+            reparsed.charts, book.charts,
+            "chart graph must survive the round trip"
+        );
         assert_eq!(
             reparsed.workbook.sheets[0].name, book.workbook.sheets[0].name,
             "the workbook still parses beside its charts"
@@ -8060,10 +8117,16 @@ mod tests {
             let cursor = std::io::Cursor::new(&out[..]);
             let mut zip = zip::ZipArchive::new(cursor).unwrap();
             let mut xml = String::new();
-            zip.by_name("xl/charts/chart1.xml").unwrap().read_to_string(&mut xml).unwrap();
+            zip.by_name("xl/charts/chart1.xml")
+                .unwrap()
+                .read_to_string(&mut xml)
+                .unwrap();
             xml
         };
-        assert!(xml.contains("<c:lineChart>"), "plot group must re-emit: {xml}");
+        assert!(
+            xml.contains("<c:lineChart>"),
+            "plot group must re-emit: {xml}"
+        );
         assert!(xml.contains(r#"<c:smooth val="1"/>"#));
         assert!(xml.contains("<c:v>t</c:v>"), "series name must re-emit");
     }
@@ -8076,7 +8139,10 @@ mod tests {
 
         assert_eq!(space.chart_kind_name(), "column");
         let value = space.to_chart_model_value();
-        assert_eq!(value["kind"], "column", "bridge kind must be the ChartKind name");
+        assert_eq!(
+            value["kind"], "column",
+            "bridge kind must be the ChartKind name"
+        );
         let series = value["series"].as_array().unwrap();
         assert_eq!(series.len(), 1);
         assert_eq!(series[0]["name"], "Revenue");
@@ -8093,7 +8159,10 @@ mod tests {
         assert_eq!(series[0]["error_bars"][0]["value"], 5.0);
         let axes = value["axes"].as_array().unwrap();
         assert_eq!(axes.len(), 2);
-        assert_eq!(axes[0]["position"], "bottom", "catAx at axPos=b maps to bottom");
+        assert_eq!(
+            axes[0]["position"], "bottom",
+            "catAx at axPos=b maps to bottom"
+        );
         assert_eq!(axes[0]["title"], "Quarter");
         assert_eq!(axes[1]["position"], "left", "valAx at axPos=l maps to left");
         assert_eq!(axes[1]["show_gridlines"], true);

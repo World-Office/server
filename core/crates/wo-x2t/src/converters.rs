@@ -3300,10 +3300,20 @@ fn css_for_num_fmt(
         "lowerRoman" => Some((Some("lower-roman"), true)),
         "upperRoman" => Some((Some("upper-roman"), true)),
         // Counting formats without a css equivalent still order the list.
-        "ordinal" | "cardinalText" | "ordinalText" | "hex" | "chicago"
-        | "decimalZero" | "decimalEnclosedCircle" | "decimalEnclosedFullstop"
-        | "decimalEnclosedParen" | "arabicFullStop" | "aiueo" | "iroha"
-        | "koreanDigital" | "japaneseCounting" => Some((None, true)),
+        "ordinal"
+        | "cardinalText"
+        | "ordinalText"
+        | "hex"
+        | "chicago"
+        | "decimalZero"
+        | "decimalEnclosedCircle"
+        | "decimalEnclosedFullstop"
+        | "decimalEnclosedParen"
+        | "arabicFullStop"
+        | "aiueo"
+        | "iroha"
+        | "koreanDigital"
+        | "japaneseCounting" => Some((None, true)),
         _ => None,
     }
 }
@@ -4265,9 +4275,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 .as_ref()
                 .and_then(|b| b.numbering.as_ref())
                 .and_then(|n| n.level_for(para.properties.num_id.unwrap_or(0), ilvl))
-                .and_then(|lvl| {
-                    css_for_num_fmt(lvl.num_fmt.as_deref(), lvl.lvl_text.as_deref())
-                });
+                .and_then(|lvl| css_for_num_fmt(lvl.num_fmt.as_deref(), lvl.lvl_text.as_deref()));
             // Known numIds (1..8) keep their css list-style-type + ordered
             // flag; hand-authored docx falls back to the ListNumber style
             // heuristic (pre C2-2b convention).
@@ -4401,10 +4409,13 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 .find(|f| !f.complex)
                 .and_then(|f| f.cached_result.clone())
             {
-                inlines.insert(1, InlineElement::Text {
-                    text: cached,
-                    style: None,
-                });
+                inlines.insert(
+                    1,
+                    InlineElement::Text {
+                        text: cached,
+                        style: None,
+                    },
+                );
             }
         }
 

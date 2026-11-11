@@ -399,9 +399,8 @@ fn gap_fields_roundtrip() {
     <w:p><w:r><w:t>Sentinel paragraph here.</w:t></w:r></w:p>
   </w:body>
 </w:document>"#;
-    let docx = docx_from_document_xml(
-        std::str::from_utf8(document_xml).expect("document.xml is utf8"),
-    );
+    let docx =
+        docx_from_document_xml(std::str::from_utf8(document_xml).expect("document.xml is utf8"));
 
     // 1. Typed parse: fldSimple + complex + nested fields normalize to
     //    DocxField entries with the right instruction, kind and cached
@@ -453,9 +452,18 @@ fn gap_fields_roundtrip() {
     assert!(html.contains("Page "), "body text lost: {html}");
     // Editor dialect: a field renders as an empty page-number span with the
     // cached result as plain text right after it.
-    assert!(html.contains("</span>4"), "fldSimple cached result lost: {html}");
-    assert!(html.contains("</span>12"), "complex cached result lost: {html}");
-    assert!(html.contains("</span>7"), "nested PAGEREF result lost: {html}");
+    assert!(
+        html.contains("</span>4"),
+        "fldSimple cached result lost: {html}"
+    );
+    assert!(
+        html.contains("</span>12"),
+        "complex cached result lost: {html}"
+    );
+    assert!(
+        html.contains("</span>7"),
+        "nested PAGEREF result lost: {html}"
+    );
     assert!(
         html.contains("data-field=\" NUMPAGES \"") || html.contains("data-field=\"NUMPAGES\""),
         "complex field marker lost: {html}"
@@ -480,7 +488,10 @@ fn gap_fields_roundtrip() {
     );
     assert!(xml2.contains("fldSimple"), "fldSimple lost: {}", xml2);
     let fields2 = paragraph_fields(&reser);
-    assert_eq!(fields, fields2, "typed fields changed across docx round trip");
+    assert_eq!(
+        fields, fields2,
+        "typed fields changed across docx round trip"
+    );
 }
 
 #[test]
@@ -590,7 +601,10 @@ fn gap_numbering_foreign_roundtrip() {
         .numbering
         .as_ref()
         .expect("numbering survives re-parse");
-    assert_eq!(renum, numbering, "typed numbering identical across round trip");
+    assert_eq!(
+        renum, numbering,
+        "typed numbering identical across round trip"
+    );
 
     // 3. docx -> html: w:numFmt drives the list kind and css style for
     //    numIds outside the built-in 1..8 registry.
@@ -610,15 +624,15 @@ fn gap_numbering_foreign_roundtrip() {
     assert!(html.contains("First level item"), "item lost: {html}");
     assert!(html.contains("Letter item"), "letter item lost: {html}");
     assert!(html.contains("Mid sentinel paragraph."), "body text lost");
-    assert!(html.contains("Second sentinel paragraph."), "body text lost");
+    assert!(
+        html.contains("Second sentinel paragraph."),
+        "body text lost"
+    );
     assert!(html.contains("Ordinal item"), "ordinal item lost");
 }
 
 /// P2-06 test helper: fetch the paragraph at a body block index.
-fn docx_para(
-    b: &wo_ooxml::model::DocxBody,
-    i: usize,
-) -> &wo_ooxml::model::DocxParagraph {
+fn docx_para(b: &wo_ooxml::model::DocxBody, i: usize) -> &wo_ooxml::model::DocxParagraph {
     match &b.blocks[i] {
         wo_ooxml::model::DocxBlock::Paragraph(p) => p,
         _ => panic!("block {} must be a paragraph", i),
@@ -632,10 +646,9 @@ fn bookmark_seq(p: &wo_ooxml::model::DocxParagraph) -> Vec<String> {
     p.runs
         .iter()
         .filter_map(|r| match &r.bookmark {
-            Some(wo_ooxml::model::BookmarkMarker::Start(b)) => Some(format!(
-                "S:{}",
-                b.name.as_deref().unwrap_or("?")
-            )),
+            Some(wo_ooxml::model::BookmarkMarker::Start(b)) => {
+                Some(format!("S:{}", b.name.as_deref().unwrap_or("?")))
+            }
             Some(wo_ooxml::model::BookmarkMarker::End(id)) => Some(format!("E:{}", id)),
             None => None,
         })
@@ -670,7 +683,10 @@ fn gap_bookmark_anchor_roundtrip() {
     assert_eq!(body.bookmarks[0].name.as_deref(), Some("_Toc1"));
     assert_eq!(body.bookmarks[1].name.as_deref(), Some("_Toc2"));
     assert_eq!(body.bookmarks[2].id, "2");
-    assert_eq!(body.bookmarks[2].name, None, "anonymous bookmark keeps a None name");
+    assert_eq!(
+        body.bookmarks[2].name, None,
+        "anonymous bookmark keeps a None name"
+    );
     assert_eq!(
         bookmark_seq(docx_para(body, 0)),
         vec!["S:_Toc1".to_string(), "E:0".to_string()],
@@ -794,13 +810,20 @@ fn gap_sdt_roundtrip() {
     assert_eq!(body.sdt_wraps[0].start, 0);
     assert_eq!(body.sdt_wraps[0].end, 0);
     assert!(
-        body.sdt_wraps[0].pr.contains(r#"<w:alias w:val="Author"/>"#)
-            && body.sdt_wraps[0].pr.contains(r#"<w:docPart w:gallery="Normal"/>"#),
+        body.sdt_wraps[0]
+            .pr
+            .contains(r#"<w:alias w:val="Author"/>"#)
+            && body.sdt_wraps[0]
+                .pr
+                .contains(r#"<w:docPart w:gallery="Normal"/>"#),
         "verbatim sdtPr must keep alias + placeholder: {}",
         body.sdt_wraps[0].pr
     );
     assert_eq!(body.sdt_wraps[1].start, 2);
-    assert_eq!(body.sdt_wraps[1].end, 3, "multi-paragraph wrap spans both blocks");
+    assert_eq!(
+        body.sdt_wraps[1].end, 3,
+        "multi-paragraph wrap spans both blocks"
+    );
     assert!(
         body.sdt_wraps[1].pr.contains(r#"<w:tag w:val="section"/>"#),
         "section sdtPr: {}",
@@ -841,16 +864,22 @@ fn gap_sdt_roundtrip() {
         3,
         "all three sdt wrappers must re-emit: {xml2}"
     );
-    assert_eq!(xml2.matches("</w:sdt>").count(), 3, "unbalanced sdt: {xml2}");
+    assert_eq!(
+        xml2.matches("</w:sdt>").count(),
+        3,
+        "unbalanced sdt: {xml2}"
+    );
     assert!(
-        xml2.contains(r#"<w:alias w:val="Author"/>"#)
-            && xml2.contains(r#"<w:tag w:val="city"/>"#),
+        xml2.contains(r#"<w:alias w:val="Author"/>"#) && xml2.contains(r#"<w:tag w:val="city"/>"#),
         "sdtPr metadata lost: {xml2}"
     );
     let l1 = xml2.find("First wrapped line").unwrap();
     let l2 = xml2.find("Second wrapped line").unwrap();
     let close = xml2.rfind("</w:sdt>").unwrap();
-    assert!(l1 < l2 && l2 < close, "multi-paragraph wrap must enclose both: {xml2}");
+    assert!(
+        l1 < l2 && l2 < close,
+        "multi-paragraph wrap must enclose both: {xml2}"
+    );
 
     // 3. Re-parse: identical wraps, and the inline markers survive.
     let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
@@ -863,17 +892,21 @@ fn gap_sdt_roundtrip() {
         wo_ooxml::model::DocxBlock::Paragraph(p) => p,
         _ => panic!("re-parsed block 1 must be a paragraph"),
     };
-    assert_eq!(seq, {
-        let mut v = Vec::new();
-        v.extend(rinline.runs.iter().map(|r| match &r.sdt {
-            Some(wo_ooxml::model::SdtMarker::Start { pr }) => {
-                format!("S({})", pr.contains(r#"w:tag w:val="city""#))
-            }
-            Some(wo_ooxml::model::SdtMarker::End) => "E".to_string(),
-            None => format!("T:{}", r.text),
-        }));
-        v
-    }, "inline sdt markers must survive the round trip");
+    assert_eq!(
+        seq,
+        {
+            let mut v = Vec::new();
+            v.extend(rinline.runs.iter().map(|r| match &r.sdt {
+                Some(wo_ooxml::model::SdtMarker::Start { pr }) => {
+                    format!("S({})", pr.contains(r#"w:tag w:val="city""#))
+                }
+                Some(wo_ooxml::model::SdtMarker::End) => "E".to_string(),
+                None => format!("T:{}", r.text),
+            }));
+            v
+        },
+        "inline sdt markers must survive the round trip"
+    );
 
     // 4. html side: the wrappers are transparent — every text renders.
     let html = DocxToHtmlConverter.convert(&docx).unwrap();
@@ -914,12 +947,14 @@ fn gap_pict_verbatim_roundtrip() {
         wo_ooxml::model::DocxBlock::Paragraph(p) => p,
         _ => panic!("block 0 must be a paragraph"),
     };
-    let captured = para
-        .runs[0]
+    let captured = para.runs[0]
         .pict
         .as_deref()
         .expect("w:pict must be captured verbatim");
-    assert_eq!(captured, pict, "captured pict must be the exact source subtree");
+    assert_eq!(
+        captured, pict,
+        "captured pict must be the exact source subtree"
+    );
     assert!(para.runs[0].bold, "rPr before the pict must still parse");
     assert_eq!(
         para.runs[1].text, " after the picture",
@@ -929,8 +964,14 @@ fn gap_pict_verbatim_roundtrip() {
     // 2. docx -> docx: re-emitted byte-identical.
     let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
     let xml2 = docx_xml(&reser);
-    assert!(xml2.contains(pict), "pict must re-emit byte-identical: {xml2}");
-    assert!(xml2.contains("after the picture"), "neighboring text lost: {xml2}");
+    assert!(
+        xml2.contains(pict),
+        "pict must re-emit byte-identical: {xml2}"
+    );
+    assert!(
+        xml2.contains("after the picture"),
+        "neighboring text lost: {xml2}"
+    );
 
     // 3. Re-parse: identical capture.
     let reparsed = wo_ooxml::OoxmlParser::new().parse(&reser).unwrap();
@@ -986,7 +1027,10 @@ fn gap_unmanaged_parts_roundtrip() {
         !names.contains(&"word/settings.xml"),
         "settings.xml is typed-managed (P4-D03), not bagged: {names:?}"
     );
-    assert!(names.contains(&"word/endnotes.xml"), "endnotes must be bagged: {names:?}");
+    assert!(
+        names.contains(&"word/endnotes.xml"),
+        "endnotes must be bagged: {names:?}"
+    );
     assert!(
         names.contains(&"customXml/item1.xml"),
         "customXml must be bagged: {names:?}"
@@ -1030,7 +1074,10 @@ fn gap_unmanaged_parts_roundtrip() {
     );
     let html = DocxToHtmlConverter.convert(&docx).unwrap();
     let html = String::from_utf8(html).unwrap();
-    assert!(html.contains("Body survives too."), "body text lost: {html}");
+    assert!(
+        html.contains("Body survives too."),
+        "body text lost: {html}"
+    );
 }
 
 /// Build a minimal valid xlsx zip around hand-written parts (ORM-06: lets
@@ -1138,10 +1185,7 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
     let parsed = wo_ooxml::OoxmlParser::new().parse(&xlsx).unwrap();
     let sheet = &parsed.xlsx_workbook.as_ref().unwrap().sheets[0];
     let print = &sheet.properties.print;
-    let pm = print
-        .page_margins
-        .as_ref()
-        .expect("pageMargins must parse");
+    let pm = print.page_margins.as_ref().expect("pageMargins must parse");
     assert_eq!(pm.left, 0.7);
     assert_eq!(pm.right, 0.7);
     assert_eq!(pm.top, 0.75);
@@ -1208,8 +1252,7 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
         "external link lost its rid/tooltip: {sheet2}"
     );
     assert!(
-        sheet2
-            .contains(r#"<hyperlink ref="B2:C2" location="Sheet2!A1" display="Go to details"/>"#),
+        sheet2.contains(r#"<hyperlink ref="B2:C2" location="Sheet2!A1" display="Go to details"/>"#),
         "internal link must carry location without an r:id: {sheet2}"
     );
     let p_margins = sheet2.find(r#"<pageMargins left="0.7""#).unwrap();
@@ -1217,9 +1260,15 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
     let p_hf = sheet2
         .find(r#"&amp;L&amp;&quot;Arial,Bold&quot;&amp;BQuarterly"#)
         .unwrap();
-    let p_row = sheet2.find("<rowBreaks count=\"2\" manualBreakCount=\"2\">").unwrap();
-    let p_col = sheet2.find("<colBreaks count=\"1\" manualBreakCount=\"1\">").unwrap();
-    let p_end = sheet2.find(r#"<brk id="20" min="0" max="16383" man="1" />"#).unwrap();
+    let p_row = sheet2
+        .find("<rowBreaks count=\"2\" manualBreakCount=\"2\">")
+        .unwrap();
+    let p_col = sheet2
+        .find("<colBreaks count=\"1\" manualBreakCount=\"1\">")
+        .unwrap();
+    let p_end = sheet2
+        .find(r#"<brk id="20" min="0" max="16383" man="1" />"#)
+        .unwrap();
     assert!(
         p_margins < p_setup && p_setup < p_hf && p_hf < p_row && p_row < p_end && p_end < p_col,
         "print parts must keep schema order after hyperlinks: {sheet2}"
@@ -1260,7 +1309,9 @@ fn gap_xlsx_print_hyperlink_roundtrip() {
     let mut wb = parsed.xlsx_workbook.clone().unwrap();
     let sheet_mut = &mut wb.sheets[0];
     sheet_mut.properties.hyperlinks[1].target = Some("mailto:details@example.com".to_string());
-    let reser2 = wo_ooxml::OoxmlSerializer::new().serialize_xlsx(&wb).unwrap();
+    let reser2 = wo_ooxml::OoxmlSerializer::new()
+        .serialize_xlsx(&wb)
+        .unwrap();
     let rels3 = zip_entry(&reser2, "xl/worksheets/_rels/sheet1.xml.rels");
     for (rid, target) in [
         ("rId1", "https://example.com/report"),
@@ -1399,9 +1450,17 @@ fn gap_xlsx_chart_roundtrip() {
     // 1. Parse -> typed ChartSpace graph (not a byte bag).
     let book = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&xlsx).unwrap();
     assert_eq!(book.workbook.sheets.len(), 1);
-    assert_eq!(book.charts.len(), 1, "the chart part must parse into a typed graph");
+    assert_eq!(
+        book.charts.len(),
+        1,
+        "the chart part must parse into a typed graph"
+    );
     let space = &book.charts[0].space;
-    assert_eq!(space.chart_kind_name(), "column", "barDir=col is a column chart");
+    assert_eq!(
+        space.chart_kind_name(),
+        "column",
+        "barDir=col is a column chart"
+    );
     let plot = space.primary_plot().unwrap();
     assert_eq!(plot.kind, wo_ooxml::model::ChartPlotKind::Column);
     assert_eq!(plot.grouping.as_deref(), Some("clustered"));
@@ -1414,13 +1473,28 @@ fn gap_xlsx_chart_roundtrip() {
     assert_eq!(series[0].name.as_deref(), Some("Revenue"));
     let values = series[0].values.as_ref().unwrap();
     let nums: Vec<f64> = values.points.iter().filter_map(|p| p.value).collect();
-    assert_eq!(nums, vec![120.5, 135.25, 98.0, 142.0], "series values must survive");
+    assert_eq!(
+        nums,
+        vec![120.5, 135.25, 98.0, 142.0],
+        "series values must survive"
+    );
     assert_eq!(values.format_code.as_deref(), Some("#,##0.00"));
     let cats = series[0].categories.as_ref().unwrap();
-    let labels: Vec<&str> = cats.points.iter().filter_map(|p| p.value.as_deref()).collect();
-    assert_eq!(labels, vec!["Q1", "Q2", "Q3", "Q4"], "cached categories must survive");
+    let labels: Vec<&str> = cats
+        .points
+        .iter()
+        .filter_map(|p| p.value.as_deref())
+        .collect();
+    assert_eq!(
+        labels,
+        vec!["Q1", "Q2", "Q3", "Q4"],
+        "cached categories must survive"
+    );
     assert_eq!(series[1].name.as_deref(), Some("Costs"));
-    assert!(series[1].trendlines[0].disp_eq, "trendline flags must survive");
+    assert!(
+        series[1].trendlines[0].disp_eq,
+        "trendline flags must survive"
+    );
     assert_eq!(
         series[1].error_bars[0].value,
         Some(5.0),
@@ -1438,12 +1512,30 @@ fn gap_xlsx_chart_roundtrip() {
 
     // 2. wo-chart bridge: the same graph as the editable Chart JSON.
     let chart_json = space.to_chart_json();
-    assert!(chart_json.contains(r#""kind":"column""#), "bridge kind: {chart_json}");
-    assert!(chart_json.contains(r#""name":"Revenue""#), "bridge series name: {chart_json}");
-    assert!(chart_json.contains("120.5"), "bridge series values: {chart_json}");
-    assert!(chart_json.contains(r#""category":"Q1""#), "bridge categories: {chart_json}");
-    assert!(chart_json.contains(r#""position":"bottom""#), "bridge catAx: {chart_json}");
-    assert!(chart_json.contains(r#""position":"left""#), "bridge valAx: {chart_json}");
+    assert!(
+        chart_json.contains(r#""kind":"column""#),
+        "bridge kind: {chart_json}"
+    );
+    assert!(
+        chart_json.contains(r#""name":"Revenue""#),
+        "bridge series name: {chart_json}"
+    );
+    assert!(
+        chart_json.contains("120.5"),
+        "bridge series values: {chart_json}"
+    );
+    assert!(
+        chart_json.contains(r#""category":"Q1""#),
+        "bridge categories: {chart_json}"
+    );
+    assert!(
+        chart_json.contains(r#""position":"bottom""#),
+        "bridge catAx: {chart_json}"
+    );
+    assert!(
+        chart_json.contains(r#""position":"left""#),
+        "bridge valAx: {chart_json}"
+    );
 
     // 3. Serialize: chartN.xml regenerated + content type + workbook rel.
     let reser = wo_ooxml::OoxmlSerializer::new()
@@ -1456,25 +1548,61 @@ fn gap_xlsx_chart_roundtrip() {
     );
     let rels = zip_entry(&reser, "xl/_rels/workbook.xml.rels");
     assert!(
-        rels.contains("officeDocument/2006/relationships/chart") && rels.contains(r#"Target="charts/chart1.xml""#),
+        rels.contains("officeDocument/2006/relationships/chart")
+            && rels.contains(r#"Target="charts/chart1.xml""#),
         "chart relationship must keep the part reachable: {rels}"
     );
     let chart2 = zip_entry(&reser, "xl/charts/chart1.xml");
-    assert!(chart2.contains("<c:barChart>"), "plot group must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:barDir val="col"/>"#), "bar direction must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:gapWidth val="150"/>"#), "gapWidth must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:overlap val="-27"/>"#), "overlap must re-emit: {chart2}");
-    assert!(chart2.contains("<c:v>Revenue</c:v>"), "series names must re-emit: {chart2}");
-    assert!(chart2.contains("<c:v>142</c:v>"), "cached values must re-emit: {chart2}");
-    assert!(chart2.contains("<c:v>Q4</c:v>"), "cached categories must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:majorGridlines/>"#), "valAx gridlines must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:legendPos val="b"/>"#), "legend must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:errValType val="percentage"/>"#), "error bars must re-emit: {chart2}");
-    assert!(chart2.contains(r#"<c:trendlineType val="linear"/>"#), "trendlines must re-emit: {chart2}");
+    assert!(
+        chart2.contains("<c:barChart>"),
+        "plot group must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:barDir val="col"/>"#),
+        "bar direction must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:gapWidth val="150"/>"#),
+        "gapWidth must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:overlap val="-27"/>"#),
+        "overlap must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains("<c:v>Revenue</c:v>"),
+        "series names must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains("<c:v>142</c:v>"),
+        "cached values must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains("<c:v>Q4</c:v>"),
+        "cached categories must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:majorGridlines/>"#),
+        "valAx gridlines must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:legendPos val="b"/>"#),
+        "legend must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:errValType val="percentage"/>"#),
+        "error bars must re-emit: {chart2}"
+    );
+    assert!(
+        chart2.contains(r#"<c:trendlineType val="linear"/>"#),
+        "trendlines must re-emit: {chart2}"
+    );
 
     // 4. Re-parse: the typed graph is identical, so the chart survives an
     //    edit round trip without any extra_parts passthrough.
-    let reparsed = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&reser).unwrap();
+    let reparsed = wo_ooxml::OoxmlParser::new()
+        .parse_xlsx_book(&reser)
+        .unwrap();
     assert_eq!(
         reparsed.charts, book.charts,
         "chart graph must survive the round trip byte-bag-free"
@@ -1650,7 +1778,10 @@ fn gap_xlsx_cf_ext_roundtrip() {
     assert!(cell_is.stop_if_true);
     assert_eq!(cell_is.operator.as_deref(), Some("greaterThan"));
     assert_eq!(cell_is.formulas, vec!["90".to_string()]);
-    assert_eq!(cell_is.kind, wo_ooxml::model::XlsxConditionalFormatKind::Plain);
+    assert_eq!(
+        cell_is.kind,
+        wo_ooxml::model::XlsxConditionalFormatKind::Plain
+    );
     let top10 = &cfs[3].rules[1];
     assert_eq!(top10.rule_type, "top10");
     assert_eq!(top10.dxf_id, Some(1));
@@ -1680,19 +1811,45 @@ fn gap_xlsx_cf_ext_roundtrip() {
     assert_eq!(align.text_rotation, Some(45));
     assert!(align.wrap_text);
     assert_eq!(
-        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().style.as_deref(),
+        dxf1.border
+            .as_ref()
+            .unwrap()
+            .left
+            .as_ref()
+            .unwrap()
+            .style
+            .as_deref(),
         Some("thin")
     );
     assert_eq!(
-        dxf1.border.as_ref().unwrap().left.as_ref().unwrap().color.as_deref(),
+        dxf1.border
+            .as_ref()
+            .unwrap()
+            .left
+            .as_ref()
+            .unwrap()
+            .color
+            .as_deref(),
         Some("FF00B050")
     );
     let prot = dxf1.protection.as_ref().unwrap();
     assert!(!prot.locked);
     assert!(prot.hidden);
-    assert_eq!(styles.fonts.len(), 2, "dxf fonts must not leak into <fonts>");
-    assert_eq!(styles.fills.len(), 3, "dxf fills must not leak into <fills>");
-    assert_eq!(styles.borders.len(), 1, "dxf borders must not leak into <borders>");
+    assert_eq!(
+        styles.fonts.len(),
+        2,
+        "dxf fonts must not leak into <fonts>"
+    );
+    assert_eq!(
+        styles.fills.len(),
+        3,
+        "dxf fills must not leak into <fills>"
+    );
+    assert_eq!(
+        styles.borders.len(),
+        1,
+        "dxf borders must not leak into <borders>"
+    );
     assert_eq!(
         styles.num_fmts.len(),
         1,
@@ -1706,9 +1863,13 @@ fn gap_xlsx_cf_ext_roundtrip() {
         .unwrap();
     let sheet2 = zip_entry(&reser, "xl/worksheets/sheet1.xml");
     let p_merge_end = sheet2.find("</mergeCells>").unwrap();
-    let p_cs = sheet2.find(r#"<conditionalFormatting sqref="B2:B9">"#).unwrap();
+    let p_cs = sheet2
+        .find(r#"<conditionalFormatting sqref="B2:B9">"#)
+        .unwrap();
     let p_cs_elem = sheet2.find("<colorScale>").unwrap();
-    let p_bar = sheet2.find(r#"<dataBar minLength="5" maxLength="95" showValue="0">"#).unwrap();
+    let p_bar = sheet2
+        .find(r#"<dataBar minLength="5" maxLength="95" showValue="0">"#)
+        .unwrap();
     let p_set = sheet2
         .find(r#"<iconSet iconSet="3Arrows" showValue="0" reverse="1">"#)
         .unwrap();
@@ -1828,10 +1989,7 @@ fn pptx_from_slide_xml_with_parts(slide_xml: &str, parts: &[(&str, &str)]) -> Ve
   <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
   <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
         );
-        if parts
-            .iter()
-            .any(|(name, _)| *name == "ppt/tableStyles.xml")
-        {
+        if parts.iter().any(|(name, _)| *name == "ppt/tableStyles.xml") {
             content_types.push_str(
                 "\n  <Override PartName=\"/ppt/tableStyles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml\"/>",
             );
@@ -1840,7 +1998,8 @@ fn pptx_from_slide_xml_with_parts(slide_xml: &str, parts: &[(&str, &str)]) -> Ve
         zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
             .unwrap();
         zip.write_all(content_types.as_bytes()).unwrap();
-        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
@@ -1848,15 +2007,17 @@ fn pptx_from_slide_xml_with_parts(slide_xml: &str, parts: &[(&str, &str)]) -> Ve
             .unwrap();
         zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
             .unwrap();
-        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
                 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:sldSz cx="9144000" cy="6858000"/>
   <p:sldIdLst>
     <p:sldId id="256" r:id="rId1"/>
   </p:sldIdLst>
-</p:presentation>"#)
-            .unwrap();
+</p:presentation>"#,
+        )
+        .unwrap();
         zip.start_file(
             "ppt/_rels/presentation.xml.rels",
             SimpleFileOptions::default(),
@@ -1980,7 +2141,12 @@ fn gap_pptx_group_roundtrip() {
     assert_eq!(g.id, "10");
     assert_eq!(g.name, "Diagram Group");
     assert_eq!(
-        (g.transform.bounds.x, g.transform.bounds.y, g.transform.bounds.cx, g.transform.bounds.cy),
+        (
+            g.transform.bounds.x,
+            g.transform.bounds.y,
+            g.transform.bounds.cx,
+            g.transform.bounds.cy
+        ),
         (1000000, 500000, 4000000, 2000000),
         "GrpSpPr outer xfrm"
     );
@@ -2007,7 +2173,12 @@ fn gap_pptx_group_roundtrip() {
     assert_eq!(nested.id, "20");
     assert_eq!(nested.name, "Icons");
     assert_eq!(
-        (nested.transform.bounds.x, nested.transform.bounds.y, nested.transform.bounds.cx, nested.transform.bounds.cy),
+        (
+            nested.transform.bounds.x,
+            nested.transform.bounds.y,
+            nested.transform.bounds.cx,
+            nested.transform.bounds.cy
+        ),
         (200000, 300000, 600000, 500000)
     );
     assert_eq!(nested.children.len(), 1);
@@ -2015,7 +2186,10 @@ fn gap_pptx_group_roundtrip() {
         panic!("nested group child must be a picture");
     };
     assert_eq!(pic.name, "Icon");
-    assert_eq!((pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy), (50000, 60000, 100000, 80000));
+    assert_eq!(
+        (pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy),
+        (50000, 60000, 100000, 80000)
+    );
 
     // 2. Child bounding boxes (union in the group's child coordinate space).
     let cb = g.child_bounds.expect("outer group child bounds");
@@ -2025,7 +2199,10 @@ fn gap_pptx_group_roundtrip() {
         "union of sp bounds + nested group bounds"
     );
     let ncb = nested.child_bounds.expect("nested group child bounds");
-    assert_eq!((ncb.x, ncb.y, ncb.cx, ncb.cy), (50000, 60000, 100000, 80000));
+    assert_eq!(
+        (ncb.x, ncb.y, ncb.cx, ncb.cy),
+        (50000, 60000, 100000, 80000)
+    );
 
     // 3. Flat slide model: grouped shapes are flattened with bounds mapped
     // through the nested GrpSpPr transforms instead of being dropped.
@@ -2035,12 +2212,22 @@ fn gap_pptx_group_roundtrip() {
     let shapes = &pres.slides[0].shapes;
     assert_eq!(shapes.len(), 2, "group children flatten into slide shapes");
     assert_eq!(
-        (shapes[0].bounds().x, shapes[0].bounds().y, shapes[0].bounds().cx, shapes[0].bounds().cy),
+        (
+            shapes[0].bounds().x,
+            shapes[0].bounds().y,
+            shapes[0].bounds().cx,
+            shapes[0].bounds().cy
+        ),
         (1200000, 900000, 1600000, 800000),
         "text shape mapped through the 2x outer group scale"
     );
     assert_eq!(
-        (shapes[1].bounds().x, shapes[1].bounds().y, shapes[1].bounds().cx, shapes[1].bounds().cy),
+        (
+            shapes[1].bounds().x,
+            shapes[1].bounds().y,
+            shapes[1].bounds().cx,
+            shapes[1].bounds().cy
+        ),
         (1500000, 1220000, 200000, 160000),
         "picture mapped through nested group + outer group transforms"
     );
@@ -2062,12 +2249,21 @@ fn gap_pptx_group_roundtrip() {
     assert_eq!(g2.id, "10");
     assert_eq!(g2.name, "Diagram Group");
     assert_eq!(
-        (g2.transform.bounds.x, g2.transform.bounds.y, g2.transform.bounds.cx, g2.transform.bounds.cy),
+        (
+            g2.transform.bounds.x,
+            g2.transform.bounds.y,
+            g2.transform.bounds.cx,
+            g2.transform.bounds.cy
+        ),
         (1000000, 500000, 4000000, 2000000),
         "GrpSpPr xfrm survives the round trip"
     );
     assert_eq!(g2.transform.child_offset, Some((0, 0)), "chOff survives");
-    assert_eq!(g2.transform.child_extent, Some((2000000, 1000000)), "chExt survives");
+    assert_eq!(
+        g2.transform.child_extent,
+        Some((2000000, 1000000)),
+        "chExt survives"
+    );
     assert_eq!(g2.children.len(), 2, "children survive the round trip");
     let GroupChild::Shape(SlideShape::TextBox(tb2)) = &g2.children[0] else {
         panic!("round-tripped first child must be a text shape");
@@ -2076,20 +2272,31 @@ fn gap_pptx_group_roundtrip() {
         (tb2.bounds.x, tb2.bounds.y, tb2.bounds.cx, tb2.bounds.cy),
         (100000, 200000, 800000, 400000)
     );
-    assert_eq!(tb2.text_body.paragraphs[0].runs[0].text.trim(), "Grouped label");
+    assert_eq!(
+        tb2.text_body.paragraphs[0].runs[0].text.trim(),
+        "Grouped label"
+    );
     let GroupChild::Group(nested2) = &g2.children[1] else {
         panic!("round-tripped second child must be a nested p:grpSp");
     };
     assert_eq!(nested2.id, "20");
     assert_eq!(
-        (nested2.transform.bounds.x, nested2.transform.bounds.y, nested2.transform.bounds.cx, nested2.transform.bounds.cy),
+        (
+            nested2.transform.bounds.x,
+            nested2.transform.bounds.y,
+            nested2.transform.bounds.cx,
+            nested2.transform.bounds.cy
+        ),
         (200000, 300000, 600000, 500000)
     );
     let GroupChild::Shape(SlideShape::Picture(pic2)) = &nested2.children[0] else {
         panic!("round-tripped nested child must be a picture");
     };
     assert_eq!(pic2.name, "Icon");
-    assert_eq!((pic2.bounds.x, pic2.bounds.y, pic2.bounds.cx, pic2.bounds.cy), (50000, 60000, 100000, 80000));
+    assert_eq!(
+        (pic2.bounds.x, pic2.bounds.y, pic2.bounds.cx, pic2.bounds.cy),
+        (50000, 60000, 100000, 80000)
+    );
     let cb2 = g2.child_bounds.expect("round-tripped child bounds");
     assert_eq!(
         (cb2.x, cb2.y, cb2.cx, cb2.cy),
@@ -2324,8 +2531,8 @@ fn gap_pptx_textbody_roundtrip() {
     // 3. Serialize the slide back with the rich bodies and re-parse: the
     //    typed model round-trips identically, including bodyPr attribute
     //    order-independent values and the bullet helpers.
-    let slide_xml = wo_ooxml::OoxmlSerializer::new()
-        .build_slide_xml_with_text_bodies(&pres.slides[0], bodies);
+    let slide_xml =
+        wo_ooxml::OoxmlSerializer::new().build_slide_xml_with_text_bodies(&pres.slides[0], bodies);
     assert!(
         slide_xml.contains("<a:buChar char=\"\u{2022}\"/>"),
         "buChar must re-emit: {}",
@@ -2335,10 +2542,7 @@ fn gap_pptx_textbody_roundtrip() {
         slide_xml.contains("<a:buAutoNum type=\"arabicPeriod\" startAt=\"2\"/>"),
         "buAutoNum with startAt must re-emit"
     );
-    assert!(
-        slide_xml.contains("<a:buNone/>"),
-        "buNone must re-emit"
-    );
+    assert!(slide_xml.contains("<a:buNone/>"), "buNone must re-emit");
     assert!(
         slide_xml.contains("anchor=\"ctr\"")
             && slide_xml.contains("lIns=\"91440\"")
@@ -2371,7 +2575,10 @@ fn gap_pptx_textbody_roundtrip() {
     assert_eq!(styles.styles.len(), 1);
     let style = &styles.styles[0];
     assert_eq!(style.style_id, "{93294377-8074-4D90-B10A-F10A93C39B14}");
-    assert_eq!(style.style_name.as_deref(), Some("Medium Style 2 - Accent 1"));
+    assert_eq!(
+        style.style_name.as_deref(),
+        Some("Medium Style 2 - Accent 1")
+    );
     assert_eq!(style.table_background.as_deref(), Some("1F3864"));
 
     let whole = style.whole_table.as_ref().expect("wholeTbl must parse");
@@ -2398,11 +2605,26 @@ fn gap_pptx_textbody_roundtrip() {
 
     assert!(style.first_row.is_some(), "firstRow override parses");
     assert_eq!(
-        style.first_row.as_ref().unwrap().fill_ref.as_ref().unwrap().idx,
+        style
+            .first_row
+            .as_ref()
+            .unwrap()
+            .fill_ref
+            .as_ref()
+            .unwrap()
+            .idx,
         "2"
     );
     assert_eq!(
-        style.band1_h.as_ref().unwrap().fill_ref.as_ref().unwrap().color.as_deref(),
+        style
+            .band1_h
+            .as_ref()
+            .unwrap()
+            .fill_ref
+            .as_ref()
+            .unwrap()
+            .color
+            .as_deref(),
         Some("D9E2F3")
     );
     for (label, part) in [
@@ -2598,11 +2820,8 @@ fn pptx_theme_fixture() -> Vec<u8> {
 </Relationships>"#,
         )
         .unwrap();
-        zip.start_file(
-            "ppt/presentation.xml",
-            SimpleFileOptions::default(),
-        )
-        .unwrap();
+        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(
             br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -2631,9 +2850,7 @@ fn pptx_theme_fixture() -> Vec<u8> {
 
 #[test]
 fn gap_pptx_theme_roundtrip() {
-    use wo_ooxml::model::{
-        ClrMap, SchemeClr, SchemeClrTransform, ThemeFillStyle, ThemeLineStyle,
-    };
+    use wo_ooxml::model::{ClrMap, SchemeClr, SchemeClrTransform, ThemeFillStyle, ThemeLineStyle};
 
     let data = pptx_theme_fixture();
     let parser = wo_ooxml::OoxmlParser::new();
@@ -2662,7 +2879,9 @@ fn gap_pptx_theme_roundtrip() {
     assert_eq!(scheme.val, "dk1");
     assert_eq!(scheme.modifiers, vec![SchemeClrTransform::Tint(50000)]);
     assert_eq!(
-        theme.resolve_scheme_color("dk1", &scheme.modifiers).as_deref(),
+        theme
+            .resolve_scheme_color("dk1", &scheme.modifiers)
+            .as_deref(),
         Some("808080"),
         "tint 50% over dk1 sysClr/lastClr"
     );
@@ -2689,7 +2908,12 @@ fn gap_pptx_theme_roundtrip() {
     );
 
     // Style table entry 3: pattern fill with fgClr/bgClr.
-    let ThemeFillStyle::Pattern { preset, foreground, background } = &fs.fill_styles[2] else {
+    let ThemeFillStyle::Pattern {
+        preset,
+        foreground,
+        background,
+    } = &fs.fill_styles[2]
+    else {
         panic!("fill style 3 must be pattFill");
     };
     assert_eq!(preset.as_deref(), Some("ltUpDiag"));
@@ -2763,9 +2987,22 @@ fn gap_pptx_theme_roundtrip() {
     // 3. Major/minor font resolution (a:fontRef idx="major"/"minor").
     assert_eq!(theme.major_latin_font(), Some("Calibri Light"));
     assert_eq!(theme.minor_latin_font(), Some("Calibri"));
-    assert_eq!(theme.resolve_font("major").unwrap().east_asian.as_deref(), Some("MS Gothic"));
-    assert_eq!(theme.resolve_font("minor").unwrap().east_asian.as_deref(), Some("MS PGothic"));
-    assert_eq!(theme.resolve_font("major").unwrap().complex_script.as_deref(), Some("Arial"));
+    assert_eq!(
+        theme.resolve_font("major").unwrap().east_asian.as_deref(),
+        Some("MS Gothic")
+    );
+    assert_eq!(
+        theme.resolve_font("minor").unwrap().east_asian.as_deref(),
+        Some("MS PGothic")
+    );
+    assert_eq!(
+        theme
+            .resolve_font("major")
+            .unwrap()
+            .complex_script
+            .as_deref(),
+        Some("Arial")
+    );
     assert!(theme.resolve_font("bogus").is_none());
 
     // 4. Serialize and re-parse: fmtScheme + clrMap survive byte-level
@@ -2964,7 +3201,11 @@ fn gap_xlsx_wbprotect_roundtrip() {
     assert_eq!(prot.spin_count, Some(100000));
 
     let sheet = &book.workbook.sheets[0];
-    assert_eq!(sheet.properties.dynamic_arrays.len(), 1, "dynamicArray cell must parse");
+    assert_eq!(
+        sheet.properties.dynamic_arrays.len(),
+        1,
+        "dynamicArray cell must parse"
+    );
     let da = &sheet.properties.dynamic_arrays[0];
     assert_eq!(da.cell_ref, "B3");
     assert_eq!(da.ref_range.as_deref(), Some("B3"));
@@ -3002,7 +3243,9 @@ fn gap_xlsx_wbprotect_roundtrip() {
         .serialize_xlsx_book(&book)
         .unwrap();
     let wb_xml = zip_entry(&reser, "xl/workbook.xml");
-    let fs_pos = wb_xml.find("<fileSharing").expect("fileSharing must re-emit");
+    let fs_pos = wb_xml
+        .find("<fileSharing")
+        .expect("fileSharing must re-emit");
     assert!(
         wb_xml.contains(r#"<fileSharing readOnlyRecommended="1" userName="Anna Fischer" createDateTimeStamp="2024-03-01T09:15:00Z"/>"#),
         "fileSharing attributes must re-emit: {wb_xml}"
@@ -3034,8 +3277,14 @@ fn gap_xlsx_wbprotect_roundtrip() {
     );
     assert!(sheet2.contains("<metadata>"), "metadata block must re-emit");
     assert!(sheet2.contains(r#"<metadataType name="XLDAPR"/>"#));
-    assert!(sheet2.contains(r#"<rc t="1" v="0" />"#), "cellMetadata records must re-emit: {sheet2}");
-    assert!(sheet2.contains(r#"<rc t="2" v="0" />"#), "valueMetadata records must re-emit: {sheet2}");
+    assert!(
+        sheet2.contains(r#"<rc t="1" v="0" />"#),
+        "cellMetadata records must re-emit: {sheet2}"
+    );
+    assert!(
+        sheet2.contains(r#"<rc t="2" v="0" />"#),
+        "valueMetadata records must re-emit: {sheet2}"
+    );
 
     let ct = zip_entry(&reser, "[Content_Types].xml");
     assert!(
@@ -3043,19 +3292,28 @@ fn gap_xlsx_wbprotect_roundtrip() {
         "richValue content type must be re-declared: {ct}"
     );
     let rv2 = zip_entry(&reser, "xl/richData/richValue.xml");
-    assert!(rv2.contains("<rvb>0</rvb>"), "richValue blob must re-emit: {rv2}");
+    assert!(
+        rv2.contains("<rvb>0</rvb>"),
+        "richValue blob must re-emit: {rv2}"
+    );
     assert!(rv2.contains(r#"<rvc t="2" v="Image" />"#));
-    assert!(rv2.contains(r#"<rvc t="7" v="Widget photo" />"#), "richValue records must re-emit: {rv2}");
+    assert!(
+        rv2.contains(r#"<rvc t="7" v="Widget photo" />"#),
+        "richValue records must re-emit: {rv2}"
+    );
 
     // 3. Re-parse: the typed model is identical, so a protected,
     //    dynamic-array + rich-value workbook survives an edit round trip.
-    let reparsed = wo_ooxml::OoxmlParser::new().parse_xlsx_book(&reser).unwrap();
+    let reparsed = wo_ooxml::OoxmlParser::new()
+        .parse_xlsx_book(&reser)
+        .unwrap();
     assert_eq!(
         reparsed.workbook.properties.file_sharing, book.workbook.properties.file_sharing,
         "fileSharing must round-trip"
     );
     assert_eq!(
-        reparsed.workbook.properties.workbook_protection, book.workbook.properties.workbook_protection,
+        reparsed.workbook.properties.workbook_protection,
+        book.workbook.properties.workbook_protection,
         "workbookProtection must round-trip without unlocking"
     );
     assert_eq!(
@@ -3154,7 +3412,10 @@ fn gap_docx_revisions_roundtrip() {
         vec!["S:del".to_string(), "E:del".to_string()],
         "deletion span must bracket its run"
     );
-    assert_eq!(p1.runs[1].text, "old wording", "w:delText content must be captured");
+    assert_eq!(
+        p1.runs[1].text, "old wording",
+        "w:delText content must be captured"
+    );
     match &p1.runs[0].revision {
         Some(wo_ooxml::model::RevisionMarker::Start(rev)) => {
             assert_eq!(rev.kind, wo_ooxml::model::RevisionKind::Deletion);
@@ -3308,38 +3569,75 @@ fn gap_docx_math_roundtrip() {
     assert_eq!(p0.runs.len(), 3, "text / math marker / text run order");
     assert_eq!(p0.runs[0].text, "Einstein wrote ");
     let math = p0.runs[1].math.as_ref().expect("inline math must be typed");
-    assert_eq!(math.verbatim, inline_math, "inline math must be captured verbatim");
+    assert_eq!(
+        math.verbatim, inline_math,
+        "inline math must be captured verbatim"
+    );
     assert!(!math.display, "bare m:oMath is inline math");
-    assert_eq!(math.linear_text, "Emc2=ahc", "linear m:t text must concatenate");
+    assert_eq!(
+        math.linear_text, "Emc2=ahc",
+        "linear m:t text must concatenate"
+    );
     assert_eq!(
         p0.runs[1].text, "Emc2=ahc",
         "the linear text rides run.text so converters render it"
     );
-    assert_eq!(p0.runs[2].text, " in 1905.", "text after the math must survive");
+    assert_eq!(
+        p0.runs[2].text, " in 1905.",
+        "text after the math must survive"
+    );
 
     let p1 = docx_para(body, 1);
-    assert_eq!(p1.runs.len(), 1, "display math is the paragraph's only content");
-    let dmath = p1.runs[0].math.as_ref().expect("display math must be typed");
-    assert_eq!(dmath.verbatim, display_math, "the whole m:oMathPara wrapper must be verbatim");
+    assert_eq!(
+        p1.runs.len(),
+        1,
+        "display math is the paragraph's only content"
+    );
+    let dmath = p1.runs[0]
+        .math
+        .as_ref()
+        .expect("display math must be typed");
+    assert_eq!(
+        dmath.verbatim, display_math,
+        "the whole m:oMathPara wrapper must be verbatim"
+    );
     assert!(dmath.display, "m:oMathPara must be flagged as display math");
-    assert_eq!(dmath.linear_text, "a+b2", "fraction num/den must concatenate in order");
+    assert_eq!(
+        dmath.linear_text, "a+b2",
+        "fraction num/den must concatenate in order"
+    );
 
     // 2. docx -> html: the linear math text renders (twice: inline + display).
     let html = String::from_utf8(DocxToHtmlConverter.convert(&docx).unwrap()).unwrap();
-    assert!(html.contains("Emc2=ahc"), "inline math linear text lost: {html}");
-    assert!(html.contains("a+b2"), "display math linear text lost: {html}");
+    assert!(
+        html.contains("Emc2=ahc"),
+        "inline math linear text lost: {html}"
+    );
+    assert!(
+        html.contains("a+b2"),
+        "display math linear text lost: {html}"
+    );
 
     // 3. docx -> docx: subtrees re-emit byte-identical, in position.
     let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
     let xml2 = docx_xml(&reser);
-    assert!(xml2.contains(inline_math), "inline math must re-emit byte-identical: {xml2}");
-    assert!(xml2.contains(display_math), "display math must re-emit byte-identical: {xml2}");
+    assert!(
+        xml2.contains(inline_math),
+        "inline math must re-emit byte-identical: {xml2}"
+    );
+    assert!(
+        xml2.contains(display_math),
+        "display math must re-emit byte-identical: {xml2}"
+    );
     let (t0, m, t1) = (
         xml2.find("Einstein wrote").unwrap(),
         xml2.find(inline_math).unwrap(),
         xml2.find("in 1905.").unwrap(),
     );
-    assert!(t0 < m && m < t1, "inline math must stay between its neighbor runs: {xml2}");
+    assert!(
+        t0 < m && m < t1,
+        "inline math must stay between its neighbor runs: {xml2}"
+    );
     assert!(
         !xml2.contains("<w:t xml:space=\"preserve\">Emc2=ahc</w:t>"),
         "the linear extraction must never re-emit as run text: {xml2}"
@@ -3384,8 +3682,14 @@ fn gap_docx_math_in_run_roundtrip() {
     let parsed = wo_ooxml::OoxmlParser::new().parse(&docx).unwrap();
     let body = parsed.docx_body.as_ref().unwrap();
     let p0 = docx_para(body, 0);
-    let m = p0.runs[0].math.as_ref().expect("run-nested math must be typed");
-    assert_eq!(m.verbatim, math, "run-nested math must be captured verbatim");
+    let m = p0.runs[0]
+        .math
+        .as_ref()
+        .expect("run-nested math must be typed");
+    assert_eq!(
+        m.verbatim, math,
+        "run-nested math must be captured verbatim"
+    );
     assert_eq!(m.linear_text, "x", "linear m:t text must extract");
 
     let reser = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
@@ -3413,19 +3717,19 @@ fn gap_flat_opc_entry() {
     <w:p><w:r><w:t>Test flat OPC document</w:t></w:r></w:p>
   </w:body>
 </w:wordDocument>"#;
-    
+
     // Verify flat OPC detection
     assert!(
         wo_ooxml::detector::is_flat_opc_docx(flat_opc_xml.as_bytes()),
         "Word 2003 XML must detect as flat OPC"
     );
-    
+
     // Verify it's also detected as OOXML
     assert!(
         wo_ooxml::is_ooxml(flat_opc_xml.as_bytes()),
         "Word 2003 XML must detect as OOXML"
     );
-    
+
     // Flat OPC with Word 2007+ namespace
     let flat_opc_2007 = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -3433,7 +3737,7 @@ fn gap_flat_opc_entry() {
     <w:p><w:r><w:t>Test Word 2007 flat OPC</w:t></w:r></w:p>
   </w:body>
 </w:document>"#;
-    
+
     assert!(
         wo_ooxml::detector::is_flat_opc_docx(flat_opc_2007.as_bytes()),
         "Word 2007+ XML must detect as flat OPC"
@@ -3444,17 +3748,18 @@ fn gap_flat_opc_entry() {
 fn gap_settings_typed_roundtrip() {
     // P4-D03: DOCX settings (track-changes / protection) must parse into
     // typed DocxSettings and survive a parse → serialize → parse round trip.
-    
+
     // Build a minimal DOCX with word/settings.xml
     use std::io::Write;
     use zip::write::SimpleFileOptions;
-    
+
     let mut buf = Vec::new();
     {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-        
+
         // [Content_Types].xml
-        zip.start_file("[Content_Types].xml", SimpleFileOptions::default()).unwrap();
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -3462,46 +3767,49 @@ fn gap_settings_typed_roundtrip() {
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
 </Types>"#).unwrap();
-        
+
         // _rels/.rels
-        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>"#).unwrap();
-        
+
         // word/document.xml
-        zip.start_file("word/document.xml", SimpleFileOptions::default()).unwrap();
-        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        zip.start_file("word/document.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
     <w:p><w:r><w:t>Test paragraph</w:t></w:r></w:p>
   </w:body>
-</w:document>"#).unwrap();
-        
+</w:document>"#,
+        )
+        .unwrap();
+
         // word/settings.xml with trackRevisions and documentProtection
-        zip.start_file("word/settings.xml", SimpleFileOptions::default()).unwrap();
-        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        zip.start_file("word/settings.xml", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:trackRevisions w:val="true"/>
   <w:documentProtection w:edit="comments"/>
-</w:settings>"#).unwrap();
-        
+</w:settings>"#,
+        )
+        .unwrap();
+
         zip.finish().unwrap();
     }
-    
+
     // Parse the DOCX
     let parsed = wo_ooxml::OoxmlParser::new().parse(&buf).unwrap();
-    assert!(
-        parsed.docx_body.is_some(),
-        "DOCX must have body"
-    );
+    assert!(parsed.docx_body.is_some(), "DOCX must have body");
     let body = parsed.docx_body.as_ref().unwrap();
-    assert!(
-        body.settings.is_some(),
-        "DOCX must parse settings.xml"
-    );
-    
+    assert!(body.settings.is_some(), "DOCX must parse settings.xml");
+
     let settings = body.settings.as_ref().unwrap();
     assert_eq!(
         settings.track_changes,
@@ -3512,15 +3820,15 @@ fn gap_settings_typed_roundtrip() {
         settings.protection == Some(wo_ooxml::model::DocxProtection::Comments),
         "documentProtection must parse as Comments variant"
     );
-    
+
     // Serialize back
     let reserialized = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
-    
+
     // Re-parse the serialization
     let reparsed = wo_ooxml::OoxmlParser::new().parse(&reserialized).unwrap();
     let rebody = reparsed.docx_body.as_ref().unwrap();
     let resettings = rebody.settings.as_ref().unwrap();
-    
+
     // Verify typed fields survive
     assert_eq!(
         resettings.track_changes,
@@ -3531,7 +3839,7 @@ fn gap_settings_typed_roundtrip() {
         resettings.protection == Some(wo_ooxml::model::DocxProtection::Comments),
         "documentProtection must survive round trip"
     );
-    
+
     // Verify raw XML also survives
     assert!(
         resettings.raw_xml.is_some(),
@@ -3552,7 +3860,7 @@ fn gap_xlsx_pivot_grouping() {
     // - PivotField with group_ranges, group_period, and formula fields
     // - PivotValueField with formula field
     // All structures support serde serialization/deserialization
-    
+
     // Test that the types exist and can be referenced
     // Note: Actual usage requires wo-sheet as a dependency
     assert!(true, "Pivot grouping types defined in wo-sheet::pivot");
@@ -3561,8 +3869,8 @@ fn gap_xlsx_pivot_grouping() {
 /// P4-P01: Test that PPTX timing tree (TimingTree/TimeNode) types exist and can be used
 #[test]
 fn gap_pptx_timing_roundtrip() {
-    use wo_ooxml::model::{TimingTree, TimeNode, TimingCondition};
-    
+    use wo_ooxml::model::{TimeNode, TimingCondition, TimingTree};
+
     // Create a simple timing tree programmatically
     let timing_tree = TimingTree {
         root: Some(TimeNode {
@@ -3572,53 +3880,52 @@ fn gap_pptx_timing_roundtrip() {
             repeat_count: None,
             start_conditions: vec![],
             end_conditions: vec![],
-            children: vec![
-                TimeNode {
-                    node_type: "par".to_string(),
-                    id: Some("par-1".to_string()),
-                    duration: Some(5.0),
+            children: vec![TimeNode {
+                node_type: "par".to_string(),
+                id: Some("par-1".to_string()),
+                duration: Some(5.0),
+                repeat_count: None,
+                start_conditions: vec![TimingCondition {
+                    event: "onBegin".to_string(),
+                    delay: 0.0,
+                    ref_id: None,
+                }],
+                end_conditions: vec![],
+                children: vec![TimeNode {
+                    node_type: "cTn".to_string(),
+                    id: Some("anim-1".to_string()),
+                    duration: Some(1.5),
                     repeat_count: None,
                     start_conditions: vec![TimingCondition {
-                        event: "onBegin".to_string(),
+                        event: "withPrevious".to_string(),
                         delay: 0.0,
                         ref_id: None,
                     }],
                     end_conditions: vec![],
-                    children: vec![
-                        TimeNode {
-                            node_type: "cTn".to_string(),
-                            id: Some("anim-1".to_string()),
-                            duration: Some(1.5),
-                            repeat_count: None,
-                            start_conditions: vec![TimingCondition {
-                                event: "withPrevious".to_string(),
-                                delay: 0.0,
-                                ref_id: None,
-                            }],
-                            end_conditions: vec![],
-                            children: vec![],
-                            target: Some("shape-1".to_string()),
-                        },
-                    ],
-                    target: None,
-                },
-            ],
+                    children: vec![],
+                    target: Some("shape-1".to_string()),
+                }],
+                target: None,
+            }],
             target: None,
         }),
         nodes: vec![],
     };
-    
+
     // Verify serialization works
     let serialized = serde_json::to_string(&timing_tree).unwrap();
     assert!(serialized.contains("tmRoot"));
     assert!(serialized.contains("par"));
     assert!(serialized.contains("cTn"));
-    
+
     // Verify deserialization works
     let deserialized: TimingTree = serde_json::from_str(&serialized).unwrap();
     assert_eq!(deserialized.root.as_ref().unwrap().node_type, "tmRoot");
     assert_eq!(deserialized.root.as_ref().unwrap().children.len(), 1);
-    assert_eq!(deserialized.root.as_ref().unwrap().children[0].node_type, "par");
+    assert_eq!(
+        deserialized.root.as_ref().unwrap().children[0].node_type,
+        "par"
+    );
 }
 
 /// P4-P01: Test that SmartArt diagrams survive PPTX parsing and serialization
@@ -3627,13 +3934,14 @@ fn gap_pptx_smartart_survives() {
     // Build a minimal PPTX with a SmartArt shape
     use std::io::Write;
     use zip::write::SimpleFileOptions;
-    
+
     let mut buf = Vec::new();
     {
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-        
+
         // [Content_Types].xml
-        zip.start_file("[Content_Types].xml", SimpleFileOptions::default()).unwrap();
+        zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -3641,16 +3949,18 @@ fn gap_pptx_smartart_survives() {
   <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
   <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
 </Types>"#).unwrap();
-        
+
         // _rels/.rels
-        zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+        zip.start_file("_rels/.rels", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).unwrap();
-        
+
         // ppt/presentation.xml
-        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default()).unwrap();
+        zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <presentation xmlns="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sldIdLst>
@@ -3658,16 +3968,21 @@ fn gap_pptx_smartart_survives() {
   </sldIdLst>
   <sldMasterIdLst/>
 </presentation>"#).unwrap();
-        
+
         // ppt/_rels/presentation.xml.rels
-        zip.start_file("ppt/_rels/presentation.xml.rels", SimpleFileOptions::default()).unwrap();
+        zip.start_file(
+            "ppt/_rels/presentation.xml.rels",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>"#).unwrap();
-        
+
         // ppt/slides/slide1.xml with SmartArt graphicFrame
-        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default()).unwrap();
+        zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+            .unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sld xmlns="http://schemas.openxmlformats.org/presentationml/2006/main">
   <cSld>
@@ -3691,31 +4006,32 @@ fn gap_pptx_smartart_survives() {
     </spTree>
   </cSld>
 </sld>"#).unwrap();
-        
+
         zip.finish().unwrap();
     }
-    
+
     // Parse the PPTX using the parser directly (not through OoxmlDocument)
     // This tests that SmartArt shapes are parsed correctly
     let parser = wo_ooxml::OoxmlParser::new();
     let mut cursor = std::io::Cursor::new(buf.as_slice());
     let mut archive = zip::ZipArchive::new(cursor).unwrap();
     let pptx = parser.parse_pptx(&mut archive).unwrap().unwrap();
-    
+
     // Verify SmartArt was parsed (as a shape in the slide)
     assert_eq!(pptx.slides.len(), 1, "Should have one slide");
     let slide = &pptx.slides[0];
-    
+
     // Check that at least one SmartArt shape exists
-    let has_smartart = slide.shapes.iter().any(|shape| {
-        matches!(shape, wo_ooxml::model::SlideShape::SmartArt(_))
-    });
+    let has_smartart = slide
+        .shapes
+        .iter()
+        .any(|shape| matches!(shape, wo_ooxml::model::SlideShape::SmartArt(_)));
     assert!(has_smartart, "Slide should contain a SmartArt shape");
-    
+
     // Now also test through OoxmlDocument for serialization
     let parsed = parser.parse(&buf).unwrap();
     let reserialized = wo_ooxml::OoxmlSerializer::new().serialize(&parsed).unwrap();
-    
+
     // Verify the reserialized file is still a valid ZIP
     assert_eq!(reserialized[0], 0x50);
     assert_eq!(reserialized[1], 0x4B);

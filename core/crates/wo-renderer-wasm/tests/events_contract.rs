@@ -26,7 +26,9 @@ fn phase1_frames_pin_the_editor_js_registry_1to1() {
     let pins: Vec<(&str, WsEvent)> = vec![
         (
             "focus_object",
-            WsEvent::FocusObject { kind: "image".into() },
+            WsEvent::FocusObject {
+                kind: "image".into(),
+            },
         ),
         (
             "document_modified_changed",
@@ -156,7 +158,10 @@ fn toolbar_state_collapses_the_formatting_family() {
 
 #[test]
 fn legacy_zoom_change_stays_a_distinct_frame() {
-    assert_eq!(frame(&WsEvent::ZoomChange { scale: 1.0 })["event"], "zoom_change");
+    assert_eq!(
+        frame(&WsEvent::ZoomChange { scale: 1.0 })["event"],
+        "zoom_change"
+    );
 }
 
 #[test]

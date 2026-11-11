@@ -13,8 +13,11 @@ fn create_test_image_1x1_red() -> Vec<u8> {
     let mut img = RgbaImage::new(1, 1);
     img.put_pixel(0, 0, image::Rgba([255u8, 0u8, 0u8, 255u8]));
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-        .unwrap();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut bytes),
+        image::ImageFormat::Png,
+    )
+    .unwrap();
     bytes
 }
 
@@ -27,8 +30,11 @@ fn create_test_image_2x2_blue() -> Vec<u8> {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-        .unwrap();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut bytes),
+        image::ImageFormat::Png,
+    )
+    .unwrap();
     bytes
 }
 
@@ -41,8 +47,11 @@ fn create_test_image_10x10_green() -> Vec<u8> {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-        .unwrap();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut bytes),
+        image::ImageFormat::Png,
+    )
+    .unwrap();
     bytes
 }
 
@@ -75,10 +84,10 @@ fn test_draw_image_scaling() {
 #[test]
 fn test_draw_image_transparent() {
     let handle = create_canvas(100, 100);
-    
+
     // First draw a background
     render_rect(handle, 0.0, 0.0, 100.0, 100.0, "#0000FF").unwrap();
-    
+
     // Create a semi-transparent image
     let mut img = RgbaImage::new(10, 10);
     for y in 0..10 {
@@ -87,8 +96,11 @@ fn test_draw_image_transparent() {
         }
     }
     let mut bytes = Vec::new();
-    img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
-        .unwrap();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut bytes),
+        image::ImageFormat::Png,
+    )
+    .unwrap();
 
     // Draw the semi-transparent image
     let result = super::canvas_bridge::render_image(handle, &bytes, 0.0, 0.0, 10.0, 10.0);
@@ -125,13 +137,13 @@ fn test_emu_to_px_conversion() {
     // 12700 EMUs = 1 point
     // 1 point = 96/72 pixels = 4/3 pixels at 96 DPI
     // So: emu * (96/72) / 12700 = emu / 12700 * 4/3
-    
+
     let emu_to_px = PT_TO_PX / 12700.0;
-    
+
     // 12700 EMUs should be 4/3 pixels
     let px = 12700u32 as f32 * emu_to_px;
-    assert!((px - 4.0/3.0).abs() < 0.001);
-    
+    assert!((px - 4.0 / 3.0).abs() < 0.001);
+
     // 38100 EMUs (3 * 12700) should be 4 pixels
     let px = 38100u32 as f32 * emu_to_px;
     assert!((px - 4.0).abs() < 0.001);
@@ -142,47 +154,47 @@ fn test_emu_to_px_conversion() {
 #[test]
 fn test_layout_image_basic() {
     let mut engine = LayoutEngine::new();
-    
+
     let image_data = create_test_image_10x10_green();
     let image = DocxImage {
         bytes: image_data,
-        width_emu: 12700,  // 1 point = 4/3 pixels
+        width_emu: 12700, // 1 point = 4/3 pixels
         height_emu: 12700,
         wrap_mode: "inline".to_string(),
     };
-    
+
     let body = DocxBody {
         blocks: vec![DocxBlock::Image(image)],
         ..Default::default()
     };
-    
+
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);
     assert_eq!(pages.len(), 1);
     assert_eq!(pages[0].images.len(), 1);
-    
+
     let img = &pages[0].images[0];
     // 12700 EMU / 12700 * 4/3 = 4/3 pixels
-    assert!((img.width - 4.0/3.0).abs() < 0.1);
-    assert!((img.height - 4.0/3.0).abs() < 0.1);
+    assert!((img.width - 4.0 / 3.0).abs() < 0.1);
+    assert!((img.height - 4.0 / 3.0).abs() < 0.1);
 }
 
 #[test]
 fn test_layout_image_with_paragraphs() {
     let mut engine = LayoutEngine::new();
-    
+
     let image_data = create_test_image_2x2_blue();
     let image = DocxImage {
         bytes: image_data,
-        width_emu: 25400,  // 2 points = 8/3 pixels
+        width_emu: 25400, // 2 points = 8/3 pixels
         height_emu: 25400,
         wrap_mode: "inline".to_string(),
     };
-    
+
     let paragraph = DocxParagraph {
         runs: vec![],
         ..Default::default()
     };
-    
+
     let body = DocxBody {
         blocks: vec![
             DocxBlock::Paragraph(paragraph.clone()),
@@ -191,7 +203,7 @@ fn test_layout_image_with_paragraphs() {
         ],
         ..Default::default()
     };
-    
+
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);
     assert_eq!(pages.len(), 1);
     assert!(pages[0].images.len() >= 1);
@@ -208,12 +220,12 @@ fn test_flat_paragraphs_with_images() {
         height_emu: 12700,
         wrap_mode: "inline".to_string(),
     };
-    
+
     let paragraph = DocxParagraph {
         runs: vec![],
         ..Default::default()
     };
-    
+
     let body = DocxBody {
         blocks: vec![
             DocxBlock::Paragraph(paragraph.clone()),
@@ -222,7 +234,7 @@ fn test_flat_paragraphs_with_images() {
         ],
         ..Default::default()
     };
-    
+
     // This should not panic and should return only the paragraph paths
     let paths = flat_paragraphs(&body);
     assert_eq!(paths.len(), 2);

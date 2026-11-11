@@ -12,11 +12,11 @@ use std::time::Instant;
 
 use crate::layout::{LayoutElement, LayoutEngine, LayoutLine, LayoutPage};
 use crate::model::*;
+use image::ImageEncoder as _;
 use pdf_writer::{Content, Name, Pdf, Rect, Ref, Str};
 use wo_common::{CoreError, Result};
 use wo_ooxml::model::{DocxBody, OoxmlFormat};
 use wo_ooxml::parser::OoxmlParser;
-use image::ImageEncoder as _;
 use wo_renderer::{Canvas, Color, FontLibrary, Paint};
 
 /// DOCX rendering pipeline.
@@ -207,7 +207,10 @@ impl DocxRenderPipeline {
 
         if page_num as usize > page_count {
             return Err(CoreError::InvalidInput {
-                message: format!("Page {} out of range ({} pages total)", page_num, page_count),
+                message: format!(
+                    "Page {} out of range ({} pages total)",
+                    page_num, page_count
+                ),
             });
         }
 
@@ -927,9 +930,7 @@ mod tests {
         let err = pipeline.render_page_png(&docx, 0).unwrap_err();
         assert!(err.to_string().contains("1-based"), "got: {err}");
 
-        let err = pipeline
-            .render_page_png(&docx, 999)
-            .unwrap_err();
+        let err = pipeline.render_page_png(&docx, 999).unwrap_err();
         assert!(err.to_string().contains("out of range"), "got: {err}");
     }
 
