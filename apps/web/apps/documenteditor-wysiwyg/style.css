@@ -3144,6 +3144,66 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
 .ribbon-page[data-tab="forms"] .rb { min-width: 32px; }
 #btn-forms-view-fill { min-width: auto; padding: 0 8px; }
 
+/* FX-U2: roles manager list + role chips (RolesManagerDlg / RoleDeleteDlg) */
+.wo-role-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow: auto; }
+.wo-role-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+.wo-role-chip:hover { background: var(--hover); }
+.wo-role-chip.wo-role-selected, .wo-role-chip[aria-selected="true"] { border-color: var(--accent); }
+.wo-role-chip-static { cursor: default; }
+.wo-role-chip-static:hover { background: var(--surface); }
+.wo-role-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); flex: none; }
+.wo-role-name { font-weight: 600; }
+.wo-role-user { margin-left: auto; color: var(--muted); font-size: 11px; }
+.wo-role-none { color: var(--muted); font-size: 12px; }
+.wo-role-delete-confirm { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+/* FX-U2: FormSettings per-field rows (formFields widget) */
+.wo-form-fields { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; }
+.wo-form-field-head {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(110px, 1fr) 70px minmax(110px, 1fr);
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.wo-form-field-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(110px, 1fr) 70px minmax(110px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.wo-form-field-row:hover { background: var(--hover); }
+.wo-form-field-row.wo-form-field-selected { border-color: var(--accent); }
+.wo-form-field-label { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wo-form-field-role, .wo-form-field-fillmode {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+.wo-form-field-required { justify-self: center; }
+.wo-form-fields-empty { color: var(--muted); font-size: 12px; }
+
 /* Form field elements in document */
 .form-field {
   display: inline-block;

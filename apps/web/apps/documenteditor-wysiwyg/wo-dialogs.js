@@ -621,8 +621,279 @@ export function multiSliderGradient(root, opts = {}) {
   return handle;
 }
 
+// ---------------------------------------------------------------------------
+// Widget 4: roleList — FX-U2 roles manager list (RolesManagerDlg body).
+// Each role renders as a selectable chip (palette swatch + name + assignee);
+// the model keeps {roles, selected} so the headless (Node) half works like
+// the other factories: getValue()/setValue()/select() without a DOM.
+// ---------------------------------------------------------------------------
+const FF_FILL_MODES = ["any", "role"];
+
+function ffNormRoles(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter((r) => r && typeof r.id === "string")
+    .map((r) => ({ id: r.id, name: String(r.name || ""), color: String(r.color || ""), user: String(r.user || "") }));
+}
+function ffNormFields(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter((f) => f && typeof f.key === "string")
+    .map((f, i) => ({
+      key: f.key,
+      index: typeof f.index === "number" ? f.index : i,
+      type: String(f.type || "text"),
+      label: String(f.label == null ? f.key : f.label),
+      role: String(f.role || ""),
+      required: f.required === true,
+      fillMode: FF_FILL_MODES.indexOf(f.fillMode) !== -1 ? f.fillMode : "any",
+    }));
+}
+
+export function roleList(root, opts = {}) {
+  const state = { roles: ffNormRoles(opts.roles), selected: "" };
+  const handle = {
+    widget: "roleList",
+    el: null,
+    getValue() {
+      return { roles: state.roles.map((r) => Object.assign({}, r)), selected: state.selected };
+    },
+    /** Re-sync from the live role list: an array (engine setValue path) or
+     *  a previous {roles, selected} blob. A role that vanished deselects. */
+    setValue(next) {
+      const roles = Array.isArray(next) ? next : (next && Array.isArray(next.roles) ? next.roles : null);
+      if (roles) {
+        state.roles = ffNormRoles(roles);
+        if (state.selected && !state.roles.some((r) => r.id === state.selected)) state.selected = "";
+      }
+      if (next && !Array.isArray(next) && typeof next.selected === "string") {
+        state.selected = state.roles.some((r) => r.id === next.selected) ? next.selected : "";
+      }
+      paint();
+      fire();
+      return handle;
+    },
+    select(id) {
+      state.selected = state.roles.some((r) => r.id === id) ? String(id) : "";
+      paint();
+      fire();
+      return handle;
+    },
+    destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+  };
+  const mounted = !!root && hasDom();
+  function fire() {
+    if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+    if (typeof CustomEvent === "function" && mounted && typeof root.dispatchEvent === "function") {
+      try {
+        root.dispatchEvent(new CustomEvent("wo-dialog-change", { detail: { widget: "roleList", value: handle.getValue() } }));
+      } catch (err) { /* headless */ }
+    }
+  }
+  if (!mounted) return handle; // headless: pure model only
+  const t = opts.t;
+  const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+
+  root.setAttribute("data-wo-widget-root", "roleList");
+  function paint() {
+    if (!mounted) return;
+    const none = state.roles.length === 0;
+    root.innerHTML = none
+      ? '<span class="wo-role-none" data-i18n="Widget.RolesList.None">' + escHtml(tr("Widget.RolesList.None", "No roles yet")) + "</span>"
+      : '<div class="wo-role-list" role="listbox" aria-label="' + escHtml(tr("Dialog.Roles.Section", "Roles")) + '">' +
+        state.roles.map((r) =>
+          '<button type="button" class="wo-role-chip' + (r.id === state.selected ? " wo-role-selected" : "") + '"' +
+          ' data-wo-role="' + escHtml(r.id) + '" role="option" aria-selected="' + (r.id === state.selected) + '">' +
+            '<span class="wo-role-swatch" style="background-color:#' + escHtml(r.color) + '" aria-hidden="true"></span>' +
+            '<span class="wo-role-name">' + escHtml(r.name) + "</span>" +
+            '<span class="wo-role-user">' + (r.user
+              ? escHtml(tr("Widget.RolesList.AssignedTo", "Assigned to") + ": " + r.user)
+              : "") + "</span>" +
+          "</button>"
+        ).join("") + "</div>";
+  }
+  on(root, "click", (ev) => {
+    const chip = ev.target && typeof ev.target.closest === "function" ? ev.target.closest("[data-wo-role]") : null;
+    if (!chip) return;
+    handle.select(chip.getAttribute("data-wo-role"));
+  });
+  paint();
+  return handle;
+}
+
+// ---------------------------------------------------------------------------
+// Widget 5: roleDeleteInfo — RoleDeleteDlg confirm blurb. Shows the role
+// about to be removed (swatch + name + assignee) so the OK is informed.
+// ---------------------------------------------------------------------------
+export function roleDeleteInfo(root, opts = {}) {
+  let role = opts.role && typeof opts.role === "object" ? Object.assign({}, opts.role) : null;
+  const handle = {
+    widget: "roleDeleteInfo",
+    el: null,
+    getValue() { return role ? Object.assign({}, role) : null; },
+    setValue(next) {
+      role = next && typeof next.id === "string" ? { id: next.id, name: String(next.name || ""), color: String(next.color || ""), user: String(next.user || "") } : null;
+      paint();
+      fire();
+      return handle;
+    },
+    destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+  };
+  const mounted = !!root && hasDom();
+  function fire() {
+    if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+  }
+  if (!mounted) return handle;
+  const t = opts.t;
+  const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+  root.setAttribute("data-wo-widget-root", "roleDeleteInfo");
+  function paint() {
+    if (!mounted) return;
+    root.innerHTML = role
+      ? '<div class="wo-role-chip wo-role-chip-static">' +
+          '<span class="wo-role-swatch" style="background-color:#' + escHtml(role.color) + '" aria-hidden="true"></span>' +
+          '<span class="wo-role-name">' + escHtml(role.name) + "</span>" +
+          '<span class="wo-role-user">' + (role.user
+            ? escHtml(tr("Widget.RolesList.AssignedTo", "Assigned to") + ": " + role.user)
+            : "") + "</span>" +
+        "</div>" +
+        '<p class="wo-role-delete-confirm" data-i18n="Widget.RoleDelete.Confirm">' +
+          escHtml(tr("Widget.RoleDelete.Confirm", "Delete this role? Fields keep their fills.")) + "</p>"
+      : "";
+  }
+  paint();
+  return handle;
+}
+
+// ---------------------------------------------------------------------------
+// Widget 6: formFields — FX-U2 FormSettings per-field table. One row per
+// span.form-field: label + role (select from the document's roles) +
+// required (checkbox) + filling mode (select). Model: {fields, roles,
+// selected(index)} — patch()/select()/setValue() work headless like the
+// other factories.
+// ---------------------------------------------------------------------------
+export function formFields(root, opts = {}) {
+  const state = {
+    fields: ffNormFields(opts.fields),
+    roles: ffNormRoles(opts.roles),
+    selected: (typeof opts.selected === "number" && opts.selected >= 0 && opts.selected < (opts.fields || []).length) ? opts.selected : null,
+  };
+  const handle = {
+    widget: "formFields",
+    el: null,
+    getValue() {
+      return {
+        fields: state.fields.map((f) => Object.assign({}, f)),
+        roles: state.roles.map((r) => Object.assign({}, r)),
+        selected: state.selected,
+      };
+    },
+    /** Re-sync from the document: an array of fields, or a previous
+     *  {fields, roles} blob. Selection resets (the rows rebuild). */
+    setValue(next) {
+      const fields = Array.isArray(next) ? next : (next && Array.isArray(next.fields) ? next.fields : null);
+      const roles = next && !Array.isArray(next) && Array.isArray(next.roles) ? next.roles : null;
+      if (fields) {
+        state.fields = ffNormFields(fields);
+        state.selected = null;
+      }
+      if (roles) state.roles = ffNormRoles(roles);
+      paint();
+      fire();
+      return handle;
+    },
+    /** Patch one field by key. Unknown role ids are rejected; clearing the
+     *  role degrades a "role" filling mode back to "any" (a role mode
+     *  without a role is meaningless). */
+    patch(key, patchObj) {
+      const field = state.fields.find((f) => f.key === key);
+      if (!field || !patchObj || typeof patchObj !== "object") return handle;
+      if (Object.prototype.hasOwnProperty.call(patchObj, "role")) {
+        const v = String(patchObj.role == null ? "" : patchObj.role);
+        if (v === "" || state.roles.some((r) => r.id === v)) field.role = v;
+      }
+      if (Object.prototype.hasOwnProperty.call(patchObj, "required")) {
+        field.required = patchObj.required === true || patchObj.required === "true";
+      }
+      if (Object.prototype.hasOwnProperty.call(patchObj, "fillMode")) {
+        if (FF_FILL_MODES.indexOf(patchObj.fillMode) !== -1) field.fillMode = patchObj.fillMode;
+      }
+      if (!field.role && field.fillMode === "role") field.fillMode = "any";
+      paint();
+      fire();
+      return handle;
+    },
+    select(index) {
+      state.selected = (typeof index === "number" && index >= 0 && index < state.fields.length) ? index : null;
+      paint();
+      fire();
+      return handle;
+    },
+    destroy() { if (root && root.innerHTML !== undefined) root.innerHTML = ""; },
+  };
+  const mounted = !!root && hasDom();
+  function fire() {
+    if (typeof opts.onChange === "function") opts.onChange(handle.getValue());
+    if (typeof CustomEvent === "function" && mounted && typeof root.dispatchEvent === "function") {
+      try {
+        root.dispatchEvent(new CustomEvent("wo-dialog-change", { detail: { widget: "formFields", value: handle.getValue() } }));
+      } catch (err) { /* headless */ }
+    }
+  }
+  if (!mounted) return handle; // headless: pure model only
+  const t = opts.t;
+  const tr = (k, d) => (t && typeof t === "function" ? t(k) : d);
+
+  root.setAttribute("data-wo-widget-root", "formFields");
+  function paint() {
+    if (!mounted) return;
+    const roleOptions = (field) =>
+      '<option value=""' + (field.role === "" ? " selected" : "") + ">" + escHtml(tr("Widget.FormFields.None", "Unassigned")) + "</option>" +
+      state.roles.map((r) =>
+        '<option value="' + escHtml(r.id) + '"' + (field.role === r.id ? " selected" : "") + ">" + escHtml(r.name) + "</option>"
+      ).join("");
+    const fillOptions = (field) =>
+      '<option value="any"' + (field.fillMode === "any" ? " selected" : "") + ">" + escHtml(tr("Widget.FormFields.FillModeAny", "Anyone")) + "</option>" +
+      '<option value="role"' + (field.fillMode === "role" ? " selected" : "") + ">" + escHtml(tr("Widget.FormFields.FillModeRole", "Role only")) + "</option>";
+    root.innerHTML = state.fields.length === 0
+      ? '<span class="wo-form-fields-empty" data-i18n="Status.NoFormFields">' + escHtml(tr("Status.NoFormFields", "No form fields in the document")) + "</span>"
+      : '<div class="wo-form-fields" role="table" aria-label="' + escHtml(tr("Dialog.FormSettings.Section", "Form fields")) + '">' +
+        '<div class="wo-form-field-head" role="row" aria-hidden="true">' +
+          '<span data-i18n="Dialog.FormSettings.Section">' + escHtml(tr("Dialog.FormSettings.Section", "Form fields")) + "</span>" +
+          '<span data-i18n="Widget.FormFields.Role">' + escHtml(tr("Widget.FormFields.Role", "Role")) + "</span>" +
+          '<span data-i18n="Widget.FormFields.Required">' + escHtml(tr("Widget.FormFields.Required", "Required")) + "</span>" +
+          '<span data-i18n="Widget.FormFields.FillMode">' + escHtml(tr("Widget.FormFields.FillMode", "Filling mode")) + "</span>" +
+        "</div>" +
+        state.fields.map((f, i) =>
+          '<div class="wo-form-field-row' + (i === state.selected ? " wo-form-field-selected" : "") + '" data-wo-field="' + escHtml(f.key) + '" role="row">' +
+            '<span class="wo-form-field-label" role="cell">' + escHtml(f.label) + "</span>" +
+            '<select class="wo-form-field-role" data-wo-field-role="' + escHtml(f.key) + '" role="cell" aria-label="' + escHtml(tr("Widget.FormFields.Role", "Role")) + '">' + roleOptions(f) + "</select>" +
+            '<input type="checkbox" class="wo-form-field-required" data-wo-field-required="' + escHtml(f.key) + '"' + (f.required ? " checked" : "") + ' role="cell" aria-label="' + escHtml(tr("Widget.FormFields.Required", "Required")) + '" />' +
+            '<select class="wo-form-field-fillmode" data-wo-field-fillmode="' + escHtml(f.key) + '" role="cell" aria-label="' + escHtml(tr("Widget.FormFields.FillMode", "Filling mode")) + '">' + fillOptions(f) + "</select>" +
+          "</div>"
+        ).join("") + "</div>";
+  }
+  on(root, "change", (ev) => {
+    const target = ev && ev.target;
+    if (!target || typeof target.getAttribute !== "function") return;
+    const roleKey = target.getAttribute("data-wo-field-role");
+    if (roleKey) { handle.patch(roleKey, { role: target.value }); return; }
+    const reqKey = target.getAttribute("data-wo-field-required");
+    if (reqKey) { handle.patch(reqKey, { required: target.checked }); return; }
+    const fillKey = target.getAttribute("data-wo-field-fillmode");
+    if (fillKey) handle.patch(fillKey, { fillMode: target.value });
+  });
+  on(root, "click", (ev) => {
+    const row = ev.target && typeof ev.target.closest === "function" ? ev.target.closest("[data-wo-field]") : null;
+    if (!row) return;
+    const key = row.getAttribute("data-wo-field");
+    const idx = state.fields.findIndex((f) => f.key === key);
+    if (idx !== -1) handle.select(idx);
+  });
+  paint();
+  return handle;
+}
+
 /** Spec row type "custom" → widget factory registry. */
-export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradient };
+export const WO_CUSTOM_WIDGETS = { tableStyler, hsbColorPicker, multiSliderGradient, roleList, roleDeleteInfo, formFields };
 
 // ---------------------------------------------------------------------------
 // WoDialogEngine
@@ -1746,6 +2017,92 @@ export const DOCUMENT_ACCESS_DIALOG_SPEC = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// FX-U2: form-roles + form-settings dialog specs — RolesManagerDlg (role
+// list over the wo-bridge wasm role ops), RoleEditDlg (name/color/user),
+// RoleDeleteDlg (confirm blurb) and FormSettings (per-field role +
+// required + filling mode). Specs only; the behavioral half (open/apply,
+// wasm-first woRolesGetAll/Add/Edit/Remove call path) lives in editor.js.
+// ---------------------------------------------------------------------------
+export const ROLES_MANAGER_SPEC = {
+  id: "roles-manager-dialog",
+  title: "Form roles",
+  titleKey: "Dialog.Roles.Title",
+  width: 520,
+  okCmd: "rolesManagerOk",
+  sections: [
+    {
+      title: "Roles",
+      titleKey: "Dialog.Roles.Section",
+      rows: [
+        { type: "custom", key: "roles", label: "Roles", labelKey: "Dialog.Roles.Section",
+          widget: "roleList" },
+        { type: "button", key: "rolesAdd", label: "Add…", labelKey: "Widget.RolesList.Add",
+          cmd: "rolesAddClick" },
+        { type: "button", key: "rolesEdit", label: "Edit…", labelKey: "Widget.RolesList.Edit",
+          cmd: "rolesEditClick" },
+        { type: "button", key: "rolesRemove", label: "Remove…", labelKey: "Widget.RolesList.Remove",
+          cmd: "rolesRemoveClick" },
+      ],
+    },
+  ],
+};
+
+export const ROLE_EDIT_SPEC = {
+  id: "role-edit-dialog",
+  title: "Role",
+  titleKey: "Dialog.RoleEdit.Title",
+  width: 440,
+  okCmd: "roleEditOk",
+  sections: [
+    {
+      title: "Role",
+      titleKey: "Dialog.RoleEdit.Title",
+      rows: [
+        { type: "text", key: "name", label: "Name", labelKey: "Dialog.RoleEdit.Name", value: "" },
+        { type: "color", key: "color", label: "Color", labelKey: "Dialog.RoleEdit.Color", value: "#6C8EBF" },
+        { type: "text", key: "user", label: "Assigned user", labelKey: "Dialog.RoleEdit.User", value: "" },
+      ],
+    },
+  ],
+};
+
+export const ROLE_DELETE_SPEC = {
+  id: "role-delete-dialog",
+  title: "Delete role",
+  titleKey: "Dialog.RoleDelete.Title",
+  width: 440,
+  okCmd: "roleDeleteOk",
+  sections: [
+    {
+      title: "Role",
+      titleKey: "Dialog.RoleDelete.Title",
+      rows: [
+        { type: "custom", key: "roleInfo", label: "Role", labelKey: "Dialog.RoleDelete.Title",
+          widget: "roleDeleteInfo" },
+      ],
+    },
+  ],
+};
+
+export const FORM_SETTINGS_SPEC = {
+  id: "form-settings-dialog",
+  title: "Form settings",
+  titleKey: "Dialog.FormSettings.Title",
+  width: 680,
+  okCmd: "formSettingsOk",
+  sections: [
+    {
+      title: "Form fields",
+      titleKey: "Dialog.FormSettings.Section",
+      rows: [
+        { type: "custom", key: "fields", label: "Form fields", labelKey: "Dialog.FormSettings.Section",
+          widget: "formFields" },
+      ],
+    },
+  ],
+};
+
 /**
  * Named spec registry for editor.js / tests (window.WoDialogs.WO_DIALOG_SPECS). */
 export const WO_DIALOG_SPECS = {
@@ -1768,6 +2125,10 @@ export const WO_DIALOG_SPECS = {
   formatSettingsDialog: FORMAT_SETTINGS_DIALOG_SPEC,
   mailMergeEmailDialog: MAIL_MERGE_EMAIL_DIALOG_SPEC,
   documentAccessDialog: DOCUMENT_ACCESS_DIALOG_SPEC,
+  rolesManager: ROLES_MANAGER_SPEC,
+  roleEdit: ROLE_EDIT_SPEC,
+  roleDelete: ROLE_DELETE_SPEC,
+  formSettings: FORM_SETTINGS_SPEC,
 };
 
 /** Convenience: buildDialog(engine, spec) — or buildDialog(spec) against a
