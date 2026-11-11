@@ -211,29 +211,25 @@
       <button id="qat-format-paint" type="button" class="qat" aria-pressed="false" title="Format painter — copy, then apply to a selection (Ctrl+Alt+C / Ctrl+Alt+V)" data-i18n-title="Toolbar.FormatPainterTitle" aria-label="Format painter" data-i18n-aria-label="Toolbar.FormatPainter"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="10" height="4" rx="1"/><path d="M11.5 4h1.5A1.5 1.5 0 0 1 14.5 5.5v1A1.5 1.5 0 0 1 13 8H8.5"/><path d="M8.5 8v2.5"/><rect x="7.25" y="10.5" width="2.5" height="3.5" rx="0.75"/></svg></button>
     </div>
     <div class="ribbon-page active" data-tab="home" role="group" aria-label="Home ribbon" data-i18n-aria-label="Toolbar.Region">
-    <!-- Home ribbon (CHROME2-TWO-ROW-RIBBON): OO 9.4 two-row geometry from
-         the OO census (y<90 → row 1, y>=90 → row 2). Row 1: clipboard quick
-         cluster, paste, Font family/size/±/case, Paragraph lists/indents/
-         spacing/direction, the styles gallery, and the right-edge tools.
+    <!-- Home ribbon (CHROME2-TWO-ROW-RIBBON, CHROME-D arrangement): OO 9.4
+         two-row geometry from the OO census (y<90 → row 1, y>=90 → row 2).
+         Row 1: the Font family/size/±/case cluster LEADS, directly after the
+         QAT strip — the clipboard quick cluster + paste group are QAT
+         duplicates (CHROME-A) and the right-edge tools live in the band's
+         persistent .toolbar-tools right zone (CHROME-D); then Paragraph
+         lists/indents/spacing/direction and the styles gallery.
          Row 2: Font character styles (BIUS·scripts·colors·clear), Paragraph
          alignment/nonprinting/shading/borders/more-formatting, Select all.
          Every control keeps its id and data-cmd; caret sub-buttons stay
          glued like OO split carets. -->
     <div class="ribbon-row">
-    <!-- Quick-access cluster flattened horizontal (copy·undo·cut·redo,
-         census x-order 95..) — the old 2x2 elset panel is gone. -->
-    <div class="rb-group" role="group" aria-label="Quick access">
-    <button id="btn-copy" class="rb" title="Copy (Ctrl+C)" data-i18n-title="Toolbar.CopyTitle" aria-label="Copy" data-i18n-aria-label="Ctx.Copy" aria-keyshortcuts="Control+C"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v7A1.5 1.5 0 0 0 4 11.5h1.5"/></svg></button>
-    <button id="btn-undo" class="rb"  data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5h6a3.5 3.5 0 1 1 0 7H6"/><path d="M6.5 4 3 7.5l3.5 3.5"/></svg></button>
-    <button id="btn-cut" class="rb" title="Cut (Ctrl+X)" data-i18n-title="Toolbar.CutTitle" aria-label="Cut" data-i18n-aria-label="Ctx.Cut" aria-keyshortcuts="Control+X"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="4" cy="12.5" r="1.8"/><circle cx="12" cy="12.5" r="1.8"/><path d="M5.2 11 11 1.5M10.8 11 5 1.5"/></svg></button>
-    <button id="btn-redo" class="rb"  data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 7.5h-6a3.5 3.5 0 1 0 0 7H10"/><path d="M9.5 4 13 7.5 9.5 11"/></svg></button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Clipboard">
-    <button id="btn-paste" class="rb" title="Paste (Ctrl+V)" data-i18n-title="Toolbar.PasteTitle" aria-label="Paste" data-i18n-aria-label="Toolbar.Paste" aria-keyshortcuts="Control+V"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="8" height="10.5" rx="1.5"/><path d="M10 3.5V2a.9.9 0 0 0-.9-.9H4.9A.9.9 0 0 0 4 2v1.5M6 6h6M6 9h6M6 12h4"/></svg></button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <!-- Font group row 1 (census x-order): family·size·increment·decrement·case. -->
+    <!-- Font group row 1 (census x-order): family·size·increment·decrement·case.
+         CHROME-D: the font cluster LEADS row 1 — the clipboard quick cluster
+         (copy·undo·cut·redo) + paste group that used to sit before it are
+         duplicates of the persistent QAT strip (CHROME-A carries Speichern/
+         Kopieren/Einfügen/Ausschneiden + Drucken/Rückgängig/Wiederholen/
+         Format übertragen on every tab), so row 1 starts at the Font group
+         directly after the strip. -->
     <div class="rb-group" role="group" aria-label="Font">
     <select id="font-family" class="toolbar-select rb bare"  title="Font family" data-i18n-title="Toolbar.FontFamilyTitle" aria-label="Font family">
       <option value="" selected>Default</option>
@@ -375,14 +371,6 @@
       </ul>
     </span>
     </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group rb-edge" role="group" aria-label="Toolbar tools">
-    <button id="btn-find" class="rb"  title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
-    <button id="btn-ribbon-collapse" class="rb rb-flat" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
-    <button id="btn-fullscreen" data-i18n-title="View.FullscreenToggle" data-i18n-aria-label="View.FullscreenToggle" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
-    <button id="btn-theme" data-i18n-title="View.ThemeToggle" data-i18n-aria-label="View.ThemeToggle" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
-    <button id="btn-replace" class="rb" title="Replace (Ctrl+H)" data-i18n-title="Home.ReplaceTitle" aria-label="Replace" data-i18n-aria-label="Home.Replace" aria-keyshortcuts="Control+H"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4"/><path d="m9.5 9.5 3.5 3.5M3 4h6M7.5 2.5 9 4 7.5 5.5" transform="translate(-0.5 0.5)"/></svg></button>
-    </div>
     </div>
     <div class="ribbon-row">
     <div class="rb-group" role="group" aria-label="Font character styles">
@@ -453,6 +441,20 @@
     <button id="btn-select-all" class="rb" data-cmd="selectAll" title="Select all (Ctrl+A)" data-i18n-title="Home.SelectAllTitle" aria-label="Select all" data-i18n-aria-label="Home.SelectAll" aria-keyshortcuts="Control+A"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke-dasharray="2.4 2"/><path d="M5.5 8h5M8 5.5v5"/></svg></button>
     </div>
     </div>
+    </div>
+    <!-- CHROME-D topbar right zone: the Find · Replace · Collapse ·
+         Fullscreen · Theme cluster leaves the Home ribbon and becomes
+         persistent chrome pinned to the RIGHT edge of the function band —
+         the mirror of the left-edge QAT strip. Its DOM slot (between two
+         .ribbon-page siblings, so tab pages surround it) is neutralized by
+         flex `order` (see .toolbar-tools CSS), which keeps the zone the
+         LAST visible band item on EVERY tab. -->
+    <div class="toolbar-tools" role="group" aria-label="Toolbar tools" data-i18n-aria-label="Toolbar.Tools">
+    <button id="btn-find" class="rb"  title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
+    <button id="btn-replace" class="rb" title="Replace (Ctrl+H)" data-i18n-title="Home.ReplaceTitle" aria-label="Replace" data-i18n-aria-label="Home.Replace" aria-keyshortcuts="Control+H"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4"/><path d="m9.5 9.5 3.5 3.5M3 4h6M7.5 2.5 9 4 7.5 5.5" transform="translate(-0.5 0.5)"/></svg></button>
+    <button id="btn-ribbon-collapse" class="rb rb-flat" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
+    <button id="btn-fullscreen" data-i18n-title="View.FullscreenToggle" data-i18n-aria-label="View.FullscreenToggle" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
+    <button id="btn-theme" data-i18n-title="View.ThemeToggle" data-i18n-aria-label="View.ThemeToggle" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
     </div>
     <div class="ribbon-page" data-tab="insert" role="group" aria-label="Insert ribbon">
     <div class="ribbon-row">

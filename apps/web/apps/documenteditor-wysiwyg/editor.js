@@ -1965,17 +1965,13 @@
     return true;
   }
 
-  // Grey out the toolbar buttons when the chain is exhausted (or the
+  // Grey out the QAT undo/redo cells when the chain is exhausted (or the
   // document is read-only) instead of serving no-op clicks; the "can
   // undo/redo" state is the SIZE of our explicit stacks now, not the
   // opaque queryCommandEnabled query.
   function updateUndoRedoState() {
-    const undoBtn = document.getElementById("btn-undo");
-    const redoBtn = document.getElementById("btn-redo");
-    if (undoBtn) undoBtn.disabled = READ_ONLY || undoStack.length === 0;
-    if (redoBtn) redoBtn.disabled = READ_ONLY || redoStack.length === 0;
-    // CHROME-A QAT: the strip's undo/redo cells grey out with the same
-    // history-chain state as the Home-ribbon pair.
+    // CHROME-D: the Home-ribbon undo/redo pair is gone (QAT duplicates) —
+    // the CHROME-A strip's cells carry the persistent grey-out state.
     const qatUndoBtn = document.getElementById("qat-undo");
     const qatRedoBtn = document.getElementById("qat-redo");
     if (qatUndoBtn) qatUndoBtn.disabled = READ_ONLY || undoStack.length === 0;
@@ -11297,20 +11293,9 @@
     editorEl.focus();
     document.execCommand("insertHTML", false, sanitizePasteHtml(html));
   });
-  // Ribbon Clipboard group: same actions as the ctx menu's Paste/Cut/Copy.
-  const clipPasteBtn = document.getElementById("btn-paste");
-  if (clipPasteBtn) clipPasteBtn.addEventListener("click", () => {
-    richPaste().then((rich) => {
-      if (rich) return;
-      navigator.clipboard.readText().then((text) => {
-        if (text) document.execCommand("insertText", false, text);
-      }).catch(() => {});
-    });
-  });
-  for (const id of ["btn-cut", "btn-copy"]) {
-    const b = document.getElementById(id);
-    if (b) b.addEventListener("click", () => document.execCommand(id === "btn-cut" ? "cut" : "copy"));
-  }
+  // CHROME-D: the Home Clipboard quick cluster (paste/cut/copy) is gone —
+  // the CHROME-A QAT strip carries the same dispatch (qat-paste mirrors the
+  // rich-paste-then-plaintext-fallback path, qat-cut/qat-copy execCommand).
   // --- CHROME-A QAT strip (OO 9.4 quick access, 2x4) ---------------------
   // The strip lives in #toolbar OUTSIDE the .ribbon-page flow, so it stays
   // on every tab. Same dispatch as the Home clipboard cluster / titlebar QA
