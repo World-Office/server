@@ -934,23 +934,28 @@
       return true;
     } catch (err) { return false; }
   }
+  // pasteFormat() reports success so the QAT painter cell can deactivate
+  // after one applied stroke (Word single-click painter parity); the
+  // Ctrl+Alt+V path ignores the return value.
   function pasteFormat() {
-    if (!paintedFormat) { setStatus(t("Status.NoFormatToPaste")); return; }
+    if (!paintedFormat) { setStatus(t("Status.NoFormatToPaste")); return false; }
     const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) { setStatus(t("Status.NoSelection")); return; }
+    if (!sel || sel.rangeCount === 0) { setStatus(t("Status.NoSelection")); return false; }
     const range = sel.getRangeAt(0);
-    if (range.collapsed || range.toString() === "") { setStatus(t("Status.NoSelection")); return; }
+    if (range.collapsed || range.toString() === "") { setStatus(t("Status.NoSelection")); return false; }
     let node = range.commonAncestorContainer;
     if (node.nodeType === 3) node = node.parentElement;
     const missing = Object.entries(paintedFormat).filter(([p, v]) => !hasExplicitFormat(node, p, v));
-    if (missing.length === 0) { setStatus(t("Status.FormatApplied")); return; }
+    if (missing.length === 0) { setStatus(t("Status.FormatApplied")); return true; }
     if (paintFormatOnSelection(Object.fromEntries(missing))) {
       markDirty();
       captureHistory();
       scheduleCollabSync();
       notifyHost("editing");
       setStatus(t("Status.FormatApplied"));
+      return true;
     }
+    return false;
   }
 
   function fontIsMono() {
@@ -1969,6 +1974,12 @@
     const redoBtn = document.getElementById("btn-redo");
     if (undoBtn) undoBtn.disabled = READ_ONLY || undoStack.length === 0;
     if (redoBtn) redoBtn.disabled = READ_ONLY || redoStack.length === 0;
+    // CHROME-A QAT: the strip's undo/redo cells grey out with the same
+    // history-chain state as the Home-ribbon pair.
+    const qatUndoBtn = document.getElementById("qat-undo");
+    const qatRedoBtn = document.getElementById("qat-redo");
+    if (qatUndoBtn) qatUndoBtn.disabled = READ_ONLY || undoStack.length === 0;
+    if (qatRedoBtn) qatRedoBtn.disabled = READ_ONLY || redoStack.length === 0;
   }
 
   // BUG7-UNDO-DEEP: read-only automation hook over the history chain (same
@@ -11300,6 +11311,39 @@
     const b = document.getElementById(id);
     if (b) b.addEventListener("click", () => document.execCommand(id === "btn-cut" ? "cut" : "copy"));
   }
+  // --- CHROME-A QAT strip (OO 9.4 quick access, 2x4) ---------------------
+  // The strip lives in #toolbar OUTSIDE the .ribbon-page flow, so it stays
+  // on every tab. Same dispatch as the Home clipboard cluster / titlebar QA
+  // buttons: undo/redo ride the data-cmd chain (see the generic data-cmd
+  // wiring + updateUndoRedoState), print/save/paste/cut/copy mirror their
+  // existing twins, and the painter cell toggles copyFormat() ->
+  // pasteFormat() like the Ctrl+Alt+C / Ctrl+Alt+V keyboard pair.
+  const qatSaveBtn = document.getElementById("qat-save");
+  if (qatSaveBtn) qatSaveBtn.addEventListener("click", saveDocument);
+  const qatPasteBtn = document.getElementById("qat-paste");
+  if (qatPasteBtn) qatPasteBtn.addEventListener("click", () => {
+    richPaste().then((rich) => {
+      if (rich) return;
+      navigator.clipboard.readText().then((text) => {
+        if (text) document.execCommand("insertText", false, text);
+      }).catch(() => {});
+    });
+  });
+  const qatPrintBtn = document.getElementById("qat-print");
+  if (qatPrintBtn) qatPrintBtn.addEventListener("click", () => window.print());
+  for (const qid of ["qat-cut", "qat-copy"]) {
+    const qb = document.getElementById(qid);
+    if (qb) qb.addEventListener("click", () => document.execCommand(qid === "qat-cut" ? "cut" : "copy"));
+  }
+  const qatPainterBtn = document.getElementById("qat-format-paint");
+  if (qatPainterBtn) qatPainterBtn.addEventListener("click", () => {
+    if (!paintedFormat) {
+      copyFormat();
+    } else if (pasteFormat()) {
+      paintedFormat = null; // one-stroke painter: deactivate after applying
+    }
+    qatPainterBtn.setAttribute("aria-pressed", String(Boolean(paintedFormat)));
+  });
   // OO parity: suppress the native browser context menu everywhere in the
   // app shell (toolbar, ribbon, statusbar, main backdrop, right-panel). The
   // custom #ctx-menu handles right-click inside #editor (next block). This

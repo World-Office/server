@@ -451,6 +451,36 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar button.rib-scroll-btn:hover { background: var(--hover); }
 #rib-scroll-left { top: 0; bottom: auto; box-shadow: inset 0 1px 0 var(--border), -6px 0 8px rgba(0, 0, 0, 0.14); }
 #rib-scroll-right { top: auto; bottom: 0; }
+
+/* CHROME-A QAT (OO 9.4 quick-access strip): persistent 2x4 grid (2 columns
+   x 4 rows) pinned to the LEFT edge of the function band, OUTSIDE the
+   .ribbon-page flow — tab switches swap pages, this strip stays ("on every
+   tab"). The active page shrinks (flex: 1 1 0) to give it room; chevron
+   scrolling keeps measuring the page, so nothing else moves. */
+.toolbar .qat-strip {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, 24px);
+  grid-auto-rows: 1fr;
+  gap: 1px;
+  align-self: stretch;
+  padding: 5px 0;
+  margin-right: 3px;
+  border-right: 1px solid var(--border);
+}
+.toolbar .qat-strip button.qat {
+  min-width: 24px;
+  width: 24px;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbar .qat-strip button.qat svg { width: 15px; height: 15px; }
+.toolbar .qat-strip button.qat[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.toolbar > .ribbon-page.active { width: auto; min-width: 0; flex: 1 1 0; }
 @media (max-width: 760px) {
   /* Tiny windows: keep the strip usable by letting only the icons cluster
      show in the titlebar name slot. */
