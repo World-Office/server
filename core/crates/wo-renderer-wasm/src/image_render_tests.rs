@@ -76,7 +76,7 @@ fn test_draw_image_scaling() {
     assert!(result.is_ok());
 
     // Check that the area was filled
-    let pixels = get_pixel_data(handle).unwrap();
+    let _pixels = get_pixel_data(handle).unwrap();
     // The 10x10 area starting at (10,10) should have some red pixels
     // This is a basic check - pixel-perfect verification would be more complex
 }
@@ -141,11 +141,11 @@ fn test_emu_to_px_conversion() {
     let emu_to_px = PT_TO_PX / 12700.0;
 
     // 12700 EMUs should be 4/3 pixels
-    let px = 12700u32 as f32 * emu_to_px;
+    let px = 12700_f32 * emu_to_px;
     assert!((px - 4.0 / 3.0).abs() < 0.001);
 
     // 38100 EMUs (3 * 12700) should be 4 pixels
-    let px = 38100u32 as f32 * emu_to_px;
+    let px = 38100_f32 * emu_to_px;
     assert!((px - 4.0).abs() < 0.001);
 }
 
@@ -206,7 +206,7 @@ fn test_layout_image_with_paragraphs() {
 
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);
     assert_eq!(pages.len(), 1);
-    assert!(pages[0].images.len() >= 1);
+    assert!(!pages[0].images.is_empty());
 }
 
 // -- Flat paragraphs with images --

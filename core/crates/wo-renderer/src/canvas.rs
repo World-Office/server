@@ -407,9 +407,9 @@ impl PixelBuffer {
             }
         } else {
             // For open paths (stroke-like), use coverage directly
-            for py in 0..self.height as usize {
-                for px in 0..self.width as usize {
-                    let final_alpha = alpha * color.a * coverage[py][px].clamp(0.0, 1.0);
+            for (py, row) in coverage.iter().enumerate() {
+                for (px, cell) in row.iter().enumerate() {
+                    let final_alpha = alpha * color.a * cell.clamp(0.0, 1.0);
                     if px < self.width as usize && py < self.height as usize {
                         let px_u = px as u32;
                         let py_u = py as u32;
@@ -1098,7 +1098,7 @@ impl Canvas {
         }
 
         // Decode the image
-        let img = image::io::Reader::new(std::io::Cursor::new(image_data))
+        let img = image::ImageReader::new(std::io::Cursor::new(image_data))
             .with_guessed_format()
             .map_err(|e| format!("Failed to read image: {}", e))?
             .decode()

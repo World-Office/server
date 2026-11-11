@@ -2158,7 +2158,7 @@ impl OoxmlParser {
                     let mut layout = "".to_string();
 
                     // Try to find diagram-specific attributes
-                    if let Some(dgm) = gd.children().find(|c| c.has_tag_name("relIds")) {
+                    if gd.children().find(|c| c.has_tag_name("relIds")).is_some() {
                         // In a real SmartArt, we'd parse the diagram definition XML
                         // For now, we'll use placeholder values
                         diag_type = "SmartArt Diagram".to_string();
@@ -2346,8 +2346,10 @@ impl OoxmlParser {
                 let root = doc.root_element();
                 let w_ns = Self::W_NS;
 
-                let mut settings = DocxSettings::default();
-                settings.raw_xml = Some(xml.clone());
+                let mut settings = DocxSettings {
+                    raw_xml: Some(xml.clone()),
+                    ..Default::default()
+                };
 
                 // Parse w:trackRevisions
                 for child in root.children() {
@@ -2424,8 +2426,8 @@ impl OoxmlParser {
     ) -> Result<()> {
         // (part name "/word/x.xml" -> content type) and (ext -> content type)
         // from the source package's [Content_Types].xml.
-        let (mut overrides, mut defaults): (Vec<(String, String)>, Vec<(String, String)>) =
-            (Vec::new(), Vec::new());
+        type CtxPairs = Vec<(String, String)>;
+        let (mut overrides, mut defaults): (CtxPairs, CtxPairs) = (Vec::new(), Vec::new());
         if let Ok(ct_xml) = self.read_zip_entry(archive, "[Content_Types].xml") {
             if let Ok(ct_doc) = XmlDoc::parse(&ct_xml) {
                 for node in ct_doc.descendants() {
@@ -4090,24 +4092,6 @@ impl OoxmlParser {
 
         let mut color_scheme = ColorScheme::default();
         let mut font_scheme = FontScheme::default();
-
-        for child in root.descendants() {
-            let local = child.tag_name().name();
-            let ns = child.tag_name().namespace();
-
-            match (ns, local) {
-                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "clrScheme") => {
-                    color_scheme = self.parse_color_scheme(&child);
-                }
-                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fontScheme") => {
-                    font_scheme = self.parse_font_scheme(&child);
-                }
-                _ => {}
-            }
-        }
-
-        let mut color_scheme = ColorScheme::default();
-        let mut font_scheme = FontScheme::default();
         let mut format_scheme: Option<FmtScheme> = None;
 
         for child in root.descendants() {
@@ -4723,17 +4707,17 @@ impl OoxmlParser {
     }
 
     fn parse_chart_node(chart: roxmltree::Node) -> ChartNode {
-        let mut node = ChartNode::default();
-        node.title = Self::c_child(chart, "title").map(Self::parse_chart_title);
-        node.auto_title_deleted = Self::child_val_bool(chart, "autoTitleDeleted");
-        if let Some(plot_area) = Self::c_child(chart, "plotArea") {
-            node.plot_area = Self::parse_plot_area(plot_area);
+        ChartNode {
+            title: Self::c_child(chart, "title").map(Self::parse_chart_title),
+            auto_title_deleted: Self::child_val_bool(chart, "autoTitleDeleted"),
+            plot_area: Self::c_child(chart, "plotArea")
+                .map(Self::parse_plot_area)
+                .unwrap_or_default(),
+            legend: Self::c_child(chart, "legend").map(Self::parse_chart_legend),
+            plot_vis_only: Self::child_val_bool(chart, "plotVisOnly"),
+            disp_blanks_as: Self::child_val_str(chart, "dispBlanksAs"),
+            show_dlbls_over_max: Self::child_val_bool(chart, "showDLblsOverMax"),
         }
-        node.legend = Self::c_child(chart, "legend").map(Self::parse_chart_legend);
-        node.plot_vis_only = Self::child_val_bool(chart, "plotVisOnly");
-        node.disp_blanks_as = Self::child_val_str(chart, "dispBlanksAs");
-        node.show_dlbls_over_max = Self::child_val_bool(chart, "showDLblsOverMax");
-        node
     }
 
     fn parse_chart_title(title: roxmltree::Node) -> ChartTitleNode {

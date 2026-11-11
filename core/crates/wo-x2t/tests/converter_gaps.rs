@@ -3010,16 +3010,13 @@ fn gap_pptx_theme_roundtrip() {
     let out = wo_ooxml::OoxmlSerializer::new()
         .serialize_pptx(&pres)
         .expect("pptx serialization");
-    let theme_blob = String::from_utf8(
-        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
-            .unwrap()
-            .by_name("ppt/theme/theme1.xml")
-            .unwrap()
-            .bytes()
-            .collect::<Result<Vec<u8>, _>>()
-            .unwrap(),
-    )
-    .unwrap();
+    let theme_blob = {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(out.as_slice())).unwrap();
+        let mut f = archive.by_name("ppt/theme/theme1.xml").unwrap();
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut f, &mut buf).unwrap();
+        String::from_utf8(buf).unwrap()
+    };
     assert!(
         theme_blob.contains("<a:fmtScheme name=\"Office\">"),
         "parsed fmtScheme must re-emit: {}",
@@ -3029,16 +3026,15 @@ fn gap_pptx_theme_roundtrip() {
     assert!(theme_blob.contains("<a:tint val=\"50000\"/>"));
     assert!(theme_blob.contains("<a:prstDash val=\"sysDot\"/>"));
 
-    let master_blob = String::from_utf8(
-        zip::ZipArchive::new(std::io::Cursor::new(out.as_slice()))
-            .unwrap()
+    let master_blob = {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(out.as_slice())).unwrap();
+        let mut f = archive
             .by_name("ppt/slideMasters/slideMaster1.xml")
-            .unwrap()
-            .bytes()
-            .collect::<Result<Vec<u8>, _>>()
-            .unwrap(),
-    )
-    .unwrap();
+            .unwrap();
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut f, &mut buf).unwrap();
+        String::from_utf8(buf).unwrap()
+    };
     assert!(
         master_blob.contains("bg2=\"dk2\"") && master_blob.contains("tx2=\"lt2\""),
         "master clrMap must re-emit: {}",
@@ -3863,7 +3859,7 @@ fn gap_xlsx_pivot_grouping() {
 
     // Test that the types exist and can be referenced
     // Note: Actual usage requires wo-sheet as a dependency
-    assert!(true, "Pivot grouping types defined in wo-sheet::pivot");
+    // ponytail: smoke test — types referenced above; no runtime assertion needed
 }
 
 /// P4-P01: Test that PPTX timing tree (TimingTree/TimeNode) types exist and can be used
@@ -4013,7 +4009,7 @@ fn gap_pptx_smartart_survives() {
     // Parse the PPTX using the parser directly (not through OoxmlDocument)
     // This tests that SmartArt shapes are parsed correctly
     let parser = wo_ooxml::OoxmlParser::new();
-    let mut cursor = std::io::Cursor::new(buf.as_slice());
+    let cursor = std::io::Cursor::new(buf.as_slice());
     let mut archive = zip::ZipArchive::new(cursor).unwrap();
     let pptx = parser.parse_pptx(&mut archive).unwrap().unwrap();
 

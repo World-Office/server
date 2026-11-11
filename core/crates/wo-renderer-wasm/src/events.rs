@@ -282,7 +282,9 @@ static SINK: OnceLock<Mutex<Option<js_sys::Function>>> = OnceLock::new();
 /// Native-`cargo test`-only sink: JS functions cannot exist off-wasm, so
 /// `emit_event` falls back to this slot when the wasm sink is empty.
 #[cfg(test)]
-static TEST_SINK: OnceLock<Mutex<Option<Box<dyn FnMut(&WsEvent) + Send>>>> = OnceLock::new();
+type TestSink = Mutex<Option<Box<dyn FnMut(&WsEvent) + Send>>>;
+#[cfg(test)]
+static TEST_SINK: OnceLock<TestSink> = OnceLock::new();
 
 /// Install the JS callback that receives every pushed `WsEvent` frame as a
 /// `{"event": "<snake_case variant>", "payload": {...}}` object.

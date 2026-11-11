@@ -1025,7 +1025,7 @@ fn empty_body_err() -> String {
 
 /// The paragraph block at the document cursor, if the body is non-empty
 /// and the cursor sits on a paragraph block.
-fn para_at_cursor<'a>(body: &'a DocxBody, doc_handle: u32) -> Option<&'a DocxParagraph> {
+fn para_at_cursor(body: &DocxBody, doc_handle: u32) -> Option<&DocxParagraph> {
     let cursor = super::get_cursor(doc_handle);
     let pidx = cursor.para.min(body.blocks.len().saturating_sub(1));
     match body.blocks.get(pidx)? {
@@ -1469,7 +1469,7 @@ fn validate_stored(kind: &str, value: &serde_json::Value) -> Result<String, Stri
             .map_err(|e| format!("JSON error: {e}"))?,
         _ => unreachable!("kind pre-validated by normalize_kind"),
     };
-    Ok(serde_json::to_string(&canonical).map_err(|e| format!("JSON error: {e}"))?)
+    serde_json::to_string(&canonical).map_err(|e| format!("JSON error: {e}"))
 }
 
 fn set_stored(doc_handle: u32, kind: &str, value: &serde_json::Value) -> Result<String, String> {

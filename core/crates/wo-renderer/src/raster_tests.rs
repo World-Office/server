@@ -51,7 +51,7 @@ fn test_stroke_aa_coverage_basic() {
     c.stroke_aa_coverage();
 
     // Should not panic
-    assert!(true, "AA stroke should complete without panic");
+    // ponytail: smoke test — completing without panic IS the assertion
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn test_stroke_aa_coverage_width() {
     c.stroke_aa_coverage();
 
     // Should not panic with wide stroke
-    assert!(true, "AA stroke with width should complete");
+    // ponytail: smoke test — completing without panic IS the assertion
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn test_rasterize_path_aa_stroke() {
     c.rasterize_path_aa(&path, true, 3.0);
 
     // Should not panic
-    assert!(true, "AA rasterize stroke should complete");
+    // ponytail: smoke test — completing without panic IS the assertion
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn test_stroke_joins_aa() {
     c.stroke_aa_coverage();
 
     // Should not panic
-    assert!(true, "AA stroke with join should complete");
+    // ponytail: smoke test — completing without panic IS the assertion
 }
 
 #[test]
@@ -220,7 +220,7 @@ fn test_aa_coverage_methods_exist() {
     c.rasterize_path_aa(&path, false, 1.0);
     c.rasterize_path_aa(&path, true, 1.0);
 
-    assert!(true, "All AA coverage methods should be callable");
+    // ponytail: smoke test — completing without panic IS the assertion
 }
 
 // --- Image drawing: bilinear scaling + transparent blend ---

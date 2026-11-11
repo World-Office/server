@@ -34,7 +34,7 @@ pub struct LineBreak {
 
 impl LineBreak {
     /// Copy the line's glyphs out of `run` into a standalone run.
-    pub fn slice<'a>(&self, run: &'a ShapedRun) -> ShapedRun {
+    pub fn slice(&self, run: &ShapedRun) -> ShapedRun {
         ShapedRun {
             font_size: run.font_size,
             glyphs: run.glyphs[self.start..self.end].to_vec(),

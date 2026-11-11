@@ -1141,10 +1141,11 @@ pub struct DocxSettings {
 }
 
 /// Document protection mode (CT_DocProtect, ECMA-376 §17.15.1.30).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DocxProtection {
     /// No changes allowed (full document read-only).
+    #[default]
     ReadOnly,
     /// Comments only; no content edits.
     Comments,
@@ -1174,12 +1175,6 @@ impl DocxProtection {
             DocxProtection::TrackedChanges => "trackedChanges",
             DocxProtection::Forms => "forms",
         }
-    }
-}
-
-impl Default for DocxProtection {
-    fn default() -> Self {
-        DocxProtection::ReadOnly
     }
 }
 
@@ -2754,6 +2749,9 @@ pub struct GroupShape {
 }
 
 /// One entry of a group's child list.
+/// ponytail: large_enum_variant allowed — Shape dominates; boxing would touch
+/// every slide parse/match site; groups hold few children, so the size is fine.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupChild {
     /// A leaf slide shape (`p:sp`, `p:pic`, `p:cxnSp`, ...).
@@ -3751,13 +3749,13 @@ pub fn apply_scheme_color_transforms(hex: &str, modifiers: &[SchemeClrTransform]
             SchemeClrTransform::Tint(v) => {
                 let t = pct(v);
                 for c in rgb.iter_mut() {
-                    *c = (*c as f64 * t + 255.0 * (1.0 - t)).round();
+                    *c = (*c * t + 255.0 * (1.0 - t)).round();
                 }
             }
             SchemeClrTransform::Shade(v) => {
                 let s = pct(v);
                 for c in rgb.iter_mut() {
-                    let v = (*c as f64 * s).round();
+                    let v = (*c * s).round();
                     *c = v.clamp(0.0, 255.0);
                 }
             }

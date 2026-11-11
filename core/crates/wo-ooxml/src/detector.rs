@@ -26,8 +26,10 @@ pub fn detect_ooxml_format(content_types_xml: &str) -> OoxmlFormat {
 /// Detect if data is a flat OPC (single-XML) DOCX document.
 /// Flat OPC format is a single XML file (not a ZIP) that represents a complete
 /// DOCX document. This includes:
+///
 /// - Word 2003 XML format (w:wordDocument root element)
 /// - Flat OPC format with w:document root element
+///
 /// Returns true if the data looks like a flat OPC XML document.
 pub fn is_flat_opc_docx(data: &[u8]) -> bool {
     if data.len() < 50 {

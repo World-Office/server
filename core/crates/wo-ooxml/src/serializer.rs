@@ -2393,7 +2393,7 @@ impl OoxmlSerializer {
         if let Some(date) = &rev.date {
             el.push_str(&format!(" w:date=\"{}\"", escape_xml(date)));
         }
-        el.push_str(">");
+        el.push('>');
         el
     }
 
@@ -5839,7 +5839,7 @@ fn push_chart_header_footer(xml: &mut String, hf: &XlsxHeaderFooter) {
     if hf.different_first {
         xml.push_str(" differentFirst=\"1\"");
     }
-    xml.push_str(">");
+    xml.push('>');
     for (name, text) in [
         ("oddHeader", &hf.odd_header),
         ("oddFooter", &hf.odd_footer),

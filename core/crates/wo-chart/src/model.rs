@@ -353,7 +353,7 @@ pub enum TrendlineKind {
 }
 
 /// A regression trendline on a chart series.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Trendline {
     /// The regression type.
     pub kind: TrendlineKind,
@@ -425,7 +425,7 @@ pub enum ErrorBarValueType {
 }
 
 /// Error bars on a chart series.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ErrorBar {
     /// Which axis this applies to.
     #[serde(default)]
@@ -442,34 +442,6 @@ pub struct ErrorBar {
     /// No end caps on the bars (`c:noEndCap`).
     #[serde(default)]
     pub no_end_cap: bool,
-}
-
-impl Default for Trendline {
-    fn default() -> Self {
-        Self {
-            kind: TrendlineKind::default(),
-            order: None,
-            period: None,
-            forward: None,
-            backward: None,
-            intercept: None,
-            show_r_squared: false,
-            show_equation: false,
-            name: None,
-        }
-    }
-}
-
-impl Default for ErrorBar {
-    fn default() -> Self {
-        Self {
-            direction: ErrorBarDirection::default(),
-            bar_type: ErrorBarType::default(),
-            value_type: ErrorBarValueType::default(),
-            value: None,
-            no_end_cap: false,
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------

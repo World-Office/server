@@ -349,7 +349,7 @@ mod tests {
                 .as_nanos()
         ));
         std::fs::create_dir_all(&dir).unwrap();
-        let cfg = form_cfg(&dir.to_str().unwrap().to_string());
+        let cfg = form_cfg(dir.to_str().unwrap());
         let app = crate::create_app(cfg.clone());
         if !content.is_empty() {
             let store = crate::store::DocStore::new(&cfg.data_dir);
@@ -615,7 +615,7 @@ mod tests {
     /// A plain docx filled form is equally accepted and labelled as docx.
     #[tokio::test]
     async fn test_save_form_accepts_plain_docx() {
-        let (app, dir) = test_app_with_store("unused", b"").await;
+        let (_app, dir) = test_app_with_store("unused", b"").await;
         let form_app = save_form_app(&form_cfg(&dir));
 
         let resp = post_body(
@@ -645,7 +645,7 @@ mod tests {
     /// empty bodies and non-package payloads are 4xx.
     #[tokio::test]
     async fn test_save_form_rejects_bad_input() {
-        let (app, dir) = test_app_with_store("unused", b"").await;
+        let (_app, dir) = test_app_with_store("unused", b"").await;
         let form_app = save_form_app(&form_cfg(&dir));
 
         // Path traversal must be rejected before it can touch the filesystem.
