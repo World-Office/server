@@ -1669,6 +1669,17 @@
       openSaveFormDialog();
       return;
     }
+    // FX-U2: form roles + form settings — engine-hosted dialogs (specs in
+    // wo-dialogs.js); okCmd payloads are one JSON ledger entry per apply.
+    if (cmd === "openRolesManager") { openRolesManager(); return; }
+    if (cmd === "rolesManagerOk") { rolesManagerOk(); return; }
+    if (cmd === "rolesAddClick") { rolesAddClick(); return; }
+    if (cmd === "rolesEditClick") { rolesEditClick(); return; }
+    if (cmd === "rolesRemoveClick") { rolesRemoveClick(); return; }
+    if (cmd === "roleEditOk") { applyRoleEdit(value); return; }
+    if (cmd === "roleDeleteOk") { applyRoleDelete(); return; }
+    if (cmd === "openFormSettings") { openFormSettings(); return; }
+    if (cmd === "formSettingsOk") { applyFormSettings(value); return; }
     // Loud-stub doctrine at the root: any command that reaches this
     // fallthrough but is not a real browser execCommand (e.g. a stubbed
     // ribbon button) must SAY so instead of failing silently — silent
@@ -15807,6 +15818,342 @@
   // FX-U1: Backstage save-form pane handler
   // Backstage pane switching is handled by the existing backstage machinery
   // We just need to wire the save-form button
+
+  // ------------------------------------------------------------------
+  // FX-U2: form roles (RolesManagerDlg/RoleEditDlg/RoleDeleteDlg) +
+  // FormSettings (per-field role assignment + required/fill-mode).
+  //
+  // Role ops go wasm-first — wo-renderer-wasm exports asc_getAllRoles/
+  // asc_addRole/asc_editRole/asc_removeRole (js_name of the Rust fns
+  // asc_get_all_roles/asc_add_role/asc_edit_role/asc_remove_role) over
+  // window.__WO_WASM__, camelCase probed first, snake_case accepted too —
+  // with a JS-side store fallback below for when the wasm engine is
+  // absent. The fallback mirrors the Rust FORM_ROLES_STORE 1:1: role-N
+  // ids (removed ids reusable, smallest free), palette colors (empty
+  // color picks the next entry), duplicate-name rejection, camelCase
+  // {id,name,color,user} wire objects. The block is self-contained on
+  // purpose (extracted + executed under a stubbed window by the gate
+  // tests, same technique as wasm-events.test.mjs).
+  // ------------------------------------------------------------------
+  const ROLE_PALETTE = ["6C8EBF", "D79B00", "82B366", "B85450", "9673A6", "5085BD", "D6B656", "808080"];
+  const WO_ROLES_LIST = [];
+  function woRolesWasm() {
+    return (typeof window !== "undefined" && window.__WO_WASM__) || null;
+  }
+  function woRolesWasmFn(mod, camel, snake) {
+    if (!mod) return null;
+    if (typeof mod[camel] === "function") return mod[camel];
+    if (typeof mod[snake] === "function") return mod[snake];
+    return null;
+  }
+  function woRolesParse(json) {
+    try { return JSON.parse(json); } catch (err) { return null; }
+  }
+  function woRolesDocHandle(mod) {
+    return typeof mod.getDocHandle === "function" ? mod.getDocHandle() : 0;
+  }
+  function woRolesNextId(list) {
+    let n = 1;
+    while (list.some((r) => r.id === "role-" + n)) n++;
+    return "role-" + n;
+  }
+  function woRolesClone(role) { return Object.assign({}, role); }
+  function woRolesGetAll() {
+    const mod = woRolesWasm();
+    const fn = woRolesWasmFn(mod, "asc_getAllRoles", "asc_get_all_roles");
+    if (fn) {
+      try {
+        const parsed = woRolesParse(fn(woRolesDocHandle(mod)));
+        if (Array.isArray(parsed)) {
+          // Mirror into the JS store so a later wasm failure degrades to
+          // the same list instead of an empty one.
+          WO_ROLES_LIST.length = 0;
+          parsed.forEach((r) => {
+            if (r && typeof r.id === "string") WO_ROLES_LIST.push(woRolesClone(r));
+          });
+          return { ok: true, roles: WO_ROLES_LIST.map(woRolesClone) };
+        }
+      } catch (err) { /* engine error → fall back to the JS store */ }
+    }
+    return { ok: true, roles: WO_ROLES_LIST.map(woRolesClone) };
+  }
+  function woRolesAdd(name, color) {
+    const mod = woRolesWasm();
+    const fn = woRolesWasmFn(mod, "asc_addRole", "asc_add_role");
+    if (fn) {
+      try {
+        const parsed = woRolesParse(fn(woRolesDocHandle(mod), String(name || ""), String(color || "")));
+        if (parsed && typeof parsed.id === "string") return { ok: true, role: woRolesClone(parsed) };
+      } catch (err) {
+        return { ok: false, error: err && err.message ? err.message : String(err) };
+      }
+    }
+    const trimmed = String(name || "").trim();
+    if (!trimmed) return { ok: false, error: "Role name must not be empty" };
+    if (WO_ROLES_LIST.some((r) => r.name === trimmed)) return { ok: false, error: "Role name already in use" };
+    const trimmedColor = String(color || "").trim();
+    const role = {
+      id: woRolesNextId(WO_ROLES_LIST),
+      name: trimmed,
+      color: trimmedColor || ROLE_PALETTE[WO_ROLES_LIST.length % ROLE_PALETTE.length],
+      user: "",
+    };
+    WO_ROLES_LIST.push(role);
+    return { ok: true, role: woRolesClone(role) };
+  }
+  function woRolesEdit(id, patch) {
+    const mod = woRolesWasm();
+    const fn = woRolesWasmFn(mod, "asc_editRole", "asc_edit_role");
+    if (fn) {
+      try {
+        const parsed = woRolesParse(fn(woRolesDocHandle(mod), String(id || ""), JSON.stringify(patch || {})));
+        if (parsed && typeof parsed.id === "string") return { ok: true, role: woRolesClone(parsed) };
+      } catch (err) {
+        return { ok: false, error: err && err.message ? err.message : String(err) };
+      }
+    }
+    const at = WO_ROLES_LIST.findIndex((r) => r.id === id);
+    if (at === -1) return { ok: false, error: "Unknown role id" };
+    const role = WO_ROLES_LIST[at];
+    const p = patch || {};
+    if (Object.prototype.hasOwnProperty.call(p, "name")) {
+      const trimmed = String(p.name == null ? "" : p.name).trim();
+      if (!trimmed) return { ok: false, error: "Role name must not be empty" };
+      if (WO_ROLES_LIST.some((r) => r.name === trimmed && r.id !== id)) return { ok: false, error: "Role name already in use" };
+      role.name = trimmed;
+    }
+    if (Object.prototype.hasOwnProperty.call(p, "color")) {
+      const trimmed = String(p.color == null ? "" : p.color).trim();
+      role.color = trimmed || ROLE_PALETTE[at % ROLE_PALETTE.length];
+    }
+    if (Object.prototype.hasOwnProperty.call(p, "user")) {
+      role.user = String(p.user == null ? "" : p.user).trim();
+    }
+    return { ok: true, role: woRolesClone(role) };
+  }
+  function woRolesRemove(id) {
+    const mod = woRolesWasm();
+    const fn = woRolesWasmFn(mod, "asc_removeRole", "asc_remove_role");
+    if (fn) {
+      try {
+        const parsed = woRolesParse(fn(woRolesDocHandle(mod), String(id || "")));
+        if (parsed && typeof parsed.id === "string") {
+          const at = WO_ROLES_LIST.findIndex((r) => r.id === id);
+          if (at !== -1) WO_ROLES_LIST.splice(at, 1);
+          return { ok: true, role: woRolesClone(parsed) };
+        }
+      } catch (err) {
+        return { ok: false, error: err && err.message ? err.message : String(err) };
+      }
+    }
+    const at = WO_ROLES_LIST.findIndex((r) => r.id === id);
+    if (at === -1) return { ok: false, error: "Unknown role id" };
+    const removed = WO_ROLES_LIST.splice(at, 1)[0];
+    return { ok: true, role: woRolesClone(removed) };
+  }
+  const WO_ROLES_API = { getAll: woRolesGetAll, add: woRolesAdd, edit: woRolesEdit, remove: woRolesRemove };
+  window.woRoles = WO_ROLES_API;
+
+  // FX-U2: FormSettings persistence API — reads span.form-field elements
+  // into {key,index,type,label,role,required,fillMode} rows and writes the
+  // edited values back onto the field spans' data-role / data-required /
+  // data-fill-mode attributes (the form engine's per-field contract).
+  const FILL_MODES = ["any", "role"];
+  function woFormFieldType(field) {
+    return field.getAttribute("data-form-field") || "text";
+  }
+  function woFormFieldLabel(field, index) {
+    const type = woFormFieldType(field);
+    const base = {
+      text: t("Forms.TextField"),
+      checkbox: t("Forms.Checkbox"),
+      dropdown: t("Forms.Dropdown"),
+      date: t("Forms.Date"),
+    }[type] || type;
+    return base + " " + (index + 1);
+  }
+  function woFormFieldKey(field, index) {
+    let key = field.getAttribute("data-field-key");
+    if (!key) {
+      key = "field-" + (index + 1);
+      field.setAttribute("data-field-key", key);
+    }
+    return key;
+  }
+  function woCollectFormFields() {
+    const fields = Array.prototype.slice.call(document.querySelectorAll(".form-field"));
+    return fields.map((field, index) => ({
+      key: woFormFieldKey(field, index),
+      index: index,
+      type: woFormFieldType(field),
+      label: woFormFieldLabel(field, index),
+      role: field.getAttribute("data-role") || "",
+      required: field.getAttribute("data-required") === "true",
+      fillMode: FILL_MODES.indexOf(field.getAttribute("data-fill-mode")) !== -1 ? field.getAttribute("data-fill-mode") : "any",
+    }));
+  }
+  function woApplyFormSettings(fields) {
+    const spans = Array.prototype.slice.call(document.querySelectorAll(".form-field"));
+    let applied = 0;
+    spans.forEach((field, index) => {
+      const key = woFormFieldKey(field, index);
+      const next = (fields || []).find((f) => f && f.key === key);
+      if (!next) return;
+      field.setAttribute("data-role", String(next.role || ""));
+      field.setAttribute("data-required", next.required === true || next.required === "true" ? "true" : "false");
+      field.setAttribute("data-fill-mode", FILL_MODES.indexOf(next.fillMode) !== -1 ? next.fillMode : "any");
+      applied++;
+    });
+    if (applied) markDirty();
+    return applied;
+  }
+  const FORM_SETTINGS_API = { collect: woCollectFormFields, apply: woApplyFormSettings, fillModes: FILL_MODES.slice() };
+  window.woFormSettings = FORM_SETTINGS_API;
+
+  // FX-U2: engine-hosted dialogs (specs in wo-dialogs.js WO_DIALOG_SPECS);
+  // okCmd payloads are one JSON ledger entry per dialog apply (engine
+  // invariant), the same pattern as TableSettingsAdvanced/ImageSettingsAdvanced.
+  const ROLES_MANAGER_DIALOG_ID = "roles-manager-dialog";
+  const ROLE_EDIT_DIALOG_ID = "role-edit-dialog";
+  const ROLE_DELETE_DIALOG_ID = "role-delete-dialog";
+  const FORM_SETTINGS_DIALOG_ID = "form-settings-dialog";
+  let roleEditTarget = null;   // role id being edited, null = add mode
+  let roleDeleteTarget = null; // role awaiting delete confirmation
+  function woRolesDialogReady() {
+    return !!(window.WoDialogs && window.WoDialogs.WO_DIALOG_SPECS && window.woDialogEngine);
+  }
+  function woRolesSelection() {
+    if (!woRolesDialogReady()) return "";
+    const values = window.woDialogEngine.getValues(ROLES_MANAGER_DIALOG_ID);
+    const blob = values && values.roles;
+    return blob && typeof blob === "object" && typeof blob.selected === "string" ? blob.selected : "";
+  }
+  function syncRolesManagerDialog() {
+    const handle = woRolesDialogReady() ? window.woDialogEngine.get(ROLES_MANAGER_DIALOG_ID) : null;
+    if (!handle) return;
+    const res = woRolesGetAll();
+    handle.setValue("roles", (res && res.roles) || []);
+  }
+  function openRolesManager() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " rolesManager"); return; }
+    let handle = window.woDialogEngine.get(ROLES_MANAGER_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.rolesManager);
+    syncRolesManagerDialog();
+    handle.open();
+  }
+  function rolesManagerOk() {
+    if (woRolesDialogReady()) window.woDialogEngine.close(ROLES_MANAGER_DIALOG_ID);
+  }
+  function openRoleEdit(role) {
+    let handle = window.woDialogEngine.get(ROLE_EDIT_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.roleEdit);
+    handle.setValue("name", role ? role.name : "");
+    handle.setValue("color", "#" + (role ? role.color : (ROLE_PALETTE[woRolesGetAll().roles.length % ROLE_PALETTE.length] || "6C8EBF")));
+    handle.setValue("user", role ? role.user : "");
+    handle.open();
+  }
+  function rolesAddClick() {
+    roleEditTarget = null;
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " roleEdit"); return; }
+    openRoleEdit(null);
+  }
+  function rolesEditClick() {
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " roleEdit"); return; }
+    const selected = woRolesSelection();
+    const role = selected ? woRolesGetAll().roles.find((r) => r.id === selected) : null;
+    if (!role) { setStatus(t("Status.SelectRoleFirst"), true); return; }
+    roleEditTarget = role.id;
+    openRoleEdit(role);
+  }
+  function applyRoleEdit(value) {
+    const v = advParsePayload(value, "roleEditOk");
+    if (!v) return;
+    const name = String(v.name == null ? "" : v.name);
+    const color = String(v.color == null ? "" : v.color).replace(/^#/, "").trim();
+    const user = String(v.user == null ? "" : v.user).trim();
+    let res;
+    if (roleEditTarget) {
+      res = woRolesEdit(roleEditTarget, { name: name, color: color, user: user });
+      if (res.ok) setStatus(t("Status.RoleUpdated"));
+    } else {
+      res = woRolesAdd(name, color);
+      if (res.ok && user) woRolesEdit(res.role.id, { user: user });
+      if (res.ok) setStatus(t("Status.RoleAdded"));
+    }
+    if (!res.ok) {
+      // Store/engine rejection (empty or duplicate name): say why, keep the
+      // dialog open so the user can fix the name.
+      setStatus(res.error || t("Status.RoleNotFound"), true);
+      return;
+    }
+    roleEditTarget = null;
+    if (woRolesDialogReady()) window.woDialogEngine.close(ROLE_EDIT_DIALOG_ID);
+    syncRolesManagerDialog();
+  }
+  function rolesRemoveClick() {
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " roleDelete"); return; }
+    const selected = woRolesSelection();
+    const role = selected ? woRolesGetAll().roles.find((r) => r.id === selected) : null;
+    if (!role) { setStatus(t("Status.SelectRoleFirst"), true); return; }
+    roleDeleteTarget = role;
+    let handle = window.woDialogEngine.get(ROLE_DELETE_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.roleDelete);
+    handle.setValue("roleInfo", role);
+    handle.open();
+  }
+  function applyRoleDelete() {
+    if (!roleDeleteTarget) {
+      if (woRolesDialogReady()) window.woDialogEngine.close(ROLE_DELETE_DIALOG_ID);
+      return;
+    }
+    const res = woRolesRemove(roleDeleteTarget.id);
+    roleDeleteTarget = null;
+    if (!res.ok) {
+      setStatus(t("Status.RoleNotFound"), true);
+    } else {
+      setStatus(t("Status.RoleRemoved"));
+    }
+    if (woRolesDialogReady()) window.woDialogEngine.close(ROLE_DELETE_DIALOG_ID);
+    syncRolesManagerDialog();
+  }
+  function openFormSettings() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " formSettings"); return; }
+    const fields = woCollectFormFields();
+    if (!fields.length) { setStatus(t("Status.NoFormFields"), true); return; }
+    let handle = window.woDialogEngine.get(FORM_SETTINGS_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.formSettings);
+    const roles = woRolesGetAll().roles;
+    handle.setValue("fields", { fields: fields, roles: roles });
+    // OO FormSettings opens on the caret's field (or the first one): route
+    // the preselection into the mounted formFields widget handle.
+    let focus = 0;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const node = sel.getRangeAt(0).startContainer;
+      const el = node && node.nodeType === 1 ? node : node && node.parentElement;
+      const span = el && typeof el.closest === "function" ? el.closest(".form-field") : null;
+      if (span) {
+        const at = fields.findIndex((f) => f.key === (span.getAttribute("data-field-key") || ""));
+        if (at !== -1) focus = at;
+      }
+    }
+    const widget = (window.woDialogEngine.widgets || []).find((w) => w && w.widget === "formFields" &&
+      w.el && w.el.getAttribute("data-wo-key") === "fields" &&
+      w.el.closest && w.el.closest('[data-wo-dialog="' + FORM_SETTINGS_DIALOG_ID + '"]'));
+    if (widget && typeof widget.select === "function") widget.select(focus);
+    handle.open();
+  }
+  function applyFormSettings(value) {
+    const v = advParsePayload(value, "formSettingsOk");
+    if (!v) return;
+    const blob = v.fields && typeof v.fields === "object" ? v.fields : {};
+    const applied = woApplyFormSettings(blob.fields || []);
+    if (!applied) { setStatus(t("Status.NoFormFields"), true); return; }
+    setStatus(t("Status.FormSettingsApplied"));
+    if (woRolesDialogReady()) window.woDialogEngine.close(FORM_SETTINGS_DIALOG_ID);
+  }
 
    loadDocument();
 })();
