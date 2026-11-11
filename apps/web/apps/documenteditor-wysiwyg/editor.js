@@ -12366,10 +12366,14 @@
       closeAllMenus();
       if (willOpen) setMenu(list, trig, true);
     });
-    list.querySelectorAll("button[data-cmd]").forEach((item) => {
+    // data-menu-cmd: overflow-menu items that duplicate a ribbon data-cmd
+    // (CHROME-F "Mehr") — kept out of [data-cmd] so parity selectors and the
+    // generic wiring resolve to the visible ribbon button, not the hidden
+    // menu duplicate.
+    list.querySelectorAll("button[data-cmd], button[data-menu-cmd]").forEach((item) => {
       item.addEventListener("click", () => {
         closeAllMenus();
-        runCommand(item.dataset.cmd, item.dataset.value || null);
+        runCommand(item.dataset.menuCmd || item.dataset.cmd, item.dataset.value || null);
       });
     });
     // Color menu items (F-125/F-126/F-127): open the matching toolbar

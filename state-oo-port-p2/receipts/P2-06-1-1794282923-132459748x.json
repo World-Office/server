@@ -1,0 +1,17 @@
+{
+  "task": "P2-06",
+  "attempt": 1,
+  "worker": "p2-tud1",
+  "model": "tud/Qwen3.8-27B",
+  "wall_clock_s": 3602.699501992,
+  "tokens": 11925643,
+  "turns": 123,
+  "prompt_tokens": 11840501,
+  "completion_tokens": 85142,
+  "ts": 1794282923,
+  "outcome": "failed",
+  "error": "harness: provider transport: timeout: global; work kept on branch tf/P2-06-rejected-1-1794282922",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

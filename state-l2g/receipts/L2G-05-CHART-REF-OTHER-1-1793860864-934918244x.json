@@ -1,0 +1,16 @@
+{
+  "task": "L2G-05-CHART-REF-OTHER",
+  "attempt": 1,
+  "worker": "l2g-w0",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1974.504636051,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793860864,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

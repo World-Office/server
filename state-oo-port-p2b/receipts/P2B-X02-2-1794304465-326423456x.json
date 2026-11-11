@@ -1,0 +1,17 @@
+{
+  "task": "P2B-X02",
+  "attempt": 2,
+  "worker": "p2b-mis0",
+  "model": "tud/mistral-medium-3.5-128b",
+  "wall_clock_s": 46.476343554,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1794304465,
+  "outcome": "failed",
+  "error": "merge of tf/P2B-X02 failed: Auto-merging core/crates/wo-ooxml/src/lib.rs",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

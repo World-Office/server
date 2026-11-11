@@ -375,9 +375,9 @@
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" aria-label="More" data-i18n-aria-label="Home.More"><span data-i18n="Home.More">More</span>▾</button>
       <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-cmd="bold" data-i18n="Toolbar.Bold">Bold</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="italic" data-i18n="Toolbar.Italic">Italic</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="underline" data-i18n="Toolbar.Underline">Underline</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="bold" data-i18n="Toolbar.Bold">Bold</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="italic" data-i18n="Toolbar.Italic">Italic</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="underline" data-i18n="Toolbar.Underline">Underline</button></li>
       </ul>
     </span>
     </div>
@@ -2251,6 +2251,10 @@
       <div class="dialog-field">
         <label for="hf-different-first">Different first page</label>
         <input id="hf-different-first" type="checkbox">
+      </div>
+      <div class="dialog-field">
+        <label for="hf-distance" data-i18n="HF.Distance">Distance from edge (cm)</label>
+        <input id="hf-distance" type="number" min="0" step="0.1" value="1.25">
       </div>
       <div class="dialog-actions">
         <button id="btn-headerfooter-close" data-i18n="Dialog.Cancel">Cancel</button>

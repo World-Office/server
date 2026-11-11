@@ -1,5 +1,5 @@
 {
-  "$comment": "L2H-02-CTX-RESIDUAL: residual ctx-menu ledger rows. Verify-first facts: UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); TextAlignment is a table-gated submenu (toggleCtxSubmenu, editor.js:9831) whose TextAlignCenter child sets td inline text-align (applyCellTextAlign, editor.js:10267/10320); Insert-tab #btn-header inserts <header class=page-header> directly (editor.js:1274); the WO table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871) \u2014 no ctx-menu item exists for it (right-panel #rp-table-advanced routes to borders-dialog instead, editor.js:7261/7797); clipboard rows observe the system clipboard itself (runner clipboard assertion, _boot grants read/write permissions) -> ctx copy/cut promoted 2026-11-07 via the L2M-04 clipboard fallback.",
+  "$comment": "L2H-02-CTX-RESIDUAL: residual ctx-menu ledger rows. Verify-first facts: UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); TextAlignment is a table-gated submenu (toggleCtxSubmenu, editor.js:9831) whose TextAlignCenter child sets td inline text-align (applyCellTextAlign, editor.js:10267/10320); Insert-tab #btn-header inserts <header class=page-header> directly (editor.js:1274); the WO table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871) — no ctx-menu item exists for it (right-panel #rp-table-advanced routes to borders-dialog instead, editor.js:7261/7797); clipboard rows observe the system clipboard itself (runner clipboard assertion, _boot grants read/write permissions) -> ctx copy/cut promoted 2026-11-07 via the L2M-04 clipboard fallback.",
   "entries": {
     "ctx.justify": {
       "effektClass": "format",
@@ -10,7 +10,7 @@
         "prop": "text-align",
         "equals": "justify"
       },
-      "note": "ledger ctx.justify \u2014 WO surface elsewhere: ribbon data-cmd=justifyFull (not in the WO ctx menu); execCommand('justifyFull') justifies the block under the caret (same proven contract as home-format.json justifyfull)"
+      "note": "ledger ctx.justify — WO surface elsewhere: ribbon data-cmd=justifyFull (not in the WO ctx menu); execCommand('justifyFull') justifies the block under the caret (same proven contract as home-format.json justifyfull)"
     },
     "ctx.text-alignment": {
       "effektClass": "format",
@@ -22,7 +22,7 @@
         "prop": "text-align",
         "equals": "center"
       },
-      "note": "ledger ctx.text-alignment \u2014 TextAlignment is a data-showif=table submenu header (toggleCtxSubmenu keeps the menu open, editor.js:9831); the TextAlignCenter child applies inline text-align:center on the selected td (applyCellTextAlign, editor.js:10267/10320); computed-style reads the td the selection sits in"
+      "note": "ledger ctx.text-alignment — TextAlignment is a data-showif=table submenu header (toggleCtxSubmenu keeps the menu open, editor.js:9831); the TextAlignCenter child applies inline text-align:center on the selected td (applyCellTextAlign, editor.js:10267/10320); computed-style reads the td the selection sits in"
     },
     "ctx.edit-header": {
       "effektClass": "structure",
@@ -32,7 +32,7 @@
         "kind": "dom-mutation",
         "selector": "#editor header.page-header"
       },
-      "note": "ledger ctx.edit-header \u2014 WO surface elsewhere: insert-tab header button (data-cmd=insertHeader) inserts <header class=page-header> as #editor's first child on first press (editor.js:1274-1295; not in the WO ctx menu)"
+      "note": "ledger ctx.edit-header — WO surface elsewhere: insert-tab header button (data-cmd=insertHeader) inserts <header class=page-header> as #editor's first child on first press (editor.js:1274-1295; not in the WO ctx menu)"
     },
     "ctx.update-entire-table": {
       "effektClass": "structure",
@@ -41,9 +41,9 @@
       "post": "#btn-updatetoc-ok",
       "assertion": {
         "kind": "dom-mutation",
-        "selector": "#editor nav.toc"
+        "selector": "#editor div.toc"
       },
-      "note": "ledger ctx.update-entire-table \u2014 ctx UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); its Update button (confirmUpdateTocDialog, editor.js:9336) inserts <nav class=toc> when absent and runs refreshToc \u2014 the whole-table update op"
+      "note": "ledger ctx.update-entire-table — ctx UpdateTOC opens #updatetoc-dialog (openUpdateTocDialog, editor.js:9332/9950); its Update button (confirmUpdateTocDialog, editor.js:9336) inserts <nav class=toc> when absent and runs refreshToc — the whole-table update op"
     },
     "ctx.update-table-of-contents": {
       "effektClass": "dialog",
@@ -63,7 +63,7 @@
           "selector": "#btn-updatetoc-ok"
         }
       ],
-      "note": "ledger ctx.update-table-of-contents \u2014 same UpdateTOC ctx row opens the Update Table of Contents dialog (openUpdateTocDialog, editor.js:9332/9950)"
+      "note": "ledger ctx.update-table-of-contents — same UpdateTOC ctx row opens the Update Table of Contents dialog (openUpdateTocDialog, editor.js:9332/9950)"
     },
     "ctx.update-page-numbers-only": {
       "effektClass": "dialog",
@@ -83,7 +83,7 @@
           "selector": "#toc-update option[value=\"pages\"]"
         }
       ],
-      "note": "ledger ctx.update-page-numbers-only \u2014 the updatetoc-dialog's #toc-update select carries the 'Update page numbers only' option value=pages (index.html:2403); confirmUpdateTocDialog branches choice===pages (editor.js:9337/9350)"
+      "note": "ledger ctx.update-page-numbers-only — the updatetoc-dialog's #toc-update select carries the 'Update page numbers only' option value=pages (index.html:2403); confirmUpdateTocDialog branches choice===pages (editor.js:9337/9350)"
     },
     "ctx.table-advanced-settings": {
       "effektClass": "dialog",
@@ -107,7 +107,7 @@
           "selector": "#table-ops-border-style"
         }
       ],
-      "note": "ledger ctx.table-advanced-settings \u2014 WO surface elsewhere per the ledger (table-ops-dialog): no ctx-menu item exists (index.html ctx census); the reachable table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871); the right-panel #rp-table-advanced link routes to borders-dialog instead (editor.js:7261/7797)"
+      "note": "ledger ctx.table-advanced-settings — WO surface elsewhere per the ledger (table-ops-dialog): no ctx-menu item exists (index.html ctx census); the reachable table-settings surface is the insert-tab Table actions button -> #table-ops-dialog (openTableOps, editor.js:2871); the right-panel #rp-table-advanced link routes to borders-dialog instead (editor.js:7261/7797)"
     },
     "ctx.copy": {
       "effektClass": "op",
@@ -129,7 +129,7 @@
         "selector": "#editor",
         "contains": "PASTE-MARKER"
       },
-      "note": "ctx Paste goes through richPaste/navigator.clipboard.readText \u2014 seedClipboard fills the headless system clipboard"
+      "note": "ctx Paste goes through richPaste/navigator.clipboard.readText — seedClipboard fills the headless system clipboard"
     },
     "ctx.cut": {
       "effektClass": "op",
@@ -149,7 +149,7 @@
         "kind": "clipboard",
         "contains": "https://example.com/"
       },
-      "note": "ledger ctx.copy-hyperlink-address promoted \u2014 in the link-at-caret pre the data-showif=link row is visible and the handler (editor.js:9932-9937) resolves linkEl.closest(\"#editor a[href]\") from the preserved selection anchor and writes linkEl.href (https://example.com/, the fixture link) to the system clipboard; _boot grants clipboard-read/write permissions so the runner's clipboard assertion reads the payload back (probe-verified roundtrip)"
+      "note": "ledger ctx.copy-hyperlink-address promoted — in the link-at-caret pre the data-showif=link row is visible and the handler (editor.js:9932-9937) resolves linkEl.closest(\"#editor a[href]\") from the preserved selection anchor and writes linkEl.href (https://example.com/, the fixture link) to the system clipboard; _boot grants clipboard-read/write permissions so the runner's clipboard assertion reads the payload back (probe-verified roundtrip)"
     },
     "ctx.frame-advanced-settings": {
       "effektClass": "dialog",
@@ -160,11 +160,26 @@
         "dialogSelector": "#image-alt-dialog"
       },
       "subFeatures": [
-        { "name": "width input", "selector": "#image-size-width" },
-        { "name": "height input", "selector": "#image-size-height" },
-        { "name": "alt text input", "selector": "#image-alt-input" },
-        { "name": "apply action", "selector": "#btn-image-alt-ok" },
-        { "name": "cancel action", "selector": "#btn-image-alt-cancel" }
+        {
+          "name": "width input",
+          "selector": "#image-size-width"
+        },
+        {
+          "name": "height input",
+          "selector": "#image-size-height"
+        },
+        {
+          "name": "alt text input",
+          "selector": "#image-alt-input"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-image-alt-ok"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-image-alt-cancel"
+        }
       ],
       "note": "FrameSettings on a plain image falls through to openImageAltDialog (#image-alt-dialog); vector/equation path is the equation-settings row"
     }

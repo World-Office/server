@@ -1,0 +1,17 @@
+{
+  "task": "P2B-X02",
+  "attempt": 3,
+  "worker": "p2b-glm0",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 1541.691553277,
+  "tokens": 9307581,
+  "turns": 117,
+  "prompt_tokens": 9239916,
+  "completion_tokens": 67665,
+  "ts": 1794307126,
+  "outcome": "failed",
+  "error": "merge of tf/P2B-X02 failed: Auto-merging core/crates/wo-ooxml/src/lib.rs",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

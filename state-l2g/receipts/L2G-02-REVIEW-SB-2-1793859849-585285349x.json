@@ -1,0 +1,16 @@
+{
+  "task": "L2G-02-REVIEW-SB",
+  "attempt": 2,
+  "worker": "l2g-w1",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 2616.786240026,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793859849,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

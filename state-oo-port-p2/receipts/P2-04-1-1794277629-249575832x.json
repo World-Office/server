@@ -1,0 +1,17 @@
+{
+  "task": "P2-04",
+  "attempt": 1,
+  "worker": "p2-w2",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 1552.685931139,
+  "tokens": 4109792,
+  "turns": 82,
+  "prompt_tokens": 4058543,
+  "completion_tokens": 51249,
+  "ts": 1794277629,
+  "outcome": "failed",
+  "error": "acceptance gate failed (exit 1): ",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "agent"
+}

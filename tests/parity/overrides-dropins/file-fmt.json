@@ -8,7 +8,7 @@
         "kind": "dom-mutation",
         "selector": "#editor div.page-break"
       },
-      "note": "ledger row: file.insert \u2014 Insert-tab Blank page button dispatches insertBlankPage, which reuses the page-break contract: execCommand insertHTML plants <div class=\"page-break\"><br></div> plus a trailing empty <p> into #editor (editor.js:1174-1194), the fresh page's first block"
+      "note": "ledger row: file.insert — Insert-tab Blank page button dispatches insertBlankPage, which reuses the page-break contract: execCommand insertHTML plants <div class=\"page-break\"><br></div> plus a trailing empty <p> into #editor (editor.js:1174-1194), the fresh page's first block"
     },
     "file.protection": {
       "effektClass": "dialog",
@@ -44,54 +44,54 @@
           "selector": "#btn-protect-cancel"
         }
       ],
-      "note": "ledger row: file.protection \u2014 Protection-tab Encrypt button (data-cmd=protectDialog, same command as backstage btn-fileprotect) opens #protect-dialog (editor.js:8288-8311 protectDialog, protectionError starts empty); dialog carries the restrict/password/editable-range controls"
+      "note": "ledger row: file.protection — Protection-tab Encrypt button (data-cmd=protectDialog, same command as backstage btn-fileprotect) opens #protect-dialog (editor.js:8288-8311 protectDialog, protectionError starts empty); dialog carries the restrict/password/editable-range controls"
     },
     "file.cut-ctrl-x": {
       "effektClass": "op",
-      "selector": "#btn-cut",
+      "selector": "#qat-cut",
       "woTab": "home",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor h1",
         "contains": "kommen bei World Office"
       },
-      "note": "ledger row: file.cut-ctrl-x \u2014 toolbar Cut button runs document.execCommand(\"cut\") (editor.js:9745-9748); the runner's placed selection is \"Will\" (first 4 chars of the demo h1 \"Willkommen bei World Office\"), so the h1 reads \"kommen bei World Office\" afterwards"
+      "note": "ledger row: file.cut-ctrl-x — toolbar Cut button runs document.execCommand(\"cut\") (editor.js:9745-9748); the runner's placed selection is \"Will\" (first 4 chars of the demo h1 \"Willkommen bei World Office\"), so the h1 reads \"kommen bei World Office\" afterwards | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11"
     },
     "file.copy-ctrl-insert": {
       "effektClass": "op",
-      "selector": "#btn-copy",
+      "selector": "#qat-copy",
       "woTab": "home",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor h1",
         "contains": "Willkommen bei World Office"
       },
-      "reason": "#btn-copy runs document.execCommand(\"copy\") (editor.js:9747) \u2014 it writes the OS clipboard only; no DOM mutation, status change or wo:* event is emitted, and the runner's assertion vocabulary cannot read the clipboard (headless clipboard-read is permission-denied), so Copy has no observable contract effect",
-      "note": "ledger row: file.copy-ctrl-insert \u2014 real gap: clipboard write is invisible to DOM-observer assertions; honest xfail"
+      "reason": "#btn-copy runs document.execCommand(\"copy\") (editor.js:9747) — it writes the OS clipboard only; no DOM mutation, status change or wo:* event is emitted, and the runner's assertion vocabulary cannot read the clipboard (headless clipboard-read is permission-denied), so Copy has no observable contract effect",
+      "note": "ledger row: file.copy-ctrl-insert — real gap: clipboard write is invisible to DOM-observer assertions; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11"
     },
     "file.copy-style-ctrl-alt-c": {
       "effektClass": "op",
-      "selector": "#btn-copy",
+      "selector": "#qat-format-paint",
       "woTab": "home",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor h1",
         "contains": "Willkommen bei World Office"
       },
-      "reason": "OO's Copy style (Ctrl+Alt+C) is a format painter; WO ships no copy-style control anywhere in editor.js (no copyStyle/formatPainter wiring \u2014 census fuzzy-matched #btn-copy), and clicking #btn-copy executes a plain clipboard copy with no style-state observable",
-      "note": "ledger row: file.copy-style-ctrl-alt-c \u2014 real gap: no WO format-painter control exists; honest xfail"
+      "reason": "OO's Copy style (Ctrl+Alt+C) is a format painter; WO ships no copy-style control anywhere in editor.js (no copyStyle/formatPainter wiring — census fuzzy-matched #btn-copy), and clicking #btn-copy executes a plain clipboard copy with no style-state observable",
+      "note": "ledger row: file.copy-style-ctrl-alt-c — real gap: no WO format-painter control exists; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11"
     },
     "file.paste-ctrl-v": {
       "effektClass": "op",
       "woTab": "home",
-      "selector": "#btn-paste",
+      "selector": "#qat-paste",
       "seedClipboard": "PASTE-MARKER seeded text",
       "assertion": {
         "kind": "text-mutation",
         "selector": "#editor",
         "contains": "PASTE-MARKER"
       },
-      "note": "btn-paste reads navigator.clipboard.readText \u2014 browser context has clipboard permissions (_boot) and seedClipboard writes the headless system clipboard"
+      "note": "btn-paste reads navigator.clipboard.readText — browser context has clipboard permissions (_boot) and seedClipboard writes the headless system clipboard | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11"
     },
     "formatting.clear-style": {
       "effektClass": "format",
@@ -115,7 +115,7 @@
         "selector": "#editor ol li:nth-child(2)",
         "absent": true
       },
-      "note": "ledger row: formatting.decrease-indent-ctrl-shift-m \u2014 toolbar Decrease-indent button (same emitCommand(\"outdent\") as the Ctrl+Shift+M chord, editor.js:11022) routes to execCommand(\"outdent\"); with the list pre (caret in <li>beta</li> of the two-item ordered list) Chromium pulls the second item out of the <ol>, so ol li:nth-child(2) disappears"
+      "note": "ledger row: formatting.decrease-indent-ctrl-shift-m — toolbar Decrease-indent button (same emitCommand(\"outdent\") as the Ctrl+Shift+M chord, editor.js:11022) routes to execCommand(\"outdent\"); with the list pre (caret in <li>beta</li> of the two-item ordered list) Chromium pulls the second item out of the <ol>, so ol li:nth-child(2) disappears"
     },
     "formatting.shading": {
       "effektClass": "format",
@@ -127,7 +127,7 @@
         "kind": "dom-mutation",
         "selector": "#editor p[style*=\"background-color\"]"
       },
-      "note": "applyParagraphShading needs the caret inside a <p> (closest('p')) \u2014 formatted-selection pre + synthetic change on the color input; F-040 paragraph shading"
+      "note": "applyParagraphShading needs the caret inside a <p> (closest('p')) — formatted-selection pre + synthetic change on the color input; F-040 paragraph shading"
     },
     "formatting.borders": {
       "effektClass": "dialog",
@@ -171,7 +171,7 @@
           "selector": "#btn-borders-cancel"
         }
       ],
-      "note": "ledger row: formatting.borders \u2014 Home-tab Borders button (data-cmd=openBorders, same command as the More-formatting menu row) opens #borders-dialog (editor.js:7797-7802 openBordersDialog adds .open); dialog carries the four side checkboxes + width/color and ok/cancel"
+      "note": "ledger row: formatting.borders — Home-tab Borders button (data-cmd=openBorders, same command as the More-formatting menu row) opens #borders-dialog (editor.js:7797-7802 openBordersDialog adds .open); dialog carries the four side checkboxes + width/color and ok/cancel"
     }
   }
 }

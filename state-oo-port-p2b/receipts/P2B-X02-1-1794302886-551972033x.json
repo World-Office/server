@@ -1,0 +1,17 @@
+{
+  "task": "P2B-X02",
+  "attempt": 1,
+  "worker": "p2b-glm0",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 2123.682420069,
+  "tokens": 11308497,
+  "turns": 128,
+  "prompt_tokens": 11218252,
+  "completion_tokens": 90245,
+  "ts": 1794302886,
+  "outcome": "failed",
+  "error": "harness: turn cap 128 reached; work kept on branch tf/P2B-X02-rejected-1-1794302885",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

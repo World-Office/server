@@ -167,7 +167,8 @@
           "selector": "#doc-lang option"
         }
       ],
-      "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522)"
+      "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522) | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless",
+      "xfail": true
     },
     "ctx.update-1-style": {
       "effektClass": "op",

@@ -1,0 +1,16 @@
+{
+  "task": "L2G-04-INSERT-FILE",
+  "attempt": 1,
+  "worker": "l2g-w3",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 1995.746096323,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793859163,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}

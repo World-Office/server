@@ -1,0 +1,50 @@
+{
+  "L2G-03-PLUGINS-VIEW": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793857167,
+    "attempt_worker": "l2g-w2"
+  },
+  "L2G-05-CHART-REF-OTHER": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793858890,
+    "attempt_worker": "l2g-w0"
+  },
+  "L2G-02-REVIEW-SB": {
+    "state": "done",
+    "attempts": 2,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793857232,
+    "attempt_worker": "l2g-w1"
+  },
+  "L2G-04-INSERT-FILE": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793857167,
+    "attempt_worker": "l2g-w3"
+  },
+  "L2G-01-PAGE-MENU": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793857167,
+    "attempt_worker": "l2g-w0"
+  },
+  "L2G-06-FORMAT-CTRL": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1793859132,
+    "attempt_worker": "l2g-w2"
+  }
+}

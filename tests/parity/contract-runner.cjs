@@ -1009,6 +1009,27 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // view — the playwright default here is 30s, which xfail rows would
       // burn wholesale; 3s is plenty for genuinely visible controls
       await loc.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      // The ribbon scrolls via transform on the active .ribbon-page, NOT
+      // native overflow — scrollIntoViewIfNeeded is a no-op for ribbon
+      // buttons pushed past the viewport edge. Drive the same transform
+      // the ‹ › chevrons use, but only when the control is really offscreen.
+      {
+        const eh = await loc.elementHandle().catch(() => null);
+        if (eh) {
+          await page.evaluate((el) => {
+            const pg = el.closest('.ribbon-page');
+            if (!pg) return;
+            const vw = document.documentElement.clientWidth;
+            const r = el.getBoundingClientRect();
+            if (r.left >= 0 && r.right <= vw) return; // already on screen
+            const cur = new DOMMatrixReadOnly(getComputedStyle(pg).transform === 'none' ? '' : getComputedStyle(pg).transform).m41;
+            const max = Math.max(0, pg.scrollWidth - pg.clientWidth);
+            const target = Math.min(Math.max(0, r.left - cur - 60), max);
+            pg.style.transform = target > 0 ? `translateX(${-target}px)` : '';
+          }, eh).catch(() => {});
+          await sleep(80);
+        }
+      }
       const box = await loc.boundingBox();
       const hit = box && await page.evaluate(({ x, y }) => {
         const el = document.elementFromPoint(x, y);

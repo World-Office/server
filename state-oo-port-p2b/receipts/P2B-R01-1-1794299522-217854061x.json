@@ -1,0 +1,17 @@
+{
+  "task": "P2B-R01",
+  "attempt": 1,
+  "worker": "p2b-glm0",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 952.166032962,
+  "tokens": 66751,
+  "turns": 8,
+  "prompt_tokens": 66018,
+  "completion_tokens": 733,
+  "ts": 1794299522,
+  "outcome": "failed",
+  "error": "harness: provider http 408: {\"error\":{\"message\":\"litellm.Timeout: APITimeoutError - Request timed out. Error_str: Request timed out. - timeout value=300.0, time taken=300.07 seconds\\n\\nDeployment Info",
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": "infra"
+}

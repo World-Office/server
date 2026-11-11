@@ -1,0 +1,17 @@
+{
+  "task": "P2B-R02",
+  "attempt": 1,
+  "worker": "p2b-glm0",
+  "model": "glm-5-turbo",
+  "wall_clock_s": 650.72711791,
+  "tokens": 1207431,
+  "turns": 36,
+  "prompt_tokens": 1176382,
+  "completion_tokens": 31049,
+  "ts": 1794305040,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null,
+  "failure_class": null
+}

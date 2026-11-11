@@ -39,9 +39,15 @@ const WIDTHS = [1920, 1366, 1280];
         });
       let furthest = null, fr = 0;
       for (const el of ctrls) { const r = el.getBoundingClientRect(); if (r.right > fr) { fr = r.right; furthest = el; } }
+      // Tag the element for the post-scroll re-query: a class-derived selector
+      // is ambiguous (e.g. the Mehr `.menu-trigger` also matches the tab-strip
+      // File button `#btn-file.menu-trigger` first), which made the hit-test
+      // check the wrong element at 1366/1280.
+      document.querySelectorAll('[data-wo-furthest]').forEach(e => e.removeAttribute('data-wo-furthest'));
+      if (furthest) furthest.setAttribute('data-wo-furthest', '1');
       const sr = document.querySelector('#rib-scroll-right');
       return { hScroll, total: ctrls.length, furthestRight: Math.round(fr),
-        furthestSel: furthest ? (furthest.id ? '#' + furthest.id : '.' + (furthest.className || '').toString().split(' ')[0]) : null,
+        furthestSel: furthest ? '[data-wo-furthest]' : null,
         chevronVisible: sr ? !sr.hidden && getComputedStyle(sr).display !== 'none' : false };
     });
     let ok = !lay.hScroll;

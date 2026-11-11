@@ -22,9 +22,7 @@
     {
       "id": "CHROME-F",
       "repo": "server",
-      "deps": [
-        "CHROME-E"
-      ],
+      "deps": [],
       "priority": 8,
       "title": "chrome: Startseite OO grouping — rb-groups (Schriftart | Absatz | Formatvorlagen) + 'Mehr' overflow menu for the rest, instead of one flat 48-button row",
       "scope": [
@@ -42,14 +40,12 @@
         "apps/web/apps/documenteditor-wysiwyg/home-overflow.test.mjs"
       ],
       "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node home-overflow.test.mjs 2>&1 | tail -1 | grep OVERFLOW-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node rows-gate.test.mjs tabs.test.mjs audit-i18n.test.mjs home-arrange.test.mjs 2>&1 | grep -c 'not ok' | grep -q '^0$' && echo GATE-OK) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
-      "note": "OO 9.4 DE home ground truth (/tmp/oo-home-full.json): row 1 = font group (Schriftart combo + Schriftgröße combo + vergrößern/verkleinern + Groß-/Kleinschreibung), paragraph group (Aufzählung/Nummerierung/Mehrebenen + Einzug −/+ + Ausrichtung), styles gallery (Standard/Titel/Untertitel/Überschrift 1-3…), then ONE 'Mehr' button (btn-big-more) opening the overflow; row 2 = character formats Fett/Kursiv/Unterstrichen/Durchgestrichen/Hoch/Tief + Hervorhebung + Schriftfarbe + Formatierung löschen.\nWO today (/tmp/wo-home-visible.json): 48 buttons in two flat ribbon-rows, everything visible. Task: restructure the home page into OO rb-groups — row 1: group 'Schriftart' (existing font combo, size combo, grow/shrink, case-change), group 'Absatz' (bullets, numbering, multilevel, indent dec/inc, RTL, alignment options dropdown), group 'Formatvorlagen' (style chips standard/title/subtitle/h1-h3), then a 'Mehr ▾' overflow button (id btn-home-more, i18n Home.More / 'Mehr') whose dropdown lists ALL remaining home controls (lists options, paragraph direction options, find/replace if still in page — no, those moved to topbar in CHROME-D — plus any leftover); row 2: the character format cluster + highlight/fontcolor/clearstyle as today.\nCONSTRAINTS: rows-gate.test.mjs requires EXACTLY TWO .ribbon-row children in the home page — keep 2 rows; groups go INSIDE rows. Overflow dropdown = existing dropdown/overlay pattern (grep for existing ribbon dropdown, e.g. the 'Optionen für …' buttons or btn-big-more equivalents in other tabs; reuse that mechanism, do not build a new one). Every moved button KEEPS its id/data-cmd/data-i18n — only DOM nesting changes. Dropdown items must remain reachable (click opens, items clickable). audit-i18n: dropdown items keep data-i18n.\nNew probe home-overflow.test.mjs (assert/strict static reads): home page has exactly 2 .ribbon-row; row 1 contains the three rb-groups + btn-home-more; btn-home-more has a dropdown container in DOM listing >=10 items; all previously-visible home button ids still exist in DOM (moved, not deleted); suite green → print OVERFLOW-PASS."
+      "note": "PARALLEL-SAFE (oo-chrome4 runs 5x mistral-128b): deps relaxed to [] — coordinate by REGION, not by waiting: touch ONLY the home ribbon page region of index.html + home-overflow.test.mjs + style.css home/overflow rules; do NOT touch .qat-strip, statusbar, or other tabs. Was: ['CHROME-E']"
     },
     {
       "id": "CHROME-G",
       "repo": "server",
-      "deps": [
-        "CHROME-E"
-      ],
+      "deps": [],
       "priority": 6,
       "title": "chrome: review display-mode dropdown 'Alle Änderungen anzeigen' next to the track-changes statusbar icon (OO 9.4 statusbar)",
       "scope": [
@@ -67,7 +63,7 @@
         "apps/web/apps/documenteditor-wysiwyg/review-mode.test.mjs"
       ],
       "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node review-mode.test.mjs 2>&1 | tail -1 | grep REVIEW-MODE-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node statusbar.test.mjs trackchanges.test.mjs audit-i18n.test.mjs 2>&1 | grep -c 'not ok' | grep -q '^0$' && echo GATE-OK) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
-      "note": "OO 9.4 DE statusbar right side has, next to the review (Nachverfolgen) icon, a dropdown captioned 'Alle Änderungen anzeigen' (Show all changes) — grep i18n.js, keys around 'Alle Änderungen' exist (12 hits) — selecting Simple/All/Final/Original display modes. WO has the sb-track-changes icon only.\nTask: add a statusbar dropdown button (id btn-review-mode, class sb, next to sb-track-changes) showing the current mode caption; options: Alle Änderungen anzeigen / Einfache Änderungen anzeigen / Original anzeigen / Finale Version anzeigen (i18n keys Review.ModeAll/ModeSimple/ModeOriginal/ModeFinal, EN+DE, data-i18n on button + items). State lives in editor.js next to trackChangesOn (reviewDisplayMode, default 'all'); selecting an item applies it: grep editor.js for how tracked changes are RENDERED (insertions/deletions markup classes) — if a display-mode render path exists, wire it; if not, store the mode + notifyHost('reviewMode') and add a data-review-mode attribute on <body> (CSS can then hide/show .tc-del etc. — add minimal CSS rules for the 4 modes using existing class names from the trackchanges renderer; keep default 'all' = current behavior, zero visual change).\nDropdown mechanics: reuse the existing statusbar dropdown pattern (sb-lang caption ▾ opens a menu — grep for its open/close handler and clone it). New probe review-mode.test.mjs: btn-review-mode exists with 4 items + i18n keys EN+DE, editor.js has reviewDisplayMode + body data attribute, CSS rules exist for the 4 modes, statusbar.test/trackchanges stay green → REVIEW-MODE-PASS."
+      "note": "PARALLEL-SAFE (oo-chrome4 runs 5x mistral-128b): deps relaxed to [] — coordinate by REGION, not by waiting: touch ONLY the statusbar review cluster of index.html + review-mode.test.mjs + editor.js review-mode block; do NOT touch .qat-strip or home page. Was: ['CHROME-E']"
     },
     {
       "id": "LEDGER-H",
@@ -92,9 +88,7 @@
     {
       "id": "PARITY-R",
       "repo": "harness",
-      "deps": [
-        "LEDGER-H"
-      ],
+      "deps": [],
       "priority": 5,
       "title": "report: refresh PARITY-REPORT.md + ROUNDTRIP-GAPS.md with chrome rounds 2-3 + L4=32+ state; post-campaign docserver image rebuild checklist into ROADMAP",
       "scope": [
@@ -107,7 +101,71 @@
         "census/ledger/ROUNDTRIP-GAPS.md"
       ],
       "accept": "grep -q 'CHROME-A' census/PARITY-REPORT.md && grep -q 'L4=3' census/PARITY-REPORT.md && git log --oneline -1 | grep -q PARITY-R",
-      "note": "Documentation-only task. Update census/PARITY-REPORT.md: add a 'Chrome parity rounds 2-3 (2026-11-11)' section — round 2 (d3b604e83): tab order Kopf-uF after Plugins, OO-exact draw tooltips, EN leftovers fixed, 10 DE label alignments; round 3 via af campaign oo-chrome4: CHROME-A QAT 2x4 strip, CHROME-B Verweise labels, CHROME-C hf spin steppers (hand-fixed to ribbon position c63705fa2), CHROME-D topbar cluster + home font lead, CHROME-E QAT pixel icons, CHROME-F home Mehr-overflow, CHROME-G review display-mode dropdown; ledger L4 now 32+ (link/equation/field/chart gold added). Update the deviation table: mark resolved items, keep 'Mehr overflow on other tabs (chart-design 28 vs 10)' as the remaining known deviation. Append a line to census/PARITY-RUN-LOG.md. Also append a short 'Post-campaign ops' checklist to census/ledger/ROUNDTRIP-GAPS.md: docserver image rebuild after oo-xwave+oo-chrome4 finalize, FX-U5 ledger flip verification, prod bundle redeploy of editor-ui."
+      "note": "PARALLEL-SAFE (oo-chrome4 runs 5x mistral-128b): deps relaxed to [] — coordinate by REGION, not by waiting: docs only — census/PARITY-REPORT.md, PARITY-RUN-LOG.md, ledger/ROUNDTRIP-GAPS.md; if LEDGER-H has not merged yet, document current L4 and note LEDGER-H pending. Was: ['LEDGER-H']"
+    },
+    {
+      "id": "SB-X",
+      "repo": "server",
+      "deps": [],
+      "priority": 7,
+      "title": "statusbar: OO templateIds fehlen — goto-page box, zoom in/out + zoom-to-page/width, select/hand tool, info, cnt-lang",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/statusbar.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/statusbar.test.mjs"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node statusbar.test.mjs 2>&1 | tail -1 | grep -q 'ok') && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
+      "note": "OO 9.4 statusbar templateIds (wo-test-harness/census/oo-source/oo-statusbar.json) missing in WO: status-goto-box/status-goto-page (page 'x of y' + goto input), slot-status-btn-info, btn-cnt-lang (content language — distinct from existing sb-doc-lang), status-btn-select-tool / status-btn-hand-tool, btn-zoom-topage / btn-zoom-towidth / btn-zoom-down / btn-zoom-up (WO has only sb-zoom-slider + sb-zoom-label). WO already has sb-track-changes + sb-review-display-mode from CHROME-G — do not duplicate btn-doc-review. Add the missing ones with sb-* ids, data-i18n EN+DE keys (Status.GotoPage, Status.ZoomIn/Out/ToPage/ToWidth, Status.SelectTool, Status.HandTool, Status.Info, Status.CntLang), wire in editor.js (zoom buttons adjust the SAME zoom state the sb-zoom-slider uses; goto-page input jumps via existing page nav). If statusbar.test.mjs pins DE strings/order, update it in the SAME commit. Keep i18n single-text-node contract. Full suite must stay green (currently 156 tests)."
+    },
+    {
+      "id": "FM-X",
+      "repo": "server",
+      "deps": [],
+      "priority": 6,
+      "title": "backstage: OO fm-btns fehlen — save-copy, print-with-preview, rename, rights (save-desktop = web n/a, dokumentieren)",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E \"^# fail 0\") && /usr/bin/node -e \"const h=require('fs').readFileSync('apps/web/apps/documenteditor-wysiwyg/index.html','utf8'); for (const id of ['fm-btn-save-copy','fm-btn-print-preview','fm-btn-rename','fm-btn-rights']) if(!h.includes(id)) { console.error('missing '+id); process.exit(1) } console.log('FM-OK')\"",
+      "note": "OO FileMenu buttons (wo-test-harness/census/oo-source/oo-filemenu.json) missing in WO backstage: fm-btn-save-copy (Kopie speichern — save a copy, keep original open), fm-btn-print-with-preview (Druckansicht), fm-btn-rename (umbenennen — backstage input), fm-btn-rights (Rechte/Zugriff info). fm-btn-save-desktop is desktop-only: for web add it DISABLED with tooltip 'Nur Desktop-App' OR omit and record the deviation in the task note + PARITY-REPORT. Reuse existing backstage button markup (grep 'fm-btn-' in index.html), i18n keys File.SaveCopy/File.PrintPreview/File.Rename/File.Rights EN+DE, wire handlers in editor.js next to existing fm handlers. Suite must stay green (156)."
+    },
+    {
+      "id": "SCHUTZ-X",
+      "repo": "server",
+      "deps": [],
+      "priority": 5,
+      "title": "fehlende OO-Controls: Schutz btn-add-password (Kennwort) + Startseite paracolor (Absatzhintergrund)",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/protect-tab.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js",
+        "apps/web/apps/documenteditor-wysiwyg/protect-tab.test.mjs"
+      ],
+      "accept": "(cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node protect-tab.test.mjs 2>&1 | tail -1 | grep SCHUTZ-PASS) && (cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# fail 0')",
+      "note": "Two OO ribbon controls with no WO counterpart (verified by grep 2026-11-11): (1) Schutz tab btn-add-password — OO opens a password dialog (Kennwort + bestätigen, min 8 Zeichen) then protects the document; reuse the existing protect-dialog pattern (grep protect-dialog in index.html/editor.js). (2) Home: paracolor = Absatz-Hintergrundfarbe (OO btn-paracolor) — WO has highlight (Zeichenmarker) but NOT paragraph shading; add btn-paracolor next to highlight, applies background-color to current paragraph via the existing block-format path. i18n EN+DE, data-i18n, single-text-node contract, audit-i18n green. New probe protect-tab.test.mjs: buttons exist with i18n EN+DE, dialog opens/closes, apply wired -> prints SCHUTZ-PASS."
     }
   ]
 }

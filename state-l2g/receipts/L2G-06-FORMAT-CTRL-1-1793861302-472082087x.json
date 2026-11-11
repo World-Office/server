@@ -1,0 +1,16 @@
+{
+  "task": "L2G-06-FORMAT-CTRL",
+  "attempt": 1,
+  "worker": "l2g-w2",
+  "model": "litellm/glm-5.3-flash",
+  "wall_clock_s": 2169.647320261,
+  "tokens": null,
+  "turns": null,
+  "prompt_tokens": null,
+  "completion_tokens": null,
+  "ts": 1793861302,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null,
+  "contracts": null
+}
