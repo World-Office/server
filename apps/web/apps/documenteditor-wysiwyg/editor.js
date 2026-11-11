@@ -10473,7 +10473,8 @@
     closeOverlayDialog("headerfooter-dialog");
     const hfType = (document.querySelector("input[name='hf-type']:checked") || {}).value || "both";
     const diffFirst = !!(document.getElementById("hf-different-first") || {}).checked;
-    const dist = parseFloat((document.getElementById("hf-distance") || {}).value) || 12.5;
+    const headerOffset = parseFloat((document.getElementById("hf-header-offset") || {}).value) || 12.5;
+    const footerOffset = parseFloat((document.getElementById("hf-footer-offset") || {}).value) || 12.5;
     const types = hfType === "both" ? ["header", "footer"] : [hfType];
     for (const tag of types) {
       const existing = editor.querySelector(":scope > " + tag + ".page-" + tag);
@@ -10485,8 +10486,8 @@
       if (!el) continue;
       if (diffFirst) el.dataset.differentFirst = "true";
       else delete el.dataset.differentFirst;
-      if (tag === "header") el.style.paddingTop = dist + "mm";
-      else el.style.paddingBottom = dist + "mm";
+      if (tag === "header") el.style.paddingTop = headerOffset + "mm";
+      else el.style.paddingBottom = footerOffset + "mm";
     }
     markDirty();
     captureHistory();

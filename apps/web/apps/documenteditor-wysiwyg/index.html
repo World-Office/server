@@ -2190,8 +2190,12 @@
         <input id="hf-different-first" type="checkbox">
       </div>
       <div class="dialog-field">
-        <label for="hf-distance">Distance from edge (mm)</label>
-        <input id="hf-distance" type="number" min="0" max="50" value="12.5" inputmode="decimal">
+        <label for="hf-header-offset" data-i18n="HF.HeaderFromTop">Header from Top</label>
+        <input id="hf-header-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal">
+      </div>
+      <div class="dialog-field">
+        <label for="hf-footer-offset" data-i18n="HF.FooterFromBottom">Footer from Bottom</label>
+        <input id="hf-footer-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal">
       </div>
       <div class="dialog-actions">
         <button id="btn-headerfooter-close" data-i18n="Dialog.Cancel">Cancel</button>
