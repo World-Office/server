@@ -801,7 +801,7 @@
     if (!focus || !editor.contains(focus)) return;
     const el = focus.nodeType === 1 ? focus : focus.parentElement;
     if (!el || !el.closest) return;
-    const marker = el.closest("hr, .page-break, .column-break, .section-break, [data-columns], nav.toc, div.object");
+    const marker = el.closest("hr, .page-break, .column-break, .section-break, [data-columns], div.toc, div.object");
     if (!marker) return;
     const r = document.createRange();
     r.setStartAfter(marker);
@@ -3818,7 +3818,7 @@
     restoreFocus();
     editor.focus();
     document.execCommand("insertHTML", false,
-      '<nav class="toc" data-title="' + escapeAttr(t) + '"></nav><p><br></p>');
+      '<div class="toc" data-title="' + escapeAttr(t) + '"></div><p><br></p>');
     moveCaretPastStructuralMarkers();
     captureHistory();
     markDirty();
@@ -8711,14 +8711,14 @@
     updateActiveStates();
   }
 
-  // TOC live preview: fill every <nav class="toc"> with links to the
+  // TOC live preview: fill every <div class="toc"> with links to the
   // current h1..h6 (the converters strip the children on save — the nav is
   // a marker, data-title is what persists).
   function refreshToc() {
     const headings = editor.querySelectorAll("h1, h2, h3, h4, h5, h6");
     const captions = Array.from(editor.querySelectorAll("figcaption")).map((c) => c.textContent);
     let n = 0;
-    editor.querySelectorAll("nav.toc").forEach((nav) => {
+    editor.querySelectorAll("div.toc").forEach((nav) => {
       nav.textContent = "";
       const isFigs = nav.getAttribute("data-kind") === "figures";
       const src = isFigs ? captions : Array.from(headings);
@@ -9177,7 +9177,7 @@
   function insertTableOfFiguresCommand() {
     editor.focus();
     document.execCommand("insertHTML", false,
-      '<nav class="toc" data-kind="figures" data-title="List of Figures"></nav><p><br></p>');
+      '<div class="toc" data-kind="figures" data-title="List of Figures"></div><p><br></p>');
     moveCaretPastStructuralMarkers();
     refreshToc();
     captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
@@ -10453,7 +10453,7 @@
     const title = titleInput ? titleInput.value : "List of Figures";
     editor.focus();
     document.execCommand("insertHTML", false,
-      '<nav class="toc" data-kind="figures" data-title="' + escapeAttr(title) + '"></nav><p><br></p>');
+      '<div class="toc" data-kind="figures" data-title="' + escapeAttr(title) + '"></div><p><br></p>');
     moveCaretPastStructuralMarkers();
     refreshToc();
     captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
@@ -10910,10 +10910,10 @@
   function confirmUpdateTocDialog() {
     const choice = (document.getElementById("toc-update") || {}).value || "entire";
     if (READ_ONLY) return;
-    if (!editor.querySelector("nav.toc")) {
+    if (!editor.querySelector("div.toc")) {
       editor.focus();
       document.execCommand("insertHTML", false,
-        '<nav class="toc" data-title="Table of Contents"></nav><p><br></p>');
+        '<div class="toc" data-title="Table of Contents"></div><p><br></p>');
       moveCaretPastStructuralMarkers();
     }
     refreshToc();
