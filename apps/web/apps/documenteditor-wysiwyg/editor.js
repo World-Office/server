@@ -1026,24 +1026,28 @@
     notifyHost("editing");
   }
 
-  function runCommand(cmd, value) {
-    // Loud guard: with restrict-editing on (contentEditable off) the
-    // execCommand-based mutations silently fail — say so instead (the
-    // protection controls themselves must stay reachable to un-restrict).
-    const editBlocked = () => {
-      if (editor.contentEditable !== "false") {
-        // WO-19-allow-edit-ranges: while an editable window is armed the
-        // selection itself must sit inside it, even though the whole surface
-        // stayed contentEditable (per-range read-only enforcement).
-        if (activeEditableRange() && !selectionWithinEditableRange()) {
-          setStatus(t("Prot.OutsideRange") + " " + cmd, true);
-          return true;
-        }
-        return false;
+  // Loud guard: with restrict-editing on (contentEditable off) the
+  // execCommand-based mutations silently fail — say so instead (the
+  // protection controls themselves must stay reachable to un-restrict).
+  // FX-U3: hoisted out of runCommand — the FX-U1 insertFormField route
+  // calls it too, and the runCommand-local const was not in scope there
+  // (every Forms-tab field insert died on "editBlocked is not defined").
+  function editBlocked(cmdLabel) {
+    if (editor.contentEditable !== "false") {
+      // WO-19-allow-edit-ranges: while an editable window is armed the
+      // selection itself must sit inside it, even though the whole surface
+      // stayed contentEditable (per-range read-only enforcement).
+      if (activeEditableRange() && !selectionWithinEditableRange()) {
+        setStatus(t("Prot.OutsideRange") + " " + cmdLabel, true);
+        return true;
       }
-      setStatus(t("Status.NotAvailable") + " " + cmd, true);
-      return true;
-    };
+      return false;
+    }
+    setStatus(t("Status.NotAvailable") + " " + cmdLabel, true);
+    return true;
+  }
+
+  function runCommand(cmd, value) {
     if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") {
       toggleList(cmd);
       return;
@@ -1256,7 +1260,7 @@
       // PAGE-field authoring (F-085): the span the converters map to
       // w:fldSimple PAGE / text:page-number. Range-API insert (execCommand
       // insertHTML silently no-ops when a dialog button stole editor focus).
-      if (editBlocked()) return;
+      if (editBlocked(cmd)) return;
       const span = document.createElement("span");
       span.className = "page-number";
       const sel = document.getSelection();
@@ -1314,7 +1318,7 @@
       return;
     }
     if (cmd === "insertSymbol" || cmd === "insertDate") {
-      if (editBlocked()) return;
+      if (editBlocked(cmd)) return;
       // execCommand("insertText") needs editable focus; if the click left
       // focus on the ribbon button it silently fails — restore the editor
       // (and with it the caret) first.
@@ -1655,7 +1659,7 @@
     }
     // FX-U1: Forms tab - insert form fields
     if (cmd === "insertTextField" || cmd === "insertCheckboxField" || cmd === "insertDropdownField" || cmd === "insertDateField") {
-      if (editBlocked()) return;
+      if (editBlocked(cmd)) return;
       insertFormField(cmd);
       return;
     }
@@ -1680,12 +1684,17 @@
     if (cmd === "roleDeleteOk") { applyRoleDelete(); return; }
     if (cmd === "openFormSettings") { openFormSettings(); return; }
     if (cmd === "formSettingsOk") { applyFormSettings(value); return; }
+    // FX-U3: FillingStatusSettings — engine-hosted dialog (spec in
+    // wo-dialogs.js); the widget's role switcher emits fillingRoleSwitch.
+    if (cmd === "openFillingStatus") { openFillingStatus(); return; }
+    if (cmd === "fillingStatusOk") { fillingStatusOk(); return; }
+    if (cmd === "fillingRoleSwitch") { fillingRoleSwitch(value); return; }
     // Loud-stub doctrine at the root: any command that reaches this
     // fallthrough but is not a real browser execCommand (e.g. a stubbed
     // ribbon button) must SAY so instead of failing silently — silent
     // no-ops read as "the app is broken".
     let supported = false;
-    if (editBlocked()) return;
+    if (editBlocked(cmd)) return;
     try { supported = document.queryCommandSupported(cmd); } catch (err) { /* some engines throw on odd names */ }
     if (!supported) {
       setStatus(t("Status.NotAvailable") + " " + cmd, true);
@@ -15713,7 +15722,7 @@
   let formDesignMode = true;
 
   function insertFormField(fieldType) {
-    if (editBlocked()) return;
+    if (editBlocked(fieldType)) return;
     editor.focus();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
@@ -15722,9 +15731,14 @@
     }
     const range = sel.getRangeAt(0);
     const field = document.createElement("span");
-    field.className = "form-field form-field-" + fieldType.toLowerCase().replace("insert", "").replace("field", "");
+    const fieldKind = fieldType.replace("insert", "").replace("Field", "").toLowerCase();
+    // FX-U3 MaskedField hook: fields carry both the legacy form-field
+    // class and the wo-form-field/[data-kind] naming the fill overlay
+    // targets (span.wo-form-field[data-kind=date] etc.).
+    field.className = "form-field form-field-" + fieldKind + " wo-form-field";
     field.setAttribute("contenteditable", "false");
-    field.setAttribute("data-form-field", fieldType.replace("insert", "").replace("Field", "").toLowerCase());
+    field.setAttribute("data-form-field", fieldKind);
+    field.setAttribute("data-kind", fieldKind);
     if (fieldType === "insertCheckboxField") {
       field.innerHTML = '<input type="checkbox" style="pointer-events:auto">';
     } else if (fieldType === "insertDropdownField") {
@@ -16010,6 +16024,294 @@
   const FORM_SETTINGS_API = { collect: woCollectFormFields, apply: woApplyFormSettings, fillModes: FILL_MODES.slice() };
   window.woFormSettings = FORM_SETTINGS_API;
 
+  // ------------------------------------------------------------------
+  // FX-U3: form filling engine (FillingStatusSettings) — the write/read
+  // path behind the dialog. Field fills go wasm-first through
+  // asc_fillField (Rust asc_fill_field), the completion answer comes from
+  // asc_getFillingStatus (Rust asc_get_filling_status) and the per-role
+  // gate from asc_canFillRole (Rust asc_can_fill_role) — camelCase
+  // js_names probed first, snake_case accepted, same convention as the
+  // FX-U2 role ops above. The JS-side fallback mirrors the Rust
+  // FORM_FILL_STORE + role_gate 1:1: unknown role rejected, open roles
+  // fill for anyone, assigned roles only for their assignee (the JS
+  // fallback has no restriction seam, so it treats the document as
+  // unprotected — the wasm gate is stricter), empty value clears the
+  // field (and its user) while keeping the registration, and the status
+  // is "empty" | "filling" | "complete" over filled/required-left counts.
+  // The block is self-contained on purpose (extracted + executed under a
+  // stubbed window by the gate test, same technique as the roles block).
+  // ------------------------------------------------------------------
+  const WO_FILL_STORE = []; // JS mirror of the Rust per-document fill records
+  function woFillingWasm() {
+    return (typeof window !== "undefined" && window.__WO_WASM__) || null;
+  }
+  function woFillingWasmFn(mod, camel, snake) {
+    if (!mod) return null;
+    if (typeof mod[camel] === "function") return mod[camel];
+    if (typeof mod[snake] === "function") return mod[snake];
+    return null;
+  }
+  function woFillingParse(json) {
+    try { return JSON.parse(json); } catch (err) { return null; }
+  }
+  function woFillingDocHandle(mod) {
+    return typeof mod.getDocHandle === "function" ? mod.getDocHandle() : 0;
+  }
+  function woFillingClone(fill) { return Object.assign({}, fill); }
+  // OO asc_canFillRole(oRole): may `user` fill the fields of `roleId`?
+  // Unknown roles are simply not fillable (false, not an error).
+  function woCanFillRole(roleId, user) {
+    const who = String(user == null ? "" : user);
+    const mod = woFillingWasm();
+    const fn = woFillingWasmFn(mod, "asc_canFillRole", "asc_can_fill_role");
+    if (fn) {
+      try { return { ok: true, can: fn(woFillingDocHandle(mod), String(roleId || ""), who) === true }; }
+      catch (err) { return { ok: false, can: false, error: err && err.message ? err.message : String(err) }; }
+    }
+    const role = WO_ROLES_LIST.find((r) => r.id === roleId);
+    if (!role) return { ok: true, can: false };
+    return { ok: true, can: role.user === "" || (who !== "" && role.user === who) };
+  }
+  // OO asc_fillField: record one field fill (first call registers the
+  // field with its required flag + role; an empty value clears it).
+  function woFillField(fieldId, roleId, value, required, user) {
+    const who = String(user == null ? "" : user);
+    const val = String(value == null ? "" : value);
+    const mod = woFillingWasm();
+    const fn = woFillingWasmFn(mod, "asc_fillField", "asc_fill_field");
+    if (fn) {
+      try {
+        const parsed = woFillingParse(fn(woFillingDocHandle(mod), String(fieldId || ""), String(roleId || ""), val, required === true, who));
+        if (parsed && typeof parsed.fieldId === "string") {
+          const at = WO_FILL_STORE.findIndex((f) => f.fieldId === parsed.fieldId);
+          if (at === -1) WO_FILL_STORE.push(woFillingClone(parsed));
+          else WO_FILL_STORE[at] = woFillingClone(parsed);
+          return { ok: true, fill: woFillingClone(parsed) };
+        }
+      } catch (err) {
+        return { ok: false, error: err && err.message ? err.message : String(err) };
+      }
+    }
+    const id = String(fieldId || "").trim();
+    if (!id) return { ok: false, error: "Field id must not be empty" };
+    // No role attribution (data-role absent and no active dialog role) is
+    // the field-level fill-mode "any" contract: it fills ungated. Only a
+    // KNOWN role may be attributed; unknown ids are rejected loudly.
+    if (roleId !== "" && !WO_ROLES_LIST.some((r) => r.id === roleId)) return { ok: false, error: "Unknown role id" };
+    const gate = roleId === "" ? { ok: true, can: true } : woCanFillRole(roleId, who);
+    if (!gate.can) return { ok: false, error: "User " + JSON.stringify(who) + " may not fill role " + JSON.stringify(roleId) };
+    const fill = {
+      fieldId: id,
+      roleId: String(roleId || ""),
+      required: required === true,
+      value: val,
+      userId: val === "" ? "" : who,
+    };
+    const at = WO_FILL_STORE.findIndex((f) => f.fieldId === id);
+    if (at === -1) WO_FILL_STORE.push(fill); else WO_FILL_STORE[at] = fill;
+    return { ok: true, fill: woFillingClone(fill) };
+  }
+  // OO asc_getFillingStatus: how complete the form is — document-wide
+  // counts plus the per-role breakdown in role insertion order. Fills
+  // survive role removal (document data outlives role bookkeeping), so
+  // totalFields may exceed the sum over the breakdown.
+  function woFillingStatus() {
+    const mod = woFillingWasm();
+    const fn = woFillingWasmFn(mod, "asc_getFillingStatus", "asc_get_filling_status");
+    if (fn) {
+      try {
+        const parsed = woFillingParse(fn(woFillingDocHandle(mod)));
+        if (parsed && typeof parsed.status === "string") {
+          return { ok: true, status: parsed };
+        }
+      } catch (err) { /* engine error → fall back to the JS store */ }
+    }
+    const totalFields = WO_FILL_STORE.length;
+    const filledFields = WO_FILL_STORE.filter((f) => f.value !== "").length;
+    const requiredLeft = WO_FILL_STORE.filter((f) => f.required && f.value === "").length;
+    const roles = WO_ROLES_LIST.map((role) => {
+      const under = WO_FILL_STORE.filter((f) => f.roleId === role.id);
+      const filled = under.filter((f) => f.value !== "").length;
+      const left = under.filter((f) => f.required && f.value === "").length;
+      return {
+        roleId: role.id,
+        name: role.name,
+        totalFields: under.length,
+        filledFields: filled,
+        requiredLeft: left,
+        complete: left === 0,
+      };
+    });
+    const state = filledFields === 0 ? "empty" : (requiredLeft === 0 ? "complete" : "filling");
+    return {
+      ok: true,
+      status: { status: state, totalFields: totalFields, filledFields: filledFields, requiredLeft: requiredLeft, roles: roles },
+    };
+  }
+  const WO_FILLING_API = { status: woFillingStatus, fill: woFillField, canFillRole: woCanFillRole, fills: WO_FILL_STORE };
+  window.woFilling = WO_FILLING_API;
+
+  // ------------------------------------------------------------------
+  // FX-U3: MaskedField — masked inputs for the fill overlay. Date fields
+  // (span.wo-form-field[data-kind=date]) get the ____-__-__ mask, zip
+  // fields ([data-kind=zip]) the _____ mask; the mask characters are
+  // literal, typed digits land in the span's data-value (digits only).
+  // The block is self-contained on purpose (extracted + executed under a
+  // stubbed window by the gate test) — the commit hook rides opts.
+  // ------------------------------------------------------------------
+  const MASKED_FIELD_KINDS = {
+    date: { mask: "____-__-__", digits: 8 },
+    zip: { mask: "_____", digits: 5 },
+  };
+  function woMaskedKindFor(kind) {
+    const k = String(kind == null ? "" : kind).toLowerCase();
+    return Object.prototype.hasOwnProperty.call(MASKED_FIELD_KINDS, k) ? k : "";
+  }
+  function woMaskedDigits(value) {
+    return String(value == null ? "" : value).replace(/[^0-9]/g, "");
+  }
+  // The masked display: digits fill the `_` slots left to right, every
+  // other mask character stays literal (____-__-__ + "2025" → "2025-__-__").
+  function woMaskedDisplay(kind, digits) {
+    const spec = MASKED_FIELD_KINDS[woMaskedKindFor(kind)];
+    if (!spec) return "";
+    const clean = woMaskedDigits(digits);
+    let di = 0;
+    let out = "";
+    for (let i = 0; i < spec.mask.length; i++) {
+      const ch = spec.mask.charAt(i);
+      if (ch === "_") {
+        out += di < clean.length ? clean.charAt(di) : "_";
+        di++;
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
+  function woMaskedComplete(kind, digits) {
+    const spec = MASKED_FIELD_KINDS[woMaskedKindFor(kind)];
+    return !!spec && woMaskedDigits(digits).length >= spec.digits;
+  }
+  function woMaskedInputHtml(kind, value) {
+    const k = woMaskedKindFor(kind);
+    const spec = MASKED_FIELD_KINDS[k];
+    if (!spec) return "";
+    return '<input type="text" class="wo-masked-input" inputmode="numeric" autocomplete="off"' +
+      ' data-wo-mask="' + k + '" placeholder="' + spec.mask + '" aria-label="' + k + '"' +
+      ' value="' + woMaskedDisplay(k, value) + '">';
+  }
+  let woMaskedTarget = null;   // span.wo-form-field the overlay edits
+  let woMaskedOnChange = null; // commit hook (editor.js: woFillField + status)
+  function woMaskedOverlayEl() {
+    let ov = typeof document !== "undefined" ? document.getElementById("wo-fill-overlay") : null;
+    if (!ov && typeof document !== "undefined") {
+      ov = document.createElement("div");
+      ov.id = "wo-fill-overlay";
+      ov.setAttribute("hidden", "");
+      const host = document.body || document.documentElement;
+      if (host && typeof host.appendChild === "function") host.appendChild(ov);
+    }
+    return ov || null;
+  }
+  // Open the fill overlay for one masked field span (or null to close).
+  function woMaskedOpen(field, onChange) {
+    if (typeof onChange === "function") woMaskedOnChange = onChange;
+    const ov = woMaskedOverlayEl();
+    if (!ov) return null;
+    if (!field) { woMaskedClose(false); return null; }
+    const kind = woMaskedKindFor(field.getAttribute && field.getAttribute("data-kind"));
+    if (!kind) { woMaskedClose(false); return null; }
+    woMaskedTarget = field;
+    ov.innerHTML = woMaskedInputHtml(kind, field.getAttribute ? field.getAttribute("data-value") : "");
+    ov.setAttribute("data-wo-mask-kind", kind);
+    // Inline positioning (the fill overlay has no stylesheet contract): it
+    // floats right below the field span like a completion popover.
+    ov.style.position = "absolute";
+    ov.style.zIndex = "1200";
+    ov.hidden = false;
+    if (typeof field.getBoundingClientRect === "function") {
+      const box = field.getBoundingClientRect();
+      if (box && typeof window !== "undefined" && typeof window.scrollX !== "undefined") {
+        ov.style.left = Math.round(box.left + window.scrollX) + "px";
+        ov.style.top = Math.round(box.bottom + window.scrollY + 4) + "px";
+      }
+    }
+    const input = ov.querySelector ? ov.querySelector("input.wo-masked-input") : null;
+    if (input && typeof input.addEventListener === "function") {
+      input.addEventListener("input", () => { woMaskedSyncInput(input); });
+      // Chromium: a JS value-rewrite during the previous input event can
+      // leave the text-control caret stale, and editor-internal caret
+      // juggling (selectionchange syncs) may reset it between keystrokes —
+      // the typed character then finds no insertion point and silently
+      // vanishes. Parking at keydown puts the caret at the end of the mask
+      // right before the browser inserts the character; digit extraction is
+      // position-independent, so end-parking never corrupts the value.
+      input.addEventListener("keydown", () => {
+        if (typeof input.setSelectionRange !== "function") return;
+        try { const len = (input.value || "").length; input.setSelectionRange(len, len); } catch (err) { /* off-DOM */ }
+      });
+      if (typeof input.focus === "function") { try { input.focus(); } catch (err) { /* off-DOM */ } }
+      // caret to the end (after any data-value pre-fill), like a resuming edit
+      if (typeof input.setSelectionRange === "function") {
+        try { const len = (input.value || "").length; input.setSelectionRange(len, len); } catch (err) { /* off-DOM */ }
+      }
+    }
+    return ov;
+  }
+  // Re-derive the display from what the user typed: digits only survive,
+  // the mask re-renders literally, data-value carries the raw digits.
+  function woMaskedSyncInput(input) {
+    if (!input || typeof input.getAttribute !== "function") return "";
+    const kind = woMaskedKindFor(input.getAttribute("data-wo-mask"));
+    if (!kind) return "";
+    const digits = woMaskedDigits(input.value);
+    const display = woMaskedDisplay(kind, digits);
+    input.value = display;
+    // Rewriting .value drops Chromium's text-control caret — the next
+    // trusted keystroke would find no insertion point and silently vanish.
+    // Park it at the end of the mask; digit extraction is position-
+    // independent, so typing there always extends the digits left→right.
+    if (typeof input.setSelectionRange === "function") {
+      try { input.setSelectionRange(display.length, display.length); } catch (err) { /* off-DOM */ }
+    }
+    if (woMaskedTarget && typeof woMaskedTarget.setAttribute === "function") {
+      woMaskedTarget.setAttribute("data-value", digits);
+    }
+    if (typeof woMaskedOnChange === "function") woMaskedOnChange(woMaskedTarget, digits, kind);
+    return digits;
+  }
+  function woMaskedClose(commit) {
+    const ov = typeof document !== "undefined" ? document.getElementById("wo-fill-overlay") : null;
+    const digits = woMaskedTarget && typeof woMaskedTarget.getAttribute === "function" ? woMaskedTarget.getAttribute("data-value") || "" : "";
+    const kind = woMaskedTarget && typeof woMaskedTarget.getAttribute === "function" ? woMaskedKindFor(woMaskedTarget.getAttribute("data-kind")) : "";
+    woMaskedTarget = null;
+    if (ov) {
+      ov.hidden = true;
+      if (typeof ov.querySelector === "function") {
+        const input = ov.querySelector("input.wo-masked-input");
+        if (input && typeof input.removeEventListener === "function") input.removeEventListener("input", woMaskedSyncInput);
+      }
+      if (ov.innerHTML !== undefined) ov.innerHTML = "";
+    }
+    if (commit && kind && woMaskedComplete(kind, digits) && typeof woMaskedOnChange === "function") {
+      woMaskedOnChange(null, digits, kind);
+    }
+  }
+  const MASKED_FIELD_API = {
+    kinds: MASKED_FIELD_KINDS,
+    kindFor: woMaskedKindFor,
+    digits: woMaskedDigits,
+    display: woMaskedDisplay,
+    complete: woMaskedComplete,
+    inputHtml: woMaskedInputHtml,
+    open: woMaskedOpen,
+    close: woMaskedClose,
+    sync: woMaskedSyncInput,
+    target: () => woMaskedTarget,
+  };
+  window.woMaskedField = MASKED_FIELD_API;
+
   // FX-U2: engine-hosted dialogs (specs in wo-dialogs.js WO_DIALOG_SPECS);
   // okCmd payloads are one JSON ledger entry per dialog apply (engine
   // invariant), the same pattern as TableSettingsAdvanced/ImageSettingsAdvanced.
@@ -16153,6 +16455,120 @@
     if (!applied) { setStatus(t("Status.NoFormFields"), true); return; }
     setStatus(t("Status.FormSettingsApplied"));
     if (woRolesDialogReady()) window.woDialogEngine.close(FORM_SETTINGS_DIALOG_ID);
+  }
+
+  // FX-U3: FillingStatusSettings — the form completion view over
+  // asc_get_filling_status (counts, per-role breakdown) with the active
+  // fill role switcher gated by asc_can_fill_role. Filling itself goes
+  // through the MaskedField fill overlay: a click on a masked
+  // span.wo-form-field opens it, the typed digits land in data-value and
+  // on completion in asc_fillField (so the dialog's counts move).
+  const FILLING_STATUS_DIALOG_ID = "filling-status-dialog";
+  // Session user for asc_can_fill_role/asc_fill_field — probes the collab
+  // seams, "" = anonymous caller (open roles fill for anyone).
+  function woFillingSessionUser() {
+    if (typeof window === "undefined") return "";
+    try {
+      if (typeof window.__WO_USER_ID__ === "string") return window.__WO_USER_ID__;
+      if (window.__WO_SESSION__ && typeof window.__WO_SESSION__.userId === "string") return window.__WO_SESSION__.userId;
+      if (typeof window.woSessionUserId === "function") return String(window.woSessionUserId() || "");
+    } catch (err) { /* seams optional */ }
+    return "";
+  }
+  let currentMaskedSpan = null; // span.wo-form-field the fill overlay edits
+  // Active role of the FillingStatusSettings dialog (the switcher pick).
+  function woFillingActiveRole() {
+    if (!woRolesDialogReady()) return "";
+    const widget = (window.woDialogEngine.widgets || []).find((w) => w && w.widget === "fillingStatus" &&
+      w.el && w.el.getAttribute("data-wo-key") === "status" &&
+      w.el.closest && w.el.closest('[data-wo-dialog="' + FILLING_STATUS_DIALOG_ID + '"]'));
+    const blob = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    return blob && typeof blob === "object" && typeof blob.active === "string" ? blob.active : "";
+  }
+  // MaskedField commit hook: called per keystroke (field = the span) and
+  // once more on close (field = null). A complete mask closes the overlay
+  // and records the fill through asc_fillField — the FillingStatusSettings
+  // counts then move on the next sync.
+  function woMaskedCommit(field, digits, kind) {
+    const el = field || currentMaskedSpan;
+    if (!el || !woMaskedFieldComplete(kind, digits)) return; // keep typing
+    if (field) woMaskedClose(false); // completion → hide the overlay
+    const roleId = el.getAttribute("data-role") || woFillingActiveRole();
+    const required = el.getAttribute("data-required") === "true";
+    const key = el.getAttribute("data-field-key") || ("field-" + kind);
+    const res = woFillField(key, roleId, digits, required, woFillingSessionUser());
+    currentMaskedSpan = null;
+    if (!res.ok) { setStatus(res.error || t("Status.NotAvailable"), true); return; }
+    setStatus(t("Status.MaskedFieldSaved") + " " + digits);
+    syncFillingStatusDialog();
+  }
+  function woMaskedFieldComplete(kind, digits) {
+    const api = window.woMaskedField;
+    return !!(api && api.complete(kind, digits));
+  }
+  // Fill overlay trigger: a click on a masked span.wo-form-field
+  // ([data-kind=date]/[data-kind=zip]) opens the overlay for it.
+  editor.addEventListener("click", (ev) => {
+    const target = ev && ev.target;
+    const span = target && typeof target.closest === "function" ? target.closest("span.wo-form-field[data-kind]") : null;
+    const kind = span ? (window.woMaskedField ? window.woMaskedField.kindFor(span.getAttribute("data-kind")) : "") : "";
+    if (!kind) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    currentMaskedSpan = span;
+    window.woMaskedField.open(span, woMaskedCommit);
+  });
+  function syncFillingStatusDialog() {
+    const handle = woRolesDialogReady() ? window.woDialogEngine.get(FILLING_STATUS_DIALOG_ID) : null;
+    if (!handle) return;
+    const res = woFillingStatus();
+    const status = (res && res.status) || {};
+    const roles = woRolesGetAll().roles;
+    const breakdown = Array.isArray(status.roles) ? status.roles : [];
+    const widget = (window.woDialogEngine.widgets || []).find((w) => w && w.widget === "fillingStatus" &&
+      w.el && w.el.getAttribute("data-wo-key") === "status" &&
+      w.el.closest && w.el.closest('[data-wo-dialog="' + FILLING_STATUS_DIALOG_ID + '"]'));
+    const prev = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    let active = prev && typeof prev.active === "string" ? prev.active : "";
+    if (!active && roles.length) active = roles[0].id;
+    const user = woFillingSessionUser();
+    const gate = active ? woCanFillRole(active, user) : { ok: true, can: false };
+    const blob = {
+      status: status.status || "empty",
+      totalFields: status.totalFields || 0,
+      filledFields: status.filledFields || 0,
+      requiredLeft: status.requiredLeft || 0,
+      roles: breakdown,
+      roleList: roles.map((r) => ({ id: r.id, name: r.name, color: r.color, user: r.user })),
+      active: active,
+      canFill: !!gate.can,
+      user: user,
+    };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("status", blob);
+  }
+  function openFillingStatus() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " fillingStatus"); return; }
+    let handle = window.woDialogEngine.get(FILLING_STATUS_DIALOG_ID);
+    if (!handle) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS.fillingStatus);
+    syncFillingStatusDialog();
+    handle.open();
+  }
+  function fillingStatusOk() {
+    if (woRolesDialogReady()) window.woDialogEngine.close(FILLING_STATUS_DIALOG_ID);
+  }
+  // Role switcher inside the dialog: the widget picks a role, the payload
+  // re-gates through asc_can_fill_role for the (possibly anonymous) user.
+  function fillingRoleSwitch(value) {
+    const v = advParsePayload(value, "fillingRoleSwitch");
+    const active = v && typeof v.active === "string" ? v.active : "";
+    const handle = woRolesDialogReady() ? window.woDialogEngine.get(FILLING_STATUS_DIALOG_ID) : null;
+    if (!handle || !active) return;
+    const user = woFillingSessionUser();
+    const gate = woCanFillRole(active, user);
+    setStatus(gate.can ? t("Status.FillingRoleSwitched") : t("Widget.FillingStatus.CannotFill"), !gate.can);
+    syncFillingStatusDialog();
   }
 
    loadDocument();
