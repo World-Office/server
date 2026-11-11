@@ -1453,14 +1453,18 @@
         <button type="button" class="backstage-row" data-pane="new" data-i18n="Menu.New">New</button>
         <button type="button" class="backstage-row" data-pane="open" data-i18n="Menu.Open">Open…</button>
         <button type="button" class="backstage-row" data-pane="save" data-i18n="Menu.Save">Save</button>
+        <button type="button" class="backstage-row" data-pane="save-copy" data-i18n="Menu.SaveCopy">Save a copy…</button>
         <button type="button" class="backstage-row" data-pane="save-form" data-i18n="Menu.SaveAsForm">Save as form…</button>
         <button type="button" class="backstage-row" data-pane="export" data-i18n="Menu.Export">Download As</button>
         <div class="backstage-group" data-i18n="FileScreen.GroupInfo">Info</div>
         <button type="button" class="backstage-row" data-pane="info" data-i18n="FileScreen.NavInfo">Info</button>
         <button type="button" class="backstage-row" data-pane="history" data-i18n="FileScreen.NavHistory">History</button>
         <button type="button" class="backstage-row" data-pane="ai" data-i18n="FileScreen.NavAI">AI changes</button>
+        <button type="button" class="backstage-row" data-pane="rename" data-i18n="FileScreen.NavRename">Rename…</button>
+        <button type="button" class="backstage-row" data-pane="rights" data-i18n="FileScreen.NavRights">Rights…</button>
         <div class="backstage-group" data-i18n="FileScreen.GroupPrint">Print</div>
         <button type="button" class="backstage-row" data-pane="print" data-i18n="Menu.Print">Print</button>
+        <button type="button" class="backstage-row" data-pane="print-preview" data-i18n="Menu.PrintPreview">Print preview…</button>
         <div class="backstage-group" data-i18n="FileScreen.GroupHelp">Help &amp; about</div>
         <button type="button" class="backstage-row" data-pane="settings" data-i18n="FileScreen.NavSettings">Settings</button>
         <button type="button" class="backstage-row" data-pane="protect" data-i18n="FileScreen.NavProtect">Protect</button>
@@ -1494,6 +1498,11 @@
         <h2 data-i18n="FileScreen.TitleSave">Save</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescSave">Save your changes to the current document.</p>
         <button type="button" class="backstage-primary" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button>
+      </div>
+      <div class="backstage-view" data-pane-view="save-copy" hidden>
+        <h2 data-i18n="FileScreen.TitleSaveCopy">Save a copy</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescSaveCopy">Save a copy of the current document.</p>
+        <button type="button" id="fm-btn-save-copy" class="backstage-primary" data-i18n="Menu.SaveCopy">Save a copy…</button>
       </div>
       <div class="backstage-view" data-pane-view="save-form" hidden>
         <h2 data-i18n="FileScreen.TitleSaveForm">Save as form</h2>
@@ -1546,10 +1555,25 @@
         <p class="backstage-desc" data-i18n="FileScreen.DescAI">Review AI-suggested edits to this document.</p>
         <button type="button" id="btn-ai-review" class="backstage-primary" data-i18n="AI.ChangesTab">AI changes…</button>
       </div>
+      <div class="backstage-view" data-pane-view="rename" hidden>
+        <h2 data-i18n="FileScreen.TitleRename">Rename document</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescRename">Change the document name.</p>
+        <button type="button" id="fm-btn-rename" class="backstage-primary" data-i18n="FileScreen.NavRename">Rename…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="rights" hidden>
+        <h2 data-i18n="FileScreen.TitleRights">Document rights</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescRights">Manage document access and permissions.</p>
+        <button type="button" id="fm-btn-rights" class="backstage-primary" data-i18n="FileScreen.NavRights">Rights…</button>
+      </div>
       <div class="backstage-view" data-pane-view="print" hidden>
         <h2 data-i18n="FileScreen.TitlePrint">Print</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescPrint">Print the current document or export it as PDF.</p>
         <button type="button" id="btn-print" class="backstage-primary" data-i18n="Menu.Print">Print</button>
+      </div>
+      <div class="backstage-view" data-pane-view="print-preview" hidden>
+        <h2 data-i18n="FileScreen.TitlePrintPreview">Print preview</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescPrintPreview">Preview how the document will appear when printed.</p>
+        <button type="button" id="fm-btn-print-preview" class="backstage-primary" data-i18n="Menu.PrintPreview">Print preview…</button>
       </div>
       <div class="backstage-view" data-pane-view="settings" hidden>
         <h2 data-i18n="FileScreen.TitleSettings">Settings</h2>
