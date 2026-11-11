@@ -4206,6 +4206,26 @@
     updateUndoRedoState();
   }
 
+  let reviewDisplayMode = "review"; // CHROME-G: simple|final|review|original
+
+  function changeReviewDisplayMode(mode) {
+    reviewDisplayMode = mode;
+    editor.dataset.reviewDisplayMode = mode;
+    // Apply visual changes based on mode
+    updateReviewDisplayMode();
+  }
+
+  function updateReviewDisplayMode() {
+    // Update UI to reflect the current display mode
+    const sbSel = document.getElementById("sb-review-display-mode");
+    if (sbSel) {
+      sbSel.value = reviewDisplayMode;
+    }
+    // Toggle classes on editor for styling different review modes
+    editor.classList.remove("review-mode-simple", "review-mode-final", "review-mode-review", "review-mode-original");
+    editor.classList.add(`review-mode-${reviewDisplayMode}`);
+  }
+
   function setTrackChanges(on) {
     if (READ_ONLY) return;
     trackChangesOn = on;
@@ -12093,6 +12113,8 @@
   }, { passive: false });
   const sbTcBtn = document.getElementById("sb-track-changes");
   if (sbTcBtn) sbTcBtn.addEventListener("click", () => { setTrackChanges(!trackChangesOn); });
+  const sbReviewMode = document.getElementById("sb-review-display-mode");
+  if (sbReviewMode) sbReviewMode.addEventListener("change", () => { changeReviewDisplayMode(sbReviewMode.value); });
   const printBtn = document.getElementById("btn-print-qa");
   if (printBtn) printBtn.addEventListener("click", () => window.print());
   const rcBtn = document.getElementById("btn-ribbon-collapse");
