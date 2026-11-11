@@ -1689,6 +1689,24 @@
     if (cmd === "openFillingStatus") { openFillingStatus(); return; }
     if (cmd === "fillingStatusOk") { fillingStatusOk(); return; }
     if (cmd === "fillingRoleSwitch") { fillingRoleSwitch(value); return; }
+    // FX-U4: signature wave — engine-hosted dialogs (specs in
+    // wo-dialogs.js) over the woSigners engine (asc_get_signers/
+    // asc_set_signers). Widget pick cmds are ledger-only entries.
+    if (cmd === "openSignatureSettings") { openSignatureSettings(); return; }
+    if (cmd === "signatureSettingsOk") { signatureSettingsOk(value); return; }
+    if (cmd === "signatureSignerPick") { signatureSignerPick(); return; }
+    if (cmd === "openSignSettings") { openSignSettings(); return; }
+    if (cmd === "signSettingsOk") { signSettingsOk(value); return; }
+    if (cmd === "signerEditorChange") { signerEditorChange(value); return; }
+    if (cmd === "openSignDialog") { openSignDialog(); return; }
+    if (cmd === "signDialogOk") { signDialogOk(value); return; }
+    if (cmd === "signRolePick") { signRolePick(); return; }
+    if (cmd === "openSendForSigning") { openSendForSigning(); return; }
+    if (cmd === "sendForSigningSend") { sendForSigningSend(value); return; }
+    if (cmd === "signRecipientsChange") { signRecipientsChange(); return; }
+    if (cmd === "openPdfSign") { openPdfSignDialog(); return; }
+    if (cmd === "pdfSignConfirm") { pdfSignConfirm(value); return; }
+    if (cmd === "pdfSignerPick") { pdfSignerPick(); return; }
     // Loud-stub doctrine at the root: any command that reaches this
     // fallthrough but is not a real browser execCommand (e.g. a stubbed
     // ribbon button) must SAY so instead of failing silently — silent
@@ -16152,6 +16170,125 @@
   window.woFilling = WO_FILLING_API;
 
   // ------------------------------------------------------------------
+  // FX-U4: signature wave engine — the OO asc_CSigner roster over the
+  // wo-bridge wasm: asc_getSigners/asc_setSigners (js_names of the Rust
+  // asc_get_signers/asc_set_signers), camelCase probed first, snake_case
+  // accepted — same convention as the FX-U2 role ops and the FX-U3
+  // filling block above. The wasm canonical record is {id,name,date,image}
+  // (Rust AscSigner); the editor-side record carries the OO SignSettings
+  // fields too (title/email/instructions) — those live JS-side
+  // (WO_SIGNER_STORE) and survive the engine round trip through a merge.
+  // Validation mirrors the Rust asc_set_signers gates 1:1 and fails loud:
+  // empty id, empty name, duplicate id are all rejections, never silent
+  // drops. No crypto anywhere: the signing workflow state is editor-side
+  // (documented divergence — the ledger keeps the honest trace, like
+  // HintManager). The block is self-contained on purpose (extracted +
+  // executed under a stubbed window by the gate test, same technique as
+  // the roles/filling blocks).
+  // ------------------------------------------------------------------
+  const WO_SIGNER_STORE = []; // JS mirror + extended-field authority
+  function woSignersWasm() {
+    return (typeof window !== "undefined" && window.__WO_WASM__) || null;
+  }
+  function woSignersWasmFn(mod, camel, snake) {
+    if (!mod) return null;
+    if (typeof mod[camel] === "function") return mod[camel];
+    if (typeof mod[snake] === "function") return mod[snake];
+    return null;
+  }
+  function woSignersParse(json) {
+    try { return JSON.parse(json); } catch (err) { return null; }
+  }
+  function woSignersDocHandle(mod) {
+    return typeof mod.getDocHandle === "function" ? mod.getDocHandle() : 0;
+  }
+  function woSignersClone(signer) { return Object.assign({}, signer); }
+  // Full editor-side record: the wasm canonical fields + the OO
+  // SignSettingsDialog fields the engine blob does not model.
+  function woSignersNormRecord(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    return {
+      id: String(r.id == null ? "" : r.id).trim(),
+      name: String(r.name == null ? "" : r.name).trim(),
+      title: String(r.title == null ? "" : r.title),
+      email: String(r.email == null ? "" : r.email),
+      instructions: String(r.instructions == null ? "" : r.instructions),
+      date: String(r.date == null ? "" : r.date),
+      image: String(r.image == null ? "" : r.image),
+    };
+  }
+  // Mirrors the Rust asc_set_signers gates exactly (same messages' intent):
+  // "" signals valid, anything else is the loud rejection reason.
+  function woSignersInvalid(signers) {
+    for (const s of signers) {
+      if (!s.id) return "Signer `id` must not be empty";
+      if (!s.name) return "Signer \"" + s.id + "\" needs a non-empty `name`";
+    }
+    const seen = new Set();
+    for (const s of signers) {
+      if (seen.has(s.id)) return "Duplicate signer id: \"" + s.id + "\"";
+      seen.add(s.id);
+    }
+    return "";
+  }
+  // Engine canonical records ({id,name,date,image}) + JS-side extended
+  // fields — the previous store is the authority for those, and a set()
+  // also merges its own incoming roster so the FIRST wasm-backed save
+  // keeps its extended fields too (the store is still empty then; without
+  // the extra source a fresh SignSettings edit would silently lose
+  // title/email/instructions).
+  function woSignersMergeExtended(engineList, incoming) {
+    const src = Array.isArray(incoming) ? incoming : [];
+    return (Array.isArray(engineList) ? engineList : []).map((rec) => {
+      const prev = WO_SIGNER_STORE.find((s) => s.id === rec.id) || src.find((s) => s.id === rec.id);
+      return woSignersClone(Object.assign({}, prev || {}, rec));
+    });
+  }
+  function woSignersAdopt(merged) {
+    WO_SIGNER_STORE.length = 0;
+    (Array.isArray(merged) ? merged : []).forEach((s) => WO_SIGNER_STORE.push(woSignersClone(s)));
+    return { ok: true, signers: WO_SIGNER_STORE.map(woSignersClone) };
+  }
+  // OO asc_getSigners(): the stored roster, [] when none was set. The
+  // engine stays authoritative for order + canonical fields.
+  function woSignersGet() {
+    const mod = woSignersWasm();
+    const fn = woSignersWasmFn(mod, "asc_getSigners", "asc_get_signers");
+    if (fn) {
+      try {
+        const parsed = woSignersParse(fn(woSignersDocHandle(mod)));
+        if (Array.isArray(parsed)) return woSignersAdopt(woSignersMergeExtended(parsed));
+      } catch (err) { /* engine error → degrade to the JS store */ }
+    }
+    return { ok: true, signers: WO_SIGNER_STORE.map(woSignersClone) };
+  }
+  // OO asc_setSigners(aSigners): replace the roster. Validates first (the
+  // Rust engine would throw the same shapes), then pushes the canonical
+  // projection and adopts the stored answer.
+  function woSignersSet(list) {
+    const normed = (Array.isArray(list) ? list : []).map((s) => woSignersNormRecord(s));
+    const invalid = woSignersInvalid(normed);
+    if (invalid) return { ok: false, error: invalid, signers: WO_SIGNER_STORE.map(woSignersClone) };
+    const mod = woSignersWasm();
+    const fn = woSignersWasmFn(mod, "asc_setSigners", "asc_set_signers");
+    if (fn) {
+      try {
+        const canonical = normed.map((s) => ({ id: s.id, name: s.name, date: s.date, image: s.image }));
+        const stored = woSignersParse(fn(woSignersDocHandle(mod), JSON.stringify(canonical)));
+        if (!Array.isArray(stored)) {
+          return { ok: false, error: "Signer store rejected the roster", signers: WO_SIGNER_STORE.map(woSignersClone) };
+        }
+        return woSignersAdopt(woSignersMergeExtended(stored, normed));
+      } catch (err) {
+        return { ok: false, error: err && err.message ? err.message : String(err), signers: WO_SIGNER_STORE.map(woSignersClone) };
+      }
+    }
+    return woSignersAdopt(normed);
+  }
+  const WO_SIGNERS_API = { get: woSignersGet, set: woSignersSet, store: WO_SIGNER_STORE };
+  window.woSigners = WO_SIGNERS_API;
+
+  // ------------------------------------------------------------------
   // FX-U3: MaskedField — masked inputs for the fill overlay. Date fields
   // (span.wo-form-field[data-kind=date]) get the ____-__-__ mask, zip
   // fields ([data-kind=zip]) the _____ mask; the mask characters are
@@ -16569,6 +16706,397 @@
     const gate = woCanFillRole(active, user);
     setStatus(gate.can ? t("Status.FillingRoleSwitched") : t("Widget.FillingStatus.CannotFill"), !gate.can);
     syncFillingStatusDialog();
+  }
+
+  // ------------------------------------------------------------------
+  // FX-U4: signature wave wiring — the five signing dialogs over the
+  // woSigners engine block above (asc_get_signers/asc_set_signers driven):
+  //   SignatureSettings   inserts a signature LINE (div.wo-signature-line
+  //                       [data-signers]) at the caret
+  //   SignSettingsDialog  name/title/email/instructions rows bound to the
+  //                       picked roster signer, OK → woSigners.set
+  //   SignDialog          the signing step: role + drawn name, Apply marks
+  //                       the line signed (editor-side state, no crypto)
+  //   SendForSigningSettings  recipients multi-select from roles + message,
+  //                       Send → toast + an in-document status line
+  //   PdfSignDialog       pdf-specific signer confirm (reason/location)
+  // Dialogs are engine-hosted (specs in wo-dialogs.js); every OK payload is
+  // one JSON ledger entry. Widget rows with a cmd emit on USER picks only
+  // (widget setValue syncs are silent), so a dialog sync never loops.
+  // ------------------------------------------------------------------
+  const SIGNATURE_SETTINGS_DIALOG_ID = "signature-settings-dialog";
+  const SIGN_SETTINGS_DIALOG_ID = "sign-settings-dialog";
+  const SIGN_DIALOG_ID = "sign-dialog";
+  const SEND_FOR_SIGNING_DIALOG_ID = "send-for-signing-dialog";
+  const PDF_SIGN_DIALOG_ID = "pdf-sign-dialog";
+  function woSignEscAttr(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+  // Mounted custom-widget instance of one dialog row (data-wo-key inside
+  // the dialog), or null — same lookup convention as the FX-U2/U3 syncs.
+  function woSignWidget(dialogId, key, widgetName) {
+    if (!woRolesDialogReady()) return null;
+    return (window.woDialogEngine.widgets || []).find((w) => w && w.widget === widgetName &&
+      w.el && w.el.getAttribute("data-wo-key") === key &&
+      w.el.closest && w.el.closest('[data-wo-dialog="' + dialogId + '"]')) || null;
+  }
+  function woSignDialogHandle(id, specKey) {
+    let handle = woRolesDialogReady() ? window.woDialogEngine.get(id) : null;
+    if (!handle && woRolesDialogReady()) handle = window.woDialogEngine.build(window.WoDialogs.WO_DIALOG_SPECS[specKey]);
+    return handle;
+  }
+  function woSignClose(id) {
+    if (woRolesDialogReady()) window.woDialogEngine.close(id);
+  }
+  // OK payloads stringify custom-widget snapshots when the sync went
+  // through handle.setValue; prefer the live widget instance then.
+  function woSignWidgetOrPayload(value, dialogId, key, widgetName, parseKey) {
+    const v = advParsePayload(value, parseKey);
+    if (!v) return null;
+    const blob = v[key] && typeof v[key] === "object" && Array.isArray(v[key][v[key].roles ? "roles" : "signers"])
+      ? v[key]
+      : null;
+    if (blob) return { v: v, blob: blob };
+    const widget = woSignWidget(dialogId, key, widgetName);
+    const live = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    return live ? { v: v, blob: live } : { v: v, blob: null };
+  }
+
+  // ── SignatureSettings: the signature LINE at the caret ──────────────
+  function woSignatureLineIds(line) {
+    return String((line && line.getAttribute("data-signers")) || "")
+      .split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  function woSignatureDay(iso) {
+    return String(iso || "").slice(0, 10);
+  }
+  // Paint the line body from its data attrs (insert + sign both land here).
+  function woSignatureLineInner(line) {
+    const ids = woSignatureLineIds(line);
+    const signer = ids.length ? woSignersGet().signers.find((s) => s.id === ids[0]) : null;
+    const signed = line.getAttribute("data-signed") === "true";
+    const name = signed
+      ? (line.getAttribute("data-signed-by") || (signer && signer.name) || "")
+      : ((signer && signer.name) || "");
+    const label = line.getAttribute("data-label") || "";
+    const day = woSignatureDay(line.getAttribute("data-signed-date"));
+    const caption = [label, day ? t("Dialog.Sign.SignedOn") + " " + day : ""]
+      .filter(Boolean).join(" · ");
+    return '<span class="wo-signature-line-body">' +
+        '<span class="wo-signature-line-x" aria-hidden="true">x</span>' +
+        '<span class="wo-signature-line-name">' + woSignEscAttr(name) + "</span>" +
+        '<span class="wo-signature-line-rule" aria-hidden="true"></span>' +
+      "</span>" +
+      '<span class="wo-signature-line-caption">' + woSignEscAttr(caption) + "</span>";
+  }
+  function insertSignatureLine(signerId, label) {
+    if (editBlocked("insertSignatureLine")) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      setStatus(t("Status.NotAvailable") + " insertSignatureLine", true);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const line = document.createElement("div");
+    line.className = "wo-signature-line";
+    line.setAttribute("contenteditable", "false");
+    line.setAttribute("data-signers", String(signerId || "").trim());
+    line.setAttribute("data-signed", "false");
+    if (label) line.setAttribute("data-label", String(label));
+    line.innerHTML = woSignatureLineInner(line);
+    range.insertNode(line);
+    range.setStartAfter(line);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+    setStatus(t("Status.SignatureLineInserted"));
+  }
+  function syncSignatureSettingsDialog() {
+    const handle = woSignDialogHandle(SIGNATURE_SETTINGS_DIALOG_ID, "signatureSettings");
+    if (!handle) return;
+    const res = woSignersGet();
+    const widget = woSignWidget(SIGNATURE_SETTINGS_DIALOG_ID, "lineSigner", "signerPicker");
+    const prev = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    const selected = prev && typeof prev.selected === "string" && res.signers.some((s) => s.id === prev.selected)
+      ? prev.selected
+      : (res.signers[0] ? res.signers[0].id : "");
+    const blob = { signers: res.signers, selected: selected };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("lineSigner", blob);
+  }
+  function openSignatureSettings() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " signatureSettings"); return; }
+    const handle = woSignDialogHandle(SIGNATURE_SETTINGS_DIALOG_ID, "signatureSettings");
+    syncSignatureSettingsDialog();
+    handle.open();
+  }
+  function signatureSignerPick() { /* ledger-only: the widget snapshot keeps the pick */ }
+  function signatureSettingsOk(value) {
+    const picked = woSignWidgetOrPayload(value, SIGNATURE_SETTINGS_DIALOG_ID, "lineSigner", "signerPicker", "signatureSettingsOk");
+    if (!picked) return;
+    const signerId = picked.blob && typeof picked.blob.selected === "string" ? picked.blob.selected : "";
+    const label = typeof picked.v.lineLabel === "string" ? picked.v.lineLabel : "";
+    insertSignatureLine(signerId, label);
+    woSignClose(SIGNATURE_SETTINGS_DIALOG_ID);
+  }
+
+  // ── SignSettingsDialog: the signer roster + its fields ─────────────
+  function syncSignSettingsDialog() {
+    const handle = woSignDialogHandle(SIGN_SETTINGS_DIALOG_ID, "signSettings");
+    if (!handle) return;
+    const res = woSignersGet();
+    const widget = woSignWidget(SIGN_SETTINGS_DIALOG_ID, "signers", "signerEditor");
+    const blob = { signers: res.signers, selected: res.signers.length ? 0 : -1 };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("signers", blob);
+    loadSignSettingsRows(widget ? widget.getValue() : blob);
+  }
+  function loadSignSettingsRows(roster) {
+    const handle = woRolesDialogReady() ? window.woDialogEngine.get(SIGN_SETTINGS_DIALOG_ID) : null;
+    if (!handle) return;
+    const signers = roster && Array.isArray(roster.signers) ? roster.signers : [];
+    const at = roster && typeof roster.selected === "number" &&
+      roster.selected >= 0 && roster.selected < signers.length ? roster.selected : -1;
+    const picked = at >= 0 ? signers[at] : null;
+    handle.setValue("name", picked ? picked.name : "");
+    handle.setValue("title", picked ? picked.title : "");
+    handle.setValue("email", picked ? picked.email : "");
+    handle.setValue("instructions", picked ? picked.instructions : "");
+  }
+  function openSignSettings() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " signSettings"); return; }
+    const handle = woSignDialogHandle(SIGN_SETTINGS_DIALOG_ID, "signSettings");
+    syncSignSettingsDialog();
+    handle.open();
+  }
+  // Roster pick/add/remove (user action → widget onChange → this): load the
+  // picked signer into the four field rows. Row edits commit on OK only.
+  function signerEditorChange(value) {
+    const v = advParsePayload(value, "signerEditorChange");
+    if (!v) return;
+    const widget = woSignWidget(SIGN_SETTINGS_DIALOG_ID, "signers", "signerEditor");
+    const roster = widget && typeof widget.getValue === "function" ? widget.getValue() : v;
+    loadSignSettingsRows(roster);
+  }
+  function signSettingsOk(value) {
+    const v = advParsePayload(value, "signSettingsOk");
+    if (!v) return;
+    const widget = woSignWidget(SIGN_SETTINGS_DIALOG_ID, "signers", "signerEditor");
+    const roster = widget && typeof widget.getValue === "function"
+      ? widget.getValue()
+      : (v.signers && typeof v.signers === "object" && Array.isArray(v.signers.signers) ? v.signers : { signers: [], selected: -1 });
+    const signers = (roster.signers || []).map((s) => Object.assign({}, s));
+    const at = typeof roster.selected === "number" && roster.selected >= 0 && roster.selected < signers.length
+      ? roster.selected
+      : -1;
+    if (at >= 0) {
+      if (typeof v.name === "string") signers[at].name = v.name;
+      if (typeof v.title === "string") signers[at].title = v.title;
+      if (typeof v.email === "string") signers[at].email = v.email;
+      if (typeof v.instructions === "string") signers[at].instructions = v.instructions;
+    }
+    const res = woSignersSet(signers);
+    if (!res.ok) {
+      setStatus(res.error || t("Status.NotAvailable"), true);
+      return;
+    }
+    setStatus(t("Status.SignSettingsApplied"));
+    woSignClose(SIGN_SETTINGS_DIALOG_ID);
+  }
+
+  // ── SignDialog: the signing step over one signature line ───────────
+  let signDialogTarget = null; // div.wo-signature-line being signed
+  function syncSignDialog() {
+    const handle = woSignDialogHandle(SIGN_DIALOG_ID, "signDialog");
+    if (!handle) return;
+    const roles = woRolesGetAll().roles;
+    const widget = woSignWidget(SIGN_DIALOG_ID, "role", "signRolePick");
+    const prev = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    const selected = prev && typeof prev.selected === "string" && roles.some((r) => r.id === prev.selected)
+      ? prev.selected
+      : (roles[0] ? roles[0].id : "");
+    const blob = { roles: roles, selected: selected };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("role", blob);
+    handle.setValue("drawnName", "");
+  }
+  function openSignDialog() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " signDialog"); return; }
+    editor.focus();
+    // Resolve the line up-front when possible, but never block the dialog
+    // on it: the signing step MARKS the line on Apply, and a document
+    // without a signature line fails loud there (Status.NoSignatureLine).
+    let line = null;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const node = sel.getRangeAt(0).startContainer;
+      const el = node && node.nodeType === 1 ? node : node && node.parentElement;
+      line = el && typeof el.closest === "function" ? el.closest("div.wo-signature-line") : null;
+    }
+    if (!line) line = editor.querySelector("div.wo-signature-line");
+    signDialogTarget = line;
+    const handle = woSignDialogHandle(SIGN_DIALOG_ID, "signDialog");
+    syncSignDialog();
+    handle.open();
+  }
+  function signRolePick() { /* ledger-only: the widget snapshot keeps the pick */ }
+  function signDialogOk(value) {
+    const v = advParsePayload(value, "signDialogOk");
+    if (!v) return;
+    const drawnName = typeof v.drawnName === "string" ? v.drawnName.trim() : "";
+    if (!drawnName) { setStatus(t("Status.SignNeedsDrawnName"), true); return; }
+    const line = signDialogTarget && signDialogTarget.parentNode
+      ? signDialogTarget
+      : (editor.querySelector("div.wo-signature-line") || null);
+    if (!line) { setStatus(t("Status.NoSignatureLine"), true); return; }
+    const picked = woSignWidgetOrPayload(value, SIGN_DIALOG_ID, "role", "signRolePick", "signDialogOk");
+    const roleId = picked && picked.blob && typeof picked.blob.selected === "string" ? picked.blob.selected : "";
+    woSignLine(line, roleId, drawnName, woFillingSessionUser());
+    signDialogTarget = null;
+    woSignClose(SIGN_DIALOG_ID);
+  }
+  // Apply: mark the line signed + stamp the roster signers' date. Editor-
+  // side workflow state (no crypto — the honest divergence FX-U4 declares).
+  function woSignLine(line, roleId, drawnName, user) {
+    const iso = new Date().toISOString();
+    line.setAttribute("data-signed", "true");
+    if (roleId) line.setAttribute("data-signed-role", roleId);
+    else line.removeAttribute("data-signed-role");
+    line.setAttribute("data-signed-by", String(drawnName || ""));
+    line.setAttribute("data-signed-date", iso);
+    if (typeof user === "string" && user) line.setAttribute("data-signed-user", user);
+    line.classList.add("wo-signature-line-signed");
+    const ids = woSignatureLineIds(line);
+    if (ids.length) {
+      const res = woSignersSet(woSignersGet().signers.map((s) =>
+        ids.indexOf(s.id) !== -1 ? Object.assign({}, s, { date: iso }) : s));
+      if (!res.ok) setStatus(res.error || t("Status.NotAvailable"), true);
+    }
+    line.innerHTML = woSignatureLineInner(line);
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+    setStatus(t("Status.SignatureMarkedSigned"));
+  }
+
+  // ── SendForSigningSettings: recipients from roles + message ─────────
+  function syncSendForSigningDialog() {
+    const handle = woSignDialogHandle(SEND_FOR_SIGNING_DIALOG_ID, "sendForSigning");
+    if (!handle) return;
+    const roles = woRolesGetAll().roles;
+    const widget = woSignWidget(SEND_FOR_SIGNING_DIALOG_ID, "recipients", "signRecipients");
+    const prev = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    const picked = prev && Array.isArray(prev.picked)
+      ? prev.picked.filter((id) => roles.some((r) => r.id === id))
+      : [];
+    const blob = { roles: roles, picked: picked };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("recipients", blob);
+  }
+  function openSendForSigning() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " sendForSigning"); return; }
+    const handle = woSignDialogHandle(SEND_FOR_SIGNING_DIALOG_ID, "sendForSigning");
+    syncSendForSigningDialog();
+    handle.open();
+  }
+  function signRecipientsChange() { /* ledger-only: the widget snapshot keeps the picks */ }
+  function sendForSigningSend(value) {
+    const picked = woSignWidgetOrPayload(value, SEND_FOR_SIGNING_DIALOG_ID, "recipients", "signRecipients", "sendForSigningSend");
+    if (!picked) return;
+    const ids = picked.blob && Array.isArray(picked.blob.picked) ? picked.blob.picked : [];
+    if (!ids.length) { setStatus(t("Status.SigningNeedsRecipient"), true); return; }
+    const message = typeof picked.v.message === "string" ? picked.v.message.trim() : "";
+    woSigningStatusLine("sign", ids, message, "sent");
+    setStatus(t("Status.SigningRequestSent"));
+    woSignClose(SEND_FOR_SIGNING_DIALOG_ID);
+  }
+  // ── PdfSignDialog: the pdf-specific signer confirm ─────────────────
+  function syncPdfSignDialog() {
+    const handle = woSignDialogHandle(PDF_SIGN_DIALOG_ID, "pdfSignDialog");
+    if (!handle) return;
+    const res = woSignersGet();
+    const widget = woSignWidget(PDF_SIGN_DIALOG_ID, "pdfSigner", "signerPicker");
+    const prev = widget && typeof widget.getValue === "function" ? widget.getValue() : null;
+    const selected = prev && typeof prev.selected === "string" && res.signers.some((s) => s.id === prev.selected)
+      ? prev.selected
+      : (res.signers[0] ? res.signers[0].id : "");
+    const blob = { signers: res.signers, selected: selected };
+    if (widget && typeof widget.setValue === "function") widget.setValue(blob);
+    else handle.setValue("pdfSigner", blob);
+  }
+  function openPdfSignDialog() {
+    closeAllMenus();
+    if (!woRolesDialogReady()) { setStatus(t("Status.NotAvailable") + " pdfSignDialog"); return; }
+    const handle = woSignDialogHandle(PDF_SIGN_DIALOG_ID, "pdfSignDialog");
+    syncPdfSignDialog();
+    handle.open();
+  }
+  function pdfSignerPick() { /* ledger-only: the widget snapshot keeps the pick */ }
+  function pdfSignConfirm(value) {
+    const v = advParsePayload(value, "pdfSignConfirm");
+    if (!v) return;
+    if (v.confirm !== true && v.confirm !== "true") {
+      setStatus(t("Status.PdfSignNeedsConfirm"), true);
+      return;
+    }
+    const picked = woSignWidgetOrPayload(value, PDF_SIGN_DIALOG_ID, "pdfSigner", "signerPicker", "pdfSignConfirm");
+    const signerId = picked && picked.blob && typeof picked.blob.selected === "string" ? picked.blob.selected : "";
+    const reason = typeof v.reason === "string" ? v.reason.trim() : "";
+    const location = typeof v.location === "string" ? v.location.trim() : "";
+    woSigningStatusLine("pdf", signerId ? [signerId] : [], [reason, location].filter(Boolean).join(" · "), "signed");
+    setStatus(t("Status.PdfSigned"));
+    woSignClose(PDF_SIGN_DIALOG_ID);
+  }
+  // The in-document signing status line (Send/Sign PDF both write it):
+  // one div.wo-signing-status per kind, updated in place when present.
+  function woSigningStatusLine(kind, ids, note, state) {
+    editor.focus();
+    let line = editor.querySelector('div.wo-signing-status[data-kind="' + woSignEscAttr(kind) + '"]');
+    if (!line) {
+      line = document.createElement("div");
+      line.className = "wo-signing-status";
+      line.setAttribute("contenteditable", "false");
+      line.setAttribute("data-kind", String(kind));
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        range.insertNode(line);
+      } else {
+        editor.appendChild(line);
+      }
+    }
+    line.setAttribute("data-state", String(state || "sent"));
+    line.setAttribute("data-recipients", (Array.isArray(ids) ? ids : []).join(","));
+    line.setAttribute("data-sent-at", new Date().toISOString());
+    if (note) line.setAttribute("data-note", String(note));
+    const caption = (state === "signed" ? t("Dialog.PdfSign.StatusCaption") : t("Dialog.SendForSigning.StatusCaption")) +
+      " · " + t("Dialog.Sign.SignedOn") + " " + woSignatureDay(line.getAttribute("data-sent-at"));
+    line.textContent = caption;
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+    return line;
   }
 
    loadDocument();

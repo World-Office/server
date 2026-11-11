@@ -935,6 +935,17 @@
     <button type="button" id="btn-form-settings" data-cmd="openFormSettings" title="Form settings" data-i18n-title="Forms.FormSettingsTitle" data-i18n="Forms.FormSettings">Form settings</button>
     <button type="button" id="btn-filling-status" data-cmd="openFillingStatus" title="Filling status" data-i18n-title="Forms.FillingStatusTitle" data-i18n="Forms.FillingStatus">Filling status</button>
     </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <!-- FX-U4: signature wave — SignatureSettings (line insert), SignSettingsDialog
+         (signer roster), SignDialog (signing step), SendForSigningSettings
+         (recipients from roles + message), PdfSignDialog (signer confirm). -->
+    <div class="rb-group" role="group" aria-label="Signatures">
+    <button type="button" id="btn-signature-settings" data-cmd="openSignatureSettings" title="Signature line" data-i18n-title="Forms.SignatureLineTitle" data-i18n="Forms.SignatureLine">Signature line</button>
+    <button type="button" id="btn-sign-settings" data-cmd="openSignSettings" title="Signature setup" data-i18n-title="Forms.SignSettingsTitle" data-i18n="Forms.SignSettings">Signature setup</button>
+    <button type="button" id="btn-sign" data-cmd="openSignDialog" title="Sign" data-i18n-title="Forms.SignTitle" data-i18n="Forms.Sign">Sign</button>
+    <button type="button" id="btn-send-for-signing" data-cmd="openSendForSigning" title="Send for signing" data-i18n-title="Forms.SendForSigningTitle" data-i18n="Forms.SendForSigning">Send for signing</button>
+    <button type="button" id="btn-pdf-sign" data-cmd="openPdfSign" title="Sign PDF" data-i18n-title="Forms.PdfSignTitle" data-i18n="Forms.PdfSign">Sign PDF</button>
+    </div>
     </div>
     </div>
     <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
