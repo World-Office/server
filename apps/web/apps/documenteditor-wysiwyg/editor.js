@@ -12667,6 +12667,32 @@
   // ------------------------------------------------------------------
   // Keyboard shortcuts
   // ------------------------------------------------------------------
+  // Context-Enter (OO ports, capture phase): Enter on a selected object
+  // opens its edit affordance (EditChart/EditShape), Enter with the caret
+  // inside a hyperlink follows it (VisitHyperlink). Kept in its own capture
+  // listener so the main keydown body keeps plain Enter native for typing
+  // (shift-enter-behavior gate).
+  function contextEnterHandler(ev) {
+    if (ev.key !== "Enter" || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey || ev.isComposing) return;
+    const obj = selectedObject();
+    if (obj) {
+      ev.preventDefault(); ev.stopPropagation();
+      const kind = obj.getAttribute("data-kind") || obj.getAttribute("data-object") || "shape";
+      if (kind === "chart") { emitCommand("chartSettings"); }
+      else { openObjectDialog(kind === "shape" ? "" : kind); }
+      return;
+    }
+    const sel = window.getSelection();
+    const nd = sel && sel.anchorNode;
+    const host = nd && (nd.nodeType === 1 ? nd : nd.parentElement);
+    const link = host && host.closest ? host.closest("#editor a[href]") : null;
+    if (link) {
+      ev.preventDefault(); ev.stopPropagation();
+      const href = link.getAttribute("href") || "";
+      if (href) { window.open(href, "_blank", "noopener"); setStatus(t.lng === "de" ? "Link geöffnet" : "Link opened"); }
+    }
+  }
+  editor.addEventListener("keydown", contextEnterHandler, true);
   editor.addEventListener("keydown", (ev) => {
     // ------------------------------------------------------------------
     // C1 SHORTCUT PARITY (OO shortcut census, 2026-10-28). Dedicated block:
@@ -12699,33 +12725,6 @@
         obj.style.marginLeft = (ml + dx * step) + "px";
         obj.style.marginTop = (mt + dy * step) + "px";
         markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
-        return;
-      }
-    }
-    // Enter on a selected object opens its edit affordance (EditChart /
-    // EditShape): charts open the settings dialog, everything else the
-    // generic object dialog preset to its kind.
-    if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
-      const obj = selectedObject();
-      if (obj) {
-        ev.preventDefault();
-        const kind = obj.getAttribute("data-kind") || obj.getAttribute("data-object") || "shape";
-        if (kind === "chart") { emitCommand("chartSettings"); }
-        else { openObjectDialog(kind === "shape" ? "" : kind); }
-        return;
-      }
-    }
-    // Enter with the caret inside a hyperlink follows it (VisitHyperlink;
-    // Word's mouse-click adaptation for headless parity: new tab).
-    if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
-      const sel = window.getSelection();
-      const nd = sel && sel.anchorNode;
-      const host = nd && (nd.nodeType === 1 ? nd : nd.parentElement);
-      const link = host && host.closest ? host.closest("#editor a[href]") : null;
-      if (link && !ev.isComposing) {
-        ev.preventDefault();
-        const href = link.getAttribute("href") || "";
-        if (href) { window.open(href, "_blank", "noopener"); setStatus(t.lng === "de" ? "Link geöffnet" : "Link opened"); }
         return;
       }
     }
