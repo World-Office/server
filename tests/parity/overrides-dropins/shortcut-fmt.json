@@ -218,12 +218,287 @@
    "note": "soft line break",
    "effektClass": "structure"
   },
-  "inserttab": {
+  "shortcut.saveas": {
+   "key": "Control+Shift+s",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#backstage-overlay"
+   },
+   "note": "ctrl+shift+s -> openBackstage(export) (editor.js)",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#backstage-title"
+    },
+    {
+     "name": "new doc",
+     "selector": "#btn-new"
+    }
+   ]
+  },
+  "shortcut.openexistingfile": {
+   "key": "Control+o",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#backstage-overlay"
+   },
+   "note": "ctrl+o -> openBackstage(open) (editor.js)",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#backstage-title"
+    },
+    {
+     "name": "new doc",
+     "selector": "#btn-new"
+    }
+   ]
+  },
+  "shortcut.equationaddplaceholder": {
+   "key": "Control+Alt+=",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-kind=\"equation\""
+   },
+   "note": "Ctrl+Alt+= inserts an equation template vector object",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#equation-dialog-title"
+    },
+    {
+     "name": "input",
+     "selector": "#equation-input"
+    }
+   ]
+  },
+  "shortcut.insertpagenumber": {
+   "key": "Control+Shift+p",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "page-number"
+   },
+   "note": "Ctrl+Shift+P inserts PAGE field span directly (no dialog)",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#pagenumber-dialog-title"
+    },
+    {
+     "name": "position",
+     "selector": "#pagenumber-position"
+    }
+   ]
+  },
+  "shortcut.applylistbullet": {
+   "key": "Control+Shift+l",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<ul>"
+   },
+   "note": "same chord as ctrl+shift+l"
+  },
+  "shortcut.inserttablebreak": {
+   "key": "Control+Enter",
+   "pre": "in-table",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
+   },
+   "note": "column break in table context"
+  },
+  "shortcut.showall": {
+   "key": "Control+Shift+8",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#editor",
+    "hasClass": "show-marks"
+   },
+   "note": "show-all toggles the format marks overlay class"
+  },
+  "shortcut.speechworker": {
+   "key": "F7",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#editor",
+    "attr": "spellcheck",
+    "equals": "true"
+   },
+   "note": "WO maps F7 to the spellcheck engine toggle (#editor spellcheck attr)"
+  },
+  "shortcut.printpreviewandprint": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: browser window.print() \u2014 no DOM observable headless (WO prints directly, no print preview UI) \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.equationchangealignmentleft": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: equation alignment keys \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.equationchangealignmentright": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: equation alignment keys \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.specialoptionskeepsourceformat": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: paste-special variants \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.specialoptionskeeptextonly": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: paste-special variants \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.specialoptionsoverwritecells": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: paste-special variants \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.specialoptionsnesttable": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: paste-special variants \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.visithyperlink": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: visit-hyperlink key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.resetchar": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: ctrl+space reset char format \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.mixedindent": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: mixed indent key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.mixedunindent": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: mixed unindent key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.editshape": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: edit-shape key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.editchart": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: edit-chart key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.insertlinebreakmultilineform": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: form line break \u2014 form family, no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.opencommentfield": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: open comment field key \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "alt+backspace": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: delete word left \u2014 bare-Alt keys unhandled \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "alt+delete": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: delete word right \u2014 bare-Alt keys unhandled \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.replaceunicodetosymbol": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: niche symbol macro \u2014 no WO handler \u2014 OO-only until ported",
+   "effektClass": "op"
+  },
+  "shortcut.inserttab": {
    "key": "Tab",
    "xfail": true,
    "knownGap": true,
    "effektClass": "structure",
    "note": "KNOWN-GAP: Tab outside dialogs is not intercepted (no tab-char insert, no table cell nav) \u2014 OO-only until ported"
+  },
+  "ctrl+z": {
+   "key": "Control+z",
+   "pre": "dirty-type",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
+   },
+   "note": "Ctrl+Z undo removes the typed marker (DOM-restore undo)"
+  },
+  "shortcut.startindent": {
+   "key": "Control+m",
+   "pre": "dirty-type",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "indent-"
+   },
+   "note": "Ctrl+M indent adds paragraph indent marker"
+  },
+  "shortcut.startunindent": {
+   "key": "Control+Shift+m",
+   "pre": "dirty-indent",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "indent-"
+   },
+   "note": "Ctrl+Shift+M outdent removes the indent marker again"
+  },
+  "shortcut.unindent": {
+   "key": "Control+Shift+m",
+   "pre": "dirty-indent",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "indent-"
+   },
+   "note": "Ctrl+Shift+M outdent removes the indent marker again"
   }
  }
 }

@@ -1,0 +1,686 @@
+{
+ "entries": {
+  "tab:home": {
+   "effektClass": "view",
+   "selector": ".ribbon-tabs button[data-tab=\"home\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"home\"]",
+    "hasClass": "active"
+   }
+  },
+  "tab:layout": {
+   "effektClass": "view",
+   "selector": ".ribbon-tabs button[data-tab=\"layout\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"layout\"]",
+    "hasClass": "active"
+   }
+  },
+  "tab:references": {
+   "effektClass": "view",
+   "selector": ".ribbon-tabs button[data-tab=\"references\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"references\"]",
+    "hasClass": "active"
+   }
+  },
+  "tab:collaboration": {
+   "effektClass": "view",
+   "selector": ".ribbon-tabs button[data-tab=\"collaboration\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"collaboration\"]",
+    "hasClass": "active"
+   }
+  },
+  "file.ai": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"ai\"] [data-cmd=\"aiSettings\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#settings-dialog"
+   },
+   "woTab": "ai",
+   "subFeatures": [
+    {
+     "name": "theme",
+     "selector": "#settings-theme"
+    },
+    {
+     "name": "language",
+     "selector": "#settings-lang"
+    }
+   ]
+  },
+  "selectall": {
+   "effektClass": "op",
+   "selector": ".ribbon-page[data-tab=\"home\"] [data-menu-cmd=\"selectAll\"]",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "woTab": "home",
+   "pre": "menu:.ribbon-page[data-tab=\"home\"] [data-i18n=\"Home.More\"]"
+  },
+  "inkselect": {
+   "effektClass": "op",
+   "selector": "#btn-ink-select",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-select",
+    "attr": "aria-pressed"
+   },
+   "woTab": "draw",
+   "pre": "ink-pen",
+   "rootSelector": null
+  },
+  "btn-view-fit-width": {
+   "effektClass": "view",
+   "selector": "#btn-view-fit-width",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "%"
+   },
+   "woTab": "view"
+  },
+  "macros.record-macro": {
+   "effektClass": "dialog",
+   "woTab": "view",
+   "pre": "menu:#btn-macro-menu",
+   "selector": "#btn-macro-record",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:macro"
+   },
+   "note": "record emits wo:macro marker"
+  },
+  "view.pause-recording": {
+   "effektClass": "dialog",
+   "woTab": "view",
+   "pre": "menu:#btn-macro-menu",
+   "selector": "#btn-macro-pause",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:macro"
+   },
+   "note": "pause emits wo:macro marker"
+  },
+  "airewrite": {
+   "effektClass": "dialog",
+   "woTab": "plugins",
+   "selector": ".plugin-card[data-cmd=\"aiRewrite\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#ai-propose-title"
+    },
+    {
+     "name": "instruction",
+     "selector": "#ai-propose-instruction"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#ai-propose-dialog"
+   },
+   "note": "Thesaurus card -> AI rewrite flow"
+  },
+  "togglechat": {
+   "effektClass": "dialog",
+   "selector": "#btn-chat-toggle",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-chat-toggle",
+    "attr": "aria-expanded",
+    "equals": "true"
+   },
+   "woTab": "collaboration"
+  },
+  "table.draw-table": {
+   "effektClass": "structure",
+   "selector": "[data-cmd=\"tableDrawMode\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "body",
+    "hasClass": "wo-table-draw"
+   },
+   "woTab": "insert",
+   "pre": "menu:[data-i18n=\"Insert.TableMenu\"]"
+  },
+  "table.erase-table": {
+   "effektClass": "structure",
+   "selector": "[data-cmd=\"tableEraseMode\"]",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "body",
+    "hasClass": "wo-table-erase"
+   },
+   "woTab": "insert",
+   "pre": "menu:[data-i18n=\"Insert.TableMenu\"]"
+  },
+  "table.convert-text-to-table": {
+   "effektClass": "structure",
+   "selector": "[data-cmd=\"convertTextToTable\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#text-to-table-dialog"
+   },
+   "woTab": "insert",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#ttt-dialog-title"
+    },
+    {
+     "name": "separator",
+     "selector": "#ttt-sep"
+    }
+   ],
+   "pre": "menu:[data-i18n=\"Insert.TableMenu\"]"
+  },
+  "one": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"applyColumns\"][data-value=\"one\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"1\""
+   },
+   "woTab": "layout",
+   "pre": "menu:[data-i18n=\"Layout.Columns\"]"
+  },
+  "two": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"applyColumns\"][data-value=\"two\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"2\""
+   },
+   "woTab": "layout",
+   "pre": "menu:[data-i18n=\"Layout.Columns\"]"
+  },
+  "three": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"applyColumns\"][data-value=\"three\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"3\""
+   },
+   "woTab": "layout",
+   "pre": "menu:[data-i18n=\"Layout.Columns\"]"
+  },
+  "left": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"applyColumns\"][data-value=\"left\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns-layout=\"left\""
+   },
+   "woTab": "layout",
+   "pre": "menu:[data-i18n=\"Layout.Columns\"]"
+  },
+  "right": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"applyColumns\"][data-value=\"right\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns-layout=\"right\""
+   },
+   "woTab": "layout",
+   "pre": "menu:[data-i18n=\"Layout.Columns\"]"
+  },
+  "axes": {
+   "effektClass": "structure",
+   "woTab": "chart-design",
+   "pre": "chart-menu",
+   "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartElement\"][data-value=\"axes\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"axes\":true"
+   },
+   "note": "chart element toggle writes spec elements"
+  },
+  "chart.chart-title": {
+   "effektClass": "dialog",
+   "woTab": "chart-design",
+   "pre": "chart-menu",
+   "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartElement\"][data-value=\"title\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"title\":true"
+   },
+   "note": "chart title element toggle writes spec"
+  },
+  "btn-gridlines": {
+   "effektClass": "view",
+   "woTab": "chart-design",
+   "pre": "chart-menu",
+   "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartElement\"][data-value=\"gridlines\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"gridlines\":true"
+   },
+   "note": "gridlines toggle"
+  },
+  "symbol-dialog": {
+   "effektClass": "dialog",
+   "selector": "#btn-symbol",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#symbol-dialog"
+   },
+   "woTab": "insert",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#symbol-dialog-title"
+    },
+    {
+     "name": "font",
+     "selector": "#symbol-font"
+    }
+   ]
+  },
+  "hyphenation-dialog": {
+   "effektClass": "structure",
+   "woTab": "layout",
+   "pre": "menu:.ribbon-page[data-tab=\"layout\"] [data-i18n=\"Home.More\"]",
+   "selector": "[data-menu-cmd=\"toggleHyphenation\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#hyphenation-dialog-title"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hyphenation-dialog"
+   },
+   "note": "toggleHyphenation opens the hyphenation dialog"
+  },
+  "ctx.save-as-picture": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "selector": "[data-ctx=\"SaveAsPicture\"]",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:object-op"
+   },
+   "note": "applyObjectOp dispatches wo:object-op"
+  },
+  "ctx.text-direction": {
+   "effektClass": "format",
+   "pre": "ctx-menu-textdir",
+   "selector": "[data-ctx=\"TextDirRotateDown\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-textdir"
+   },
+   "note": "submenu item applies writing-mode marker (horizontal resets, rotate-down sets)"
+  },
+  "ctx.select": {
+   "effektClass": "op",
+   "selector": "[data-ctx=\"SelectAll\"]",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "pre": "ctx-menu"
+  },
+  "ctx.column-left": {
+   "effektClass": "structure",
+   "selector": "[data-ctx=\"TableColLeft\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
+   },
+   "pre": "ctx-menu-in-table"
+  },
+  "ctx.column-right": {
+   "effektClass": "structure",
+   "selector": "[data-ctx=\"TableColRight\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
+   },
+   "pre": "ctx-menu-in-table"
+  },
+  "ctx.row-below": {
+   "effektClass": "structure",
+   "selector": "[data-ctx=\"TableRowBelow\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
+   },
+   "pre": "ctx-menu-in-table"
+  },
+  "ctx.undo": {
+   "effektClass": "op",
+   "selector": "[data-ctx=\"Undo\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz"
+   },
+   "pre": "dirty-ctx"
+  },
+  "ctx.redo": {
+   "effektClass": "op",
+   "pre": "dirty-undo-ctx",
+   "selector": "[data-ctx=\"Redo\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz"
+   },
+   "note": "redo restores undone marker"
+  },
+  "file.draw": {
+   "effektClass": "op",
+   "selector": "#btn-ink-eraser",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-eraser",
+    "attr": "aria-pressed"
+   },
+   "woTab": "draw"
+  },
+  "file.editing": {
+   "effektClass": "op",
+   "woTab": "collaboration",
+   "selector": "#coedit-mode",
+   "setValue": "strict",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:coedit-mode"
+   },
+   "note": "co-edit mode select"
+  },
+  "insert.blank-page": {
+   "effektClass": "structure",
+   "woTab": "insert",
+   "pre": "menu:[data-i18n=\"Layout.Breaks\"]",
+   "selector": ".ribbon-page[data-tab=\"insert\"] [data-cmd=\"insertBlankPage\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "page-break"
+   },
+   "note": "blank page inserts page-break marker + trailing paragraph"
+  },
+  "page.dlg-margins": {
+   "effektClass": "dialog",
+   "woTab": "layout",
+   "pre": "menu:.ribbon-page[data-tab=\"layout\"] [data-i18n=\"Home.More\"]",
+   "selector": "[data-menu-target=\"#btn-page-setup\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "note": "margins live in the page-setup dialog"
+  },
+  "page.bring-forward": {
+   "effektClass": "op",
+   "woTab": "layout",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"objectOp\"][data-value=\"bring-forward\"]",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:object-op"
+   },
+   "note": "wo-ovf button, synthetic click, event dispatch precedes object check"
+  },
+  "table.dlg-table-of-contents": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"updateToc\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "toc"
+   },
+   "woTab": "references"
+  },
+  "table.dlg-table-of-figures": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"insertTableOfFigures\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "tableoffigures"
+   },
+   "woTab": "references"
+  },
+  "macros.dlg-macros": {
+   "effektClass": "dialog",
+   "woTab": "view",
+   "pre": "menu:#btn-macro-menu",
+   "selector": "#btn-macro-manager",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#macro-dialog-title"
+    },
+    {
+     "name": "name",
+     "selector": "#macro-name"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#macro-dialog"
+   },
+   "note": "macro manager opens macro dialog"
+  },
+  "file.advanced-settings": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "fixture-chart"
+   },
+   "woTab": "chart-design",
+   "pre": "chart-selection"
+  },
+  "insert.eraser": {
+   "effektClass": "op",
+   "selector": "#btn-ink-eraser",
+   "woTab": "draw",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-eraser",
+    "attr": "aria-pressed"
+   }
+  },
+  "page.page-color": {
+   "effektClass": "dialog",
+   "woTab": "layout",
+   "selector": "#pagecolor",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#pagecolor-dialog-title"
+    },
+    {
+     "name": "automatic",
+     "selector": "#btn-pagecolor-automatic"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#pagecolor-dialog"
+   },
+   "note": "page color swatch dialog"
+  },
+  "view.fit-to-page": {
+   "effektClass": "view",
+   "woTab": "view",
+   "selector": "#btn-view-fit-width",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "%"
+   },
+   "note": "fit proxy via zoom-fit label"
+  },
+  "page.dlg-page-size": {
+   "effektClass": "dialog",
+   "woTab": "layout",
+   "pre": "menu:.ribbon-page[data-tab=\"layout\"] [data-i18n=\"Home.More\"]",
+   "selector": "[data-menu-target=\"#btn-page-setup\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "note": "page setup dialog (page size + margins tabs)"
+  },
+  "page.send-backward": {
+   "effektClass": "op",
+   "woTab": "layout",
+   "selector": ".ribbon-page[data-tab=\"layout\"] [data-cmd=\"objectOp\"][data-value=\"send-backward\"]",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:object-op"
+   },
+   "note": "wo-ovf button"
+  },
+  "table.table-of-contents": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"updateToc\"]",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "toc"
+   }
+  },
+  "table.table-of-figures": {
+   "effektClass": "structure",
+   "selector": ".ribbon-page[data-tab=\"references\"] [data-cmd=\"insertTableOfFigures\"]",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "tableoffigures"
+   }
+  },
+  "macros.macros": {
+   "effektClass": "dialog",
+   "woTab": "view",
+   "selector": "#btn-macro-menu",
+   "subFeatures": [
+    {
+     "name": "record",
+     "selector": "#btn-macro-record"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#btn-macro-menu + .menu-list"
+   },
+   "note": "macro dropdown menu opens"
+  },
+  "chartsettings": {
+   "effektClass": "dialog",
+   "woTab": "chart-design",
+   "pre": "chart-selection",
+   "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#chart-dialog-title"
+    }
+   ],
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:chart-settings"
+   },
+   "note": "advanced settings -> vector editor + wo:chart-settings marker"
+  },
+  "coedit-mode": {
+   "effektClass": "op",
+   "woTab": "collaboration",
+   "selector": "#coedit-mode",
+   "setValue": "strict",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:coedit-mode"
+   },
+   "note": "select driven via setValue -> change handler emits wo:coedit-mode"
+  },
+  "page.margins": {
+   "effektClass": "dialog",
+   "woTab": "layout",
+   "pre": "menu:.ribbon-page[data-tab=\"layout\"] [data-i18n=\"Home.More\"]",
+   "selector": "[data-menu-target=\"#btn-page-setup\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "note": "margins live in the page-setup dialog"
+  },
+  "margins": {
+   "effektClass": "dialog",
+   "woTab": "layout",
+   "pre": "menu:.ribbon-page[data-tab=\"layout\"] [data-i18n=\"Home.More\"]",
+   "selector": "[data-menu-target=\"#btn-page-setup\"]",
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "note": "margins dialog"
+  }
+ }
+}

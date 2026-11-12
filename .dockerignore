@@ -10,6 +10,12 @@
 !services/**
 !core-enterprise
 !core-enterprise/**
+!services-enterprise
+!services-enterprise/**
+!assets
+!assets/**
+!frontend-dist
+!frontend-dist/**
 core/target
 services/*/node_modules
 **/.git

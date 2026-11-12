@@ -430,6 +430,30 @@
    "knownGap": true,
    "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
    "effektClass": "op"
+  },
+  "shortcut.movetostartline": {
+   "key": "Home",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret to line start \u2014 native contentEditable"
+  },
+  "shortcut.movetoendline": {
+   "key": "End",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret to line end \u2014 native contentEditable"
+  },
+  "shortcut.movetostartdocument": {
+   "key": "Control+Home",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret to document start \u2014 native contentEditable"
   }
  }
 }

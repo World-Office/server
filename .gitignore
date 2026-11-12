@@ -155,3 +155,7 @@ tests/parity/word-parity-gaps.md
 state-l2c/
 state-l2d/
 state-l2e/
+
+# local docserver runtime state (parity runs create docs)
+/data/docs/
+/data/meta/

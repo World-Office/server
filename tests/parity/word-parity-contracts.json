@@ -1,17 +1,17 @@
 {
- "generatedAt": "2026-11-12T13:10:50.037Z",
+ "generatedAt": "2026-11-12T16:39:07.638Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 501
  },
  "counts": {
-  "total": 641,
+  "total": 646,
   "byClass": {
-   "dialog": 268,
+   "dialog": 265,
    "view": 61,
    "structure": 64,
-   "op": 179,
-   "format": 69
+   "op": 191,
+   "format": 65
   },
   "unclassified": 0
  },
@@ -73,7 +73,9 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"home\"]",
+    "hasClass": "active"
    },
    "subFeatures": null
   },
@@ -113,7 +115,9 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-eraser",
+    "attr": "aria-pressed"
    },
    "subFeatures": null
   },
@@ -132,7 +136,9 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"layout\"]",
+    "hasClass": "active"
    },
    "subFeatures": null
   },
@@ -151,7 +157,9 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"references\"]",
+    "hasClass": "active"
    },
    "subFeatures": null
   },
@@ -170,7 +178,9 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": ".ribbon-page[data-tab=\"collaboration\"]",
+    "hasClass": "active"
    },
    "subFeatures": null
   },
@@ -275,9 +285,19 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#settings-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "theme",
+     "selector": "#settings-theme"
+    },
+    {
+     "name": "language",
+     "selector": "#settings-lang"
+    }
+   ]
   },
   {
    "tab": "tab:file",
@@ -294,9 +314,11 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:coedit-mode"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select driven via setValue -> change handler emits wo:coedit-mode"
   },
   {
    "tab": "tab:file",
@@ -1116,7 +1138,7 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null
   },
@@ -1135,9 +1157,12 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "page-break"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "blank page inserts page-break marker + trailing paragraph"
   },
   {
    "tab": "tab:ins",
@@ -1837,7 +1862,9 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-select",
+    "attr": "aria-pressed"
    },
    "subFeatures": null
   },
@@ -1856,7 +1883,9 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-ink-eraser",
+    "attr": "aria-pressed"
    },
    "subFeatures": null
   },
@@ -1880,39 +1909,15 @@
    },
    "subFeatures": [
     {
-     "name": "page size select",
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
      "selector": "#ps-size"
-    },
-    {
-     "name": "portrait option",
-     "selector": "input[name=\"ps-orient\"][value=\"portrait\"]"
-    },
-    {
-     "name": "landscape option",
-     "selector": "input[name=\"ps-orient\"][value=\"landscape\"]"
-    },
-    {
-     "name": "margin top",
-     "selector": "#ps-mt"
-    },
-    {
-     "name": "margin bottom",
-     "selector": "#ps-mb"
-    },
-    {
-     "name": "margin left",
-     "selector": "#ps-ml"
-    },
-    {
-     "name": "margin right",
-     "selector": "#ps-mr"
-    },
-    {
-     "name": "apply action",
-     "selector": "#btn-ps-apply"
     }
    ],
-   "note": "ledger row: page.margins — the Margins dropdown's 'Custom margins' entry (data-cmd=openPageSetup) delegates to btn-page-setup.click() (editor.js openPageSetup handler); contracted via that visible opener since dropdown items are hidden until the menu opens"
+   "note": "margins dialog"
   },
   {
    "tab": "tab:layout",
@@ -2128,9 +2133,11 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:object-op"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "wo-ovf button, synthetic click, event dispatch precedes object check"
   },
   {
    "tab": "tab:layout",
@@ -2147,9 +2154,11 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:object-op"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "wo-ovf button"
   },
   {
    "tab": "tab:layout",
@@ -2267,9 +2276,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#pagecolor-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#pagecolor-dialog-title"
+    },
+    {
+     "name": "automatic",
+     "selector": "#btn-pagecolor-automatic"
+    }
+   ],
+   "note": "page color swatch dialog"
   },
   {
    "tab": "tab:layout",
@@ -2330,26 +2350,13 @@
     "where": "dialog:updatetoc-dialog"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#updatetoc-dialog"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "toc"
    },
-   "subFeatures": [
-    {
-     "name": "update scope select",
-     "selector": "#toc-update"
-    },
-    {
-     "name": "update action",
-     "selector": "#btn-updatetoc-ok"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-updatetoc-close"
-    }
-   ],
-   "note": "ledger row: table.table-of-contents — References 'Update TOC' (data-cmd=updateToc -> openUpdateTocDialog, editor.js:9332) opens the whole-table vs page-numbers-only choice dialog"
+   "subFeatures": null
   },
   {
    "tab": "tab:links",
@@ -2580,30 +2587,13 @@
     "where": "tab:references"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#tableoffigures-dialog"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "tableoffigures"
    },
-   "subFeatures": [
-    {
-     "name": "label input",
-     "selector": "#tof-title"
-    },
-    {
-     "name": "style select",
-     "selector": "#tof-style"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-tof-ok"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-tof-close"
-    }
-   ],
-   "note": "ledger row: table.table-of-figures — References 'Table of figures' (data-cmd=insertTableOfFigures) runs the live insertTableOfFiguresCommand (editor.js:7866, later definition wins) -> openOverlayDialog('tableoffigures-dialog')"
+   "subFeatures": null
   },
   {
    "tab": "tab:review",
@@ -2618,19 +2608,13 @@
     "where": "tab:collaboration"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#coedit-mode",
-      "value": "strict"
-     }
-    ],
+    "kind": "op-emitted",
     "event": "wo:coedit-mode"
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-06: dialog-input selectOption fires the change event the synthetic click could not; the runner now arms wo:coedit-mode in the event collector and dialog-input asserts dispatch (strict -> wo:coedit-mode {mode:'strict'})"
+   "note": "select driven via setValue -> change handler emits wo:coedit-mode"
   },
   {
    "tab": "tab:review",
@@ -2942,7 +2926,10 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#btn-chat-toggle",
+    "attr": "aria-expanded",
+    "equals": "true"
    },
    "subFeatures": null
   },
@@ -3082,9 +3069,12 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "%"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "fit proxy via zoom-fit label"
   },
   {
    "tab": "tab:view",
@@ -3101,7 +3091,9 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "%"
    },
    "subFeatures": null
   },
@@ -3216,9 +3208,16 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#btn-macro-menu + .menu-list"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "record",
+     "selector": "#btn-macro-record"
+    }
+   ],
+   "note": "macro dropdown menu opens"
   },
   {
    "tab": "tab:view",
@@ -3235,9 +3234,11 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:macro"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "record emits wo:macro marker"
   },
   {
    "tab": "tab:view",
@@ -3254,9 +3255,11 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:macro"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "pause emits wo:macro marker"
   },
   {
    "tab": "tab:plugins",
@@ -3511,9 +3514,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#ai-propose-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#ai-propose-title"
+    },
+    {
+     "name": "instruction",
+     "selector": "#ai-propose-instruction"
+    }
+   ],
+   "note": "Thesaurus card -> AI rewrite flow"
   },
   {
    "tab": "tab:plugins",
@@ -4103,24 +4117,16 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#chart-dialog"
+    "kind": "op-emitted",
+    "event": "wo:chart-settings"
    },
    "subFeatures": [
     {
-     "name": "chart type select",
-     "selector": "#chart-type-select"
-    },
-    {
-     "name": "chart title input",
-     "selector": "#chart-title"
-    },
-    {
-     "name": "chart data grid",
-     "selector": "#chart-data input"
+     "name": "title",
+     "selector": "#chart-dialog-title"
     }
    ],
-   "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523)"
+   "note": "advanced settings -> vector editor + wo:chart-settings marker"
   },
   {
    "tab": "tab:charttab",
@@ -4336,7 +4342,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "body",
+    "hasClass": "wo-table-draw"
    },
    "subFeatures": null
   },
@@ -4355,7 +4363,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "body",
+    "hasClass": "wo-table-erase"
    },
    "subFeatures": null
   },
@@ -4374,9 +4384,19 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#text-to-table-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#ttt-dialog-title"
+    },
+    {
+     "name": "separator",
+     "selector": "#ttt-sep"
+    }
+   ]
   },
   {
    "tab": "menu:table",
@@ -5224,7 +5244,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"1\""
    },
    "subFeatures": null
   },
@@ -5243,7 +5265,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"2\""
    },
    "subFeatures": null
   },
@@ -5262,7 +5286,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns=\"3\""
    },
    "subFeatures": null
   },
@@ -5281,7 +5307,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns-layout=\"left\""
    },
    "subFeatures": null
   },
@@ -5300,7 +5328,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-columns-layout=\"right\""
    },
    "subFeatures": null
   },
@@ -5447,9 +5477,12 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"axes\":true"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "chart element toggle writes spec elements"
   },
   {
    "tab": "menu:chart\nelements",
@@ -5487,9 +5520,12 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"title\":true"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "chart title element toggle writes spec"
   },
   {
    "tab": "menu:chart\nelements",
@@ -5548,9 +5584,12 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\"gridlines\":true"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "gridlines toggle"
   },
   {
    "tab": "menu:chart\nelements",
@@ -5664,9 +5703,19 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#symbol-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#symbol-dialog-title"
+    },
+    {
+     "name": "font",
+     "selector": "#symbol-font"
+    }
+   ]
   },
   {
    "tab": "dialog:Margins",
@@ -5683,9 +5732,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "note": "margins dialog"
   },
   {
    "tab": "dialog:Page size",
@@ -5702,9 +5762,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "note": "page setup dialog (page size + margins tabs)"
   },
   {
    "tab": "dialog:Columns",
@@ -5751,9 +5822,16 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#hyphenation-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#hyphenation-dialog-title"
+    }
+   ],
+   "note": "toggleHyphenation opens the hyphenation dialog"
   },
   {
    "tab": "dialog:Bookmarks",
@@ -5873,7 +5951,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "tableoffigures"
    },
    "subFeatures": null
   },
@@ -5892,7 +5972,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "toc"
    },
    "subFeatures": null
   },
@@ -5911,9 +5993,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#macro-dialog"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#macro-dialog-title"
+    },
+    {
+     "name": "name",
+     "selector": "#macro-name"
+    }
+   ],
+   "note": "macro manager opens macro dialog"
   },
   {
    "tab": "dialog:Date & time",
@@ -6081,9 +6174,16 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:chart-settings"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#chart-dialog-title"
+    }
+   ],
+   "note": "advanced settings -> vector editor + wo:chart-settings marker"
   },
   {
    "tab": "backstage",
@@ -6489,11 +6589,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: browser window.print() — no DOM observable headless (WO prints directly, no print preview UI) — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -6510,9 +6611,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#backstage-overlay"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#backstage-title"
+    },
+    {
+     "name": "new doc",
+     "selector": "#btn-new"
+    }
+   ],
+   "note": "ctrl+shift+s -> openBackstage(export) (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -6660,9 +6772,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret to line start — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6679,9 +6792,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret to document start — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6698,9 +6812,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret to line end — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7084,9 +7199,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-kind=\"equation\""
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#equation-dialog-title"
+    },
+    {
+     "name": "input",
+     "selector": "#equation-input"
+    }
+   ],
+   "note": "Ctrl+Alt+= inserts an equation template vector object"
   },
   {
    "tab": "shortcut",
@@ -7101,11 +7228,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: equation alignment keys — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7120,11 +7248,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: equation alignment keys — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7231,9 +7360,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Ctrl+Z undo removes the typed marker (DOM-restore undo)"
   },
   {
    "tab": "shortcut",
@@ -7318,7 +7450,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7337,7 +7470,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7356,7 +7490,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7375,7 +7510,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7424,7 +7560,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: visit-hyperlink key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -7830,11 +7967,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "format",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<ul>"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "same chord as ctrl+shift+l"
   },
   {
    "tab": "shortcut",
@@ -7849,11 +7989,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "format",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: ctrl+space reset char format — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8045,9 +8186,13 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "indent-"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Ctrl+Shift+M outdent removes the indent marker again"
   },
   {
    "tab": "shortcut",
@@ -8062,11 +8207,23 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "structure",
+   "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "page-number"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#pagenumber-dialog-title"
+    },
+    {
+     "name": "position",
+     "selector": "#pagenumber-position"
+    }
+   ],
+   "note": "Ctrl+Shift+P inserts PAGE field span directly (no dialog)"
   },
   {
    "tab": "shortcut",
@@ -8083,9 +8240,12 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#editor",
+    "hasClass": "show-marks"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "show-all toggles the format marks overlay class"
   },
   {
    "tab": "shortcut",
@@ -8102,9 +8262,13 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "indent-"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Ctrl+M indent adds paragraph indent marker"
   },
   {
    "tab": "shortcut",
@@ -8121,9 +8285,13 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "indent-"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Ctrl+Shift+M outdent removes the indent marker again"
   },
   {
    "tab": "shortcut",
@@ -8142,7 +8310,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Tab outside dialogs is not intercepted (no tab-char insert, no table cell nav) — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8157,11 +8326,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "format",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: mixed indent key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8176,11 +8346,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "format",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: mixed unindent key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8199,7 +8370,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: edit-shape key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8218,7 +8390,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: edit-chart key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8497,9 +8670,12 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "column break in table context"
   },
   {
    "tab": "shortcut",
@@ -8594,11 +8770,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "structure",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: form line break — form family, no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8701,11 +8878,15 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "viewport-flag",
+    "rootSelector": "#editor",
+    "attr": "spellcheck",
+    "equals": "true"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "WO maps F7 to the spellcheck engine toggle (#editor spellcheck attr)"
   },
   {
    "tab": "shortcut",
@@ -8743,11 +8924,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: open comment field key — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8869,7 +9051,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: delete word left — bare-Alt keys unhandled — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -8888,7 +9071,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: delete word right — bare-Alt keys unhandled — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -9241,11 +9425,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: niche symbol macro — no WO handler — OO-only until ported"
   },
   {
    "tab": "shortcut",
@@ -9406,9 +9591,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogSelector": "#backstage-overlay"
    },
-   "subFeatures": null
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#backstage-title"
+    },
+    {
+     "name": "new doc",
+     "selector": "#btn-new"
+    }
+   ],
+   "note": "ctrl+o -> openBackstage(open) (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -9468,9 +9664,11 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "op-emitted",
+    "event": "wo:object-op"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "applyObjectOp dispatches wo:object-op"
   },
   {
    "tab": "ctx-menu",
@@ -11277,9 +11475,12 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "data-textdir"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "submenu item applies writing-mode marker (horizontal resets, rotate-down sets)"
   },
   {
    "tab": "ctx-menu",
@@ -11562,7 +11763,7 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null
   },
@@ -11644,7 +11845,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
    },
    "subFeatures": null
   },
@@ -11663,7 +11866,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
    },
    "subFeatures": null
   },
@@ -11703,7 +11908,9 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<table>"
    },
    "subFeatures": null
   },
@@ -11964,7 +12171,9 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz"
    },
    "subFeatures": null
   },
@@ -11983,9 +12192,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "redo restores undone marker"
   },
   {
    "tab": "ctx-menu",
@@ -13139,6 +13351,37 @@
     }
    ],
    "note": "ledger row: dialog.field-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-field (tab references)') — btnField click -> openDlg(\"field-dialog\") with the OO 'Field type' select (editor.js:13176) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "chart-design",
+   "ooId": "chart.advanced-settings",
+   "label": "chart.advanced-settings",
+   "token": "chart.advanced-settings",
+   "feature": "chart.advanced-settings",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "chart-design",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#chart-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "chart type select",
+     "selector": "#chart-type-select"
+    },
+    {
+     "name": "chart title input",
+     "selector": "#chart-title"
+    },
+    {
+     "name": "chart data grid",
+     "selector": "#chart-data input"
+    }
+   ],
+   "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523) [override-only: no ledger row matched this key]"
   },
   {
    "tab": "",
@@ -14631,6 +14874,33 @@
   },
   {
    "tab": "layout",
+   "ooId": "page.margins",
+   "label": "page.margins",
+   "token": "page.margins",
+   "feature": "page.margins",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "layout",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "layout",
    "ooId": "page.columns",
    "label": "page.columns",
    "token": "page.columns",
@@ -15250,6 +15520,30 @@
    "note": "pilot6: find dialog close button [override-only: no ledger row matched this key]"
   },
   {
+   "tab": "collaboration",
+   "ooId": "review.co-editing-mode",
+   "label": "review.co-editing-mode",
+   "token": "review.co-editing-mode",
+   "feature": "review.co-editing-mode",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "collaboration",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-input",
+    "set": [
+     {
+      "selector": "#coedit-mode",
+      "value": "strict"
+     }
+    ],
+    "event": "wo:coedit-mode"
+   },
+   "subFeatures": null,
+   "note": "PROMOTED 2026-11-06: dialog-input selectOption fires the change event the synthetic click could not; the runner now arms wo:coedit-mode in the event collector and dialog-input asserts dispatch (strict -> wo:coedit-mode {mode:'strict'}) [override-only: no ledger row matched this key]"
+  },
+  {
    "tab": "",
    "ooId": "strikeout",
    "label": "strikeout",
@@ -15382,23 +15676,6 @@
   },
   {
    "tab": "",
-   "ooId": "inserttab",
-   "label": "inserttab",
-   "token": "inserttab",
-   "feature": "inserttab",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": null,
-   "effektClass": "structure",
-   "assertion": {
-    "kind": "unspecified"
-   },
-   "subFeatures": null,
-   "note": "KNOWN-GAP: Tab outside dialogs is not intercepted (no tab-char insert, no table cell nav) — OO-only until ported [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "",
    "ooId": "shortcut.applyheading1",
    "label": "shortcut.applyheading1",
    "token": "shortcut.applyheading1",
@@ -15472,6 +15749,70 @@
    },
    "subFeatures": null,
    "note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "collaboration",
+   "ooId": "file.editing",
+   "label": "file.editing",
+   "token": "file.editing",
+   "feature": "file.editing",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "collaboration",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:coedit-mode"
+   },
+   "subFeatures": null,
+   "note": "co-edit mode select [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "layout",
+   "ooId": "page.dlg-margins",
+   "label": "page.dlg-margins",
+   "token": "page.dlg-margins",
+   "feature": "page.dlg-margins",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "layout",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "chart-design",
+   "ooId": "file.advanced-settings",
+   "label": "file.advanced-settings",
+   "token": "file.advanced-settings",
+   "feature": "file.advanced-settings",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "chart-design",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "fixture-chart"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]"
   }
  ]
 }

@@ -253,7 +253,7 @@ async function checkEffect(page, ov, assertion) {
       return poll(page, () => page.evaluate((a) => {
         const el = document.querySelector(a.selector || '#editor');
         if (!el) return { ok: false, observed: `no ${a.selector || '#editor'}` };
-        const text = el.textContent || '';
+        const text = a.html ? (el.innerHTML || '') : (el.textContent || '');
         let ok;
         if (a.containsDate) {
           const d = new Date();
@@ -317,7 +317,8 @@ async function checkEffect(page, ov, assertion) {
         else if (a.attr) v = el.getAttribute(a.attr);
         else if (a.prop) v = getComputedStyle(el)[a.prop];
         else return { ok: false, observed: 'viewport-flag needs hasClass|attr|prop' };
-        const ok = v === (a.prop ? a.equals : true) || v === String(a.equals);
+        const expected = a.equals === undefined ? (a.prop ? a.equals : true) : a.equals;
+        const ok = v === expected || String(v) === String(expected);
         return { ok, observed: `${a.hasClass ? 'class:' + a.hasClass : a.attr || a.prop}=${v}`, expected: `${a.equals === undefined ? true : a.equals}` };
       }, assertion));
     }
@@ -379,7 +380,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','dirty-undo','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -426,6 +427,17 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if (ov.pre === 'dirty-type') {
+        // ctx Undo contracts: type text (no undo) so the undo click has
+        // something to remove — observable is the typed marker vanishing
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.focus();
+        });
+        await page.keyboard.type(' zz');
+        await sleep(80);
+      }
       else if (ov.pre === 'dirty-undo') {
         // redo needs an UNDONE change in the stack: type, then undo — the
         // trigger key (Ctrl+Y/Ctrl+Shift+Z) should redo it back
@@ -471,6 +483,81 @@ async function subFeatureAudit(page, ov, dialogSel) {
           if (inp) inp.focus();
         });
         await sleep(100);
+      }
+      else if (ov.pre === 'ink-pen') {
+        // ink-tool contracts need the ink canvas live: pen on first
+        await page.evaluate(() => {
+          const pen=document.querySelector('#btn-ink-pen');
+          if (pen) pen.click(); else throw new Error('#btn-ink-pen missing');
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'dirty-undo-ctx') {
+        // ctx Redo: type an undoable marker, undo it, open ctx menu — the
+        // Redo click should bring the marker back
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.focus();
+        });
+        await page.keyboard.type(' zz');
+        await page.keyboard.press('Control+z');
+        await sleep(120);
+        const r = await page.evaluate(() => {
+          const ed = document.querySelector('#editor'); const b = ed.getBoundingClientRect();
+          return { x: b.left + 60, y: b.top + 60 };
+        });
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 }).catch(() => {});
+        await sleep(150);
+      }
+      else if (ov.pre === 'dirty-indent') {
+        // outdent contracts: type a marker, indent the paragraph via the
+        // real Ctrl+M handler, so the outdent trigger has something to remove
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.focus();
+        });
+        await page.keyboard.type(' zz');
+        await page.keyboard.press('Control+m');
+        await sleep(150);
+      }
+      else if (ov.pre === 'dirty-ctx') {
+        // ctx Undo/Redo: type a marker, then right-click the editor to open
+        // the native-commands area of the context menu
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.focus();
+        });
+        await page.keyboard.type(' zz');
+        await sleep(80);
+        const r = await page.evaluate(() => {
+          const ed = document.querySelector('#editor'); const b = ed.getBoundingClientRect();
+          return { x: b.left + 60, y: b.top + 60 };
+        });
+        await page.mouse.click(r.x, r.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 }).catch(() => {});
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-textdir') {
+        // text-direction submenu: place caret (applyTextDirection needs a
+        // selection inside #editor), open ctx menu, then the TextDirection
+        // parent so its [data-subitem="text-dir"] children unhide
+        await placeCaret(page);
+        const r0 = await page.evaluate(() => {
+          const ed = document.querySelector('#editor'); const b = ed.getBoundingClientRect();
+          return { x: b.left + 60, y: b.top + 60 };
+        });
+        await page.mouse.click(r0.x, r0.y, { button: 'right' });
+        await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await page.evaluate(() => {
+          const btn = document.querySelector('[data-ctx="TextDirection"]');
+          if (btn) btn.click(); else throw new Error('TextDirection missing');
+        });
+        await page.waitForSelector('[data-ctx="TextDirRotateDown"]:not([hidden])', { timeout: 2000 });
+        await sleep(150);
       }
       else if (ov.pre === 'in-table') {
         // shortcut contracts that need table context (Tab next-cell, addnewrow,
@@ -615,6 +702,27 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
+      }
+      else if (ov.pre === 'chart-menu') {
+        // chart-element menu items: fixture chart + select (activates the
+        // contextual chart-design page), then open 'Chart elements' menu
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const spec = { type: 'bar', title: 'Fixture', rows: [['A', '1'], ['B', '2']], elements: {} };
+          const img = '<img id="fixture-chart" class="vector-object" data-kind="chart" alt="chart" style="width:420px;height:240px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-spec="' + JSON.stringify(spec).replace(/"/g, '&quot;').replace(/&(?!(amp|lt|gt|quot);)/g, '&amp;') + '">';
+          ed.innerHTML = '<p>before ' + img + ' after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-chart', { timeout: 3000 });
+        await page.locator('#fixture-chart').click({ timeout: 5000 });
+        await page.waitForSelector('.ribbon-tab[data-tab="chart-design"]:not([hidden])', { timeout: 3000 });
+        await sleep(200);
+        await page.evaluate(() => {
+          const trig = document.querySelector('[data-i18n="Chart.Elements"]');
+          if (trig) trig.click(); else throw new Error('Chart elements trigger missing');
+        });
+        await sleep(200);
       }
       else if (ov.pre === 'chart-selection') {
         // chart-design tab is CONTEXTUAL: it appears only after clicking a
@@ -1179,6 +1287,9 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:field-op', window.__woCollect);
           window.addEventListener('wo:chart-elements', window.__woCollect);
           window.addEventListener('wo:coedit-mode', window.__woCollect);
+          window.addEventListener('wo:object-op', window.__woCollect);
+          window.addEventListener('wo:macro', window.__woCollect);
+          window.addEventListener('wo:macro-manager', window.__woCollect);
           window.addEventListener('wo:header-field', window.__woCollect);
           window.addEventListener('wo:style-from-format', window.__woCollect);
           window.addEventListener('wo:print-selection', window.__woCollect);
@@ -1232,7 +1343,17 @@ async function subFeatureAudit(page, ov, dialogSel) {
           }, { sel: selector, val: ov.setValue })
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
-        return page.evaluate((sel) => document.querySelector(sel).click(), selector)
+        // click contracts for selection-moved/focus-moved need the BEFORE
+        // snapshot (Select all, ctx Select…) — chained, trigger is sync
+        const snapFirst = ((ov.assertion||{}).kind==='selection-moved' || (ov.assertion||{}).kind==='focus-moved')
+          ? page.evaluate(() => {
+              const s=window.getSelection();
+              window.__woSel0=[s.anchorOffset,s.focusOffset,(s.anchorNode&&s.anchorNode.data)||(s.anchorNode&&s.anchorNode.nodeName)||'',s.isCollapsed,Math.round(window.scrollY)];
+              window.__woFocus0=(document.activeElement&&(document.activeElement.id||document.activeElement.tagName))||'';
+            })
+          : Promise.resolve();
+        return snapFirst
+          .then(() => page.evaluate((sel) => document.querySelector(sel).click(), selector))
           .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
       };
       await trigger();
