@@ -1,36 +1,15 @@
-# Not needed for Rust microservice builds
-.git/
-.gitignore
-.gitattributes
-.github/
-.forgejo/
-
-# Build artifacts
-target/
-node_modules/
-.turbo/
-.vite/
-
-# Source not needed for Rust microservices
-apps/
-desktop/
-docs/
-integrations/
-packages/
-tests/
-
-# IDE/editor
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Data files
-*.db
-test_bytes.txt
-test_simple.txt
-*.pdf
-*.png
-*.jpg
+# Docker build context slimming — the docserver image only COPYs
+# Cargo.toml, Cargo.lock, core/, services/, core-enterprise/.
+# Keep the context tiny (was 7.9 GB because target/ + node_modules rode along).
+*
+!Cargo.toml
+!Cargo.lock
+!core
+!core/**
+!services
+!services/**
+!core-enterprise
+!core-enterprise/**
+core/target
+services/*/node_modules
+**/.git
