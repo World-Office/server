@@ -37,6 +37,31 @@ const RAW = OVERRIDES === path.join(HERE, 'word-parity-overrides.json')
 
 // Default effektClass by command family — first match wins. Override file wins over these.
 const CLASS_RULES = [
+  // 2026-11-12 backlog pass — tokens that never matched below (114 rows):
+  // tab switches, ctx-menu ops, submenu commands, caret-navigation and
+  // selection shortcuts. Appended AFTER the families above: every rule here
+  // targets tokens the originals left unclassified, so order is inert.
+  [/^tab:/, 'view'],
+  [/^ctx\.(undo|redo|select|save-as-picture|visithyperlink)$/, 'op'],
+  [/^ctx\.text-direction/, 'format'],
+  [/^ctx\.(column-left|column-right|row-below)$/, 'structure'],
+  [/^table\./, 'structure'],
+  [/^(one|two|three|left|right|axes)$/, 'structure'], // menu:columns / chart-elements slots
+  [/^(inkselect|toggleink|coedit-mode|selectall|objectop|editredo|bigmoveobject|moveobject)/, 'op'],
+  [/^shortcut\.(moveto|scroll|nextmodal|previousmodal|movefocus|nextfiletab|previousfiletab)/, 'view'],
+  [/^shortcut\.(select|editredo|visithyperlink|editshape|editchart|moveobject|littlemove|addnewrow|choosenext|chooseprevious|specialoptions)/, 'op'],
+  [/^ctrl\+z$/, 'op'],
+  [/^ctrl\+a$/, 'op'],
+  [/^ctrl\+shift\+m$/, 'format'],
+  [/^shortcut\.(endparagraph|emdash)/, 'format'],
+  [/^shortcut\.saveas$/, 'dialog'],
+  [/^shortcut\.(applylistbullet|resetchar|startindent|startunindent|mixedindent|mixedunindent)$/, 'format'],
+  [/^shortcut\.showall$/, 'view'],
+  [/^(btn-macro-menu$|macros\.|view\.pause-recording$|file\.ai$|airewrite$|togglechat$)/, 'dialog'],
+  [/^btn-view-fit-width$/, 'view'],
+  [/blank[\s.?]*page/, 'structure'],
+  [/page[\s.?]*color/, 'dialog'],
+  [/fit.?to.?page|fit.?to.?width/, 'view'],
   // ordered: op before dialog before structure — first match wins
   [/^(track-changes|trackchanges|accept|reject|resolve|copy|paste|cut|select-all|copystyle|delete)/, 'op'],
   [/^(bold|italic|underline|strikeout|strikethrough|subscript|superscript|forecolor|hilitecolor|fontname|fontsize|fontsizeinc|fontsizedec|justifyleft|justifycenter|justifyright|justifyfull|justif|lineheight|line-spacing|indent|outdent|removeformat|cleardown|case|upper|lower|capitalize|ltr|rtl|text-direction|set-markers|copystyle|change-?case|highlight-color|highlight|text-color|font-color|shading|multilevel|bring ?forward|send ?backward|align|group|mergeshapes|wrapping)/, 'format'],
@@ -54,9 +79,12 @@ const LABEL_RULES = CLASS_RULES.map(([re, cls]) => [new RegExp(re.source.replace
 function classify(row, override) {
   if (override && override.effektClass) return override.effektClass;
   // All current ledger rows carry a WO binding (level 1-4); classify by
-  // the binding token, falling back to the OO census label — icon-only OO
-  // controls come with asc-genNNN ids whose meaning only the label carries
-  const tok = ((row.wo && row.wo.match) || '').toLowerCase();
+  // the binding token (same derivation as the entry key: match if it is a
+  // stable id, else the feature id), falling back to the OO census label —
+  // icon-only OO controls come with asc-genNNN ids whose meaning only the
+  // label carries
+  const raw = ((row.wo && row.wo.match) || '');
+  const tok = (raw && !raw.includes(' ') ? raw : row.feature).toLowerCase();
   const label = (row.oo && row.oo[0] && row.oo[0].label) || '';
   const hay = (tok + ' ' + label).toLowerCase();
   for (const [re, cls] of CLASS_RULES) if (re.test(tok)) return cls;
