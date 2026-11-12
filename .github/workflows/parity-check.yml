@@ -205,6 +205,15 @@ jobs:
           ref: main
       - name: Download artifacts
         uses: actions/download-artifact@v4
+      - name: Completeness gate (contracts fail = 0)
+        run: |
+          python3 - <<'PY'
+          import json
+          r = json.load(open('server/tests/parity/contract-results.json'))
+          fail = r.get('fail', 0)
+          print(f"contracts: {r.get('pass')} pass / {r.get('knownGap')} known-gap / {fail} fail (ranAt {r.get('ranAt')})")
+          assert fail == 0, f"{fail} parity contracts failing"
+          PY
       - name: Generate report
         run: |
           cd wo-test-harness
