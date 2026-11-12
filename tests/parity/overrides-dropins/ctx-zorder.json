@@ -11,7 +11,7 @@
         "prop": "zIndex",
         "equals": "1"
       },
-      "note": "ledger row ctx.bring-forward \u2014 WO control is the Layout tab objectOp button (index.html Layout.Object.BringForward); ctx-menu-on-image pre right-clicks the fixture img so selectedObject() falls back to lastObjectPick; applyObjectOp sets position:relative and zIndex 0->1"
+      "note": "ledger row ctx.bring-forward — WO control is the Layout tab objectOp button (index.html Layout.Object.BringForward); ctx-menu-on-image pre right-clicks the fixture img so selectedObject() falls back to lastObjectPick; applyObjectOp sets position:relative and zIndex 0->1"
     },
     "ctx.send-backward": {
       "effektClass": "format",
@@ -24,7 +24,7 @@
         "prop": "zIndex",
         "equals": "-1"
       },
-      "note": "ledger row ctx.send-backward \u2014 Layout tab objectOp send-backward decrements the picked img's zIndex 0->-1 (applyObjectOp z-order branch)"
+      "note": "ledger row ctx.send-backward — Layout tab objectOp send-backward decrements the picked img's zIndex 0->-1 (applyObjectOp z-order branch)"
     },
     "ctx.bring-to-foreground": {
       "effektClass": "op",
@@ -37,7 +37,7 @@
         "prop": "zIndex",
         "equals": "1"
       },
-      "note": "ledger row ctx.bring-to-foreground \u2014 Layout tab objectOp bring-to-foreground sets zIndex to siblings' max+1 (single fixture img: 0+1); override reclassifies the unclassified census row so the contract runs"
+      "note": "ledger row ctx.bring-to-foreground — Layout tab objectOp bring-to-foreground sets zIndex to siblings' max+1 (single fixture img: 0+1); override reclassifies the unclassified census row so the contract runs"
     },
     "ctx.send-to-background": {
       "effektClass": "op",
@@ -50,90 +50,90 @@
         "prop": "zIndex",
         "equals": "-1"
       },
-      "note": "ledger row ctx.send-to-background \u2014 Layout tab objectOp send-to-background sets zIndex to siblings' min-1 (single fixture img: 0-1); census class 'dialog' was a ledger mislabel, reclassified as op"
+      "note": "ledger row ctx.send-to-background — Layout tab objectOp send-to-background sets zIndex to siblings' min-1 (single fixture img: 0-1); census class 'dialog' was a ledger mislabel, reclassified as op"
     },
     "ctx.align-left": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-left\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-left\"]",
         "expect": {
           "selector": "#fixture-img.obj-square"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square (wrap) \u2014 trigger opens the Layout Align dropdown, click applies",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.align-center": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-center\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-center\"]",
         "expect": {
           "selector": "#fixture-img.obj-center"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-center",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.align-right": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-right\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-right\"]",
         "expect": {
           "selector": "#fixture-img.obj-square.obj-right"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; #fixture-img gets obj-square + obj-right",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.align-top": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-top\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-top\"]",
         "expect": {
           "selector": "#fixture-img[style*=\"vertical-align: top\"]"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: top on #fixture-img",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.align-middle": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-middle\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-middle\"]",
         "expect": {
           "selector": "#fixture-img[style*=\"vertical-align: middle\"]"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: middle on #fixture-img",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.align-bottom": {
       "effektClass": "dialog",
       "pre": "ctx-menu-on-image",
-      "selector": ".rb-menu button.menu-trigger:has(+ ul.menu-list [data-value^=\"align-\"])",
+      "selector": ".ribbon-page[data-tab=\"layout\"] .menu-trigger[data-i18n=\"Home.More\"]",
       "assertion": {
         "kind": "dialog-input",
-        "click": "[data-cmd=\"objectOp\"][data-value=\"align-bottom\"]",
+        "click": "[data-menu-cmd=\"objectOp\"][data-value=\"align-bottom\"]",
         "expect": {
           "selector": "#fixture-img[style*=\"vertical-align: bottom\"]"
         }
       },
-      "note": "PROMOTED 2026-11-06: dialog-input opens the Layout Align dropdown (menu-trigger) then clicks the objectOp item; inline vertical-align: bottom on #fixture-img",
+      "note": "CHROME-G: OO@1920 collapses the Layout object-ops group behind the tab Mehr; the align items live as data-menu-cmd mirrors there — trigger opens Mehr, click applies objectOp; #fixture-img gets obj-square via wrap premise",
       "woTab": "layout"
     },
     "ctx.distribute-horizontally": {
@@ -147,7 +147,7 @@
         "equals": "absolute"
       },
       "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.distribute-horizontally \u2014 ctx row is visible under data-showif=object, but distributeObjectsHorizontally needs selectedObjects.length >= 2 (shift-click multi-select); the ctx-menu-on-image pre picks a single fixture img so the handler no-ops with Status.DistributeNeedsTwoObjects \u2014 needs a multi-object pre (real runner vocabulary gap)"
+      "note": "KNOWN GAP: ledger row ctx.distribute-horizontally — ctx row is visible under data-showif=object, but distributeObjectsHorizontally needs selectedObjects.length >= 2 (shift-click multi-select); the ctx-menu-on-image pre picks a single fixture img so the handler no-ops with Status.DistributeNeedsTwoObjects — needs a multi-object pre (real runner vocabulary gap)"
     },
     "ctx.distribute-vertically": {
       "effektClass": "op",
@@ -160,7 +160,7 @@
         "equals": "absolute"
       },
       "xfail": true,
-      "note": "KNOWN GAP: ledger row ctx.distribute-vertically \u2014 distributeObjectsVertically needs selectedObjects.length >= 2 (shift-click multi-select); single-fixture-img pre leaves the handler no-oping \u2014 needs a multi-object pre (real runner vocabulary gap)"
+      "note": "KNOWN GAP: ledger row ctx.distribute-vertically — distributeObjectsVertically needs selectedObjects.length >= 2 (shift-click multi-select); single-fixture-img pre leaves the handler no-oping — needs a multi-object pre (real runner vocabulary gap)"
     },
     "ctx.merge-shapes": {
       "effektClass": "op",
@@ -172,7 +172,7 @@
         "kind": "dom-mutation",
         "selector": "#editor img[data-merge-op]"
       },
-      "note": "merge items live in the hidden Layout Merge-shapes dropdown \u2014 menu-trigger chain opens it, applyObjectOp merge-* stamps data-merge-op on the selected object"
+      "note": "merge items live in the hidden Layout Merge-shapes dropdown — menu-trigger chain opens it, applyObjectOp merge-* stamps data-merge-op on the selected object"
     },
     "ctx.group": {
       "effektClass": "op",
@@ -195,7 +195,7 @@
         "selector": "#editor div.object-group",
         "absent": true
       },
-      "note": "ledger row ctx.ungroup \u2014 grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) \u2014 dom-mutation absent:true observes the group gone"
+      "note": "ledger row ctx.ungroup — grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) — dom-mutation absent:true observes the group gone"
     },
     "ctx.top": {
       "effektClass": "dialog",

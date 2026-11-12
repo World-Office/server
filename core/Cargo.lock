@@ -3655,6 +3655,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "wo-docx-renderer",
  "wo-x2t",
  "zip",
 ]
@@ -3664,6 +3665,7 @@ name = "wo-docx-renderer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "image",
  "pdf-writer",
  "serde",
  "serde_json",
@@ -3841,6 +3843,7 @@ name = "wo-renderer"
 version = "0.1.0"
 dependencies = [
  "fontdb",
+ "image",
  "rustybuzz",
  "serde",
  "swash",
@@ -3852,6 +3855,7 @@ name = "wo-renderer-wasm"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "image",
  "js-sys",
  "serde",
  "serde_json",

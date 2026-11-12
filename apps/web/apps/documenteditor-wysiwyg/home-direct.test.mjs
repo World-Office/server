@@ -67,12 +67,12 @@ assert.ok(
 assertI18n("Toolbar.SubscriptTitle", "Subscript", "Tiefgestellt")
 assertI18n("Toolbar.Subscript", "Subscript", "Tiefgestellt")
 
-// ── Shading (promoted from the More-formatting menu's hidden picker) ──
+// ── Shading (CHROME-G: OO hides shading at 1920 — hidden-but-wired via wo-ovf, reachable via Home.Mehr) ──
 
 assert.ok(
-  home.includes('<label class="color-btn rb" title="Shading"') &&
+  home.includes('<label class="color-btn rb wo-ovf" title="Shading"') &&
   home.includes('<input type="color" id="shading-color"'),
-  "shading must be a direct visible color button on the home ribbon",
+  "shading must stay a wired color control on the home ribbon (wo-ovf collapse ok)",
 )
 assert.ok(
   !/id="shading-color"[^>]*\bhidden\b/.test(htmlSrc),
@@ -83,7 +83,7 @@ assertI18n("Home.Shading", "Shading", "Schattierung")
 
 // ── Borders (promoted from the More-formatting menu) ──
 
-assertDirectHomeButton('<button class="rb" data-cmd="openBorders"', "borders")
+assertDirectHomeButton('<button class="rb wo-ovf" data-cmd="openBorders"', "borders")
 assert.ok(editorSrc.includes('cmd === "openBorders"'), "editor.js must dispatch openBorders")
 assertI18n("Home.Borders", "Borders", "Rahmen")
 

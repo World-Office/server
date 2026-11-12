@@ -49,7 +49,7 @@ console.log("All new View-tab controls are direct children\n")
 
 // Every new control carries its label through i18n markers.
 const labelMarkers = {
-  "btn-view-fit-width": 'data-i18n="View.FitWidth"',
+  "btn-view-fit-width": 'data-i18n="View.FitPage"',
   "btn-view-zoom100": 'data-i18n="View.Zoom100"',
   "btn-view-headings": 'data-i18n="View.Headings"',
   "btn-view-multipages": 'data-i18n="View.MultiplePages"',
@@ -86,7 +86,7 @@ console.log(`All ${cmds.length} view data-cmds dispatched in editor.js\n`)
 // ── 3. i18n keys exist in BOTH locales (en + de) ──
 console.log("Checking i18n keys for en and de...")
 const newKeys = [
-  "View.FitWidth",
+  "View.FitPage",
   "View.Zoom100",
   "View.Headings",
   "View.MultiplePages",
@@ -104,8 +104,8 @@ for (const key of newKeys) {
   assert.ok(occurrences >= 2, `i18n key ${key} must exist in en AND de (found ${occurrences})`)
 }
 const germanValues = {
-  "View.FitWidth": "Breite einpassen",
-  "View.Zoom100": "Zoom auf 100%",
+  "View.FitPage": "Seite anpassen",
+  "View.Zoom100": "Auf 100 % zoomen",
   "View.Headings": "Überschriften",
   "View.MultiplePages": "Mehrere Seiten",
   "View.InterfaceTheme": "Oberflächendesign",

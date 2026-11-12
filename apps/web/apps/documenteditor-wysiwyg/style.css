@@ -3464,3 +3464,10 @@ body.forms-design-mode .form-field {
 .ribbon-page .hf-spin { display: inline-flex; align-items: center; gap: 4px; margin: 0 6px; }
 .ribbon-page .hf-spin label { font-size: 12px; white-space: nowrap; }
 .ribbon-page .hf-spin input[type="number"] { width: 52px; padding: 2px 4px; font-size: 12px; }
+
+/* CHROME-G overflow parity: OO collapses low-priority ribbon groups behind
+   the tab-level Mehr at 1280+. .wo-ovf mirrors that set — hidden-but-wired;
+   commands stay reachable through the Mehr menu (data-menu-cmd) and
+   [data-cmd] selectors. */
+.wo-ovf { display: none !important; }
+[hidden] { display: none !important; }

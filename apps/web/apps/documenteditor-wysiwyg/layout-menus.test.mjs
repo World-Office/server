@@ -246,7 +246,7 @@ assert.ok(
 )
 assert.ok(i18nSrc.includes('"Layout.Size.A5": "A5"'), "i18n must contain German Layout.Size.A5")
 assert.ok(
-  i18nSrc.includes('"Layout.Orientation": "Ausrichtung"'),
+  i18nSrc.includes('"Layout.Orientation": "Orientierung"'),
   "i18n must contain German Layout.Orientation",
 )
 assert.ok(

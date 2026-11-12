@@ -248,7 +248,7 @@
       <option value="Verdana">Verdana</option>
     </select>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.MoreFontFamilies" aria-label="More font families">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.MoreFontFamilies" aria-label="More font families">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="fontName" data-value="" data-i18n="Toolbar.DefaultFont">Default</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="fontName" data-value="Arial">Arial</button></li>
@@ -276,7 +276,7 @@
       <option value="7">36</option>
     </select>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.MoreFontSizes" aria-label="More font sizes">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.MoreFontSizes" aria-label="More font sizes">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="fontSize" data-value="1">8</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="fontSize" data-value="2">10</button></li>
@@ -300,22 +300,22 @@
     </span>
     <!-- OO font-group corner launcher: opens the Font dialog (the whole
          character-format family in dialog form, cf. dialog.font-dialog.l4). -->
-    <button type="button" id="btn-font-dialog" class="rb group-launch" title="Font dialog" data-i18n-title="Home.FontDialogTitle" aria-label="Font dialog" data-i18n-aria-label="Home.FontDialogTitle" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3.5h9M4 7h6.5M4 10.5h4"/><path d="M13 12.5h-4v4"/></svg></button>
+    <button type="button" id="btn-font-dialog" class="rb group-launch wo-ovf" title="Font dialog" data-i18n-title="Home.FontDialogTitle" aria-label="Font dialog" data-i18n-aria-label="Home.FontDialogTitle" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3.5h9M4 7h6.5M4 10.5h4"/><path d="M13 12.5h-4v4"/></svg></button>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Paragraph" data-i18n-aria-label="Aria.Paragraph">
-    <button class="rb" data-cmd="insertUnorderedList"  title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="4" cy="4" r="1.4"/><circle cx="4" cy="8" r="1.4"/><circle cx="4" cy="12" r="1.4"/><path d="M7 4h7M7 8h7M7 12h7" stroke="currentColor" stroke-width="1.75"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="insertUnorderedList"  title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="4" cy="4" r="1.4"/><circle cx="4" cy="8" r="1.4"/><circle cx="4" cy="12" r="1.4"/><path d="M7 4h7M7 8h7M7 12h7" stroke="currentColor" stroke-width="1.75"/></svg></button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.BulletStyleOptions" aria-label="Bullet style options">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.BulletStyleOptions" aria-label="Bullet style options">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="disc" data-i18n="Toolbar.BulletDisc">Disc</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="circle" data-i18n="Toolbar.BulletCircle">Circle</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="square" data-i18n="Toolbar.BulletSquare">Square</button></li>
       </ul>
     </span>
-    <button class="rb" data-cmd="insertOrderedList"  title="Numbered list (Ctrl+Shift+7)" data-i18n-title="Toolbar.NumberedListTitle" aria-label="Numbered list" data-i18n-aria-label="Toolbar.NumberedList" aria-pressed="false" aria-keyshortcuts="Control+Shift+7"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h2M3.5 4.5h1M4 6.5h.5M7 4h7M7 8h7M7 12h7"/><circle cx="4" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="insertOrderedList"  title="Numbered list (Ctrl+Shift+7)" data-i18n-title="Toolbar.NumberedListTitle" aria-label="Numbered list" data-i18n-aria-label="Toolbar.NumberedList" aria-pressed="false" aria-keyshortcuts="Control+Shift+7"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h2M3.5 4.5h1M4 6.5h.5M7 4h7M7 8h7M7 12h7"/><circle cx="4" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.NumberingStyleOptions" aria-label="Numbering style options">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.NumberingStyleOptions" aria-label="Numbering style options">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="decimal" data-i18n="Toolbar.NumberDecimal">1. 2. 3.</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="lower-alpha" data-i18n="Toolbar.NumberLowerAlpha">a. b. c.</button></li>
@@ -323,10 +323,10 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="listStyle" data-value="upper-alpha" data-i18n="Toolbar.NumberUpperAlpha">A. B. C.</button></li>
       </ul>
     </span>
-    <button class="rb rb-flat" data-cmd="multilevel"  title="Multilevel list" data-i18n-title="Toolbar.MultilevelTitle" aria-label="Multilevel list" data-i18n-aria-label="Toolbar.Multilevel" aria-pressed="false"><svg viewBox="0 0 19 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 1.5v12.5M1.5 2.5h6M4.5 7.5h9M7.5 12.5h10"/><circle cx="16" cy="2.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
-    <button class="rb" data-cmd="outdent"  title="Decrease indent" data-i18n-title="Toolbar.OutdentTitle" aria-label="Decrease indent" data-i18n-aria-label="Toolbar.Outdent"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M1.5 8H8M11.5 5.5 8.5 8l3 2.5"/></svg></button>
-    <button class="rb" data-cmd="indent"  title="Increase indent" data-i18n-title="Toolbar.IndentTitle" aria-label="Increase indent" data-i18n-aria-label="Toolbar.Indent"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M8.5 8H14.5M5 5.5 8 8l-3 2.5"/></svg></button>
-    <select id="line-spacing" class="toolbar-select rb bare" style="width: 56px" title="Line spacing" data-i18n-title="Toolbar.LineSpacingTitle" aria-label="Line spacing">
+    <button class="rb rb-flat wo-ovf" data-cmd="multilevel"  title="Multilevel list" data-i18n-title="Toolbar.MultilevelTitle" aria-label="Multilevel list" data-i18n-aria-label="Toolbar.Multilevel" aria-pressed="false"><svg viewBox="0 0 19 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 1.5v12.5M1.5 2.5h6M4.5 7.5h9M7.5 12.5h10"/><circle cx="16" cy="2.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="outdent"  title="Decrease indent" data-i18n-title="Toolbar.OutdentTitle" aria-label="Decrease indent" data-i18n-aria-label="Toolbar.Outdent"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M1.5 8H8M11.5 5.5 8.5 8l3 2.5"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="indent"  title="Increase indent" data-i18n-title="Toolbar.IndentTitle" aria-label="Increase indent" data-i18n-aria-label="Toolbar.Indent"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M8.5 8H14.5M5 5.5 8 8l-3 2.5"/></svg></button>
+    <select id="line-spacing" class="toolbar-select rb bare wo-ovf" style="width: 56px" title="Line spacing" data-i18n-title="Toolbar.LineSpacingTitle" aria-label="Line spacing">
       <option value="" selected>Spacing</option>
       <option value="1">1.0</option>
       <option value="1.15">1.15</option>
@@ -336,9 +336,9 @@
       <option value="3">3.0</option>
       <option value="options" data-i18n="Toolbar.LineSpacingOptions">Line spacing options…</option>
     </select>
-    <button class="rb" data-cmd="directionRtl"  title="Right-to-left paragraph" data-i18n-title="Toolbar.DirectionRtlTitle" aria-label="Right-to-left" data-i18n-aria-label="Toolbar.DirectionRtl" aria-pressed="false"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 3.5h8M12.5 3.5h-1M6.5 10.5h6M1.5 10.5h1M9.5 1.5l2 2-2 2M4.5 8.5l-2 2 2 2"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="directionRtl"  title="Right-to-left paragraph" data-i18n-title="Toolbar.DirectionRtlTitle" aria-label="Right-to-left" data-i18n-aria-label="Toolbar.DirectionRtl" aria-pressed="false"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 3.5h8M12.5 3.5h-1M6.5 10.5h6M1.5 10.5h1M9.5 1.5l2 2-2 2M4.5 8.5l-2 2 2 2"/></svg></button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.ParagraphDirectionOptions" aria-label="Paragraph direction options">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.ParagraphDirectionOptions" aria-label="Paragraph direction options">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="directionRtl" data-i18n="Toolbar.ToggleDirection">Toggle paragraph direction</button></li>
       </ul>
@@ -373,11 +373,33 @@
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" aria-label="More" data-i18n-aria-label="Home.More"><span data-i18n="Home.More">More</span>▾</button>
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More" aria-label="More" data-i18n-aria-label="Home.More"><span data-i18n="Home.More">More</span>▾</button>
       <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-menu-cmd="bold" data-i18n="Toolbar.Bold">Bold</button></li>
-        <li role="none"><button type="button" role="menuitem" data-menu-cmd="italic" data-i18n="Toolbar.Italic">Italic</button></li>
-        <li role="none"><button type="button" role="menuitem" data-menu-cmd="underline" data-i18n="Toolbar.Underline">Underline</button></li>
+        <!-- CHROME-G: OO collapses the paragraph/overflow groups behind the
+             tab-level Mehr at this width — these items mirror the collapsed
+             buttons (wo-ovf) so the commands stay one click away. -->
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="insertUnorderedList" data-i18n="Toolbar.BulletListTitle">Bullet list</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="insertOrderedList" data-i18n="Toolbar.NumberedListTitle">Numbered list</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="multilevel" data-i18n="Home.Multilevel">Multilevel list</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="justifyLeft" data-i18n="Toolbar.AlignLeft">Align left</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="justifyCenter" data-i18n="Toolbar.AlignCenter">Center</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="justifyRight" data-i18n="Toolbar.AlignRight">Align right</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="justifyFull" data-i18n="Toolbar.AlignJustify">Justify</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="outdent" data-i18n="Toolbar.Outdent">Decrease indent</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="indent" data-i18n="Toolbar.Indent">Increase indent</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="directionRtl" data-i18n="Toolbar.ToggleDirection">Toggle paragraph direction</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="smallCaps" data-i18n="Toolbar.SmallCaps">Small caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="allCaps" data-i18n="Toolbar.AllCaps">All caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="underlineDouble" data-i18n="Toolbar.UnderlineDouble">Double underline</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="strikeDouble" data-i18n="Toolbar.StrikeDouble">Double strikethrough</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-picker="highlight-color" data-i18n="Home.Highlight">Highlight color</button></li>
+        <li role="none"><button type="button" role="menuitem" data-picker="text-color" data-i18n="Home.FontColor">Font color</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="openBorders" data-i18n="Home.Borders">Borders</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="selectAll" data-i18n="Home.SelectAll">Select all</button></li>
       </ul>
     </span>
     </div>
@@ -389,7 +411,7 @@
     <button class="rb" data-cmd="strikeThrough"  title="Strikethrough (Ctrl+Shift+X)" data-i18n-title="Toolbar.StrikethroughTitle" aria-label="Strikethrough" data-i18n-aria-label="Toolbar.Strikethrough" aria-pressed="false" aria-keyshortcuts="Control+Shift+X Meta+Shift+X"><s>S</s></button>
     <button class="rb ss-stack" data-cmd="superscript"  title="Superscript / Subscript" data-i18n-title="Toolbar.SuperscriptTitle" aria-label="Superscript" data-i18n-aria-label="Toolbar.Superscript" aria-pressed="false"><span aria-hidden="true">x&sup2;</span><span aria-hidden="true">x₂</span></button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.ScriptOptions" aria-label="Script options">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="Aria.ScriptOptions" aria-label="Script options">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="superscript" data-i18n="Toolbar.Superscript">Superscript</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="subscript" data-i18n="Toolbar.Subscript">Subscript</button></li>
@@ -409,27 +431,27 @@
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Paragraph">
-    <button class="rb" data-cmd="justifyLeft"  title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyCenter"  title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyRight"  title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyFull"  title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Align just" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="justifyLeft"  title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="justifyCenter"  title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="justifyRight"  title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="justifyFull"  title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Align just" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
     <!-- AF5-HOME-DIRECT: borders/shading/nonprinting promoted from the
          More-formatting menu / View tab to direct OO-parity controls (menu
          rows and the View-tab toggle stay). -->
     <!-- Census row-2 order: nonprinting(556)·shading(596)·borders(636). -->
-    <button id="btn-home-formatmarks" class="rb" title="Nonprinting characters" data-i18n-title="Home.NonPrinting" aria-label="Nonprinting characters" data-i18n-aria-label="Home.NonPrinting" aria-pressed="false">¶</button>
+    <button id="btn-home-formatmarks" class="rb wo-ovf" title="Nonprinting characters" data-i18n-title="Home.NonPrinting" aria-label="Nonprinting characters" data-i18n-aria-label="Home.NonPrinting" aria-pressed="false">¶</button>
     <span data-wo-id="paracolor" data-wo-cmd="paragraphBackColor" data-wo-interact="opens:panel">
-      <label class="color-btn rb" title="Shading" data-i18n-title="Home.Shading">
+      <label class="color-btn rb wo-ovf" title="Shading" data-i18n-title="Home.Shading">
         <span class="color-key key-shading" aria-hidden="true">A</span>
         <input type="color" id="shading-color" value="#f4f4f4" aria-label="Paragraph shading">
       </label>
     </span>
-    <button class="rb" data-cmd="openBorders" title="Borders" data-i18n-title="Home.Borders" aria-label="Borders" data-i18n-aria-label="Home.Borders"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M2.5 8h11M8 2.5v11" stroke-dasharray="1.5 1.5"/></svg></button>
+    <button class="rb wo-ovf" data-cmd="openBorders" title="Borders" data-i18n-title="Home.Borders" aria-label="Borders" data-i18n-aria-label="Home.Borders"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M2.5 8h11M8 2.5v11" stroke-dasharray="1.5 1.5"/></svg></button>
     <!-- OO 9.4 has no glyph-extras group on Home: paragraph style / small
          caps / all caps / inline code live in the More menu (same data-cmd
          wiring, keyboard paths unchanged). -->
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="More formatting" data-i18n-aria-label="Home.MoreFormatting">▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" aria-label="More formatting" data-i18n-aria-label="Home.MoreFormatting">▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-picker="highlight-color" data-i18n="Home.Highlight">Highlight color</button></li>
         <li role="none"><button type="button" role="menuitem" data-picker="text-color" data-i18n="Home.FontColor">Font color</button></li>
@@ -449,7 +471,7 @@
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group rb-edge" role="group" aria-label="Selection">
-    <button id="btn-select-all" class="rb" data-cmd="selectAll" title="Select all (Ctrl+A)" data-i18n-title="Home.SelectAllTitle" aria-label="Select all" data-i18n-aria-label="Home.SelectAll" aria-keyshortcuts="Control+A"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke-dasharray="2.4 2"/><path d="M5.5 8h5M8 5.5v5"/></svg></button>
+    <button id="btn-select-all" class="rb wo-ovf" data-cmd="selectAll" title="Select all (Ctrl+A)" data-i18n-title="Home.SelectAllTitle" aria-label="Select all" data-i18n-aria-label="Home.SelectAll" aria-keyshortcuts="Control+A"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke-dasharray="2.4 2"/><path d="M5.5 8h5M8 5.5v5"/></svg></button>
     </div>
     </div>
     </div>
@@ -502,7 +524,7 @@
     <span class="menu rb-menu" data-wo-interact="opens:modal">
       <button id="btn-link" data-i18n-title="Toolbar.InsertLinkTitle" data-i18n-aria-label="Toolbar.InsertLinkTitle" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
     </span>
-    <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5"/></svg> Hyperlink</button>
+    <button type="button" hidden data-cmd="link" data-i18n="Insert.Hyperlink"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5"/></svg> Hyperlink</button>
     <span class="rb-sep" aria-hidden="true"></span>
     <button type="button" id="btn-headerfooter-combined" data-cmd="insertHeaderFooter" title="Header &amp; Footer" data-i18n-title="Toolbar.HeaderFooterTitle" aria-label="Header &amp; Footer" data-i18n-aria-label="Toolbar.HeaderFooter">&#9472;&#9472;</button>
     <button id="btn-pagenumber" title="Insert page number field" data-i18n-title="Toolbar.PageNumberTitle" aria-label="Insert page number">#</button>
@@ -514,9 +536,10 @@
       <button type="button" id="btn-textart" data-cmd="insertTextart" data-i18n="Insert.TextArt"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 4l3 8 3-8M5 8h0M9 4l3 8 3-8M12 8h0"/></svg> TextArt</button>
     </span>
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 13c2 0 3-1 3-3V5c0-1-1-2-3-2M7 13h6"/></svg> Drop cap</button>
-    <button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
-    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h6l3 3v8h-9z"/><path d="M9 2.5v3h3"/><path d="M5 8h6M5 10.5h6M5 13h4"/></svg> Text from File</button>
+    <button id="btn-datetime" class="wo-ovf" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
+    <button type="button" id="btn-textfile" class="wo-ovf" data-i18n="Insert.TextFromFile"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h6l3 3v8h-9z"/><path d="M9 2.5v3h3"/><path d="M5 8h6M5 10.5h6M5 13h4"/></svg> Text from File</button>
     <span class="rb-sep" aria-hidden="true"></span>
+    <!-- DEVIIATION (CHROME-G): OO@1920 hides the Formel caret behind its insert overflow, but the equation template catalog (accents/brackets/fractions/…, 10 L1 contract flows) hangs off this menu — collapsing the span display:none's the whole catalog. Kept visible as a documented 1-control deviation on Einfügen. -->
     <span class="menu rb-menu" data-wo-id="btn-equation" data-wo-cmd="btn-equation" data-wo-interact="opens:modal">
       <button type="button" id="btn-equation" data-i18n="Insert.Equation"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4c2 0 2 3 0 3s-2 3 0 3 2-1 2-3M9 4c2 0 2 3 0 3s-2 3 0 3"/><path d="M12 6l2 2M14 6l-2 2"/></svg> Equation</button>
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.EquationGallery">Symbols ▾</button>
@@ -600,28 +623,42 @@
         </li>
       </ul>
     </span>
-    <span data-wo-id="btn-symbol" data-wo-cmd="btn-symbol" data-wo-interact="opens:modal">
+    <span class="wo-ovf" data-wo-id="btn-symbol" data-wo-cmd="btn-symbol" data-wo-interact="opens:modal">
       <button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     </span>
-    <span data-wo-id="btn-contentcontrol" data-wo-cmd="btn-contentcontrol" data-wo-interact="opens:modal">
+    <span class="wo-ovf" data-wo-id="btn-contentcontrol" data-wo-cmd="btn-contentcontrol" data-wo-interact="opens:modal">
       <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6h12M5 3v10"/></svg> Content Controls</button>
     </span>
     </div>
     <div class="ribbon-row">
     <!-- CHROME2: WO-only insert controls (absent from OO census), kept in their original relative order -->
-    <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
-    <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
-    <button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
-    <button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Cross-reference" aria-label="Cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
-    <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
-    <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
-    <button type="button" id="btn-addtext" data-i18n="Insert.AddText"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3h10M3 8h7M3 13h10M11 6.5l2 2-2 2M13 8.5l-2-2"/></svg> Add text</button>
+    <button id="btn-table-ops" class="wo-ovf" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
+    <button id="btn-hr" class="wo-ovf" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button id="btn-object" class="wo-ovf" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
+    <button id="btn-crossref" class="wo-ovf" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Cross-reference" aria-label="Cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
+    <button id="btn-header" class="wo-ovf" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
+    <button id="btn-footer" class="wo-ovf" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
+    <button type="button" id="btn-addtext" class="wo-ovf" data-i18n="Insert.AddText"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3h10M3 8h7M3 13h10M11 6.5l2 2-2 2M13 8.5l-2-2"/></svg> Add text</button>
     <span class="menu rb-menu" >
-      <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.More"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg> Insert tools ▾</button>
+    <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg> Insert tools ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-chart" data-i18n="Insert.ChartEditor">Chart editor…</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-spreadsheet" data-cmd="insertObject" data-value="spreadsheet" data-i18n="Insert.Spreadsheet">Spreadsheet</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <!-- CHROME-G: collapsed OO-hidden insert controls (wo-ovf) — reachable via data-menu-target -->
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-datetime" data-i18n="Toolbar.DateTimeTitle">Insert date</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-textfile" data-i18n="Insert.TextFromFile">Text from File</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-symbol" data-i18n="Toolbar.SymbolTitle">Insert symbol</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-contentcontrol" data-i18n="Insert.ContentControl">Content controls</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-table-ops" data-i18n="Table.Actions">Table actions</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-hr" data-i18n="Toolbar.HRTitle">Horizontal line</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-object" data-i18n="Toolbar.ObjectTitle">Insert object</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-crossref" data-i18n="Toolbar.CrossrefTitle">Cross-reference</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="insertHeader" data-i18n="Toolbar.HeaderTitle">Insert page header</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="insertFooter" data-i18n="Toolbar.FooterTitle">Insert page footer</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-addtext" data-i18n="Insert.AddText">Add Text</button></li>
       </ul>
     </span>
     </div>
@@ -715,9 +752,44 @@
       </ul>
     </span>
     <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="2.5" cy="4" r="0.8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="0.8" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12" r="0.8" fill="currentColor" stroke="none"/><path d="M5 4h9M5 8h9M5 12h9"/></svg> Line numbers</button>
-    <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 6h5M9 6h5M2 10h5M9 10h5"/><path d="M7 8h2"/></svg> Hyphenation</button>
+    <!-- CHROME-G: OO Layout parity — Trennen + Linker/Rechter Einzug (page
+         margins, loud stubs until margin inputs land) and the tab-level Mehr
+         holding the collapsed object-ops group (wo-ovf above). -->
+    <button type="button" data-stub="layout.split" data-i18n="Layout.Split" data-i18n-title="Layout.Split" title="Split">Split</button>
+    <button type="button" data-stub="layout.margin-left" data-i18n="Layout.MarginLeft" data-i18n-title="Layout.MarginLeft" title="Left indent">Left indent</button>
+    <button type="button" data-stub="layout.margin-right" data-i18n="Layout.MarginRight" data-i18n-title="Layout.MarginRight" title="Right indent">Right indent</button>
+    <span class="menu rb-menu">
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More">More ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-page-setup" data-i18n="Layout.PageSetup">Page setup</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="wrap-tight" data-i18n="Layout.Wrapping.Tight">Tight</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="wrap-through" data-i18n="Layout.Wrapping.Through">Through</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward">Bring forward</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="send-backward" data-i18n="Layout.Object.SendBackward">Send backward</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="group" data-i18n="Layout.Object.Group">Group</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="ungroup" data-i18n="Layout.Object.Ungroup">Ungroup</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-left" data-i18n="Layout.Align.Left">Align left</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-center" data-i18n="Layout.Align.Center">Align center</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-right" data-i18n="Layout.Align.Right">Align right</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-top" data-i18n="Layout.Align.Top">Align top</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-middle" data-i18n="Layout.Align.Middle">Align middle</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="align-bottom" data-i18n="Layout.Align.Bottom">Align bottom</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="merge-union" data-i18n="Layout.Merge.Union">Union</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="merge-subtract" data-i18n="Layout.Merge.Subtract">Subtract</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="objectOp" data-value="merge-intersect" data-i18n="Layout.Merge.Intersect">Intersect</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleWatermark" data-i18n="Layout.Watermark">Watermark</button></li>
+      </ul>
+    </span>
+    <button type="button" data-cmd="toggleHyphenation" class="wo-ovf" data-i18n="Layout.Hyphenation"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 6h5M9 6h5M2 10h5M9 10h5"/><path d="M7 8h2"/></svg> Hyphenation</button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Wrapping"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 7h6M2 10h6M2 13h12"/><rect x="9" y="7" width="5" height="6" rx="0.5"/></svg> Wrapping ▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Wrapping"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 7h6M2 10h6M2 13h12"/><rect x="9" y="7" width="5" height="6" rx="0.5"/></svg> Wrapping ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
@@ -727,12 +799,12 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-through" data-i18n="Layout.Wrapping.Through">Through</button></li>
       </ul>
     </span>
-    <button type="button" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 2v8M5 5l3-3 3 3"/><rect x="3" y="11" width="10" height="3" rx="0.5"/></svg> Bring forward</button>
-    <button type="button" data-cmd="objectOp" data-value="bring-to-foreground" data-i18n="Layout.Object.BringToForeground"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 1v10M5 4l3-3 3 3"/><rect x="2" y="11" width="12" height="3" rx="0.5"/></svg> Bring to foreground</button>
-    <button type="button" data-cmd="objectOp" data-value="send-backward" data-i18n="Layout.Object.SendBackward"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 14V6M5 11l3 3 3-3"/><rect x="2" y="2" width="12" height="3" rx="0.5"/></svg> Send backward</button>
-    <button type="button" data-cmd="objectOp" data-value="send-to-background" data-i18n="Layout.Object.SendToBackground"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 15V5M5 8l3 3 3-3"/><rect x="2" y="1" width="12" height="3" rx="0.5"/></svg> Send to background</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 2v8M5 5l3-3 3 3"/><rect x="3" y="11" width="10" height="3" rx="0.5"/></svg> Bring forward</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="bring-to-foreground" data-i18n="Layout.Object.BringToForeground"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 1v10M5 4l3-3 3 3"/><rect x="2" y="11" width="12" height="3" rx="0.5"/></svg> Bring to foreground</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="send-backward" data-i18n="Layout.Object.SendBackward"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 14V6M5 11l3 3 3-3"/><rect x="2" y="2" width="12" height="3" rx="0.5"/></svg> Send backward</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="send-to-background" data-i18n="Layout.Object.SendToBackground"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 15V5M5 8l3 3 3-3"/><rect x="2" y="1" width="12" height="3" rx="0.5"/></svg> Send to background</button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Align"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M3 7h7M3 10h10M3 13h7"/></svg> Align ▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Align"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M3 7h7M3 10h10M3 13h7"/></svg> Align ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-left" data-i18n="Layout.Align.Left">Align left</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-center" data-i18n="Layout.Align.Center">Align center</button></li>
@@ -742,21 +814,21 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-bottom" data-i18n="Layout.Align.Bottom">Align bottom</button></li>
       </ul>
     </span>
-    <button type="button" data-cmd="objectOp" data-value="group" data-i18n="Layout.Object.Group"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="0.5"/><rect x="9" y="9" width="5" height="5" rx="0.5"/></svg> Group</button>
-    <button type="button" data-cmd="objectOp" data-value="ungroup" data-i18n="Layout.Object.Ungroup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="0.5"/><rect x="9" y="2" width="5" height="5" rx="0.5"/><rect x="2" y="9" width="5" height="5" rx="0.5"/><rect x="9" y="9" width="5" height="5" rx="0.5"/></svg> Ungroup</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="group" data-i18n="Layout.Object.Group"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="0.5"/><rect x="9" y="9" width="5" height="5" rx="0.5"/></svg> Group</button>
+    <button type="button" class="wo-ovf" data-cmd="objectOp" data-value="ungroup" data-i18n="Layout.Object.Ungroup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="0.5"/><rect x="9" y="2" width="5" height="5" rx="0.5"/><rect x="2" y="9" width="5" height="5" rx="0.5"/><rect x="9" y="9" width="5" height="5" rx="0.5"/></svg> Ungroup</button>
     <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.MergeShapes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="6" r="3.5"/><circle cx="10" cy="10" r="3.5"/></svg> Merge shapes ▾</button>
+      <button type="button" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.MergeShapes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="6" r="3.5"/><circle cx="10" cy="10" r="3.5"/></svg> Merge shapes ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-union" data-i18n="Layout.Merge.Union">Union</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-subtract" data-i18n="Layout.Merge.Subtract">Subtract</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-intersect" data-i18n="Layout.Merge.Intersect">Intersect</button></li>
       </ul>
     </span>
-    <button type="button" data-cmd="toggleWatermark" data-i18n="Layout.Watermark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M4 12L12 4" stroke-dasharray="1.5 1.5"/></svg> Watermark</button>
-    <label class="ribbon-picker" title="Page color" data-i18n-title="Layout.PageColor">
+    <button type="button" class="wo-ovf" data-cmd="toggleWatermark" data-i18n="Layout.Watermark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M4 12L12 4" stroke-dasharray="1.5 1.5"/></svg> Watermark</button>
+    <label class="ribbon-picker wo-ovf" title="Page color" data-i18n-title="Layout.PageColor">
       <input type="color" id="pagecolor" value="#ffffff" aria-label="Page color" data-i18n-aria-label="Layout.PageColor">
     </label>
-    <label class="ribbon-picker" title="Color scheme" data-i18n-title="Layout.Colors">
+    <label class="ribbon-picker wo-ovf" title="Color scheme" data-i18n-title="Layout.Colors">
       <select id="themecolors" aria-label="Color scheme" data-i18n-aria-label="Layout.Colors">
         <option value="default" data-i18n="Layout.Colors.Default">Default</option>
         <option value="gold">Gold</option>
@@ -767,10 +839,10 @@
     </label>
     </div>
     <div class="ribbon-row">
-    <span data-wo-id="btn-page-setup" data-wo-cmd="btn-page-setup" data-wo-interact="opens:modal">
+    <span class="wo-ovf" data-wo-id="btn-page-setup" data-wo-cmd="btn-page-setup" data-wo-interact="opens:modal">
       <button type="button" id="btn-page-setup" data-i18n="Layout.PageSetup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 2.5h7l3 3v8h-10z"/><path d="M10 2.5v3h3"/><path d="M5 8h6M5 10.5h6M5 13h4"/></svg> Page setup</button>
     </span>
-    <span data-wo-id="btn-columns" data-wo-cmd="btn-columns" data-wo-interact="opens:modal">
+    <span class="wo-ovf" data-wo-id="btn-columns" data-wo-cmd="btn-columns" data-wo-interact="opens:modal">
       <button type="button" id="btn-columns" data-i18n="Layout.Columns"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M6 2.5v11M10 2.5v11"/></svg> Columns</button>
     </span>
     </div>
@@ -785,17 +857,17 @@
     <span data-wo-id="btn-footnote" data-wo-cmd="btn-footnote" data-wo-interact="opens:modal">
       <button id="btn-footnote" data-cmd="insertFootnote" title="Footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Footnote">¹</button>
     </span>
-    <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
+    <button id="btn-endnote" class="wo-ovf" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
     <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
     <span data-wo-id="btn-bookmark" data-wo-cmd="btn-bookmark" data-wo-interact="opens:modal">
       <button id="btn-bookmark" data-cmd="bookmark" data-i18n="Ref.Bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Bookmark" aria-label="Bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
     </span>
-    <span data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
+    <span class="wo-ovf" data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
       <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
     </span>
     <button type="button" data-cmd="insertCaption" data-i18n="Ref.Caption">Caption</button>
-    <button type="button" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
-    <button type="button" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
+    <button type="button" class="wo-ovf" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
+    <button type="button" class="wo-ovf" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
     <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
     <button type="button" data-cmd="insertTableOfFigures" data-i18n="Ref.TableOfFigures">Table of figures</button>
     </div>
@@ -808,7 +880,7 @@
     <!-- CHROME2 census: tab 'review' row 1 = CoEditingMode/AddComment/Delete/Resolve/TrackChanges/DisplayMode/Prev/Next/Accept/Reject/Compare/Combine/Chat/MailMerge; WO-only review/comments → row 2 -->
     <div class="ribbon-row">
     <label for="coedit-mode" data-i18n="Collab.CoEditMode">Co-editing mode</label>
-    <select id="coedit-mode" title="Co-editing mode" aria-label="Co-editing mode">
+    <select id="coedit-mode" title="Co-editing mode" aria-label="Co-editing mode" data-i18n-title="Collab.CoEditMode" data-i18n-aria-label="Collab.CoEditMode">
       <option value="fast" data-i18n="Collab.CoEditFast">Fast</option>
       <option value="strict" data-i18n="Collab.CoEditStrict">Strict</option>
     </select>
@@ -827,8 +899,8 @@
     <button type="button" data-cmd="mailMerge" data-i18n="Collab.MailMerge">Mail Merge</button>
     </div>
     <div class="ribbon-row">
-    <button id="btn-review-changes" data-i18n-title="Review.Changes" data-i18n-aria-label="Review.Changes" title="Review changes" aria-label="Review changes">✓</button>
-    <button id="btn-comments" data-i18n-title="Comments.Show" data-i18n-aria-label="Comments.Show" title="Show comments" aria-label="Show comments">◫</button>
+    <button id="btn-review-changes" class="wo-ovf" data-i18n-title="Review.Changes" data-i18n-aria-label="Review.Changes" title="Review changes" aria-label="Review changes">✓</button>
+    <button id="btn-comments" class="wo-ovf" data-i18n-title="Comments.Show" data-i18n-aria-label="Comments.Show" title="Show comments" aria-label="Show comments">◫</button>
     </div>
     </div>
     <div class="ribbon-page" data-tab="protection" role="group" aria-label="Protection ribbon" data-i18n-aria-label="Tab.Protection">
@@ -843,20 +915,20 @@
     <div class="ribbon-page" data-tab="view" role="group" aria-label="View ribbon" data-i18n-aria-label="Tab.View">
     <!-- CHROME2 census: tab 'view' y68 row1 = Headings, FitToPage, Zoom100, InterfaceTheme, DarkDocument, Macros/Record; y>=90 row2 = FitToWidth, MultiplePages, PauseRecording (pause lives inside the Macros menu here). WO-only view toggles keep their head-of-row position. -->
     <div class="ribbon-row">
-    <button type="button" data-cmd="displayMode" data-i18n="View.Mode">Document view</button>
-    <button id="btn-ruler-toggle" type="button" data-i18n="View.Ruler" aria-pressed="true">Ruler</button>
+    <button type="button" class="wo-ovf" data-cmd="displayMode" data-i18n="View.Mode">Document view</button>
+    <button id="btn-ruler-toggle" type="button" class="wo-ovf" data-i18n="View.Ruler" aria-pressed="true">Ruler</button>
     <!-- Gridlines is wired directly (like the ruler toggle) instead of via
          data-cmd, so the formatting-state mirror loop does not clobber its
          aria-pressed (a view toggle, not a caret format). -->
-    <button id="btn-gridlines" type="button" data-i18n="View.Gridlines" aria-pressed="false">Gridlines</button>
-    <button id="btn-view-formatmarks" type="button" data-i18n="View.FormattingMarks" aria-pressed="false">Formatting marks</button>
-    <button id="btn-nav-toggle" type="button" data-cmd="toggleNavigation" data-i18n="View.Navigation" aria-expanded="false">Navigation</button>
+    <button id="btn-gridlines" type="button" class="wo-ovf" data-i18n="View.Gridlines" aria-pressed="false">Gridlines</button>
+    <button id="btn-view-formatmarks" type="button" class="wo-ovf" data-i18n="View.FormattingMarks" aria-pressed="false">Formatting marks</button>
+    <button id="btn-nav-toggle" type="button" class="wo-ovf" data-cmd="toggleNavigation" data-i18n="View.Navigation" aria-expanded="false">Navigation</button>
     <!-- AF7-RIGHT-PANEL: right settings panel toggle (Ctrl+Shift+P, OO convention). -->
-    <button id="btn-right-panel-toggle" type="button" data-cmd="toggleRightPanel" data-i18n="View.RightPanel" aria-pressed="false">Settings panel</button>
+    <button id="btn-right-panel-toggle" type="button" class="wo-ovf" data-cmd="toggleRightPanel" data-i18n="View.RightPanel" aria-pressed="false">Settings panel</button>
     <!-- PTS-T2 (ORM-09 PageThumbnails): left thumbnail rail toggle — wired
          exactly like btn-right-panel-toggle (data-cmd -> runCommand). -->
-    <button id="btn-thumbnails-toggle" type="button" data-cmd="toggleThumbnails" data-i18n="View.PageThumbnails" aria-pressed="false">Thumbnails</button>
-    <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
+    <button id="btn-thumbnails-toggle" type="button" class="wo-ovf" data-cmd="toggleThumbnails" data-i18n="View.PageThumbnails" aria-pressed="false">Thumbnails</button>
+    <button id="btn-view-fullscreen" type="button" class="wo-ovf" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
     <button id="btn-view-headings" type="button" data-i18n="View.Headings" aria-pressed="false">Headings</button>
     <button id="btn-view-fit" type="button" data-i18n="View.Fit">Fit page</button>
@@ -866,7 +938,7 @@
          counterparts, the theme select reuses the wo-theme machinery.
          CHROME2: census puts fit-width + multiple-pages on row 2. -->
     <button id="btn-view-zoom100" type="button" data-i18n="View.Zoom100">Zoom to 100%</button>
-    <label class="ribbon-picker" title="Interface theme" data-i18n-title="View.InterfaceTheme">
+    <label class="ribbon-picker wo-ovf" title="Interface theme" data-i18n-title="View.InterfaceTheme">
     <select id="view-theme-select" aria-label="Interface theme" data-i18n-aria-label="View.InterfaceTheme">
       <option value="light" data-i18n="View.ThemeLight">Light</option>
       <option value="dark" data-i18n="View.ThemeDark">Dark</option>
@@ -874,7 +946,7 @@
     </label>
     <button id="btn-view-darkdoc" type="button" data-i18n="View.DarkDocument" aria-pressed="false">Dark document</button>
     <span class="menu rb-menu" >
-      <button type="button" id="btn-macro-menu" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.RecordMacro"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4L2 8l3 4M11 4l3 4-3 4M9 3l-2 10"/></svg> Macros ▾</button>
+      <button type="button" id="btn-macro-menu" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n="View.RecordMacro"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4L2 8l3 4M11 4l3 4-3 4M9 3l-2 10"/></svg> Macros ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" id="btn-macro-record" data-i18n="View.MacroRecord">Record macro</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-macro-pause" data-i18n="View.MacroPause">Pause recording</button></li>
@@ -882,15 +954,33 @@
       </ul>
     </span>
     <span class="menu rb-menu" >
-      <button type="button" id="btn-speech" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.Speech"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="4" height="7" rx="2"/><path d="M4 8c0 2.5 2 4 4 4s4-1.5 4-4M8 12v2"/></svg> Speech ▾</button>
+      <button type="button" id="btn-speech" class="menu-trigger caret-btn wo-ovf" aria-haspopup="true" aria-expanded="false" data-i18n="View.Speech"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="4" height="7" rx="2"/><path d="M4 8c0 2.5 2 4 4 4s4-1.5 4-4M8 12v2"/></svg> Speech ▾</button>
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" id="btn-readaloud" data-cmd="readAloud" data-i18n="View.ReadAloud">Read aloud</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-dictate" data-cmd="dictate" data-i18n="View.Dictate">Dictate…</button></li>
       </ul>
     </span>
+    <span class="menu rb-menu">
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More">More ▾</button>
+      <!-- CHROME-G: collapsed view toggles (wo-ovf) reachable via Mehr -->
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="displayMode" data-i18n="View.Mode">Document view</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-ruler-toggle" data-i18n="View.Ruler">Ruler</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-gridlines" data-i18n="View.Gridlines">Gridlines</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-view-formatmarks" data-i18n="View.FormattingMarks">Formatting marks</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleNavigation" data-i18n="View.Navigation">Navigation</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleRightPanel" data-i18n="View.RightPanel">Settings panel</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleThumbnails" data-i18n="View.PageThumbnails">Thumbnails</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-view-fullscreen" data-i18n="View.Fullscreen">Fullscreen</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-macro-record" data-i18n="View.MacroRecord">Record macro</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-readaloud" data-i18n="View.ReadAloud">Read aloud</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-dictate" data-i18n="View.Dictate">Dictate…</button></li>
+      </ul>
+    </span>
     </div>
     <div class="ribbon-row">
-    <button id="btn-view-fit-width" type="button" data-i18n="View.FitWidth" aria-pressed="false">Fit width</button>
+    <button id="btn-view-fit-width" type="button" data-i18n="View.FitPage" data-i18n-title="View.FitPage" title="Fit to page" aria-pressed="false">Fit page</button>
     <button id="btn-view-multipages" type="button" data-i18n="View.MultiplePages" aria-pressed="false">Multiple pages</button>
     </div>
     </div>
@@ -920,7 +1010,7 @@
     </span>
     </div>
     <div class="ribbon-row">
-    <button type="button" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
+    <button type="button" class="wo-ovf" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
     </div>
     </div>
     <div class="ribbon-page" data-tab="ai" role="group" aria-label="AI ribbon" data-i18n-aria-label="Tab.AI">
@@ -933,11 +1023,11 @@
     <button type="button" data-cmd="aiSummarize" data-i18n="AI.Summarize">Summarize</button>
     </div>
     <div class="ribbon-row">
-    <button id="btn-ai-review-tab" type="button" data-i18n="AI.ChangesTab">AI changes</button>
+    <button id="btn-ai-review-tab" type="button" class="wo-ovf" data-i18n="AI.ChangesTab">AI changes</button>
     <span data-wo-id="btn-ai-translate" data-wo-cmd="btn-ai-translate" data-wo-interact="opens:modal">
       <button type="button" id="btn-ai-translate" data-cmd="aiTranslate" data-value="German" data-i18n="AI.Translate">Translate</button>
     </span>
-    <button type="button" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
+    <button type="button" class="wo-ovf" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
     <span data-wo-id="btn-ai-grammar" data-wo-cmd="btn-ai-grammar" data-wo-interact="opens:modal">
       <button type="button" id="btn-ai-grammar" data-i18n="AI.Grammar">Grammar</button>
     </span>
@@ -1043,12 +1133,19 @@
     <input id="chart-width-input" type="number" min="40" max="2000" step="1" aria-label="Width" data-i18n-aria-label="Chart.Width">
     <label for="chart-height-input" data-i18n="Chart.Height">H</label>
     <input id="chart-height-input" type="number" min="40" max="2000" step="1" aria-label="Height" data-i18n-aria-label="Chart.Height">
-    <button type="button" data-cmd="chartSize" data-i18n="Chart.Size.Apply">Apply size</button>
+    <button type="button" class="wo-ovf" data-cmd="chartSize" data-i18n="Chart.Size.Apply">Apply size</button>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Chart 3D rotation">
-    <button type="button" data-cmd="chart3d" data-i18n="Chart.Rotation3D">3D rotation</button>
+    <button type="button" class="wo-ovf" data-cmd="chart3d" data-i18n="Chart.Rotation3D">3D rotation</button>
     </div>
+    <span class="menu rb-menu">
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More">More ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="chartSize" data-i18n="Chart.Size.Apply">Apply size</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="chart3d" data-i18n="Chart.Rotation3D">3D rotation</button></li>
+      </ul>
+    </span>
     </div>
     <div class="ribbon-row">
     <div class="rb-group" role="group" aria-label="Chart settings">
@@ -1059,18 +1156,30 @@
     <div class="ribbon-page" data-tab="header-footer" role="group" aria-label="Header and Footer ribbon" data-i18n-aria-label="Tab.HeaderFooter">
     <!-- CHROME2 census: tab 'headerfooter' row1 = PageNumber, DateTime, Field, Image, Close (the unlabeled stacked carets in the census correspond to the five WO H/F toggles, kept together on row 2). -->
     <div class="ribbon-row">
+    <button type="button" data-cmd="insertHeaderFooter" data-i18n="HF.Edit" data-i18n-title="HF.Edit" title="Header &amp; Footer">Header &amp; Footer</button>
     <button id="btn-hf-pagenumber" type="button" data-i18n="HF.PageNumber">Page number</button>
     <button id="btn-hf-datetime" type="button" data-i18n="HF.DateTime">Date &amp; time</button>
     <button id="btn-hf-field" type="button" data-i18n="HF.Field">Field</button>
     <button id="btn-hf-image" type="button" data-i18n="HF.Image">Image</button>
-    <button id="btn-hf-close" type="button" data-i18n="HF.Close">Close Header &amp; Footer</button>
+    <span class="menu rb-menu">
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More">More ▾</button>
+      <!-- CHROME-G: collapsed H/F options (wo-ovf) reachable via Mehr -->
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-cmd="toggleSameAsPrev" data-i18n="HF.SameAsPrev">Same as previous</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-hf-close" data-i18n="HF.Close">Close Header &amp; Footer</button></li>
+      </ul>
+    </span>
+    <button id="btn-hf-close" type="button" class="wo-ovf" data-i18n="HF.Close">Close Header &amp; Footer</button>
     </div>
     <div class="ribbon-row">
-    <button type="button" data-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button>
-    <button type="button" data-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button>
+    <button type="button" class="wo-ovf" data-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button>
+    <button type="button" class="wo-ovf" data-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button>
     <span class="hf-spin"><label for="hf-header-offset" data-i18n="HF.HeaderAbove" data-i18n-title="HF.HeaderAbove">Header from top</label><input id="hf-header-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal" data-i18n-title="HF.HeaderAbove" aria-label="Header from top"></span>
     <span class="hf-spin"><label for="hf-footer-offset" data-i18n="HF.FooterBelow" data-i18n-title="HF.FooterBelow">Footer from bottom</label><input id="hf-footer-offset" type="number" min="0" max="50" value="12.5" step="0.1" inputmode="decimal" data-i18n-title="HF.FooterBelow" aria-label="Footer from bottom"></span>
-    <button type="button" data-cmd="toggleSameAsPrev" data-i18n="HF.SameAsPrev">Same as previous</button>
+    <button type="button" class="wo-ovf" data-cmd="toggleSameAsPrev" data-i18n="HF.SameAsPrev">Same as previous</button>
     </div>
     </div>
     <!-- Overflow chevrons (CHROME1-TITLE-TAB-ROW, OO/Word style): edge-split

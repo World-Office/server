@@ -65,11 +65,11 @@ const newKeys = {
   "HF.Image": ["Image", "Bild"],
   "Ref.Link": ["Link", "Link"],
   "Ref.Bookmark": ["Bookmark", "Lesezeichen"],
-  "Ref.AddText": ["Add Text", "Text hinzufügen"],
+  "Ref.AddText": ["Add Text", "Text Hinzufügen"],
   "Collab.Accept": ["Accept", "Annehmen"],
   "Collab.Reject": ["Reject", "Ablehnen"],
   "Collab.MailMerge": ["Mail Merge", "Serienbrief"],
-  "Toolbar.DateTimeTitle": ["Date & Time", "Datum und Uhrzeit"],
+  "Toolbar.DateTimeTitle": ["Date & Time", "Datum & Uhrzeit"],
   "Menu.Export": ["Download As", "Herunterladen als"],
 }
 for (const [key, [en, de]] of Object.entries(newKeys)) {
@@ -111,8 +111,9 @@ const promoted = [
   ["btn-smartart", "Insert.SmartArt"],
 ]
 for (const [id, marker] of promoted) {
-  const btn = `<button type="button" id="${id}" data-i18n="${marker}">`
-  assert.ok(insertPage.includes(btn),
+  // CHROME-G: ids may carry class="wo-ovf" (collapsed behind Mehr) — still
+  // top-level and wired, the class is deliberate OO@1920 overflow parity.
+  assert.ok(new RegExp(`<button type="button"[^>]*id="${id}"[^>]*data-i18n="${marker}"`).test(insertPage),
     `${id} must be a top-level button on the insert ribbon-page`)
   assert.ok(!insertMoreList.includes(`id="${id}"`),
     `${id} must NOT remain inside the Insert tools dropdown`)

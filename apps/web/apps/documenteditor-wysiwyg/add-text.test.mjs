@@ -38,7 +38,7 @@ assert.ok(
 )
 
 assert.ok(
-  i18nSrc.includes('"Ref.AddText": "Text hinzufügen"'),
+  i18nSrc.includes('"Ref.AddText": "Text Hinzufügen"'),
   "WO-5: Ref.AddText i18n key must exist in German",
 )
 

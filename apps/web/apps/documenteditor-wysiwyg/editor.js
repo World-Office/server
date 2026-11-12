@@ -12387,6 +12387,14 @@
         if (input && input.showPicker) input.showPicker();
       });
     });
+    // CHROME-G: Mehr items that mirror id-wired (not data-cmd) ribbon
+    // controls — click the collapsed .wo-ovf button so its own handler runs.
+    list.querySelectorAll("button[data-menu-target]").forEach((item) => {
+      item.addEventListener("click", () => {
+        closeAllMenus();
+        document.querySelector(item.dataset.menuTarget)?.click();
+      });
+    });
   });
 
   if (fileTrigger && backstage) {
