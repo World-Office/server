@@ -1,17 +1,17 @@
 {
- "generatedAt": "2026-11-12T11:15:17.487Z",
+ "generatedAt": "2026-11-12T13:10:50.037Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 501
  },
  "counts": {
-  "total": 619,
+  "total": 641,
   "byClass": {
    "dialog": 268,
-   "view": 63,
-   "structure": 57,
-   "op": 173,
-   "format": 58
+   "view": 61,
+   "structure": 64,
+   "op": 179,
+   "format": 69
   },
   "unclassified": 0
  },
@@ -6717,9 +6717,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret doc end — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6736,9 +6737,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "viewport scroll on long doc"
   },
   {
    "tab": "shortcut",
@@ -6755,9 +6757,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "viewport scroll from bottom"
   },
   {
    "tab": "shortcut",
@@ -6819,9 +6822,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret right — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6838,9 +6842,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret left — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6857,9 +6862,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret up — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6876,9 +6882,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret down — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -6895,9 +6902,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "focus-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Tab cycles modal fields"
   },
   {
    "tab": "shortcut",
@@ -6914,9 +6922,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "focus-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "Shift+Tab cycles modal fields back"
   },
   {
    "tab": "shortcut",
@@ -6935,7 +6944,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -6954,7 +6964,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -6973,7 +6984,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -6992,7 +7004,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -7009,9 +7022,10 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "end paragraph — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7171,14 +7185,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
     "contains": " "
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.nonbreakingspace — Ctrl+Shift+Space emits insertSymbol U+00A0 at the caret (editor.js:10983)"
+   "note": "non-breaking space U+00A0 (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -7236,9 +7250,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz "
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "redo restores undone insertText (snapshot chain US-31)"
   },
   {
    "tab": "shortcut",
@@ -7424,9 +7441,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select-all extends selection"
   },
   {
    "tab": "shortcut",
@@ -7443,9 +7461,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select to line start — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7462,9 +7481,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select to line end — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7481,9 +7501,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select to doc start — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7500,9 +7521,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select to doc end — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7519,9 +7541,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select char right — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7538,9 +7561,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select char left — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7557,9 +7581,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select line up — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7576,9 +7601,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select line down — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7595,9 +7621,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select page up — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7614,9 +7641,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select page down — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7633,9 +7661,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select prev page — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7652,9 +7681,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select next page — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -7671,12 +7701,12 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "computed-style",
-    "prop": "font-weight",
-    "equals": "700"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<b>"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.bold (Ctrl+B) — emitCommand(\"bold\"), same execCommand path as the proven toolbar click contract 'bold'; <b> wrap -> font-weight 700"
+   "note": "native contentEditable bold"
   },
   {
    "tab": "shortcut",
@@ -7693,12 +7723,12 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "computed-style",
-    "prop": "font-style",
-    "equals": "italic"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<i>"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.italic (Ctrl+I) — emitCommand(\"italic\"); <i> wrap -> font-style italic"
+   "note": "native contentEditable italic"
   },
   {
    "tab": "shortcut",
@@ -7715,12 +7745,12 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "computed-style",
-    "prop": "text-decoration-line",
-    "equals": "underline"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<u>"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader)"
+   "note": "native contentEditable underline"
   },
   {
    "tab": "shortcut",
@@ -7948,14 +7978,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "format",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "computed-style",
-    "prop": "text-align",
-    "equals": "start"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<ul>"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.leftpara — ledger + editor.js bind Ctrl+L (Ctrl+Shift+L is the bulleted-list combo, insertUnorderedList). On the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write, so the honest post-chord state is start (same as the justifyleft click contract)"
+   "note": "bulleted list"
   },
   {
    "tab": "shortcut",
@@ -7973,10 +8003,11 @@
    "effektClass": "structure",
    "assertion": {
     "kind": "dom-mutation",
-    "selector": "#editor .page-break"
+    "selector": "#editor",
+    "contains": "page-break"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.insertpagebreak — Ctrl+Enter emits insertPageBreak which plants div.page-break + trailing p (editor.js:11231, 1177-1194)"
+   "note": "column/page break insert"
   },
   {
    "tab": "shortcut",
@@ -8206,7 +8237,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8225,7 +8257,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8244,7 +8277,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8263,7 +8297,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8278,11 +8313,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8297,11 +8333,12 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "op",
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8342,7 +8379,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Tab next-table-cell keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8361,7 +8399,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Shift+Tab prev-table-cell keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8380,7 +8419,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Tab next-table-row keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8399,7 +8439,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Shift+Tab prev-table-row keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8416,9 +8457,10 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "end paragraph cell — native contentEditable — in-table fixture"
   },
   {
    "tab": "shortcut",
@@ -8437,7 +8479,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Tab add-table-row keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8475,7 +8518,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Tab form-field nav keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8494,7 +8538,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Shift+Tab form-field nav keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -8513,7 +8558,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8532,7 +8578,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -8566,14 +8613,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
     "contains": "©"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.copyrightsign — Ctrl+Alt+G emits insertSymbol U+00A9 (editor.js:11039)"
+   "note": "© symbol (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -8588,14 +8635,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
     "contains": "€"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.eurosign — Ctrl+Alt+E emits insertSymbol U+20AC (editor.js:11038)"
+   "note": "Euro symbol (editor.js insertSymbol)"
   },
   {
    "tab": "shortcut",
@@ -8610,14 +8657,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
     "contains": "®"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.registeredsign — Ctrl+Alt+R emits insertSymbol U+00AE (editor.js:11041)"
+   "note": "® symbol (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -8632,14 +8679,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
     "contains": "™"
    },
    "subFeatures": null,
-   "note": "ledger row: shortcut.trademarksign — Ctrl+Alt+T emits insertSymbol U+2122 (editor.js:11040)"
+   "note": "™ symbol (editor.js)"
   },
   {
    "tab": "shortcut",
@@ -8742,7 +8789,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav — OO-only"
   },
   {
    "tab": "shortcut",
@@ -8761,7 +8809,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav — OO-only"
   },
   {
    "tab": "shortcut",
@@ -8778,9 +8827,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret word left — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -8797,9 +8847,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "caret word right — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -8919,12 +8970,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "text-mutation",
+    "kind": "dom-mutation",
     "selector": "#editor",
-    "contains": "PASTE-MARKER"
+    "contains": "seeded"
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted"
+   "note": "pasteTextOnly strips formatting (editor.js ctrl+shift+v)"
   },
   {
    "tab": "shortcut",
@@ -8963,9 +9014,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select word right — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -8982,9 +9034,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "select word left — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -9002,10 +9055,11 @@
    "effektClass": "format",
    "assertion": {
     "kind": "dom-mutation",
-    "selector": "#editor h1",
-    "note": "Ctrl+Alt+1 wraps the selection block in H1 via emitCommand('formatBlock','H1') (editor.js ~11078); the list fixture starts with zero headings, so the first #editor h1 appearing is the chord's effect"
+    "selector": "#editor",
+    "contains": "Heading"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "ctrl+alt+N heading style"
   },
   {
    "tab": "shortcut",
@@ -9023,10 +9077,11 @@
    "effektClass": "format",
    "assertion": {
     "kind": "dom-mutation",
-    "selector": "#editor h2",
-    "note": "Ctrl+Alt+2 wraps the block in H2 (editor.js ~11078)"
+    "selector": "#editor",
+    "contains": "Heading"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "ctrl+alt+N heading style"
   },
   {
    "tab": "shortcut",
@@ -9044,10 +9099,11 @@
    "effektClass": "format",
    "assertion": {
     "kind": "dom-mutation",
-    "selector": "#editor h3",
-    "note": "Ctrl+Alt+3 wraps the block in H3 (editor.js ~11078)"
+    "selector": "#editor",
+    "contains": "Heading"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "ctrl+alt+N heading style"
   },
   {
    "tab": "shortcut",
@@ -9066,7 +9122,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -9085,7 +9142,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -9104,7 +9162,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -9123,7 +9182,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
   },
   {
    "tab": "shortcut",
@@ -9202,9 +9262,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "next page — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -9221,9 +9282,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "prev page — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -9262,9 +9324,10 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "em dash — native contentEditable"
   },
   {
    "tab": "shortcut",
@@ -9305,7 +9368,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Ctrl+PageDown file-tab keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -9324,7 +9388,8 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "note": "KNOWN-GAP: no WO handler — Ctrl+PageUp file-tab keys (OO-only) until ported"
   },
   {
    "tab": "shortcut",
@@ -14928,6 +14993,195 @@
   },
   {
    "tab": "",
+   "ooId": "shortcut.bold",
+   "label": "shortcut.bold",
+   "token": "shortcut.bold",
+   "feature": "shortcut.bold",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "font-weight",
+    "equals": "700"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.bold (Ctrl+B) — emitCommand(\"bold\"), same execCommand path as the proven toolbar click contract 'bold'; <b> wrap -> font-weight 700 [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.italic",
+   "label": "shortcut.italic",
+   "token": "shortcut.italic",
+   "feature": "shortcut.italic",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "font-style",
+    "equals": "italic"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.italic (Ctrl+I) — emitCommand(\"italic\"); <i> wrap -> font-style italic [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.underline",
+   "label": "shortcut.underline",
+   "token": "shortcut.underline",
+   "feature": "shortcut.underline",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "text-decoration-line",
+    "equals": "underline"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.leftpara",
+   "label": "shortcut.leftpara",
+   "token": "shortcut.leftpara",
+   "feature": "shortcut.leftpara",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "text-align",
+    "equals": "start"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.leftpara — ledger + editor.js bind Ctrl+L (Ctrl+Shift+L is the bulleted-list combo, insertUnorderedList). On the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write, so the honest post-chord state is start (same as the justifyleft click contract) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.nonbreakingspace",
+   "label": "shortcut.nonbreakingspace",
+   "token": "shortcut.nonbreakingspace",
+   "feature": "shortcut.nonbreakingspace",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": " "
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.nonbreakingspace — Ctrl+Shift+Space emits insertSymbol U+00A0 at the caret (editor.js:10983) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.copyrightsign",
+   "label": "shortcut.copyrightsign",
+   "token": "shortcut.copyrightsign",
+   "feature": "shortcut.copyrightsign",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "©"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.copyrightsign — Ctrl+Alt+G emits insertSymbol U+00A9 (editor.js:11039) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.eurosign",
+   "label": "shortcut.eurosign",
+   "token": "shortcut.eurosign",
+   "feature": "shortcut.eurosign",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "€"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.eurosign — Ctrl+Alt+E emits insertSymbol U+20AC (editor.js:11038) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.registeredsign",
+   "label": "shortcut.registeredsign",
+   "token": "shortcut.registeredsign",
+   "feature": "shortcut.registeredsign",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "®"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.registeredsign — Ctrl+Alt+R emits insertSymbol U+00AE (editor.js:11041) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.trademarksign",
+   "label": "shortcut.trademarksign",
+   "token": "shortcut.trademarksign",
+   "feature": "shortcut.trademarksign",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "™"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.trademarksign — Ctrl+Alt+T emits insertSymbol U+2122 (editor.js:11040) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.insertpagebreak",
+   "label": "shortcut.insertpagebreak",
+   "token": "shortcut.insertpagebreak",
+   "feature": "shortcut.insertpagebreak",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor .page-break"
+   },
+   "subFeatures": null,
+   "note": "ledger row: shortcut.insertpagebreak — Ctrl+Enter emits insertPageBreak which plants div.page-break + trailing p (editor.js:11231, 1177-1194) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
    "ooId": "ctx.edit-alt-text",
    "label": "ctx.edit-alt-text",
    "token": "ctx.edit-alt-text",
@@ -14994,6 +15248,230 @@
    },
    "subFeatures": null,
    "note": "pilot6: find dialog close button [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "strikeout",
+   "label": "strikeout",
+   "token": "strikeout",
+   "feature": "strikeout",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<s>"
+   },
+   "subFeatures": null,
+   "note": "ctrl+shift+x strikeThrough (editor.js) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "emdash",
+   "label": "emdash",
+   "token": "emdash",
+   "feature": "emdash",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "—"
+   },
+   "subFeatures": null,
+   "note": "em dash (editor.js ctrl+alt+-) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "endash",
+   "label": "endash",
+   "token": "endash",
+   "feature": "endash",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "–"
+   },
+   "subFeatures": null,
+   "note": "en dash numpad (editor.js L2M-05) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "copy",
+   "label": "copy",
+   "token": "copy",
+   "feature": "copy",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "clipboard",
+    "contains": "Will"
+   },
+   "subFeatures": null,
+   "note": "copy placeCaret selection (first 4 chars) to clipboard [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "cut",
+   "label": "cut",
+   "token": "cut",
+   "feature": "cut",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "clipboard",
+    "contains": "Will"
+   },
+   "subFeatures": null,
+   "note": "cut placeCaret selection to clipboard [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "paste",
+   "label": "paste",
+   "token": "paste",
+   "feature": "paste",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "seeded"
+   },
+   "subFeatures": null,
+   "note": "paste from system clipboard [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "insertlinebreak",
+   "label": "insertlinebreak",
+   "token": "insertlinebreak",
+   "feature": "insertlinebreak",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<br"
+   },
+   "subFeatures": null,
+   "note": "soft line break [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "inserttab",
+   "label": "inserttab",
+   "token": "inserttab",
+   "feature": "inserttab",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "unspecified"
+   },
+   "subFeatures": null,
+   "note": "KNOWN-GAP: Tab outside dialogs is not intercepted (no tab-char insert, no table cell nav) — OO-only until ported [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.applyheading1",
+   "label": "shortcut.applyheading1",
+   "token": "shortcut.applyheading1",
+   "feature": "shortcut.applyheading1",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor h1",
+    "note": "Ctrl+Alt+1 wraps the selection block in H1 via emitCommand('formatBlock','H1') (editor.js ~11078); the list fixture starts with zero headings, so the first #editor h1 appearing is the chord's effect"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.applyheading2",
+   "label": "shortcut.applyheading2",
+   "token": "shortcut.applyheading2",
+   "feature": "shortcut.applyheading2",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor h2",
+    "note": "Ctrl+Alt+2 wraps the block in H2 (editor.js ~11078)"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.applyheading3",
+   "label": "shortcut.applyheading3",
+   "token": "shortcut.applyheading3",
+   "feature": "shortcut.applyheading3",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor h3",
+    "note": "Ctrl+Alt+3 wraps the block in H3 (editor.js ~11078)"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "shortcut.pastetextwithoutformat",
+   "label": "shortcut.pastetextwithoutformat",
+   "token": "shortcut.pastetextwithoutformat",
+   "feature": "shortcut.pastetextwithoutformat",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "op",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "PASTE-MARKER"
+   },
+   "subFeatures": null,
+   "note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted [override-only: no ledger row matched this key]"
   }
  ]
 }

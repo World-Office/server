@@ -275,6 +275,28 @@ async function checkEffect(page, ov, assertion) {
           ? `events: ${(window.__woEvents || []).join(',')}`
           : 'no wo:* events observed',
       }), assertion.event || `wo:${assertion.selector || ''}`), undefined);
+    case 'selection-moved':
+      // caret/selection contracts: the before-state was captured on the
+      // window (see trigger); pass iff the selection CHANGED (offsets,
+      // node, or collapsed-flag) OR the viewport scrolled (PageUp/Down
+      // scroll without moving the caret). Native contentEditable behavior
+      // counts — Home/End/arrows/Ctrl+WordMove need no editor.js handler.
+      return poll(page, () => page.evaluate(() => {
+        const s = window.getSelection();
+        const now = [s.anchorOffset, s.focusOffset, (s.anchorNode && s.anchorNode.data) || (s.anchorNode && s.anchorNode.nodeName) || '', s.isCollapsed, Math.round(window.scrollY)];
+        const was = window.__woSel0;
+        const ok = !!was && (was[0] !== now[0] || was[1] !== now[1] || was[2] !== now[2] || was[3] !== now[3] || was[4] !== now[4]);
+        return { ok, observed: `selection ${JSON.stringify(was)} -> ${JSON.stringify(now)}` };
+      }), undefined, undefined);
+    case 'focus-moved':
+      // modal focus-nav contracts (Tab/Shift+Tab between dialog fields):
+      // before-state captured alongside __woSel0 in the trigger; pass iff
+      // the ACTIVE ELEMENT changed (selection may be untouched)
+      return poll(page, () => page.evaluate(() => {
+        const now = (document.activeElement && (document.activeElement.id || document.activeElement.tagName)) || '';
+        const was = window.__woFocus0;
+        return { ok: !!was && was !== now, observed: `focus ${was} -> ${now}` };
+      }), undefined, undefined);
     case 'clipboard': {
       // headless clipboard: _boot grants clipboard-read/write permissions;
       // row asserts the system-clipboard payload (ctx copy/copy-hyperlink)
@@ -357,7 +379,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','dirty-undo','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -403,6 +425,71 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.mouse.click(r.x, r.y, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
+      }
+      else if (ov.pre === 'dirty-undo') {
+        // redo needs an UNDONE change in the stack: type, then undo — the
+        // trigger key (Ctrl+Y/Ctrl+Shift+Z) should redo it back
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.focus();
+        });
+        await page.keyboard.type('zz ');
+        await page.keyboard.press('Control+z'); // editor's own undo handler owns the stack
+        await sleep(100);
+      }
+      else if (ov.pre === 'long-doc') {
+        // scroll contracts need more than one viewport of content; scrollup
+        // additionally starts at the BOTTOM so PageUp has somewhere to go
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const p = [];
+          for (let i = 0; i < 80; i++) p.push('<p>filler paragraph ' + i + ' for scroll contracts</p>');
+          ed.innerHTML = p.join('') + '<p id="scroll-tail">tail</p>';
+          window.__woScrolledDown = (ov2 => ov2)(window.scrollTo ? (window.scrollTo(0, document.body.scrollHeight), true) : false);
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.setStart(document.getElementById('scroll-tail').firstChild, 2);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'find-dialog') {
+        // modal focus-nav contracts: open the find dialog and focus its
+        // first input (the runner's own ctrl+f contract proved this flow)
+        await page.evaluate(() => {
+          const btn = document.querySelector('[data-cmd="find"]') || document.querySelector('#btn-find');
+          if (btn) btn.click();
+        });
+        await page.waitForSelector('#find-dialog:not([hidden])', { timeout: 3000 }).catch(() => {});
+        await page.evaluate(() => {
+          const inp = document.querySelector('#find-dialog input, #find-dialog button');
+          if (inp) inp.focus();
+        });
+        await sleep(100);
+      }
+      else if (ov.pre === 'in-table') {
+        // shortcut contracts that need table context (Tab next-cell, addnewrow,
+        // table-page nav…): 2x2 table, caret collapsed in cell 1 — no
+        // hit-test dance, the trigger is a key chord
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tr><td>alpha cell</td><td>beta cell</td></tr><tr><td>gamma</td><td>delta</td></tr></table><p>after</p>';
+          const cell = ed.querySelectorAll('td')[0];
+          const range = document.createRange();
+          range.setStart(cell.firstChild, 2);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(100);
       }
       else if (ov.pre === 'ctx-menu-in-table') {
         // ctx rows gated on data-showif="table" (merge/split cells, row/column
@@ -1119,6 +1206,15 @@ async function subFeatureAudit(page, ov, dialogSel) {
           // keyboard shortcut contract: dispatch a real key chord (handlers
           // listen on #editor — placeCaret focuses it and selects word 1)
           if (!preMenu) placeCaret(page);
+          // selection-moved: caret/selection contracts need the BEFORE state
+          if ((ov.assertion || {}).kind === 'selection-moved' || (ov.assertion || {}).kind === 'focus-moved') {
+            return page.evaluate(() => {
+              const s = window.getSelection();
+              window.__woSel0 = [s.anchorOffset, s.focusOffset, (s.anchorNode && s.anchorNode.data) || (s.anchorNode && s.anchorNode.nodeName) || '', s.isCollapsed, Math.round(window.scrollY)];
+              window.__woFocus0 = (document.activeElement && (document.activeElement.id || document.activeElement.tagName)) || '';
+            }).then(() => page.keyboard.press(ov.key))
+              .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
+          }
           return page.keyboard.press(ov.key)
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }

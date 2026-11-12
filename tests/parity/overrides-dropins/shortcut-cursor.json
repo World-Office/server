@@ -1,0 +1,435 @@
+{
+ "entries": {
+  "shortcut.movetoenddocument": {
+   "key": "Control+End",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret doc end \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.scrolldown": {
+   "pre": "long-doc",
+   "key": "PageDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "viewport scroll on long doc",
+   "effektClass": "view"
+  },
+  "shortcut.scrollup": {
+   "pre": "long-doc",
+   "key": "PageUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "viewport scroll from bottom",
+   "effektClass": "view"
+  },
+  "shortcut.movetorightchar": {
+   "key": "ArrowRight",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret right \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.movetoleftchar": {
+   "key": "ArrowLeft",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret left \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.movetoupline": {
+   "key": "ArrowUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret up \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.movetodownline": {
+   "key": "ArrowDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret down \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.nextmodalcontrol": {
+   "pre": "find-dialog",
+   "key": "Tab",
+   "assertion": {
+    "kind": "focus-moved"
+   },
+   "note": "Tab cycles modal fields",
+   "effektClass": "view"
+  },
+  "shortcut.previousmodalcontrol": {
+   "pre": "find-dialog",
+   "key": "Shift+Tab",
+   "assertion": {
+    "kind": "focus-moved"
+   },
+   "note": "Shift+Tab cycles modal fields back",
+   "effektClass": "view"
+  },
+  "shortcut.movetolowerheader": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetoupperheader": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "view"
+  },
+  "shortcut.endparagraph": {
+   "key": "End",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "end paragraph \u2014 native contentEditable",
+   "effektClass": "format"
+  },
+  "shortcut.editredo": {
+   "pre": "dirty-undo",
+   "key": "Control+Y",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "zz "
+   },
+   "note": "redo restores undone insertText (snapshot chain US-31)",
+   "effektClass": "op"
+  },
+  "shortcut.selecttostartline": {
+   "key": "Shift+Home",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select to line start \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selecttoendline": {
+   "key": "Shift+End",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select to line end \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selecttostartdocument": {
+   "key": "Control+Shift+Home",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select to doc start \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selecttoenddocument": {
+   "key": "Control+Shift+End",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select to doc end \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectrightchar": {
+   "key": "Shift+ArrowRight",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select char right \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectleftchar": {
+   "key": "Shift+ArrowLeft",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select char left \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectlineup": {
+   "key": "Shift+ArrowUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select line up \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectlinedown": {
+   "key": "Shift+ArrowDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select line down \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectpageup": {
+   "key": "Shift+PageUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select page up \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectpagedown": {
+   "key": "Shift+PageDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select page down \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selecttobeginpreviouspage": {
+   "key": "Shift+PageUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select prev page \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selecttobeginnextpage": {
+   "key": "Shift+PageDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select next page \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.bigmoveobjectleft": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.bigmoveobjectright": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.bigmoveobjectup": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.bigmoveobjectdown": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.movetonextcell": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Tab next-table-cell keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetopreviouscell": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Shift+Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Shift+Tab prev-table-cell keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetonextrow": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Tab next-table-row keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.endparagraphcell": {
+   "pre": "in-table",
+   "key": "End",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "end paragraph cell \u2014 native contentEditable \u2014 in-table fixture",
+   "effektClass": "format"
+  },
+  "shortcut.addnewrow": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Tab add-table-row keys (OO-only) until ported",
+   "effektClass": "op"
+  },
+  "shortcut.selectrightword": {
+   "key": "Control+Shift+ArrowRight",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select word right \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.selectleftword": {
+   "key": "Control+Shift+ArrowLeft",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select word left \u2014 native contentEditable",
+   "effektClass": "op"
+  },
+  "shortcut.littlemoveobjectleft": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.littlemoveobjectright": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.littlemoveobjectup": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.littlemoveobjectdown": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.emdash": {
+   "key": "Control+Alt+Minus",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "em dash \u2014 native contentEditable",
+   "effektClass": "format"
+  },
+  "shortcut.nextfiletab": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Control+PageDown",
+   "note": "KNOWN-GAP: no WO handler \u2014 Ctrl+PageDown file-tab keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.previousfiletab": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Control+PageUp",
+   "note": "KNOWN-GAP: no WO handler \u2014 Ctrl+PageUp file-tab keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetostartword": {
+   "key": "Control+ArrowLeft",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret word left \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.movetoendword": {
+   "key": "Control+ArrowRight",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "caret word right \u2014 native contentEditable",
+   "effektClass": "view"
+  },
+  "shortcut.movetonextpage": {
+   "key": "PageDown",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "next page \u2014 native contentEditable",
+   "pre": "long-doc",
+   "effektClass": "view"
+  },
+  "shortcut.movetopreviouspage": {
+   "key": "PageUp",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "prev page \u2014 native contentEditable",
+   "pre": "long-doc",
+   "effektClass": "view"
+  },
+  "shortcut.movetostartnextpage": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Control+PageDown",
+   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav \u2014 OO-only",
+   "effektClass": "view"
+  },
+  "shortcut.movetostartpreviouspage": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Control+PageUp",
+   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav \u2014 OO-only",
+   "effektClass": "view"
+  },
+  "shortcut.movetopreviousrow": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Shift+Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Shift+Tab prev-table-row keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetonextform": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Tab form-field nav keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetopreviousform": {
+   "xfail": true,
+   "knownGap": true,
+   "key": "Shift+Tab",
+   "note": "KNOWN-GAP: no WO handler \u2014 Shift+Tab form-field nav keys (OO-only) until ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetolowerheaderfooter": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "view"
+  },
+  "shortcut.movetoupperheaderfooter": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "view"
+  },
+  "shortcut.choosenextcomboboxoption": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.choosepreviouscomboboxoption": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.movefocustonextobject": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  },
+  "shortcut.movefocustopreviousobject": {
+   "xfail": true,
+   "knownGap": true,
+   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) \u2014 OO-only until object nav is ported",
+   "effektClass": "op"
+  }
+ }
+}

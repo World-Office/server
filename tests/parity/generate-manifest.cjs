@@ -93,10 +93,10 @@ function classify(row, override) {
 }
 
 const VALID_CLASSES = new Set(['format', 'structure', 'dialog', 'op', 'view', 'stub', 'covered-cluster', 'unclassified']);
-const VALID_ASSERTIONS = new Set(['computed-style', 'dom-mutation', 'dialog-visible', 'dialog-action', 'dialog-input', 'op-emitted', 'viewport-flag', 'text-mutation', 'clipboard', 'unspecified']);
+const VALID_ASSERTIONS = new Set(['computed-style', 'dom-mutation', 'dialog-visible', 'dialog-action', 'dialog-input', 'op-emitted', 'viewport-flag', 'text-mutation', 'clipboard', 'selection-moved', 'focus-moved', 'unspecified']);
 
 function validateOverride(key, o, errors) {
-  if (!VALID_CLASSES.has(o.effektClass)) errors.push(`${key}: bad effektClass "${o.effektClass}"`);
+  if (o.effektClass !== undefined && !VALID_CLASSES.has(o.effektClass)) errors.push(`${key}: bad effektClass "${o.effektClass}"`);
   if (o.assertion) {
     if (!VALID_ASSERTIONS.has(o.assertion.kind)) errors.push(`${key}: bad assertion.kind "${o.assertion.kind}"`);
     if (o.assertion.kind === 'computed-style' && !(o.assertion.prop && o.assertion.equals !== undefined)) errors.push(`${key}: computed-style needs prop+equals`);

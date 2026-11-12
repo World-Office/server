@@ -1,0 +1,229 @@
+{
+ "entries": {
+  "ctrl+b": {
+   "key": "Control+b",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<b>"
+   },
+   "note": "native contentEditable bold",
+   "effektClass": "format"
+  },
+  "ctrl+i": {
+   "key": "Control+i",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<i>"
+   },
+   "note": "native contentEditable italic",
+   "effektClass": "format"
+  },
+  "ctrl+u": {
+   "key": "Control+u",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<u>"
+   },
+   "note": "native contentEditable underline",
+   "effektClass": "format"
+  },
+  "strikeout": {
+   "key": "Control+Shift+x",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<s>"
+   },
+   "note": "ctrl+shift+x strikeThrough (editor.js)",
+   "effektClass": "format"
+  },
+  "ctrl+shift+l": {
+   "key": "Control+Shift+l",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<ul>"
+   },
+   "note": "bulleted list",
+   "effektClass": "structure"
+  },
+  "ctrl+alt+e": {
+   "key": "Control+Alt+e",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u20ac"
+   },
+   "note": "Euro symbol (editor.js insertSymbol)",
+   "effektClass": "format"
+  },
+  "ctrl+alt+g": {
+   "key": "Control+Alt+g",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u00a9"
+   },
+   "note": "\u00a9 symbol (editor.js)",
+   "effektClass": "format"
+  },
+  "ctrl+alt+t": {
+   "key": "Control+Alt+t",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u2122"
+   },
+   "note": "\u2122 symbol (editor.js)",
+   "effektClass": "format"
+  },
+  "ctrl+alt+r": {
+   "key": "Control+Alt+r",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u00ae"
+   },
+   "note": "\u00ae symbol (editor.js)",
+   "effektClass": "format"
+  },
+  "emdash": {
+   "key": "Control+Alt+Minus",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u2014"
+   },
+   "note": "em dash (editor.js ctrl+alt+-)",
+   "effektClass": "structure"
+  },
+  "endash": {
+   "key": "Control+NumpadSubtract",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u2013"
+   },
+   "note": "en dash numpad (editor.js L2M-05)",
+   "effektClass": "structure"
+  },
+  "ctrl+shift+space": {
+   "key": "Control+Shift+ ",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\u00a0"
+   },
+   "note": "non-breaking space U+00A0 (editor.js)",
+   "effektClass": "structure"
+  },
+  "ctrl+shift+v": {
+   "key": "Control+Shift+v",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "seeded"
+   },
+   "seedClipboard": "seeded plain paste",
+   "note": "pasteTextOnly strips formatting (editor.js ctrl+shift+v)",
+   "effektClass": "op"
+  },
+  "copy": {
+   "key": "Control+c",
+   "assertion": {
+    "kind": "clipboard",
+    "contains": "Will"
+   },
+   "note": "copy placeCaret selection (first 4 chars) to clipboard",
+   "effektClass": "op"
+  },
+  "cut": {
+   "key": "Control+x",
+   "assertion": {
+    "kind": "clipboard",
+    "contains": "Will"
+   },
+   "note": "cut placeCaret selection to clipboard",
+   "effektClass": "op"
+  },
+  "paste": {
+   "key": "Control+v",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "seeded"
+   },
+   "seedClipboard": "seeded clipboard paste",
+   "note": "paste from system clipboard",
+   "effektClass": "op"
+  },
+  "ctrl+a": {
+   "key": "Control+a",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "select-all extends selection",
+   "effektClass": "op"
+  },
+  "ctrl+alt+1": {
+   "key": "Control+Alt+1",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "Heading"
+   },
+   "note": "ctrl+alt+N heading style",
+   "effektClass": "format"
+  },
+  "ctrl+alt+2": {
+   "key": "Control+Alt+2",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "Heading"
+   },
+   "note": "ctrl+alt+N heading style",
+   "effektClass": "format"
+  },
+  "ctrl+alt+3": {
+   "key": "Control+Alt+3",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "Heading"
+   },
+   "note": "ctrl+alt+N heading style",
+   "effektClass": "format"
+  },
+  "ctrl+enter": {
+   "key": "Control+Enter",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "page-break"
+   },
+   "note": "column/page break insert",
+   "effektClass": "structure"
+  },
+  "insertlinebreak": {
+   "key": "Shift+Enter",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<br"
+   },
+   "note": "soft line break",
+   "effektClass": "structure"
+  },
+  "inserttab": {
+   "key": "Tab",
+   "xfail": true,
+   "knownGap": true,
+   "effektClass": "structure",
+   "note": "KNOWN-GAP: Tab outside dialogs is not intercepted (no tab-char insert, no table cell nav) \u2014 OO-only until ported"
+  }
+ }
+}
