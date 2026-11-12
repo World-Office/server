@@ -361,18 +361,22 @@
    "effektClass": "view"
   },
   "shortcut.movetostartnextpage": {
-   "xfail": true,
-   "knownGap": true,
-   "key": "Control+PageDown",
-   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav \u2014 OO-only",
-   "effektClass": "view"
+   "key": "Alt+PageDown",
+   "note": "Alt+PageDown \u2014 caret to next/prev page start (MoveToStartNextPage), ported in editor.js bare-Alt block",
+   "effektClass": "view",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "selection-moved"
+   }
   },
   "shortcut.movetostartpreviouspage": {
-   "xfail": true,
-   "knownGap": true,
-   "key": "Control+PageUp",
-   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav \u2014 OO-only",
-   "effektClass": "view"
+   "key": "Alt+PageUp",
+   "note": "Alt+PageUp \u2014 caret to next/prev page start (MoveToStartPreviousPage), ported in editor.js bare-Alt block",
+   "effektClass": "view",
+   "pre": "page2-caret",
+   "assertion": {
+    "kind": "selection-moved"
+   }
   },
   "shortcut.movetopreviousrow": {
    "xfail": true,

@@ -1,17 +1,17 @@
 {
- "generatedAt": "2026-11-12T16:39:07.638Z",
+ "generatedAt": "2026-11-12T22:18:05.655Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
-  "ledgerRows": 501
+  "ledgerRows": 534
  },
  "counts": {
-  "total": 646,
+  "total": 668,
   "byClass": {
-   "dialog": 265,
-   "view": 61,
-   "structure": 64,
-   "op": 191,
-   "format": 65
+   "dialog": 289,
+   "view": 59,
+   "structure": 69,
+   "op": 175,
+   "format": 76
   },
   "unclassified": 0
  },
@@ -22,7 +22,7 @@
    "label": "File",
    "token": "btn-textfile",
    "feature": "file.file",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-textfile",
@@ -64,7 +64,7 @@
    "label": "Home",
    "token": "tab:home",
    "feature": "file.home",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:home",
@@ -106,7 +106,7 @@
    "label": "Draw",
    "token": "toggleink",
    "feature": "file.draw",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toggleInk",
@@ -127,7 +127,7 @@
    "label": "Layout",
    "token": "tab:layout",
    "feature": "file.layout",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:layout",
@@ -148,7 +148,7 @@
    "label": "References",
    "token": "tab:references",
    "feature": "file.references",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:references",
@@ -169,7 +169,7 @@
    "label": "Collaboration",
    "token": "tab:collaboration",
    "feature": "file.collaboration",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:collaboration",
@@ -242,7 +242,7 @@
    "label": "Plugins",
    "token": "plugins-dialog",
    "feature": "file.plugins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -276,7 +276,7 @@
    "label": "AI",
    "token": "file.ai",
    "feature": "file.ai",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "AI changes",
@@ -305,7 +305,7 @@
    "label": "Editing",
    "token": "coedit-mode",
    "feature": "file.editing",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "coedit-mode",
@@ -326,7 +326,7 @@
    "label": "Find (Ctrl+F)",
    "token": "btn-find",
    "feature": "file.find-ctrl-f",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-find",
@@ -384,7 +384,7 @@
    "label": "Copy (Ctrl+Insert)",
    "token": "btn-copy",
    "feature": "file.copy-ctrl-insert",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-copy",
@@ -406,7 +406,7 @@
    "label": "Paste (Ctrl+V)",
    "token": "btn-paste",
    "feature": "file.paste-ctrl-v",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-paste",
@@ -428,7 +428,7 @@
    "label": "Cut (Ctrl+X)",
    "token": "btn-cut",
    "feature": "file.cut-ctrl-x",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-cut",
@@ -450,7 +450,7 @@
    "label": "Copy style (Ctrl+Alt+C)",
    "token": "btn-copy",
    "feature": "file.copy-style-ctrl-alt-c",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-copy",
@@ -472,7 +472,7 @@
    "label": "Font",
    "token": "font-family",
    "feature": "formatting.font",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-family",
@@ -494,7 +494,7 @@
    "label": "Font size",
    "token": "font-size",
    "feature": "formatting.font-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-size",
@@ -516,7 +516,7 @@
    "label": "Increment font size (Ctrl+])",
    "token": "font-size",
    "feature": "formatting.increment-font-size-ctrl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-size",
@@ -538,7 +538,7 @@
    "label": "Decrement font size (Ctrl+[)",
    "token": "font-size",
    "feature": "formatting.decrement-font-size-ctrl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-size",
@@ -711,7 +711,7 @@
    "label": "Highlight color",
    "token": "highlight-color",
    "feature": "formatting.highlight-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "highlight-color",
@@ -733,7 +733,7 @@
    "label": "Font color",
    "token": "text-color",
    "feature": "formatting.font-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "text-color",
@@ -883,7 +883,7 @@
    "label": "Paragraph line spacing",
    "token": "line-spacing",
    "feature": "formatting.paragraph-line-spacing",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "line-spacing",
@@ -1030,7 +1030,7 @@
    "label": "Nonprinting characters (Ctrl+Shift+8)",
    "token": "btn-home-formatmarks",
    "feature": "formatting.nonprinting-characters-ctrl-shift-8",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-home-formatmarks",
@@ -1052,7 +1052,7 @@
    "label": "Shading",
    "token": "shading",
    "feature": "formatting.shading",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Shading",
@@ -1073,7 +1073,7 @@
    "label": "Borders",
    "token": "openborders",
    "feature": "formatting.borders",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "openBorders",
@@ -1095,7 +1095,7 @@
    "label": "Replace (Ctrl+H)",
    "token": "btn-replace",
    "feature": "formatting.replace-ctrl-h",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-replace",
@@ -1129,7 +1129,7 @@
    "label": "Select all (Ctrl+A)",
    "token": "selectall",
    "feature": "formatting.select-all-ctrl-a",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "selectAll",
@@ -1148,7 +1148,7 @@
    "label": "Blank\nPage",
    "token": "btn-multipage",
    "feature": "insert.blank-page",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -1170,7 +1170,7 @@
    "label": "Breaks",
    "token": "breaks",
    "feature": "insert.breaks",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Breaks",
@@ -1211,7 +1211,7 @@
    "label": "Image",
    "token": "btn-hf-image",
    "feature": "image.image",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-hf-image",
@@ -1241,7 +1241,7 @@
    "label": "Shape",
    "token": "insertobject",
    "feature": "insert.shape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertObject",
@@ -1287,7 +1287,7 @@
    "label": "SmartArt",
    "token": "btn-smartart",
    "feature": "insert.smartart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-smartart",
@@ -1325,7 +1325,7 @@
    "label": "Chart",
    "token": "insertobject",
    "feature": "chart.chart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertObject",
@@ -1367,7 +1367,7 @@
    "label": "Comment",
    "token": "insertcomment",
    "feature": "review.comment",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertComment",
@@ -1639,13 +1639,13 @@
    "tab": "tab:ins",
    "ooId": "insert.date-time",
    "label": "Date &\nTime",
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "insert.date-time",
-   "level": 1,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
-    "match": "pagenumber-dialog",
-    "where": "dialog:pagenumber-dialog"
+    "match": "btn-datetime",
+    "where": "tab:insert"
    },
    "woTab": null,
    "effektClass": "structure",
@@ -1663,7 +1663,7 @@
    "label": "Text from\nFile",
    "token": "btn-textfile",
    "feature": "insert.text-from-file",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-textfile",
@@ -1705,7 +1705,7 @@
    "label": "Field",
    "token": "btn-field",
    "feature": "insert.field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-field",
@@ -1739,7 +1739,7 @@
    "label": "Equation",
    "token": "btn-equation",
    "feature": "insert.equation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-equation",
@@ -1815,7 +1815,7 @@
    "label": "Content\nControls",
    "token": "btn-contentcontrol",
    "feature": "insert.content-controls",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-contentcontrol",
@@ -1853,7 +1853,7 @@
    "label": "Select",
    "token": "inkselect",
    "feature": "insert.select",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "inkSelect",
@@ -1874,7 +1874,7 @@
    "label": "Eraser",
    "token": "toggleink",
    "feature": "insert.eraser",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toggleInk",
@@ -1895,7 +1895,7 @@
    "label": "Margins",
    "token": "margins",
    "feature": "page.margins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Margins",
@@ -1925,7 +1925,7 @@
    "label": "Orientation",
    "token": "orientation",
    "feature": "page.orientation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Orientation",
@@ -1946,7 +1946,7 @@
    "label": "Size",
    "token": "size",
    "feature": "page.size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Size",
@@ -1984,7 +1984,7 @@
    "label": "Columns",
    "token": "columns",
    "feature": "page.columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Columns",
@@ -2022,7 +2022,7 @@
    "label": "Breaks",
    "token": "breaks",
    "feature": "page.breaks",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Breaks",
@@ -2103,7 +2103,7 @@
    "label": "Wrapping",
    "token": "wrapping",
    "feature": "page.wrapping",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wrapping",
@@ -2124,7 +2124,7 @@
    "label": "Bring\nForward",
    "token": "objectop",
    "feature": "page.bring-forward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2145,7 +2145,7 @@
    "label": "Send\nBackward",
    "token": "objectop",
    "feature": "page.send-backward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2166,7 +2166,7 @@
    "label": "Align",
    "token": "align",
    "feature": "page.align",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Align",
@@ -2187,7 +2187,7 @@
    "label": "Group",
    "token": "objectop",
    "feature": "page.group",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2208,7 +2208,7 @@
    "label": "Merge\nShapes",
    "token": "btn-mergeshapes",
    "feature": "page.merge-shapes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-mergeshapes",
@@ -2267,7 +2267,7 @@
    "label": "Page\nColor",
    "token": "btn-multipage",
    "feature": "page.page-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -2297,7 +2297,7 @@
    "label": "Colors",
    "token": "themecolors",
    "feature": "page.colors",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "themecolors",
@@ -2343,7 +2343,7 @@
    "label": "Table of\nContents",
    "token": "updatetoc-dialog",
    "feature": "table.table-of-contents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "updatetoc-dialog",
@@ -2364,7 +2364,7 @@
    "label": "Add Text",
    "token": "btn-addtext",
    "feature": "references.add-text",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-addtext",
@@ -2398,7 +2398,7 @@
    "label": "Update Table",
    "token": "updatetoc",
    "feature": "table.update-table",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "updateToc",
@@ -2487,7 +2487,7 @@
    "label": "Bookmark",
    "token": "bookmark-dialog",
    "feature": "references.bookmark",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "bookmark-dialog",
@@ -2542,7 +2542,7 @@
    "label": "Cross-reference",
    "token": "crossref-dialog",
    "feature": "references.cross-reference",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "crossref-dialog",
@@ -2578,13 +2578,13 @@
    "tab": "tab:links",
    "ooId": "table.table-of-figures",
    "label": "Table of Figures",
-   "token": "inserttableoffigures",
+   "token": "tableoffigures-dialog",
    "feature": "table.table-of-figures",
    "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "insertTableOfFigures",
-    "where": "tab:references"
+    "match": "tableoffigures-dialog",
+    "where": "dialog:tableoffigures-dialog"
    },
    "woTab": null,
    "effektClass": "structure",
@@ -2601,7 +2601,7 @@
    "label": "Co-editing\nMode",
    "token": "coedit-mode",
    "feature": "review.co-editing-mode",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "coedit-mode",
@@ -2622,7 +2622,7 @@
    "label": "Add\nComment",
    "token": "btn-comment",
    "feature": "review.add-comment",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-comment",
@@ -2656,7 +2656,7 @@
    "label": "Delete",
    "token": "deletecomment",
    "feature": "review.delete",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "deleteComment",
@@ -2678,7 +2678,7 @@
    "label": "Resolve",
    "token": "resolvecomment",
    "feature": "review.resolve",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "resolveComment",
@@ -2699,7 +2699,7 @@
    "label": "Track\nChanges",
    "token": "btn-track-changes",
    "feature": "review.track-changes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-track-changes",
@@ -2763,7 +2763,7 @@
    "label": "Previous",
    "token": "prevtrackedchange",
    "feature": "review.previous",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "prevTrackedChange",
@@ -2784,7 +2784,7 @@
    "label": "Next",
    "token": "nexttrackedchange",
    "feature": "review.next",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "nextTrackedChange",
@@ -2805,7 +2805,7 @@
    "label": "Accept",
    "token": "accepttrackedchange",
    "feature": "review.accept",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "acceptTrackedChange",
@@ -2827,7 +2827,7 @@
    "label": "Reject",
    "token": "rejecttrackedchange",
    "feature": "review.reject",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "rejectTrackedChange",
@@ -2849,7 +2849,7 @@
    "label": "Compare",
    "token": "compareversion",
    "feature": "review.compare",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "compareVersion",
@@ -2883,7 +2883,7 @@
    "label": "Combine",
    "token": "combinerevisions",
    "feature": "review.combine",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "combineRevisions",
@@ -2917,7 +2917,7 @@
    "label": "Chat",
    "token": "togglechat",
    "feature": "review.chat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toggleChat",
@@ -2939,7 +2939,7 @@
    "label": "Mail\nMerge",
    "token": "mailmerge",
    "feature": "file.mail-merge",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "mailMerge",
@@ -3037,7 +3037,7 @@
    "label": "Headings",
    "token": "btn-view-headings",
    "feature": "view.headings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-headings",
@@ -3060,7 +3060,7 @@
    "label": "Fit To Page",
    "token": "btn-multipage",
    "feature": "view.fit-to-page",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -3082,7 +3082,7 @@
    "label": "Fit To Width",
    "token": "btn-view-fit-width",
    "feature": "view.fit-to-width",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-fit-width",
@@ -3103,7 +3103,7 @@
    "label": "Zoom to 100%",
    "token": "btn-zoom-reset",
    "feature": "view.zoom-to-100",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-reset",
@@ -3126,7 +3126,7 @@
    "label": "Multiple Pages",
    "token": "btn-multipage",
    "feature": "view.multiple-pages",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -3148,7 +3148,7 @@
    "label": "Interface\nTheme",
    "token": "view-theme-select",
    "feature": "view.interface-theme",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "view-theme-select",
@@ -3177,7 +3177,7 @@
    "label": "Dark\nDocument",
    "token": "btn-view-darkdoc",
    "feature": "view.dark-document",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-darkdoc",
@@ -3199,7 +3199,7 @@
    "label": "Macros",
    "token": "btn-macro-menu",
    "feature": "macros.macros",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-macro-menu",
@@ -3225,7 +3225,7 @@
    "label": "Record macro",
    "token": "macros.record-macro",
    "feature": "macros.record-macro",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Record macro",
@@ -3246,7 +3246,7 @@
    "label": "Pause recording",
    "token": "view.pause-recording",
    "feature": "view.pause-recording",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Pause recording",
@@ -3267,7 +3267,7 @@
    "label": "Plugin\nManager",
    "token": "plugins-dialog",
    "feature": "plugins.plugin-manager",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -3301,7 +3301,7 @@
    "label": "Background\nplugins",
    "token": "plugins-dialog",
    "feature": "plugins.background-plugins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -3335,7 +3335,7 @@
    "label": "Photo\nEditor",
    "token": "photoeditor",
    "feature": "image.photo-editor",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "photoEditor",
@@ -3369,7 +3369,7 @@
    "label": "YouTube",
    "token": "pluginunavailable",
    "feature": "plugins.youtube",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -3403,7 +3403,7 @@
    "label": "OCR",
    "token": "ocrrun",
    "feature": "plugins.ocr",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ocrRun",
@@ -3433,7 +3433,7 @@
    "label": "Translator",
    "token": "aitranslate",
    "feature": "plugins.translator",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiTranslate",
@@ -3471,7 +3471,7 @@
    "label": "Mendeley",
    "token": "pluginunavailable",
    "feature": "plugins.mendeley",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -3505,7 +3505,7 @@
    "label": "Thesaurus",
    "token": "airewrite",
    "feature": "review.thesaurus",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiRewrite",
@@ -3556,7 +3556,7 @@
    "label": "Zotero",
    "token": "pluginunavailable",
    "feature": "plugins.zotero",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -3590,7 +3590,7 @@
    "label": "Speech",
    "token": "btn-speech",
    "feature": "plugins.speech",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-speech",
@@ -3624,7 +3624,7 @@
    "label": "Speech\ninput",
    "token": "dictate",
    "feature": "plugins.speech-input",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "dictate",
@@ -3698,13 +3698,13 @@
    "tab": "tab:headerfooter",
    "ooId": "headerfooter.date-time",
    "label": "Date &\nTime",
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "headerfooter.date-time",
-   "level": 1,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
-    "match": "pagenumber-dialog",
-    "where": "dialog:pagenumber-dialog"
+    "match": "btn-datetime",
+    "where": "tab:insert"
    },
    "woTab": null,
    "effektClass": "structure",
@@ -3722,7 +3722,7 @@
    "label": "Field",
    "token": "btn-field",
    "feature": "headerfooter.field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-field",
@@ -3756,7 +3756,7 @@
    "label": "Close",
    "token": "btn-hf-close",
    "feature": "headerfooter.close",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-hf-close",
@@ -3821,7 +3821,7 @@
    "label": "Chatbot",
    "token": "btn-ai-assistant",
    "feature": "other.chatbot",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-ai-assistant",
@@ -3859,7 +3859,7 @@
    "label": "Summarization",
    "token": "aisummarize",
    "feature": "other.summarization",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiSummarize",
@@ -3897,7 +3897,7 @@
    "label": "Translation",
    "token": "aitranslate",
    "feature": "other.translation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiTranslate",
@@ -3935,7 +3935,7 @@
    "label": "Grammar &\nSpelling",
    "token": "btn-ai-grammar",
    "feature": "review.grammar-spelling",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-ai-grammar",
@@ -3973,7 +3973,7 @@
    "label": "Create AI\nassistant",
    "token": "createaiassistant",
    "feature": "other.create-ai-assistant",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "createAiAssistant",
@@ -4011,7 +4011,7 @@
    "label": "Chart\nElements",
    "token": "chart.chart-elements",
    "feature": "chart.chart-elements",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart elements ▾",
@@ -4032,7 +4032,7 @@
    "label": "Edit\nData",
    "token": "charteditdata",
    "feature": "chart.edit-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartEditData",
@@ -4066,7 +4066,7 @@
    "label": "Update\nData",
    "token": "chartupdatedata",
    "feature": "chart.update-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartUpdateData",
@@ -4087,7 +4087,7 @@
    "label": "Chart type",
    "token": "chart.chart-type",
    "feature": "chart.chart-type",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart type ▾",
@@ -4108,7 +4108,7 @@
    "label": "Advanced settings",
    "token": "chartsettings",
    "feature": "chart.advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartSettings",
@@ -4134,7 +4134,7 @@
    "label": "Wrapping",
    "token": "wrapping",
    "feature": "chart.wrapping",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wrapping",
@@ -4155,7 +4155,7 @@
    "label": "Width",
    "token": "chart-width-input",
    "feature": "chart.width",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart-width-input",
@@ -4185,7 +4185,7 @@
    "label": "Height",
    "token": "chart-height-input",
    "feature": "chart.height",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart-height-input",
@@ -4215,7 +4215,7 @@
    "label": "3D\nrotation",
    "token": "chart3d",
    "feature": "chart.3d-rotation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart3d",
@@ -4236,7 +4236,7 @@
    "label": "Insert page break",
    "token": "btn-multipage",
    "feature": "insert.insert-page-break",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -4257,7 +4257,7 @@
    "label": "Insert column break",
    "token": "insert.insert-column-break",
    "feature": "insert.insert-column-break",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert column break",
@@ -4278,7 +4278,7 @@
    "label": "Insert section break",
    "token": "insert.insert-section-break",
    "feature": "insert.insert-section-break",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert section break",
@@ -4333,7 +4333,7 @@
    "label": "Draw table",
    "token": "table.draw-table",
    "feature": "table.draw-table",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Draw table",
@@ -4354,7 +4354,7 @@
    "label": "Erase table",
    "token": "table.erase-table",
    "feature": "table.erase-table",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Erase table",
@@ -4404,7 +4404,7 @@
    "label": "Insert Spreadsheet",
    "token": "spreadsheet",
    "feature": "insert.insert-spreadsheet",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Spreadsheet",
@@ -4542,7 +4542,7 @@
    "label": "Fractions",
    "token": "fractions",
    "feature": "insert.fractions",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Fractions",
@@ -4563,7 +4563,7 @@
    "label": "Scripts",
    "token": "scripts",
    "feature": "insert.scripts",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Scripts",
@@ -4584,7 +4584,7 @@
    "label": "Radicals",
    "token": "radicals",
    "feature": "insert.radicals",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Radicals",
@@ -4605,7 +4605,7 @@
    "label": "Integrals",
    "token": "integrals",
    "feature": "insert.integrals",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Integrals",
@@ -4626,7 +4626,7 @@
    "label": "Large operators",
    "token": "insert.large-operators",
    "feature": "insert.large-operators",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Large operators",
@@ -4647,7 +4647,7 @@
    "label": "Brackets",
    "token": "brackets",
    "feature": "insert.brackets",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Brackets",
@@ -4668,7 +4668,7 @@
    "label": "Functions",
    "token": "functions",
    "feature": "insert.functions",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Functions",
@@ -4689,7 +4689,7 @@
    "label": "Accents",
    "token": "accents",
    "feature": "insert.accents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Accents",
@@ -4710,7 +4710,7 @@
    "label": "Limits and logarithms",
    "token": "insert.limits-and-logarithms",
    "feature": "insert.limits-and-logarithms",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Limits and logarithms",
@@ -4731,7 +4731,7 @@
    "label": "Operators",
    "token": "operators",
    "feature": "insert.operators",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Operators",
@@ -4752,7 +4752,7 @@
    "label": "Matrices",
    "token": "matrices",
    "feature": "insert.matrices",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Matrices",
@@ -4773,7 +4773,7 @@
    "label": "Last Custom",
    "token": "page.last-custom",
    "feature": "page.last-custom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Last Custom",
@@ -4794,7 +4794,7 @@
    "label": "Normal",
    "token": "normal",
    "feature": "page.normal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Normal",
@@ -4815,7 +4815,7 @@
    "label": "Narrow",
    "token": "narrow",
    "feature": "page.narrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Narrow",
@@ -4836,7 +4836,7 @@
    "label": "Moderate",
    "token": "moderate",
    "feature": "page.moderate",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Moderate",
@@ -4857,7 +4857,7 @@
    "label": "Wide",
    "token": "wide",
    "feature": "page.wide",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wide",
@@ -4878,7 +4878,7 @@
    "label": "Custom margins",
    "token": "page.custom-margins",
    "feature": "page.custom-margins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Custom margins",
@@ -4924,7 +4924,7 @@
    "label": "US Letter",
    "token": "letter",
    "feature": "page.us-letter",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Letter",
@@ -4945,7 +4945,7 @@
    "label": "US Legal",
    "token": "legal",
    "feature": "page.us-legal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Legal",
@@ -4966,7 +4966,7 @@
    "label": "A4",
    "token": "a4",
    "feature": "page.a4",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A4",
@@ -4987,7 +4987,7 @@
    "label": "A5",
    "token": "a5",
    "feature": "page.a5",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A5",
@@ -5008,7 +5008,7 @@
    "label": "B5",
    "token": "b5",
    "feature": "page.b5",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "B5",
@@ -5029,7 +5029,7 @@
    "label": "Envelope #10",
    "token": "page.envelope-10",
    "feature": "page.envelope-10",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope #10",
@@ -5050,7 +5050,7 @@
    "label": "Envelope DL",
    "token": "page.envelope-dl",
    "feature": "page.envelope-dl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope DL",
@@ -5071,7 +5071,7 @@
    "label": "Tabloid",
    "token": "tabloid",
    "feature": "page.tabloid",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Tabloid",
@@ -5092,7 +5092,7 @@
    "label": "A3",
    "token": "a3",
    "feature": "page.a3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A3",
@@ -5113,7 +5113,7 @@
    "label": "Tabloid Oversize",
    "token": "page.tabloid-oversize",
    "feature": "page.tabloid-oversize",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Tabloid Oversize",
@@ -5134,7 +5134,7 @@
    "label": "ROC 16K",
    "token": "page.roc-16k",
    "feature": "page.roc-16k",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ROC 16K",
@@ -5155,7 +5155,7 @@
    "label": "Envelope Choukei 3",
    "token": "page.envelope-choukei-3",
    "feature": "page.envelope-choukei-3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope Choukei 3",
@@ -5176,7 +5176,7 @@
    "label": "Super B/A3",
    "token": "page.super-b-a3",
    "feature": "page.super-b-a3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Super B/A3",
@@ -5197,7 +5197,7 @@
    "label": "Custom page size",
    "token": "btn-multipage",
    "feature": "page.custom-page-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -5235,7 +5235,7 @@
    "label": "One",
    "token": "one",
    "feature": "page.one",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "One",
@@ -5256,7 +5256,7 @@
    "label": "Two",
    "token": "two",
    "feature": "page.two",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Two",
@@ -5277,7 +5277,7 @@
    "label": "Three",
    "token": "three",
    "feature": "page.three",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Three",
@@ -5298,7 +5298,7 @@
    "label": "Left",
    "token": "left",
    "feature": "page.left",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Left",
@@ -5319,7 +5319,7 @@
    "label": "Right",
    "token": "right",
    "feature": "page.right",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Right",
@@ -5340,7 +5340,7 @@
    "label": "Custom columns",
    "token": "page.custom-columns",
    "feature": "page.custom-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Custom columns",
@@ -5468,7 +5468,7 @@
    "label": "Axes",
    "token": "axes",
    "feature": "chart.axes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Axes",
@@ -5490,7 +5490,7 @@
    "label": "Axis Titles",
    "token": "chart.axis-titles",
    "feature": "chart.axis-titles",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Axis Titles",
@@ -5511,7 +5511,7 @@
    "label": "Chart title",
    "token": "chart.chart-title",
    "feature": "chart.chart-title",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart title",
@@ -5533,7 +5533,7 @@
    "label": "Data labels",
    "token": "chart.data-labels",
    "feature": "chart.data-labels",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Data labels",
@@ -5554,7 +5554,7 @@
    "label": "Error Bars",
    "token": "chart.error-bars",
    "feature": "chart.error-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Error Bars",
@@ -5575,7 +5575,7 @@
    "label": "Gridlines",
    "token": "btn-gridlines",
    "feature": "chart.gridlines",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-gridlines",
@@ -5597,7 +5597,7 @@
    "label": "Legend",
    "token": "legend",
    "feature": "chart.legend",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Legend",
@@ -5618,7 +5618,7 @@
    "label": "Trendline",
    "token": "trendline",
    "feature": "chart.trendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Trendline",
@@ -5639,7 +5639,7 @@
    "label": "Up/Down Bars",
    "token": "chart.up-down-bars",
    "feature": "chart.up-down-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Up/Down Bars",
@@ -5658,13 +5658,13 @@
    "tab": "dialog:Date & time",
    "ooId": "insert.dlg-date-time",
    "label": "Date & time",
-   "token": "pagenumber-dialog",
+   "token": "insert.dlg-date-time",
    "feature": "insert.dlg-date-time",
-   "level": 1,
+   "level": 4,
    "censusStatus": "real",
    "wo": {
-    "match": "pagenumber-dialog",
-    "where": "dialog:pagenumber-dialog"
+    "match": "insert.dlg-date-time (datetime-dialog-l4.test.mjs)",
+    "where": "dialog:insert.dlg-date-time"
    },
    "woTab": null,
    "effektClass": "dialog",
@@ -5694,7 +5694,7 @@
    "label": "Symbol",
    "token": "symbol-dialog",
    "feature": "insert.dlg-symbol",
-   "level": 1,
+   "level": 4,
    "censusStatus": "real",
    "wo": {
     "match": "symbol-dialog",
@@ -5723,7 +5723,7 @@
    "label": "Margins",
    "token": "margins",
    "feature": "page.dlg-margins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Margins",
@@ -5753,7 +5753,7 @@
    "label": "Page size",
    "token": "btn-multipage",
    "feature": "page.dlg-page-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -5783,7 +5783,7 @@
    "label": "Columns",
    "token": "columns-dialog",
    "feature": "page.dlg-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "columns-dialog",
@@ -5811,27 +5811,22 @@
    "tab": "dialog:Hyphenation",
    "ooId": "page.dlg-hyphenation",
    "label": "Hyphenation",
-   "token": "hyphenation-dialog",
+   "token": "page.dlg-hyphenation",
    "feature": "page.dlg-hyphenation",
-   "level": 1,
+   "level": 4,
    "censusStatus": "real",
    "wo": {
-    "match": "hyphenation-dialog",
-    "where": "dialog:hyphenation-dialog"
+    "match": "page.dlg-hyphenation (hyphenation-dialog-l4.test.mjs)",
+    "where": "dialog:page.dlg-hyphenation"
    },
    "woTab": null,
-   "effektClass": "structure",
+   "effektClass": "dialog",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#hyphenation-dialog"
    },
-   "subFeatures": [
-    {
-     "name": "title",
-     "selector": "#hyphenation-dialog-title"
-    }
-   ],
-   "note": "toggleHyphenation opens the hyphenation dialog"
+   "subFeatures": [],
+   "note": "l4 census route -> #hyphenation-dialog"
   },
   {
    "tab": "dialog:Bookmarks",
@@ -5839,7 +5834,7 @@
    "label": "Bookmarks",
    "token": "bookmark-dialog",
    "feature": "references.dlg-bookmarks",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "bookmark-dialog",
@@ -5873,7 +5868,7 @@
    "label": "Insert caption",
    "token": "insertcaption",
    "feature": "references.dlg-insert-caption",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertCaption",
@@ -5904,7 +5899,7 @@
    "label": "Cross-reference",
    "token": "crossref-dialog",
    "feature": "references.dlg-cross-reference",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "crossref-dialog",
@@ -5940,13 +5935,13 @@
    "tab": "dialog:Table of figures",
    "ooId": "table.dlg-table-of-figures",
    "label": "Table of figures",
-   "token": "inserttableoffigures",
+   "token": "tableoffigures-dialog",
    "feature": "table.dlg-table-of-figures",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "insertTableOfFigures",
-    "where": "tab:references"
+    "match": "tableoffigures-dialog",
+    "where": "dialog:tableoffigures-dialog"
    },
    "woTab": null,
    "effektClass": "structure",
@@ -5961,13 +5956,13 @@
    "tab": "dialog:Table of contents",
    "ooId": "table.dlg-table-of-contents",
    "label": "Table of contents",
-   "token": "updatetoc-dialog",
+   "token": "toc-dialog",
    "feature": "table.dlg-table-of-contents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "updatetoc-dialog",
-    "where": "dialog:updatetoc-dialog"
+    "match": "toc-dialog",
+    "where": "dialog:toc-dialog"
    },
    "woTab": null,
    "effektClass": "structure",
@@ -5984,7 +5979,7 @@
    "label": "Macros",
    "token": "btn-macro-menu",
    "feature": "macros.dlg-macros",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-macro-menu",
@@ -6012,13 +6007,13 @@
    "tab": "dialog:Date & time",
    "ooId": "headerfooter.dlg-date-time",
    "label": "Date & time",
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "headerfooter.dlg-date-time",
-   "level": 1,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
-    "match": "pagenumber-dialog",
-    "where": "dialog:pagenumber-dialog"
+    "match": "btn-datetime",
+    "where": "tab:insert"
    },
    "woTab": null,
    "effektClass": "dialog",
@@ -6048,7 +6043,7 @@
    "label": "Back",
    "token": "back",
    "feature": "file.back",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Back",
@@ -6071,7 +6066,7 @@
    "label": "Save",
    "token": "save",
    "feature": "file.save",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Save",
@@ -6093,7 +6088,7 @@
    "label": "Download As",
    "token": "file.download-as",
    "feature": "file.download-as",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Download As",
@@ -6131,7 +6126,7 @@
    "label": "Protect",
    "token": "protect",
    "feature": "file.protect",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Protect",
@@ -6165,7 +6160,7 @@
    "label": "Advanced Settings",
    "token": "chartsettings",
    "feature": "file.advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartSettings",
@@ -6191,7 +6186,7 @@
    "label": "Suggest a Feature",
    "token": "file.suggest-a-feature",
    "feature": "file.suggest-a-feature",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Suggest a feature",
@@ -6229,7 +6224,7 @@
    "label": "Word count",
    "token": "sb-word-count",
    "feature": "statusbar.word-count",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-word-count",
@@ -6323,7 +6318,7 @@
    "label": "btn-doc-spell",
    "token": "sb-doc-spell",
    "feature": "statusbar.btn-doc-spell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-doc-spell",
@@ -6346,7 +6341,7 @@
    "label": "btn-doc-review",
    "token": "sb-track-changes",
    "feature": "statusbar.btn-doc-review",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-track-changes",
@@ -6369,7 +6364,7 @@
    "label": "status-btn-multiple-pages",
    "token": "btn-multipage",
    "feature": "statusbar.status-btn-multiple-pages",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -6391,7 +6386,7 @@
    "label": "btn-zoom-topage",
    "token": "btn-zoom-fit",
    "feature": "statusbar.btn-zoom-topage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-fit",
@@ -6413,7 +6408,7 @@
    "label": "btn-zoom-towidth",
    "token": "btn-zoom-fit",
    "feature": "statusbar.btn-zoom-towidth",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-fit",
@@ -6435,7 +6430,7 @@
    "label": "btn-zoom-down",
    "token": "btn-zoom-out",
    "feature": "statusbar.btn-zoom-down",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-out",
@@ -6458,7 +6453,7 @@
    "label": "btn-zoom-up",
    "token": "btn-zoom-in",
    "feature": "statusbar.btn-zoom-up",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-in",
@@ -6481,7 +6476,7 @@
    "label": "OpenFindDialog",
    "token": "ctrl+f",
    "feature": "shortcut.openfinddialog",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+F",
@@ -6507,7 +6502,7 @@
    "label": "OpenFindAndReplaceMenu",
    "token": "ctrl+h",
    "feature": "shortcut.openfindandreplacemenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+H",
@@ -6537,7 +6532,7 @@
    "label": "OpenCommentsPanel",
    "token": "shortcut.opencommentspanel",
    "feature": "shortcut.opencommentspanel",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Shift+H (comments rail)",
@@ -6560,7 +6555,7 @@
    "label": "Save",
    "token": "ctrl+s",
    "feature": "shortcut.save",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+S",
@@ -6602,7 +6597,7 @@
    "label": "SaveAs",
    "token": "shortcut.saveas",
    "feature": "shortcut.saveas",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Shift+S (export backstage pane)",
@@ -6632,7 +6627,7 @@
    "label": "OpenHelpMenu",
    "token": "shortcut.openhelpmenu",
    "feature": "shortcut.openhelpmenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "F1 opens Help dialog",
@@ -6662,7 +6657,7 @@
    "label": "OpenContextMenu",
    "token": "shortcut.opencontextmenu",
    "feature": "shortcut.opencontextmenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Shift+F10 fires the contextmenu DOM event; WO handler shows the custom menu",
@@ -6696,7 +6691,7 @@
    "label": "CloseMenu",
    "token": "escape",
    "feature": "shortcut.closemenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Escape",
@@ -6719,7 +6714,7 @@
    "label": "Zoom100",
    "token": "ctrl+0",
    "feature": "shortcut.zoom100",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+0",
@@ -6742,7 +6737,7 @@
    "label": "UpdateFields",
    "token": "shortcut.updatefields",
    "feature": "shortcut.updatefields",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "F9 (fieldOpAtSelection update)",
@@ -6763,7 +6758,7 @@
    "label": "MoveToStartLine",
    "token": "shortcut.movetostartline",
    "feature": "shortcut.movetostartline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6783,7 +6778,7 @@
    "label": "MoveToStartDocument",
    "token": "shortcut.movetostartdocument",
    "feature": "shortcut.movetostartdocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6803,7 +6798,7 @@
    "label": "MoveToEndLine",
    "token": "shortcut.movetoendline",
    "feature": "shortcut.movetoendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6823,7 +6818,7 @@
    "label": "MoveToEndDocument",
    "token": "shortcut.movetoenddocument",
    "feature": "shortcut.movetoenddocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6843,7 +6838,7 @@
    "label": "ScrollDown",
    "token": "shortcut.scrolldown",
    "feature": "shortcut.scrolldown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6863,7 +6858,7 @@
    "label": "ScrollUp",
    "token": "shortcut.scrollup",
    "feature": "shortcut.scrollup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6883,7 +6878,7 @@
    "label": "ZoomIn",
    "token": "ctrl+plus/=",
    "feature": "shortcut.zoomin",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Plus/=",
@@ -6928,7 +6923,7 @@
    "label": "MoveToRightChar",
    "token": "shortcut.movetorightchar",
    "feature": "shortcut.movetorightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6948,7 +6943,7 @@
    "label": "MoveToLeftChar",
    "token": "shortcut.movetoleftchar",
    "feature": "shortcut.movetoleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6968,7 +6963,7 @@
    "label": "MoveToUpLine",
    "token": "shortcut.movetoupline",
    "feature": "shortcut.movetoupline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -6988,7 +6983,7 @@
    "label": "MoveToDownLine",
    "token": "shortcut.movetodownline",
    "feature": "shortcut.movetodownline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7008,7 +7003,7 @@
    "label": "NextModalControl",
    "token": "shortcut.nextmodalcontrol",
    "feature": "shortcut.nextmodalcontrol",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7028,7 +7023,7 @@
    "label": "PreviousModalControl",
    "token": "shortcut.previousmodalcontrol",
    "feature": "shortcut.previousmodalcontrol",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7128,7 +7123,7 @@
    "label": "EndParagraph",
    "token": "shortcut.endparagraph",
    "feature": "shortcut.endparagraph",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7190,7 +7185,7 @@
    "label": "EquationAddPlaceholder",
    "token": "shortcut.equationaddplaceholder",
    "feature": "shortcut.equationaddplaceholder",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7261,7 +7256,7 @@
    "label": "DeleteLeftChar",
    "token": "backspace",
    "feature": "shortcut.deleteleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Backspace",
@@ -7284,7 +7279,7 @@
    "label": "DeleteRightChar",
    "token": "delete",
    "feature": "shortcut.deleterightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Delete",
@@ -7395,7 +7390,7 @@
    "label": "CopyFormat",
    "token": "shortcut.copyformat",
    "feature": "shortcut.copyformat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+C (format painter — captures inline + semantic char formatting)",
@@ -7417,7 +7412,7 @@
    "label": "PasteFormat",
    "token": "shortcut.pasteformat",
    "feature": "shortcut.pasteformat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+V (format painter — applies to next selection as style span)",
@@ -7519,7 +7514,7 @@
    "label": "InsertHyperlink",
    "token": "ctrl+k",
    "feature": "shortcut.inserthyperlink",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+K",
@@ -7549,7 +7544,7 @@
    "label": "VisitHyperlink",
    "token": "shortcut.visithyperlink",
    "feature": "shortcut.visithyperlink",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7558,10 +7553,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "text-mutation",
+    "selector": "#status",
+    "contains": "Link "
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: visit-hyperlink key — no WO handler — OO-only until ported"
+   "note": "Enter with caret in a hyperlink opens it (VisitHyperlink) — statusbar note is the headless-observable"
   },
   {
    "tab": "shortcut",
@@ -7569,7 +7566,7 @@
    "label": "EditSelectAll",
    "token": "ctrl+a",
    "feature": "shortcut.editselectall",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+A",
@@ -7589,7 +7586,7 @@
    "label": "SelectToStartLine",
    "token": "shortcut.selecttostartline",
    "feature": "shortcut.selecttostartline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7609,7 +7606,7 @@
    "label": "SelectToEndLine",
    "token": "shortcut.selecttoendline",
    "feature": "shortcut.selecttoendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7629,7 +7626,7 @@
    "label": "SelectToStartDocument",
    "token": "shortcut.selecttostartdocument",
    "feature": "shortcut.selecttostartdocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7649,7 +7646,7 @@
    "label": "SelectToEndDocument",
    "token": "shortcut.selecttoenddocument",
    "feature": "shortcut.selecttoenddocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7669,7 +7666,7 @@
    "label": "SelectRightChar",
    "token": "shortcut.selectrightchar",
    "feature": "shortcut.selectrightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7689,7 +7686,7 @@
    "label": "SelectLeftChar",
    "token": "shortcut.selectleftchar",
    "feature": "shortcut.selectleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7709,7 +7706,7 @@
    "label": "SelectLineUp",
    "token": "shortcut.selectlineup",
    "feature": "shortcut.selectlineup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7729,7 +7726,7 @@
    "label": "SelectLineDown",
    "token": "shortcut.selectlinedown",
    "feature": "shortcut.selectlinedown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7749,7 +7746,7 @@
    "label": "SelectPageUp",
    "token": "shortcut.selectpageup",
    "feature": "shortcut.selectpageup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7769,7 +7766,7 @@
    "label": "SelectPageDown",
    "token": "shortcut.selectpagedown",
    "feature": "shortcut.selectpagedown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7789,7 +7786,7 @@
    "label": "SelectToBeginPreviousPage",
    "token": "shortcut.selecttobeginpreviouspage",
    "feature": "shortcut.selecttobeginpreviouspage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7809,7 +7806,7 @@
    "label": "SelectToBeginNextPage",
    "token": "shortcut.selecttobeginnextpage",
    "feature": "shortcut.selecttobeginnextpage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7916,7 +7913,7 @@
    "label": "Subscript",
    "token": "ctrl+.",
    "feature": "shortcut.subscript",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+.",
@@ -7938,7 +7935,7 @@
    "label": "Superscript",
    "token": "ctrl+,",
    "feature": "shortcut.superscript",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+,",
@@ -7963,7 +7960,7 @@
    "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "Ctrl+Shift+8 (OO uses Ctrl+Shift+L)",
+    "match": "Ctrl+Shift+L (realigned 2026-11-03 to OO combo)",
     "where": "shortcut"
    },
    "woTab": null,
@@ -7982,19 +7979,22 @@
    "label": "ResetChar",
    "token": "shortcut.resetchar",
    "feature": "shortcut.resetchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Space (remove formatting)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "<b>"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: ctrl+space reset char format — no WO handler — OO-only until ported"
+   "note": "Ctrl+Space strips direct char formatting (ResetChar)"
   },
   {
    "tab": "shortcut",
@@ -8002,7 +8002,7 @@
    "label": "IncreaseFontSize",
    "token": "ctrl+]",
    "feature": "shortcut.increasefontsize",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+]",
@@ -8024,7 +8024,7 @@
    "label": "DecreaseFontSize",
    "token": "ctrl+[",
    "feature": "shortcut.decreasefontsize",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+[",
@@ -8110,23 +8110,23 @@
    "tab": "shortcut",
    "ooId": "shortcut.leftpara",
    "label": "LeftPara",
-   "token": "ctrl+shift+l",
+   "token": "ctrl+l",
    "feature": "shortcut.leftpara",
    "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "Ctrl+Shift+L",
+    "match": "Ctrl+L",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "structure",
+   "effektClass": "format",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "contains": "<ul>"
+    "kind": "computed-style",
+    "prop": "text-align",
+    "equals": "start"
    },
    "subFeatures": null,
-   "note": "bulleted list"
+   "note": "ledger row: shortcut.leftpara — ledger + editor.js bind Ctrl+L (Ctrl+Shift+L is the bulleted-list combo, insertUnorderedList). On the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write, so the honest post-chord state is start (same as the justifyleft click contract)"
   },
   {
    "tab": "shortcut",
@@ -8200,10 +8200,10 @@
    "label": "InsertPageNumber",
    "token": "shortcut.insertpagenumber",
    "feature": "shortcut.insertpagenumber",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "browser caret/scroll (n/a for web editor)",
+    "match": "Ctrl+Shift+P (realigned 2026-11-03 to OO combo; inserts PAGE-field span)",
     "where": "shortcut"
    },
    "woTab": null,
@@ -8231,10 +8231,10 @@
    "label": "ShowAll",
    "token": "shortcut.showall",
    "feature": "shortcut.showall",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
-    "match": "¶ button / View toggle (Ctrl+Shift+8 is bulleted-list in WO — OO collision kept as-is)",
+    "match": "Ctrl+Shift+8 (realigned 2026-11-03 to OO combo; marks overlay toggle)",
     "where": "shortcut"
    },
    "woTab": null,
@@ -8253,7 +8253,7 @@
    "label": "StartIndent",
    "token": "shortcut.startindent",
    "feature": "shortcut.startindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8276,7 +8276,7 @@
    "label": "StartUnIndent",
    "token": "shortcut.startunindent",
    "feature": "shortcut.startunindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8359,19 +8359,20 @@
    "label": "EditShape",
    "token": "shortcut.editshape",
    "feature": "shortcut.editshape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Enter edits object",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogId": "object-dialog"
    },
-   "subFeatures": null,
-   "note": "KNOWN-GAP: edit-shape key — no WO handler — OO-only until ported"
+   "subFeatures": [],
+   "note": "Enter on selected shape opens the object dialog (EditShape)"
   },
   {
    "tab": "shortcut",
@@ -8379,19 +8380,20 @@
    "label": "EditChart",
    "token": "shortcut.editchart",
    "feature": "shortcut.editchart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Enter edits object",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogId": "object-dialog"
    },
-   "subFeatures": null,
-   "note": "KNOWN-GAP: edit-chart key — no WO handler — OO-only until ported"
+   "subFeatures": [],
+   "note": "Enter on selected chart opens the chart editor (EditChart)"
   },
   {
    "tab": "shortcut",
@@ -8399,19 +8401,22 @@
    "label": "BigMoveObjectLeft",
    "token": "shortcut.bigmoveobjectleft",
    "feature": "shortcut.bigmoveobjectleft",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "ArrowLeft with object selected moves it 10px (BigMoveObjectLeft)"
   },
   {
    "tab": "shortcut",
@@ -8419,19 +8424,22 @@
    "label": "BigMoveObjectRight",
    "token": "shortcut.bigmoveobjectright",
    "feature": "shortcut.bigmoveobjectright",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "ArrowRight with object selected moves it 10px (BigMoveObjectRight)"
   },
   {
    "tab": "shortcut",
@@ -8439,19 +8447,22 @@
    "label": "BigMoveObjectUp",
    "token": "shortcut.bigmoveobjectup",
    "feature": "shortcut.bigmoveobjectup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "ArrowUp with object selected moves it 10px (BigMoveObjectUp)"
   },
   {
    "tab": "shortcut",
@@ -8459,19 +8470,22 @@
    "label": "BigMoveObjectDown",
    "token": "shortcut.bigmoveobjectdown",
    "feature": "shortcut.bigmoveobjectdown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "ArrowDown with object selected moves it 10px (BigMoveObjectDown)"
   },
   {
    "tab": "shortcut",
@@ -8479,19 +8493,19 @@
    "label": "MoveFocusToNextObject",
    "token": "shortcut.movefocustonextobject",
    "feature": "shortcut.movefocustonextobject",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Tab with object selected -> next object (MoveFocusToNextObject)"
   },
   {
    "tab": "shortcut",
@@ -8499,19 +8513,19 @@
    "label": "MoveFocusToPreviousObject",
    "token": "shortcut.movefocustopreviousobject",
    "feature": "shortcut.movefocustopreviousobject",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Shift+Tab -> previous object (MoveFocusToPreviousObject)"
   },
   {
    "tab": "shortcut",
@@ -8541,19 +8555,19 @@
    "label": "MoveToNextCell",
    "token": "shortcut.movetonextcell",
    "feature": "shortcut.movetonextcell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Tab next-table-cell keys (OO-only) until ported"
+   "note": "Tab in table cell -> next cell (MoveToNextCell)"
   },
   {
    "tab": "shortcut",
@@ -8561,19 +8575,19 @@
    "label": "MoveToPreviousCell",
    "token": "shortcut.movetopreviouscell",
    "feature": "shortcut.movetopreviouscell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Shift+Tab prev-table-cell keys (OO-only) until ported"
+   "note": "Shift+Tab -> previous cell (MoveToPreviousCell)"
   },
   {
    "tab": "shortcut",
@@ -8581,19 +8595,19 @@
    "label": "MoveToNextRow",
    "token": "shortcut.movetonextrow",
    "feature": "shortcut.movetonextrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Tab next-table-row keys (OO-only) until ported"
+   "note": "Tab from last cell wraps to next row (MoveToNextRow); the AddNewRow mutation is its own contract"
   },
   {
    "tab": "shortcut",
@@ -8601,19 +8615,19 @@
    "label": "MoveToPreviousRow",
    "token": "shortcut.movetopreviousrow",
    "feature": "shortcut.movetopreviousrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Shift+Tab prev-table-row keys (OO-only) until ported"
+   "note": "Shift+Tab -> previous row first cell (MoveToPreviousRow)"
   },
   {
    "tab": "shortcut",
@@ -8621,7 +8635,7 @@
    "label": "EndParagraphCell",
    "token": "shortcut.endparagraphcell",
    "feature": "shortcut.endparagraphcell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8641,19 +8655,22 @@
    "label": "AddNewRow",
    "token": "shortcut.addnewrow",
    "feature": "shortcut.addnewrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "structure",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "delta</td></tr><tr>"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Tab add-table-row keys (OO-only) until ported"
+   "note": "Tab in last cell of last row appends a fresh row (AddNewRow)"
   },
   {
    "tab": "shortcut",
@@ -8661,7 +8678,7 @@
    "label": "InsertTableBreak",
    "token": "shortcut.inserttablebreak",
    "feature": "shortcut.inserttablebreak",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8871,7 +8888,7 @@
    "label": "SpeechWorker",
    "token": "shortcut.speechworker",
    "feature": "shortcut.speechworker",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+Z read-aloud (OO SpeechWorker panel; WO maps to TTS)",
@@ -8894,7 +8911,7 @@
    "label": "OpenFilePanel",
    "token": "shortcut.openfilepanel",
    "feature": "shortcut.openfilepanel",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+F (openBackstage(\"open\") + focus recent-files rail)",
@@ -8924,12 +8941,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "dialog",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dialog-visible",
+    "dialogId": "comment-dialog",
+    "subFeatures": []
    },
-   "subFeatures": null,
-   "note": "KNOWN-GAP: open comment field key — no WO handler — OO-only until ported"
+   "subFeatures": [],
+   "note": "Alt+Meta+A opens the comment field dialog (openCommentDialog, editor.js ~12846) — ported from OO"
   },
   {
    "tab": "shortcut",
@@ -8937,7 +8956,7 @@
    "label": "OpenChatPanel",
    "token": "ctrl+alt+q",
    "feature": "shortcut.openchatpanel",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+Q",
@@ -8969,10 +8988,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav — OO-only"
+   "note": "Alt+PageUp — caret to next/prev page start (MoveToStartPreviousPage), ported in editor.js bare-Alt block"
   },
   {
    "tab": "shortcut",
@@ -8989,10 +9008,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: browser consumes Ctrl+PageDown/Up (tab switch), no WO handler for page-start nav — OO-only"
+   "note": "Alt+PageDown — caret to next/prev page start (MoveToStartNextPage), ported in editor.js bare-Alt block"
   },
   {
    "tab": "shortcut",
@@ -9000,7 +9019,7 @@
    "label": "MoveToStartWord",
    "token": "shortcut.movetostartword",
    "feature": "shortcut.movetostartword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9020,7 +9039,7 @@
    "label": "MoveToEndWord",
    "token": "shortcut.movetoendword",
    "feature": "shortcut.movetoendword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9049,10 +9068,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: delete word left — bare-Alt keys unhandled — OO-only until ported"
+   "note": "Alt+Backspace deletes the word left of the caret (DeleteWordLeft)"
   },
   {
    "tab": "shortcut",
@@ -9069,10 +9090,12 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: delete word right — bare-Alt keys unhandled — OO-only until ported"
+   "note": "Alt+Delete deletes the word right of the caret (DeleteWordRight)"
   },
   {
    "tab": "shortcut",
@@ -9080,7 +9103,7 @@
    "label": "Cut",
    "token": "shortcut.cut",
    "feature": "shortcut.cut",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+X / Cmd+X",
@@ -9103,7 +9126,7 @@
    "label": "Copy",
    "token": "shortcut.copy",
    "feature": "shortcut.copy",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+C / Cmd+C",
@@ -9123,7 +9146,7 @@
    "label": "Paste",
    "token": "shortcut.paste",
    "feature": "shortcut.paste",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+V / Cmd+V",
@@ -9145,7 +9168,7 @@
    "label": "PasteTextWithoutFormat",
    "token": "ctrl+shift+v",
    "feature": "shortcut.pastetextwithoutformat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Shift+V",
@@ -9189,7 +9212,7 @@
    "label": "SelectRightWord",
    "token": "shortcut.selectrightword",
    "feature": "shortcut.selectrightword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9209,7 +9232,7 @@
    "label": "SelectLeftWord",
    "token": "shortcut.selectleftword",
    "feature": "shortcut.selectleftword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9229,8 +9252,8 @@
    "label": "ApplyHeading1",
    "token": "ctrl+alt+1",
    "feature": "shortcut.applyheading1",
-   "level": 2,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
     "match": "Ctrl+Alt+1",
     "where": "shortcut"
@@ -9251,8 +9274,8 @@
    "label": "ApplyHeading2",
    "token": "ctrl+alt+2",
    "feature": "shortcut.applyheading2",
-   "level": 2,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
     "match": "Ctrl+Alt+2",
     "where": "shortcut"
@@ -9273,8 +9296,8 @@
    "label": "ApplyHeading3",
    "token": "ctrl+alt+3",
    "feature": "shortcut.applyheading3",
-   "level": 2,
-   "censusStatus": "real",
+   "level": 3,
+   "censusStatus": "deferred",
    "wo": {
     "match": "Ctrl+Alt+3",
     "where": "shortcut"
@@ -9295,19 +9318,22 @@
    "label": "LittleMoveObjectLeft",
    "token": "shortcut.littlemoveobjectleft",
    "feature": "shortcut.littlemoveobjectleft",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Meta+ArrowLeft nudge 1px (LittleMoveObjectLeft)"
   },
   {
    "tab": "shortcut",
@@ -9315,19 +9341,22 @@
    "label": "LittleMoveObjectRight",
    "token": "shortcut.littlemoveobjectright",
    "feature": "shortcut.littlemoveobjectright",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Meta+ArrowRight nudge 1px (LittleMoveObjectRight)"
   },
   {
    "tab": "shortcut",
@@ -9335,19 +9364,22 @@
    "label": "LittleMoveObjectUp",
    "token": "shortcut.littlemoveobjectup",
    "feature": "shortcut.littlemoveobjectup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Meta+ArrowUp nudge 1px (LittleMoveObjectUp)"
   },
   {
    "tab": "shortcut",
@@ -9355,19 +9387,22 @@
    "label": "LittleMoveObjectDown",
    "token": "shortcut.littlemoveobjectdown",
    "feature": "shortcut.littlemoveobjectdown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: Alt+Arrow object/header/combo navigation keys have no WO handler (editor.js key handling has no bare-alt branch) — OO-only until object nav is ported"
+   "note": "Meta+ArrowDown nudge 1px (LittleMoveObjectDown)"
   },
   {
    "tab": "shortcut",
@@ -9375,7 +9410,7 @@
    "label": "InsertEquation",
    "token": "ctrl+alt+=",
    "feature": "shortcut.insertequation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+=",
@@ -9396,7 +9431,7 @@
    "label": "HorizontalEllipsis",
    "token": "alt+;",
    "feature": "shortcut.horizontalellipsis",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Alt+;",
@@ -9425,12 +9460,14 @@
     "where": "shortcut"
    },
    "woTab": null,
-   "effektClass": "op",
+   "effektClass": "format",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\\u"
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: niche symbol macro — no WO handler — OO-only until ported"
+   "note": "Alt+Meta+X converts \\uXXXX left of caret (replaceUnicodeEscape, editor.js ~12601) — ported from OO"
   },
   {
    "tab": "shortcut",
@@ -9438,7 +9475,7 @@
    "label": "MoveToNextPage",
    "token": "shortcut.movetonextpage",
    "feature": "shortcut.movetonextpage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9458,7 +9495,7 @@
    "label": "MoveToPreviousPage",
    "token": "shortcut.movetopreviouspage",
    "feature": "shortcut.movetopreviouspage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9478,7 +9515,7 @@
    "label": "InsertFootnoteNow",
    "token": "ctrl+alt+f",
    "feature": "shortcut.insertfootnotenow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+F",
@@ -9582,7 +9619,7 @@
    "label": "OpenExistingFile",
    "token": "shortcut.openexistingfile",
    "feature": "shortcut.openexistingfile",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Cmd+O / Ctrl+O (openBackstage(\"open\"))",
@@ -9612,7 +9649,7 @@
    "label": "CloseFile",
    "token": "shortcut.closefile",
    "feature": "shortcut.closefile",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Cmd+W / Ctrl+W (prevents browser tab-close: dirty confirm + wo:close-document + notifyHost(close))",
@@ -9628,12 +9665,77 @@
    "note": "acceptDialogs accepts the dirty-close window.confirm Playwright otherwise auto-dismisses; the close dispatches wo:close-document"
   },
   {
+   "tab": "style-gallery",
+   "ooId": "formatting.heading-1",
+   "label": "Heading 1",
+   "token": "applyheading1",
+   "feature": "formatting.heading-1",
+   "level": 3,
+   "censusStatus": "deferred",
+   "wo": {
+    "match": "applyHeading1",
+    "where": "tab:home"
+   },
+   "woTab": null,
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "<h1"
+   },
+   "subFeatures": null,
+   "note": "Heading 1 style card -> formatBlock H1 (first h1 in the fixture doc)"
+  },
+  {
+   "tab": "style-gallery",
+   "ooId": "formatting.heading-2",
+   "label": "Heading 2",
+   "token": "applyheading2",
+   "feature": "formatting.heading-2",
+   "level": 3,
+   "censusStatus": "deferred",
+   "wo": {
+    "match": "applyHeading2",
+    "where": "tab:home"
+   },
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor h2"
+   },
+   "subFeatures": null,
+   "note": "ledger row: formatting.heading-2 — style-gallery card (first DOM match, ahead of the hidden more-styles menuitem) runs formatBlock H2 on the caret block; the default h1 'Willkommen' block is converted, planting the document's only <h2>"
+  },
+  {
+   "tab": "style-gallery",
+   "ooId": "formatting.heading-3",
+   "label": "Heading 3",
+   "token": "applyheading3",
+   "feature": "formatting.heading-3",
+   "level": 3,
+   "censusStatus": "deferred",
+   "wo": {
+    "match": "applyHeading3",
+    "where": "tab:home"
+   },
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor h3"
+   },
+   "subFeatures": null,
+   "note": "ledger row: formatting.heading-3 — style-gallery card runs formatBlock H3 on the caret block, planting the document's only <h3>"
+  },
+  {
    "tab": "ctx-menu",
    "ooId": "ctx.insert-caption",
    "label": "Insert caption",
    "token": "ctx.insert-caption",
    "feature": "ctx.insert-caption",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Caption + Home tab caption (table/text figcaption; object binding differs)",
@@ -9655,7 +9757,7 @@
    "label": "Save as picture",
    "token": "ctx.save-as-picture",
    "feature": "ctx.save-as-picture",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=SaveAsPicture -> objectOp save-as-picture",
@@ -9676,7 +9778,7 @@
    "label": "Align left",
    "token": "ctx.align-left",
    "feature": "ctx.align-left",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-left",
@@ -9700,7 +9802,7 @@
    "label": "Align center",
    "token": "ctx.align-center",
    "feature": "ctx.align-center",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-center",
@@ -9724,7 +9826,7 @@
    "label": "Align right",
    "token": "ctx.align-right",
    "feature": "ctx.align-right",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-right",
@@ -9748,7 +9850,7 @@
    "label": "Align top",
    "token": "ctx.align-top",
    "feature": "ctx.align-top",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-top",
@@ -9772,7 +9874,7 @@
    "label": "Align middle",
    "token": "ctx.align-middle",
    "feature": "ctx.align-middle",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-middle",
@@ -9796,7 +9898,7 @@
    "label": "Align bottom",
    "token": "ctx.align-bottom",
    "feature": "ctx.align-bottom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-bottom",
@@ -9862,7 +9964,7 @@
    "label": "Merge shapes",
    "token": "ctx.merge-shapes",
    "feature": "ctx.merge-shapes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp merge-union/intersect/subtract",
@@ -9883,7 +9985,7 @@
    "label": "Axis Titles",
    "token": "ctx.axis-titles",
    "feature": "ctx.axis-titles",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Axis Titles (chartElement axisTitles)",
@@ -9904,7 +10006,7 @@
    "label": "Chart Title",
    "token": "ctx.chart-title",
    "feature": "ctx.chart-title",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Chart title (chartElement title)",
@@ -9925,7 +10027,7 @@
    "label": "Data labels",
    "token": "ctx.data-labels",
    "feature": "ctx.data-labels",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Data labels (chartElement dataLabels)",
@@ -9946,7 +10048,7 @@
    "label": "Data Table",
    "token": "ctx.chart.datatable",
    "feature": "ctx.chart.datatable",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartElement dataTable toggle renders data table in chartSVG",
@@ -9967,7 +10069,7 @@
    "label": "Error Bars",
    "token": "ctx.error-bars",
    "feature": "ctx.error-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Error bars (chartElement errorBars)",
@@ -9988,7 +10090,7 @@
    "label": "Gridlines",
    "token": "ctx.gridlines",
    "feature": "ctx.gridlines",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Gridlines (chartElement gridlines)",
@@ -10009,7 +10111,7 @@
    "label": "Legend",
    "token": "ctx.legend",
    "feature": "ctx.legend",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Legend (chartElement legend)",
@@ -10030,7 +10132,7 @@
    "label": "Trendline",
    "token": "ctx.trendline",
    "feature": "ctx.trendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Trendline (chartElement trendline)",
@@ -10051,7 +10153,7 @@
    "label": " Up/Down Bars",
    "token": "ctx.up-down-bars",
    "feature": "ctx.up-down-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Up/Down bars (chartElement upDownBars)",
@@ -10072,7 +10174,7 @@
    "label": "Bring to foreground",
    "token": "ctx.bring-to-foreground",
    "feature": "ctx.bring-to-foreground",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp bring-to-foreground",
@@ -10095,7 +10197,7 @@
    "label": "Send to background",
    "token": "ctx.send-to-background",
    "feature": "ctx.send-to-background",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp send-to-background",
@@ -10118,7 +10220,7 @@
    "label": "Bring forward",
    "token": "ctx.bring-forward",
    "feature": "ctx.bring-forward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp bring-forward",
@@ -10141,7 +10243,7 @@
    "label": "Send backward",
    "token": "ctx.send-backward",
    "feature": "ctx.send-backward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp send-backward",
@@ -10269,7 +10371,7 @@
    "label": "Top and bottom",
    "token": "ctx.top-and-bottom",
    "feature": "ctx.top-and-bottom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "obj-center block flow (top-and-bottom ≈ own-line block)",
@@ -10332,7 +10434,7 @@
    "label": "Edit data",
    "token": "ctx.edit-data",
    "feature": "ctx.edit-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design tab chartEditData -> openVectorEditor(chart)",
@@ -10366,7 +10468,7 @@
    "label": "Actual size",
    "token": "ctx.actual-size",
    "feature": "ctx.actual-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ActualSize -> objectOp actual-size",
@@ -10389,7 +10491,7 @@
    "label": "Convert to shape",
    "token": "ctx.convert-to-shape",
    "feature": "ctx.convert-to-shape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ConvertToShape -> convert object placeholder to a drawing-shape placeholder via the shape picker",
@@ -10411,7 +10513,7 @@
    "label": "Replace image",
    "token": "ctx.replace-image",
    "feature": "ctx.replace-image",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ReplaceImage -> objectOp replace-image (image-dialog)",
@@ -10439,7 +10541,7 @@
    "label": "Copy",
    "token": "ctx.copy",
    "feature": "ctx.copy",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Copy",
@@ -10460,7 +10562,7 @@
    "label": "Paste",
    "token": "ctx.paste",
    "feature": "ctx.paste",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Paste",
@@ -10482,7 +10584,7 @@
    "label": "Cut",
    "token": "ctx.cut",
    "feature": "ctx.cut",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Cut",
@@ -10503,7 +10605,7 @@
    "label": "Accept change",
    "token": "ctx.accept-change",
    "feature": "ctx.accept-change",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AcceptChange",
@@ -10525,7 +10627,7 @@
    "label": "Reject change",
    "token": "ctx.reject-change",
    "feature": "ctx.reject-change",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RejectChange",
@@ -10547,7 +10649,7 @@
    "label": "Print selection",
    "token": "ctx.print-selection",
    "feature": "ctx.print-selection",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Print button / Ctrl+P (browser print; no ctx item)",
@@ -10568,7 +10670,7 @@
    "label": "Rotate",
    "token": "ctx.rotate",
    "feature": "ctx.rotate",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "right panel rp-image-rotate (applyImageRotate90)",
@@ -10589,7 +10691,7 @@
    "label": "Crop",
    "token": "ctx.crop",
    "feature": "ctx.crop",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Crop -> photo editor crop tool (drag + Apply)",
@@ -10623,7 +10725,7 @@
    "label": "Remove content control",
    "token": "ctx.remove-content-control",
    "feature": "ctx.remove-content-control",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RemoveContentControl",
@@ -10645,7 +10747,7 @@
    "label": "Content control settings",
    "token": "ctx.content-control-settings",
    "feature": "ctx.content-control-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ContentControlSettings",
@@ -10725,7 +10827,7 @@
    "label": "Link",
    "token": "ctx.link",
    "feature": "ctx.link",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Link",
@@ -10747,7 +10849,7 @@
    "label": "Edit link",
    "token": "ctx.edit-link",
    "feature": "ctx.edit-link",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditLink",
@@ -10777,7 +10879,7 @@
    "label": "Copy hyperlink address",
    "token": "ctx.copy-hyperlink-address",
    "feature": "ctx.copy-hyperlink-address",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=CopyHyperlinkAddress (clipboard)",
@@ -10798,7 +10900,7 @@
    "label": "Remove link",
    "token": "ctx.remove-link",
    "feature": "ctx.remove-link",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RemoveLink",
@@ -10820,7 +10922,7 @@
    "label": "Resize to cell",
    "token": "ctx.resize-to-cell",
    "feature": "ctx.resize-to-cell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ResizeToCell -> resizeSelectedObjectToCell (objects in table cells)",
@@ -10879,7 +10981,7 @@
    "label": "Merge cells",
    "token": "ctx.merge-cells",
    "feature": "ctx.merge-cells",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableMergeCells",
@@ -10900,7 +11002,7 @@
    "label": "Split cell...",
    "token": "ctx.split-cell",
    "feature": "ctx.split-cell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableSplitCell",
@@ -10921,7 +11023,7 @@
    "label": "Text alignment",
    "token": "ctx.text-alignment",
    "feature": "ctx.text-alignment",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextAlignment",
@@ -11087,7 +11189,7 @@
    "label": "Justify",
    "token": "ctx.justify",
    "feature": "ctx.justify",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ribbon data-cmd=justifyFull (not in WO ctx)",
@@ -11109,7 +11211,7 @@
    "label": "Table advanced settings",
    "token": "ctx.table-advanced-settings",
    "feature": "ctx.table-advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "table-ops-dialog (WO table settings surface)",
@@ -11131,7 +11233,7 @@
    "label": "Paragraph advanced settings",
    "token": "ctx.paragraph-advanced-settings",
    "feature": "ctx.paragraph-advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ParagraphSettings",
@@ -11152,7 +11254,7 @@
    "label": "Formatting as Style",
    "token": "ctx.formatting-as-style",
    "feature": "ctx.formatting-as-style",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FormattingAsStyle",
@@ -11173,7 +11275,7 @@
    "label": "Create new style",
    "token": "ctx.create-new-style",
    "feature": "ctx.create-new-style",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FormattingAsStyle -> wo:style-from-format host channel (style-save owned by host shell)",
@@ -11194,7 +11296,7 @@
    "label": "Update %1 style",
    "token": "ctx.update-1-style",
    "feature": "ctx.update-1-style",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FormattingAsStyle -> wo:style-from-format host channel (style-update owned by host shell)",
@@ -11236,7 +11338,7 @@
    "label": "Update page numbers only",
    "token": "ctx.update-page-numbers-only",
    "feature": "ctx.update-page-numbers-only",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "UpdateTOC dialog — toc-update select has 'Update page numbers only' option (refreshToc relinks; page numbers are live-preview links)",
@@ -11266,7 +11368,7 @@
    "label": "Add comment",
    "token": "ctx.add-comment",
    "feature": "ctx.add-comment",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AddComment",
@@ -11288,7 +11390,7 @@
    "label": "Follow move",
    "token": "ctx.follow-move",
    "feature": "ctx.follow-move",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FollowMove",
@@ -11335,7 +11437,7 @@
    "label": "Ignore",
    "token": "ctx.ignore",
    "feature": "ctx.ignore",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Ignore",
@@ -11357,7 +11459,7 @@
    "label": "Ignore all",
    "token": "ctx.ignore-all",
    "feature": "ctx.ignore-all",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=IgnoreAll",
@@ -11379,7 +11481,7 @@
    "label": "Add to dictionary",
    "token": "ctx.add-to-dictionary",
    "feature": "ctx.add-to-dictionary",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AddToDictionary",
@@ -11401,7 +11503,7 @@
    "label": "Spellcheck",
    "token": "ctx.spellcheck",
    "feature": "ctx.spellcheck",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Review ribbon spellcheck / F7 (not in ctx)",
@@ -11424,7 +11526,7 @@
    "label": "Distribute rows",
    "token": "ctx.distribute-rows",
    "feature": "ctx.distribute-rows",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=DistributeRows -> distributeTableRows (equalize row heights)",
@@ -11445,7 +11547,7 @@
    "label": "Distribute columns",
    "token": "ctx.distribute-columns",
    "feature": "ctx.distribute-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=DistributeColumns -> distributeTableColumns (equalize column widths)",
@@ -11466,7 +11568,7 @@
    "label": "Text direction",
    "token": "ctx.text-direction",
    "feature": "ctx.text-direction",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextDirection",
@@ -11488,7 +11590,7 @@
    "label": "Horizontal",
    "token": "ctx.horizontal",
    "feature": "ctx.horizontal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextDirHorizontal",
@@ -11575,7 +11677,7 @@
    "label": "Set numbering value",
    "token": "ctx.set-numbering-value",
    "feature": "ctx.set-numbering-value",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=SetNumberingValue -> NumberingValueDialog + applyNumberingValue (native ol split, restart at N)",
@@ -11597,7 +11699,7 @@
    "label": "Continue numbering",
    "token": "ctx.continue-numbering",
    "feature": "ctx.continue-numbering",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ContinueNumbering -> continueNumbering (native ol merge)",
@@ -11618,7 +11720,7 @@
    "label": "Adjust list indents",
    "token": "ctx.adjust-list-indents",
    "feature": "ctx.adjust-list-indents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AdjustListIndents -> ListIndentsDialog + applyListIndents (margin-left/text-indent, round-trips as w:ind left/hanging)",
@@ -11640,7 +11742,7 @@
    "label": "Bullets and numbering",
    "token": "ctx.bullets-and-numbering",
    "feature": "ctx.bullets-and-numbering",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=BulletsAndNumbering -> BulletsNumberingDialog (list-style-type + start; round-trips as w:numFmt)",
@@ -11670,7 +11772,7 @@
    "label": "Update field",
    "token": "ctx.update-field",
    "feature": "ctx.update-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=UpdateField",
@@ -11691,7 +11793,7 @@
    "label": "Edit field",
    "token": "ctx.edit-field",
    "feature": "ctx.edit-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditField",
@@ -11712,7 +11814,7 @@
    "label": "Toggle field codes",
    "token": "ctx.toggle-field-codes",
    "feature": "ctx.toggle-field-codes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ToggleFieldCodes",
@@ -11733,7 +11835,7 @@
    "label": "Equation settings",
    "token": "ctx.equation-settings",
    "feature": "ctx.equation-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EquationSettings",
@@ -11754,7 +11856,7 @@
    "label": "Select",
    "token": "ctx.select",
    "feature": "ctx.select",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser native selection",
@@ -11815,7 +11917,7 @@
    "label": "Cell",
    "token": "ctx.cell",
    "feature": "ctx.cell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableDeleteCell -> deleteTableCell (shift left + row cleanup)",
@@ -11920,7 +12022,7 @@
    "label": "Several rows/columns",
    "token": "ctx.several-rows-columns",
    "feature": "ctx.several-rows-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "table-ops dialog Insert several rows/cols (op-apply-rows/op-apply-cols; insertTableRow/Col count)",
@@ -11942,7 +12044,7 @@
    "label": "Cells",
    "token": "ctx.cells",
    "feature": "ctx.cells",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableDeleteCell -> deleteTableCell (single-cell surface; OO multi-cell selection collapses to one)",
@@ -12005,7 +12107,7 @@
    "label": "Frame advanced settings",
    "token": "ctx.frame-advanced-settings",
    "feature": "ctx.frame-advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FrameSettings",
@@ -12047,7 +12149,7 @@
    "label": "Drop cap settings",
    "token": "ctx.drop-cap-settings",
    "feature": "ctx.drop-cap-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "dropcap-dialog (btn/ctx)",
@@ -12141,7 +12243,7 @@
    "label": "Edit header",
    "token": "ctx.edit-header",
    "feature": "ctx.edit-header",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert ribbon header/footer + headerfooter-dialog (not in ctx)",
@@ -12205,7 +12307,7 @@
    "label": "Clear field",
    "token": "ctx.clear-field",
    "feature": "ctx.clear-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ClearField (empties page-number/[data-field])",
@@ -12227,7 +12329,7 @@
    "label": "Group",
    "token": "ctx.group",
    "feature": "ctx.group",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp group (groupSelectedObjects)",
@@ -12248,7 +12350,7 @@
    "label": "Ungroup",
    "token": "ctx.ungroup",
    "feature": "ctx.ungroup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp ungroup (ungroupSelectedObjects)",
@@ -12263,6 +12365,802 @@
    },
    "subFeatures": null,
    "note": "ledger row ctx.ungroup — grouped-objects pre shift-picks two fixture imgs and groups them via the real Layout > Group command, so the Ungroup click resolves the group through the lastObjectPick fallback in selectedObject() (editor.js:3399) and ungroupSelectedObjects unwraps it (editor.js:3423-3432) — dom-mutation absent:true observes the group gone"
+  },
+  {
+   "tab": "dialog:Hyperlink",
+   "ooId": "dialog.link-dialog.l4",
+   "label": "Hyperlink",
+   "token": "link-dialog",
+   "feature": "dialog.link-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "link-dialog",
+    "where": "dialog:link-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#link-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "text to display input",
+     "selector": "#link-text"
+    },
+    {
+     "name": "url input",
+     "selector": "#link-url"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-link-cancel"
+    },
+    {
+     "name": "insert action",
+     "selector": "#btn-link-ok"
+    }
+   ],
+   "note": "ledger row: dialog.link-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-link') — #btn-link click -> insertLink -> #link-dialog with the OO Text to display/URL fields (2/2 L4 field parity)"
+  },
+  {
+   "tab": "tab:home (font group)",
+   "ooId": "dialog.font-dialog.l4",
+   "label": "Font dialog (field group)",
+   "token": "dialog.font-dialog.l4",
+   "feature": "dialog.font-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "font group (font-dialog-l4.test.mjs)",
+    "where": "tab:home"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#font-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "font family",
+     "selector": "#font-dialog-family"
+    },
+    {
+     "name": "font size",
+     "selector": "#font-dialog-size"
+    },
+    {
+     "name": "increment font size",
+     "selector": "#font-dialog-inc"
+    },
+    {
+     "name": "decrement font size",
+     "selector": "#font-dialog-dec"
+    },
+    {
+     "name": "bold",
+     "selector": "#font-dialog-bold"
+    },
+    {
+     "name": "italic",
+     "selector": "#font-dialog-italic"
+    },
+    {
+     "name": "underline",
+     "selector": "#font-dialog-underline"
+    },
+    {
+     "name": "strikethrough",
+     "selector": "#font-dialog-strike"
+    },
+    {
+     "name": "highlight color",
+     "selector": "#font-dialog-highlight"
+    },
+    {
+     "name": "font color",
+     "selector": "#font-dialog-color"
+    }
+   ],
+   "note": "ledger row: dialog.font-dialog.l4 — PROMOTED 2026-11-07: the home Font group now carries the OO corner launcher (#btn-font-dialog) opening #font-dialog, whose fields are the OO font-group family verbatim (family, size, +/- steps, B/I/U/S, highlight + font color) seeded from the selection and applied on OK through the same wo-command bus the home pickers use"
+  },
+  {
+   "tab": "insert:btn-inserttable",
+   "ooId": "dialog.table-dialog.l4",
+   "label": "Table",
+   "token": "table-dialog",
+   "feature": "dialog.table-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "table-dialog",
+    "where": "dialog:table-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#table-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "rows input",
+     "selector": "#table-rows"
+    },
+    {
+     "name": "columns input",
+     "selector": "#table-cols"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-table-cancel"
+    },
+    {
+     "name": "insert action",
+     "selector": "#btn-table-ok"
+    }
+   ],
+   "note": "ledger row: dialog.table-dialog.l4 (L4 pinned, evidence: 'opens via real clicks (Insert tab + #btn-table); title Insert table, Rows/Columns number fields') — insertTable() adds .open to the anchored #table-dialog insert-pop with defaults 2/3 (editor.js:2121); the insert mutation itself is contracted at table.table"
+  },
+  {
+   "tab": "dialog:Symbol",
+   "ooId": "dialog.symbol-dialog.l4",
+   "label": "Symbol dialog (field-level)",
+   "token": "dialog.symbol-dialog.l4",
+   "feature": "dialog.symbol-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "symbol-dialog (symbol-dialog-l4.test.mjs)",
+    "where": "dialog:symbol-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#symbol-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #symbol-dialog"
+  },
+  {
+   "tab": "insert:btn-image",
+   "ooId": "dialog.image-dialog.l4",
+   "label": "Image",
+   "token": "dialog.image-dialog.l4",
+   "feature": "dialog.image-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "image-dialog (image-dialog-l4.test.mjs)",
+    "where": "dialog:image-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#image-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #image-dialog"
+  },
+  {
+   "tab": "ctx-menu:ParagraphSettings",
+   "ooId": "dialog.paragraph-settings-dialog.l4",
+   "label": "Paragraph advanced settings (field-level)",
+   "token": "dialog.paragraph-settings-dialog.l4",
+   "feature": "dialog.paragraph-settings-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "paragraph-settings-dialog (paragraph-dialog-l4.test.mjs)",
+    "where": "ctx-menu:ParagraphSettings"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#paragraph-settings-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #paragraph-settings-dialog"
+  },
+  {
+   "tab": "dialog:equation-dialog",
+   "ooId": "dialog.equation-dialog.l4",
+   "label": "equation-dialog",
+   "token": "dialog.equation-dialog.l4",
+   "feature": "dialog.equation-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "equation-l4 (equation-dialog-l4.test.mjs)",
+    "where": "dialog:equation-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#equation-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "linear notation input",
+     "selector": "#equation-input"
+    },
+    {
+     "name": "preview",
+     "selector": "#equation-preview"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-equation-cancel"
+    },
+    {
+     "name": "insert action",
+     "selector": "#btn-equation-ok"
+    }
+   ],
+   "note": "ledger row: dialog.equation-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-equation (tab insert)') — btnEquation click -> openDlg(\"equation-dialog\") with the OO Linear notation/Preview fields (editor.js:13941)"
+  },
+  {
+   "tab": "dialog:pagecolor-dialog",
+   "ooId": "dialog.pagecolor-dialog.l4",
+   "label": "pagecolor-dialog",
+   "token": "dialog.pagecolor-dialog.l4",
+   "feature": "dialog.pagecolor-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "pagecolor-l4 (pagecolor-dialog-l4.test.mjs)",
+    "where": "dialog:pagecolor-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#pagecolor-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "swatches",
+     "selector": "#pagecolor-swatches"
+    },
+    {
+     "name": "custom color",
+     "selector": "#pagecolor-custom"
+    }
+   ],
+   "note": "ledger row: dialog.pagecolor-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #pagecolor (tab layout)') — OO-parity palette dialog: the #pagecolor preview input's click handler preventDefaults the native picker and calls openPageColorDialog() -> openOverlayDialog(\"pagecolor-dialog\") (editor.js:6602)"
+  },
+  {
+   "tab": "dialog:chart-dialog",
+   "ooId": "dialog.chart-dialog.l4",
+   "label": "chart-dialog",
+   "token": "dialog.chart-dialog.l4",
+   "feature": "dialog.chart-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "chart-l4 (chart-dialog-l4.test.mjs)",
+    "where": "dialog:chart-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#chart-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #chart-dialog"
+  },
+  {
+   "tab": "dialog:comment-dialog",
+   "ooId": "dialog.comment-dialog.l4",
+   "label": "comment-dialog",
+   "token": "dialog.comment-dialog.l4",
+   "feature": "dialog.comment-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "comment-l4 (comment-dialog-l4.test.mjs)",
+    "where": "dialog:comment-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#comment-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "comment body",
+     "selector": "#comment-body"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-comment-cancel"
+    },
+    {
+     "name": "insert action",
+     "selector": "#btn-comment-ok"
+    }
+   ],
+   "note": "ledger row: dialog.comment-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-comment (tab collaboration)') — commentBtn click -> openCommentDialog -> #comment-dialog (editor.js:8730)"
+  },
+  {
+   "tab": "dialog:compare-dialog",
+   "ooId": "dialog.compare-dialog.l4",
+   "label": "compare-dialog",
+   "token": "dialog.compare-dialog.l4",
+   "feature": "dialog.compare-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "compare-l4 (compare-dialog-l4.test.mjs)",
+    "where": "dialog:compare-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#compare-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "document select",
+     "selector": "#compare-document-select"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-compare-cancel"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-compare-apply"
+    }
+   ],
+   "note": "ledger row: dialog.compare-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=compareVersion] (tab collaboration)') — openCompareView -> #compare-dialog with the OO 'Select document to compare' surface; the offline compare itself is the declared not-provable divergence, only the dialog is gated"
+  },
+  {
+   "tab": "dialog:combine-dialog",
+   "ooId": "dialog.combine-dialog.l4",
+   "label": "combine-dialog",
+   "token": "dialog.combine-dialog.l4",
+   "feature": "dialog.combine-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "combine-l4 (combine-dialog-l4.test.mjs)",
+    "where": "dialog:combine-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#combine-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "document select",
+     "selector": "#combine-document-select"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-combine-cancel"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-combine-apply"
+    }
+   ],
+   "note": "ledger row: dialog.combine-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=combineRevisions] (tab collaboration)') — openCombineView -> #combine-dialog; same offline divergence as compare, only the dialog is gated"
+  },
+  {
+   "tab": "dialog:textfromfile-dialog",
+   "ooId": "dialog.textfromfile-dialog.l4",
+   "label": "textfromfile-dialog",
+   "token": "dialog.textfromfile-dialog.l4",
+   "feature": "dialog.textfromfile-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "textfromfile-l4 (textfromfile-dialog-l4.test.mjs)",
+    "where": "dialog:textfromfile-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#textfromfile-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "choose file input",
+     "selector": "#textfromfile-input"
+    },
+    {
+     "name": "format mode",
+     "selector": "#textfromfile-mode"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-textfromfile-cancel"
+    }
+   ],
+   "note": "ledger row: dialog.textfromfile-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-textfile (tab insert)') — btnTextFile click -> openDlg(\"textfromfile-dialog\") with the OO 'Choose file…' field (editor.js:12828)"
+  },
+  {
+   "tab": "dialog:field-dialog",
+   "ooId": "dialog.field-dialog.l4",
+   "label": "field-dialog",
+   "token": "dialog.field-dialog.l4",
+   "feature": "dialog.field-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "field-l4 (field-dialog-l4.test.mjs)",
+    "where": "dialog:field-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#field-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "field type select",
+     "selector": "#field-type"
+    },
+    {
+     "name": "cancel action",
+     "selector": "#btn-field-cancel"
+    },
+    {
+     "name": "insert action",
+     "selector": "#btn-field-ok"
+    }
+   ],
+   "note": "ledger row: dialog.field-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-field (tab references)') — btnField click -> openDlg(\"field-dialog\") with the OO 'Field type' select (editor.js:13176)"
+  },
+  {
+   "tab": "dialog:speech-dialog",
+   "ooId": "dialog.speech-dialog.l4",
+   "label": "speech-dialog",
+   "token": "dialog.speech-dialog.l4",
+   "feature": "dialog.speech-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "speech-l4 (speech-dialog-l4.test.mjs)",
+    "where": "dialog:speech-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#speech-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #speech-dialog"
+  },
+  {
+   "tab": "ctx-menu:HorizontalLineSettings",
+   "ooId": "dialog.hr-settings-dialog.l4",
+   "label": "Horizontal line settings",
+   "token": "dialog.hr-settings-dialog.l4",
+   "feature": "dialog.hr-settings-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "hr-settings-l4 (hr-settings-dialog-l4.test.mjs)",
+    "where": "dialog:hr-settings-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hr-settings-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #hr-settings-dialog"
+  },
+  {
+   "tab": "layout:btn-linenumbers",
+   "ooId": "dialog.linenumbers-dialog.l4",
+   "label": "Line Numbers",
+   "token": "dialog.linenumbers-dialog.l4",
+   "feature": "dialog.linenumbers-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "linenumbers-l4 (linenumbers-dialog-l4.test.mjs)",
+    "where": "dialog:linenumbers-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "linenumbers-dialog"
+   },
+   "subFeatures": [],
+   "note": "L4 route: line numbers dialog"
+  },
+  {
+   "tab": "toolbar:btn-find",
+   "ooId": "dialog.find-dialog.l4",
+   "label": "Find and replace",
+   "token": "dialog.find-dialog.l4",
+   "feature": "dialog.find-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "find-l4 (find-dialog-l4.test.mjs)",
+    "where": "dialog:find-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#find-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #find-dialog"
+  },
+  {
+   "tab": "insert:btn-table (Table menu: Convert)",
+   "ooId": "dialog.text-to-table-dialog.l4",
+   "label": "Convert Text to Table",
+   "token": "dialog.text-to-table-dialog.l4",
+   "feature": "dialog.text-to-table-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "text-to-table-l4 (texttotable-dialog-l4.test.mjs)",
+    "where": "dialog:text-to-table-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#text-to-table-dialog"
+   },
+   "subFeatures": [],
+   "note": "L4 route: text-to-table dialog"
+  },
+  {
+   "tab": "ctx-menu:DropcapSettings",
+   "ooId": "dialog.dropcap-dialog.l4",
+   "label": "Drop Cap",
+   "token": "dialog.dropcap-dialog.l4",
+   "feature": "dialog.dropcap-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "dropcap-l4 (dropcap-dialog-l4.test.mjs)",
+    "where": "dialog:dropcap-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "dropcap-dialog"
+   },
+   "subFeatures": [],
+   "note": "L4 route: drop cap dialog"
+  },
+  {
+   "tab": "layout:btn-watermark",
+   "ooId": "dialog.watermark-dialog.l4",
+   "label": "Watermark",
+   "token": "dialog.watermark-dialog.l4",
+   "feature": "dialog.watermark-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "watermark-l4 (watermark-dialog-l4.test.mjs)",
+    "where": "dialog:watermark-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#watermark-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #watermark-dialog"
+  },
+  {
+   "tab": "insert:btn-pagenumber",
+   "ooId": "dialog.pagenumber-dialog.l4",
+   "label": "Page Number",
+   "token": "dialog.pagenumber-dialog.l4",
+   "feature": "dialog.pagenumber-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "pagenumber-l4 (pagenumber-dialog-l4.test.mjs)",
+    "where": "dialog:pagenumber-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#pagenumber-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #pagenumber-dialog"
+  },
+  {
+   "tab": "references:btn-bookmark",
+   "ooId": "dialog.bookmark-dialog.l4",
+   "label": "Insert bookmark",
+   "token": "dialog.bookmark-dialog.l4",
+   "feature": "dialog.bookmark-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "bookmark-l4 (bookmark-dialog-l4.test.mjs)",
+    "where": "dialog:bookmark-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#bookmark-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #bookmark-dialog"
+  },
+  {
+   "tab": "references:btn-toc",
+   "ooId": "dialog.toc-dialog.l4",
+   "label": "Insert table of contents",
+   "token": "dialog.toc-dialog.l4",
+   "feature": "dialog.toc-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "toc-l4 (toc-dialog-l4.test.mjs)",
+    "where": "dialog:toc-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#toc-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #toc-dialog"
+  },
+  {
+   "tab": "references:openCrossref",
+   "ooId": "dialog.crossref-dialog.l4",
+   "label": "Cross-reference",
+   "token": "dialog.crossref-dialog.l4",
+   "feature": "dialog.crossref-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "crossref-l4 (crossref-dialog-l4.test.mjs)",
+    "where": "dialog:crossref-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#crossref-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #crossref-dialog"
+  },
+  {
+   "tab": "references:insertCaption",
+   "ooId": "dialog.caption-dialog.l4",
+   "label": "Caption",
+   "token": "dialog.caption-dialog.l4",
+   "feature": "dialog.caption-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "caption-l4 (caption-dialog-l4.test.mjs)",
+    "where": "dialog:caption-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#caption-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #caption-dialog"
+  },
+  {
+   "tab": "references:insertTableOfFigures",
+   "ooId": "dialog.tableoffigures-dialog.l4",
+   "label": "Table of figures",
+   "token": "dialog.tableoffigures-dialog.l4",
+   "feature": "dialog.tableoffigures-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "tableoffigures-l4 (tableoffigures-dialog-l4.test.mjs)",
+    "where": "dialog:tableoffigures-l4"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "tableoffigures-dialog"
+   },
+   "subFeatures": [],
+   "note": "L4 route: table of figures dialog"
+  },
+  {
+   "tab": "dialog:Margins",
+   "ooId": "dialog.margins-dialog.l4",
+   "label": "Margins",
+   "token": "page-setup-dialog",
+   "feature": "dialog.margins-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "page-setup-dialog",
+    "where": "dialog:page-setup-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 page-setup modal (Margins + Page size share the dialog)"
+  },
+  {
+   "tab": "dialog:Page size",
+   "ooId": "dialog.page-size-dialog.l4",
+   "label": "Page size",
+   "token": "page-setup-dialog",
+   "feature": "dialog.page-size-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "page-setup-dialog",
+    "where": "dialog:page-setup-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 page-setup modal (Margins + Page size share the dialog)"
+  },
+  {
+   "tab": "dialog:Columns",
+   "ooId": "dialog.columns-dialog.l4",
+   "label": "Columns",
+   "token": "columns-dialog",
+   "feature": "dialog.columns-dialog.l4",
+   "level": 4,
+   "censusStatus": "real",
+   "wo": {
+    "match": "columns-dialog",
+    "where": "dialog:columns-dialog"
+   },
+   "woTab": null,
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#columns-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #columns-dialog via #btn-columns"
   },
   {
    "tab": "",
@@ -13064,293 +13962,6 @@
    },
    "subFeatures": null,
    "note": "option row: OO marks the active File-screen option; showBackstagePane sets aria-current=\"true\" + .active on the selected rail row and clears it on the others (editor.js:10907) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "insert",
-   "ooId": "dialog.link-dialog.l4",
-   "label": "dialog.link-dialog.l4",
-   "token": "dialog.link-dialog.l4",
-   "feature": "dialog.link-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "insert",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#link-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "text to display input",
-     "selector": "#link-text"
-    },
-    {
-     "name": "url input",
-     "selector": "#link-url"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-link-cancel"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-link-ok"
-    }
-   ],
-   "note": "ledger row: dialog.link-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-link') — #btn-link click -> insertLink -> #link-dialog with the OO Text to display/URL fields (2/2 L4 field parity) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "insert",
-   "ooId": "dialog.table-dialog.l4",
-   "label": "dialog.table-dialog.l4",
-   "token": "dialog.table-dialog.l4",
-   "feature": "dialog.table-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "insert",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#table-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "rows input",
-     "selector": "#table-rows"
-    },
-    {
-     "name": "columns input",
-     "selector": "#table-cols"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-table-cancel"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-table-ok"
-    }
-   ],
-   "note": "ledger row: dialog.table-dialog.l4 (L4 pinned, evidence: 'opens via real clicks (Insert tab + #btn-table); title Insert table, Rows/Columns number fields') — insertTable() adds .open to the anchored #table-dialog insert-pop with defaults 2/3 (editor.js:2121); the insert mutation itself is contracted at table.table [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "insert",
-   "ooId": "dialog.equation-dialog.l4",
-   "label": "dialog.equation-dialog.l4",
-   "token": "dialog.equation-dialog.l4",
-   "feature": "dialog.equation-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "insert",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#equation-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "linear notation input",
-     "selector": "#equation-input"
-    },
-    {
-     "name": "preview",
-     "selector": "#equation-preview"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-equation-cancel"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-equation-ok"
-    }
-   ],
-   "note": "ledger row: dialog.equation-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-equation (tab insert)') — btnEquation click -> openDlg(\"equation-dialog\") with the OO Linear notation/Preview fields (editor.js:13941) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "layout",
-   "ooId": "dialog.pagecolor-dialog.l4",
-   "label": "dialog.pagecolor-dialog.l4",
-   "token": "dialog.pagecolor-dialog.l4",
-   "feature": "dialog.pagecolor-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "layout",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#pagecolor-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "swatches",
-     "selector": "#pagecolor-swatches"
-    },
-    {
-     "name": "custom color",
-     "selector": "#pagecolor-custom"
-    }
-   ],
-   "note": "ledger row: dialog.pagecolor-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #pagecolor (tab layout)') — OO-parity palette dialog: the #pagecolor preview input's click handler preventDefaults the native picker and calls openPageColorDialog() -> openOverlayDialog(\"pagecolor-dialog\") (editor.js:6602) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "collaboration",
-   "ooId": "dialog.comment-dialog.l4",
-   "label": "dialog.comment-dialog.l4",
-   "token": "dialog.comment-dialog.l4",
-   "feature": "dialog.comment-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "collaboration",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#comment-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "comment body",
-     "selector": "#comment-body"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-comment-cancel"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-comment-ok"
-    }
-   ],
-   "note": "ledger row: dialog.comment-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-comment (tab collaboration)') — commentBtn click -> openCommentDialog -> #comment-dialog (editor.js:8730) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "collaboration",
-   "ooId": "dialog.compare-dialog.l4",
-   "label": "dialog.compare-dialog.l4",
-   "token": "dialog.compare-dialog.l4",
-   "feature": "dialog.compare-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "collaboration",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#compare-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "document select",
-     "selector": "#compare-document-select"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-compare-cancel"
-    },
-    {
-     "name": "apply action",
-     "selector": "#btn-compare-apply"
-    }
-   ],
-   "note": "ledger row: dialog.compare-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=compareVersion] (tab collaboration)') — openCompareView -> #compare-dialog with the OO 'Select document to compare' surface; the offline compare itself is the declared not-provable divergence, only the dialog is gated [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "collaboration",
-   "ooId": "dialog.combine-dialog.l4",
-   "label": "dialog.combine-dialog.l4",
-   "token": "dialog.combine-dialog.l4",
-   "feature": "dialog.combine-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "collaboration",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#combine-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "document select",
-     "selector": "#combine-document-select"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-combine-cancel"
-    },
-    {
-     "name": "apply action",
-     "selector": "#btn-combine-apply"
-    }
-   ],
-   "note": "ledger row: dialog.combine-dialog.l4 (L4 pinned, evidence: 'opened via real route: click [data-cmd=combineRevisions] (tab collaboration)') — openCombineView -> #combine-dialog; same offline divergence as compare, only the dialog is gated [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "insert",
-   "ooId": "dialog.textfromfile-dialog.l4",
-   "label": "dialog.textfromfile-dialog.l4",
-   "token": "dialog.textfromfile-dialog.l4",
-   "feature": "dialog.textfromfile-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "insert",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#textfromfile-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "choose file input",
-     "selector": "#textfromfile-input"
-    },
-    {
-     "name": "format mode",
-     "selector": "#textfromfile-mode"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-textfromfile-cancel"
-    }
-   ],
-   "note": "ledger row: dialog.textfromfile-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-textfile (tab insert)') — btnTextFile click -> openDlg(\"textfromfile-dialog\") with the OO 'Choose file…' field (editor.js:12828) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "references",
-   "ooId": "dialog.field-dialog.l4",
-   "label": "dialog.field-dialog.l4",
-   "token": "dialog.field-dialog.l4",
-   "feature": "dialog.field-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "references",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#field-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "field type select",
-     "selector": "#field-type"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-field-cancel"
-    },
-    {
-     "name": "insert action",
-     "selector": "#btn-field-ok"
-    }
-   ],
-   "note": "ledger row: dialog.field-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-field (tab references)') — btnField click -> openDlg(\"field-dialog\") with the OO 'Field type' select (editor.js:13176) [override-only: no ledger row matched this key]"
   },
   {
    "tab": "chart-design",
@@ -15128,101 +15739,6 @@
    "note": "Cross-reference dialog depth: same #crossref-dialog, Cancel closes [override-only: no ledger row matched this key]"
   },
   {
-   "tab": "home",
-   "ooId": "formatting.heading-2",
-   "label": "formatting.heading-2",
-   "token": "formatting.heading-2",
-   "feature": "formatting.heading-2",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "home",
-   "effektClass": "structure",
-   "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor h2"
-   },
-   "subFeatures": null,
-   "note": "ledger row: formatting.heading-2 — style-gallery card (first DOM match, ahead of the hidden more-styles menuitem) runs formatBlock H2 on the caret block; the default h1 'Willkommen' block is converted, planting the document's only <h2> [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "home",
-   "ooId": "formatting.heading-3",
-   "label": "formatting.heading-3",
-   "token": "formatting.heading-3",
-   "feature": "formatting.heading-3",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "home",
-   "effektClass": "structure",
-   "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor h3"
-   },
-   "subFeatures": null,
-   "note": "ledger row: formatting.heading-3 — style-gallery card runs formatBlock H3 on the caret block, planting the document's only <h3> [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "home",
-   "ooId": "dialog.font-dialog.l4",
-   "label": "dialog.font-dialog.l4",
-   "token": "dialog.font-dialog.l4",
-   "feature": "dialog.font-dialog.l4",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "home",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#font-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "font family",
-     "selector": "#font-dialog-family"
-    },
-    {
-     "name": "font size",
-     "selector": "#font-dialog-size"
-    },
-    {
-     "name": "increment font size",
-     "selector": "#font-dialog-inc"
-    },
-    {
-     "name": "decrement font size",
-     "selector": "#font-dialog-dec"
-    },
-    {
-     "name": "bold",
-     "selector": "#font-dialog-bold"
-    },
-    {
-     "name": "italic",
-     "selector": "#font-dialog-italic"
-    },
-    {
-     "name": "underline",
-     "selector": "#font-dialog-underline"
-    },
-    {
-     "name": "strikethrough",
-     "selector": "#font-dialog-strike"
-    },
-    {
-     "name": "highlight color",
-     "selector": "#font-dialog-highlight"
-    },
-    {
-     "name": "font color",
-     "selector": "#font-dialog-color"
-    }
-   ],
-   "note": "ledger row: dialog.font-dialog.l4 — PROMOTED 2026-11-07: the home Font group now carries the OO corner launcher (#btn-font-dialog) opening #font-dialog, whose fields are the OO font-group family verbatim (family, size, +/- steps, B/I/U/S, highlight + font color) seeded from the selection and applied on OK through the same wo-command bus the home pickers use [override-only: no ledger row matched this key]"
-  },
-  {
    "tab": "insert",
    "ooId": "file.file",
    "label": "file.file",
@@ -15317,25 +15833,6 @@
    },
    "subFeatures": null,
    "note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader) [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "",
-   "ooId": "shortcut.leftpara",
-   "label": "shortcut.leftpara",
-   "token": "shortcut.leftpara",
-   "feature": "shortcut.leftpara",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": null,
-   "effektClass": "format",
-   "assertion": {
-    "kind": "computed-style",
-    "prop": "text-align",
-    "equals": "start"
-   },
-   "subFeatures": null,
-   "note": "ledger row: shortcut.leftpara — ledger + editor.js bind Ctrl+L (Ctrl+Shift+L is the bulleted-list combo, insertUnorderedList). On the default left-aligned document justifyLeft is a parity no-op: Chromium skips the style write, so the honest post-chord state is start (same as the justifyleft click contract) [override-only: no ledger row matched this key]"
   },
   {
    "tab": "",
@@ -15564,6 +16061,25 @@
   },
   {
    "tab": "",
+   "ooId": "ctrl+shift+l",
+   "label": "ctrl+shift+l",
+   "token": "ctrl+shift+l",
+   "feature": "ctrl+shift+l",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "<ul>"
+   },
+   "subFeatures": null,
+   "note": "bulleted list [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
    "ooId": "emdash",
    "label": "emdash",
    "token": "emdash",
@@ -15749,6 +16265,29 @@
    },
    "subFeatures": null,
    "note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "layout",
+   "ooId": "hyphenation-dialog",
+   "label": "hyphenation-dialog",
+   "token": "hyphenation-dialog",
+   "feature": "hyphenation-dialog",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "layout",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hyphenation-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#hyphenation-dialog-title"
+    }
+   ],
+   "note": "toggleHyphenation opens the hyphenation dialog [override-only: no ledger row matched this key]"
   },
   {
    "tab": "collaboration",

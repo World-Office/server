@@ -346,6 +346,12 @@ async function subFeatureAudit(page, ov, dialogSel) {
   const server = await ensureServer();
   const browser = await launchBrowser();
   const { ctx, page } = await openEditor(browser, server.base);
+  // Fresh-document guarantee: contracts that SAVE (save/save-as flows) or
+  // the acts census can persist an edited demo.docx on the docserver —
+  // later contracts then start from a mutated doc and h1/font fixtures
+  // break. Reset demo.docx to the pristine asset before every run.
+  try { fs.copyFileSync(path.join(HERE, '../../assets/demo.docx'),
+    path.join(HERE, '../../data/docs/demo.docx')); } catch (e) {} // owned-server layout; warm servers re-parse on load
   const results = [];
   let fails = 0;
 
@@ -380,7 +386,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -426,6 +432,94 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.mouse.click(r.x, r.y, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
         await sleep(150);
+      }
+      else if (ov.pre === 'in-table-last') {
+        // AddNewRow: caret collapsed in the LAST cell of the LAST row —
+        // OO appends a fresh row on Tab there
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<table><tr><td>alpha cell</td><td>beta cell</td></tr><tr><td>gamma</td><td>delta</td></tr></table><p>after</p>';
+          const cell = ed.querySelectorAll('td')[3];
+          const range = document.createRange();
+          range.setStart(cell.firstChild, 2);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'object-selection') {
+        // floating object selected via real click (sets lastObjectPick —
+        // the CHROMIUM-SELECTION-FIX path the editor relies on)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const obj = '<div class="object" data-kind="shape" id="fixture-obj" style="width:120px;height:80px">FIRST</div>';
+          const obj2 = '<div class="object" data-kind="shape" id="fixture-obj2" style="width:120px;height:80px">SECOND</div>';
+          ed.innerHTML = '<p>before</p>' + obj + obj2 + '<p>after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-obj', { timeout: 3000 });
+        await page.locator('#fixture-obj').click({ timeout: 5000 });
+        await sleep(200);
+      }
+      else if (ov.pre === 'page2-caret') {
+        // page-start nav contracts: keep the paginated demo doc (its
+        // .wo-page sheets are the nav target), caret collapsed at the
+        // start of the LAST page so PageUp has somewhere to go
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const pages = ed.querySelectorAll('[class*="wo-page"]');
+          if (!pages.length) throw new Error('no wo-page sheets');
+          const nx = pages[pages.length - 1];
+          const t = nx.querySelector('p, h1, h2, td') || nx;
+          const range = document.createRange();
+          range.setStart(t.firstChild || t, Math.min(2, (t.firstChild && t.firstChild.length) || 0));
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'resetchar-bold') {
+        // ResetChar fixture: text + bold selection, so Ctrl+Space has
+        // direct formatting to strip
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>Willkommen bei World Office</p>';
+          const p = ed.querySelector('p');
+          const r = document.createRange();
+          r.selectNodeContents(p);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(r);
+          ed.focus();
+        });
+        await sleep(100);
+        await page.evaluate(() => { document.execCommand('bold'); });
+        await sleep(100);
+        // keep the selection — the trigger fires on it
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          const p = ed.querySelector('p');
+          if (!p) return;
+          const r = document.createRange();
+          const inner = p.querySelector('b') ? p.querySelector('b').firstChild : p.firstChild;
+          r.selectNodeContents(inner ? inner.parentNode || inner : p);
+          r.setEnd(p, p.childNodes.length);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(r);
+          ed.focus();
+        });
+        await sleep(120);
       }
       else if (ov.pre === 'dirty-type') {
         // ctx Undo contracts: type text (no undo) so the undo click has

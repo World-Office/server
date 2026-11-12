@@ -12683,7 +12683,61 @@
         : (t.lng === "de" ? "Rechtschreibprüfung deaktiviert" : "Spell check off"));
       return;
     }
+    // ------------------------------------------------------------------
+    // Object keyboard-move (Big/LittleMoveObjectLeft/Right/Up/Down): with a
+    // floating object selected, plain arrows move it by 10 px, Meta+Arrow by
+    // 1 px (OO's Little moves). No modifiers touched for caret nav.
+    {
+      const obj = selectedObject();
+      const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+      if (obj && !ev.altKey && ARROWS[ev.key]) {
+        const step = ev.metaKey ? 1 : 10;
+        const [dx, dy] = ARROWS[ev.key];
+        ev.preventDefault();
+        const cs = getComputedStyle(obj);
+        const ml = parseFloat(cs.marginLeft) || 0, mt = parseFloat(cs.marginTop) || 0;
+        obj.style.marginLeft = (ml + dx * step) + "px";
+        obj.style.marginTop = (mt + dy * step) + "px";
+        markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+        return;
+      }
+    }
+    // Enter on a selected object opens its edit affordance (EditChart /
+    // EditShape): charts open the settings dialog, everything else the
+    // generic object dialog preset to its kind.
+    if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      const obj = selectedObject();
+      if (obj) {
+        ev.preventDefault();
+        const kind = obj.getAttribute("data-kind") || obj.getAttribute("data-object") || "shape";
+        if (kind === "chart") { emitCommand("chartSettings"); }
+        else { openObjectDialog(kind === "shape" ? "" : kind); }
+        return;
+      }
+    }
+    // Enter with the caret inside a hyperlink follows it (VisitHyperlink;
+    // Word's mouse-click adaptation for headless parity: new tab).
+    if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      const sel = window.getSelection();
+      const nd = sel && sel.anchorNode;
+      const host = nd && (nd.nodeType === 1 ? nd : nd.parentElement);
+      const link = host && host.closest ? host.closest("#editor a[href]") : null;
+      if (link && !ev.isComposing) {
+        ev.preventDefault();
+        const href = link.getAttribute("href") || "";
+        if (href) { window.open(href, "_blank", "noopener"); setStatus(t.lng === "de" ? "Link geöffnet" : "Link opened"); }
+        return;
+      }
+    }
+    // ResetChar: Ctrl+Space strips direct character formatting from the
+    // selection (Word's "remove formatting" — maps to the native
+    // removeFormat command, undoable and round-trip safe).
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key === " ") {
+      if (!ev.shiftKey) {
+        ev.preventDefault();
+        if (!READ_ONLY) { document.execCommand("removeFormat"); markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing"); }
+        return;
+      }
       // Non-breaking space: Ctrl+Shift+Space (OO/Word convention).
       if (ev.shiftKey) { ev.preventDefault(); emitCommand("insertSymbol", "\u00a0"); return; }
     }
@@ -12729,6 +12783,49 @@
       // ledger shortcut.pastetextwithoutformat) — the same plain-text path as
       // the Ctrl+T chord below (pasteTextOnly()).
       if (k === "v") { ev.preventDefault(); pasteTextOnly(); return; }
+    }
+    // Word-wise delete: bare Alt+Backspace deletes the word left of the
+    // caret, Alt+Delete the word right (DeleteWordLeft/Right). Selection
+    // modify("extend", "word") + delete is the standard DOM trick.
+    // OO page-start navigation: Alt+PageDown/Alt+PageUp (MoveToStartNextPage
+    // / MoveToStartPreviousPage) — caret to the first text position of the
+    // next/previous paginated sheet. The browser does not consume Alt+Page.
+    if (ev.altKey && !ev.ctrlKey && !ev.metaKey && (ev.key === "PageDown" || ev.key === "PageUp")) {
+      const pages = Array.from(editor.querySelectorAll('[class*="wo-page"]'));
+      if (pages.length > 0) {
+        const sel = window.getSelection();
+        let cur = sel && sel.anchorNode;
+        while (cur && cur !== editor) { if (pages.includes(cur)) break; cur = cur.parentNode; }
+        const i = pages.indexOf(cur);
+        const nx = pages[ev.key === "PageDown" ? Math.min(pages.length - 1, i + 1) : Math.max(0, i - 1)];
+        if (nx && nx !== cur) {
+          ev.preventDefault();
+          editor.focus();
+          const r = document.createRange();
+          const tgt = nx.querySelector("p, h1, h2, td") || nx;
+          r.setStart(tgt.firstChild || tgt, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+          setStatus((t.lng === "de" ? "Seite " : "Page ") + (pages.indexOf(nx) + 1));
+        }
+      }
+    }
+    if (ev.altKey && !ev.ctrlKey && !ev.metaKey && (ev.key === "Backspace" || ev.key === "Delete")) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).startContainer)) {
+        ev.preventDefault();
+        if (!READ_ONLY) {
+          if (!sel.isCollapsed) { document.execCommand("delete"); }
+          else {
+            const mod = ev.key === "Backspace" ? "backward" : "forward";
+            sel.modify("extend", mod, "word");
+            if (!sel.isCollapsed) document.execCommand("delete");
+          }
+          markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+        }
+        return;
+      }
     }
     if ((ev.ctrlKey || ev.metaKey) && ev.altKey) {
       const k = ev.key.toLowerCase();
@@ -12965,9 +13062,64 @@
     // round-trip the resulting nested <ul>/<ol> as "List Bullet/Number 2".
     // Elsewhere Tab keeps its default focus-navigation behaviour (WCAG).
     if (ev.key === "Tab" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      // Tab with a floating object selected moves the OBJECT focus instead
+      // of the caret (MoveFocusToNext/PreviousObject; Shift = previous).
+      {
+        const obj = selectedObject();
+        if (obj) {
+          ev.preventDefault();
+          const objs = Array.from(editor.querySelectorAll("div.object, img.vector-object, svg.wo-equation"))
+            .filter((o) => editor.contains(o));
+          const i = objs.indexOf(obj);
+          const nx = objs[ev.shiftKey ? Math.max(0, i - 1) : Math.min(objs.length - 1, i + 1)] || obj;
+          clearMultiSelection();
+          editor.focus();
+          const r = document.createRange();
+          r.selectNode(nx);
+          const sl = window.getSelection();
+          sl.removeAllRanges();
+          sl.addRange(r);
+          setStatus(ev.shiftKey ? "Objekt: vorheriges" : "Objekt: nächstes");
+          return;
+        }
+      }
       const sel = window.getSelection();
       const nd = sel && sel.anchorNode;
       const el = nd && nd.nodeType === 1 ? nd : (nd && nd.parentElement);
+      // Tab inside a table cell: next/previous cell (MoveToNextCell /
+      // MoveToPreviousCell), row wrap at the row edge (MoveToNextRow /
+      // MoveToPreviousRow) and a fresh row past the last cell (AddNewRow —
+      // OO appends a row when Tab fires in the last cell of the last row).
+      const cell = el && el.closest ? el.closest("td, th") : null;
+      if (cell && editor.contains(cell)) {
+        if (READ_ONLY) return;
+        ev.preventDefault();
+        const tr = cell.closest("tr");
+        const cells = Array.from(tr.children).filter((c) => c.tagName === "TD" || c.tagName === "TH");
+        const idx = cells.indexOf(cell);
+        let target = null;
+        if (ev.shiftKey) {
+          if (idx > 0) target = cells[idx - 1];
+          else { const prev = tr.previousElementSibling; if (prev) target = prev.lastElementChild; }
+        } else {
+          if (idx < cells.length - 1) target = cells[idx + 1];
+          else {
+            const next = tr.nextElementSibling;
+            if (next) target = next.firstElementChild;
+            else { insertTableRow(false, 1); target = tr.nextElementSibling && tr.nextElementSibling.firstElementChild; }
+          }
+        }
+        if (target) {
+          editor.focus();
+          const r = document.createRange();
+          r.selectNodeContents(target);
+          r.collapse(true);
+          const sl = window.getSelection();
+          sl.removeAllRanges(); sl.addRange(r);
+          markDirty(); scheduleCollabSync();
+        }
+        return;
+      }
       if (el && el.closest && el.closest("li")) {
         if (READ_ONLY) return;
         ev.preventDefault();

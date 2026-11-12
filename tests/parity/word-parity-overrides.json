@@ -1,263 +1,495 @@
 {
-  "$comment": "Word parity contract overrides. Generator (generate-manifest.cjs) merges these over the census ledger (key = the row's wo.match binding id, lowercased — e.g. 'bold' — or its feature id — e.g. 'table.table'). Entry fields: effektClass format|structure|dialog|op|view|stub|covered-cluster; selector: WO control selector (fallback: [data-cmd=<wo>] then #btn-<wo>); pre: prerequisite action ('file-menu' opens the File menu first); assertion: {kind: computed-style|dom-mutation|dialog-visible|op-emitted|viewport-flag, ...}; subFeatures: [{name, selector}] — dialog-visible entries MUST list them, every missing one is a FAIL; xfail: true marks a known gap (reported, non-gating); note: free text.",
-  "entries": {
-    "bold": {
-      "effektClass": "format",
-      "selector": "[data-cmd=\"bold\"]",
-      "assertion": {
-        "kind": "computed-style",
-        "prop": "font-weight",
-        "equals": "700"
-      }
+ "$comment": "Word parity contract overrides. Generator (generate-manifest.cjs) merges these over the census ledger (key = the row's wo.match binding id, lowercased \u2014 e.g. 'bold' \u2014 or its feature id \u2014 e.g. 'table.table'). Entry fields: effektClass format|structure|dialog|op|view|stub|covered-cluster; selector: WO control selector (fallback: [data-cmd=<wo>] then #btn-<wo>); pre: prerequisite action ('file-menu' opens the File menu first); assertion: {kind: computed-style|dom-mutation|dialog-visible|op-emitted|viewport-flag, ...}; subFeatures: [{name, selector}] \u2014 dialog-visible entries MUST list them, every missing one is a FAIL; xfail: true marks a known gap (reported, non-gating); note: free text.",
+ "entries": {
+  "bold": {
+   "effektClass": "format",
+   "selector": "[data-cmd=\"bold\"]",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "font-weight",
+    "equals": "700"
+   }
+  },
+  "italic": {
+   "effektClass": "format",
+   "selector": "[data-cmd=\"italic\"]",
+   "assertion": {
+    "kind": "computed-style",
+    "prop": "font-style",
+    "equals": "italic"
+   }
+  },
+  "table.table": {
+   "effektClass": "structure",
+   "woTab": "insert",
+   "selector": "#btn-table",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor table"
+   },
+   "post": "#btn-table-ok"
+  },
+  "protect.encrypt": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"protectDialog\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#protect-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "restrict toggle",
+     "selector": "#protect-check-restrict"
     },
-    "italic": {
-      "effektClass": "format",
-      "selector": "[data-cmd=\"italic\"]",
-      "assertion": {
-        "kind": "computed-style",
-        "prop": "font-style",
-        "equals": "italic"
-      }
+    {
+     "name": "password input",
+     "selector": "#protect-new-password"
     },
-    "table.table": {
-      "effektClass": "structure",
-      "woTab": "insert",
-      "selector": "#btn-table",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor table"
-      },
-      "post": "#btn-table-ok"
-    },
-    "protect.encrypt": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"protectDialog\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#protect-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "restrict toggle",
-          "selector": "#protect-check-restrict"
-        },
-        {
-          "name": "password input",
-          "selector": "#protect-new-password"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-protect-apply"
-        }
-      ],
-      "woTab": "protection"
-    },
-    "formatting.paragraph-line-spacing": {
-      "effektClass": "dialog",
-      "woTab": "home",
-      "selector": "#line-spacing",
-      "setValue": "options",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#paragraph-settings-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "spacing before numeric",
-          "selector": "[name=spacing-before]"
-        },
-        {
-          "name": "spacing after numeric",
-          "selector": "[name=spacing-after]"
-        },
-        {
-          "name": "first-line indent",
-          "selector": "[name=first-line]"
-        },
-        {
-          "name": "widow/orphan control",
-          "selector": "[name=widow]"
-        }
-      ],
-      "note": "ledger row promoted (L2N-01): the #line-spacing select carries a trailing value=options entry ('Line spacing options…', index.html) whose change handler (editor.js) opens openParagraphSettingsDialog -> #paragraph-settings-dialog, mirroring OO's line-spacing picker leading to the paragraph dialog. setValue drives it headless (a plain .click() on a <select> fires no change); the dialog now carries the OO Spacing group fields — before/after number inputs (name=spacing-before/spacing-after -> margin-top/bottom via applyParagraphSettings) and the widow/orphan checkbox (name=widow -> class widow-control) alongside the pre-existing first-line/line-spacing/keeps. Residual divergence: OO's dialog also has 'Don't add interval between paragraphs of the same style' (right-panel census); WO defers that to the right panel."
-    },
-    "info": {
-      "effektClass": "dialog",
-      "selector": "#btn-fileinfo",
-      "pre": "backstage:info",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#info-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "document name",
-          "selector": "#info-name"
-        },
-        {
-          "name": "document path",
-          "selector": "#info-path"
-        },
-        {
-          "name": "language",
-          "selector": "#info-lang"
-        },
-        {
-          "name": "word/char stats",
-          "selector": "#info-stats"
-        },
-        {
-          "name": "file size",
-          "selector": "#info-size"
-        }
-      ]
-    },
-    "toggledropcap": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"toggleDropcap\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#dropcap-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "position select",
-          "selector": "#dropcap-position"
-        },
-        {
-          "name": "lines",
-          "selector": "#dropcap-lines"
-        },
-        {
-          "name": "distance",
-          "selector": "#dropcap-distance"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-dropcap-ok"
-        }
-      ],
-      "woTab": "insert",
-      "note": "ledger row: insert.drop-cap"
-    },
-    "togglelinenumbers": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"toggleLineNumbers\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#linenumbers-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "mode select",
-          "selector": "#ln-mode"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-linenumbers-ok"
-        }
-      ],
-      "woTab": "layout",
-      "note": "ledger row: page.line-numbers"
-    },
-    "togglewatermark": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"toggleWatermark\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#watermark-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "mode select",
-          "selector": "#wm-mode"
-        },
-        {
-          "name": "custom text",
-          "selector": "#wm-text"
-        },
-        {
-          "name": "color",
-          "selector": "#wm-color"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-watermark-ok"
-        }
-      ],
-      "woTab": "layout",
-      "note": "ledger row: page.watermark"
-    },
-    "togglehyphenation": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"toggleHyphenation\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#hyphenation-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "mode select",
-          "selector": "#hy-mode"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-hyphenation-ok"
-        }
-      ],
-      "woTab": "layout",
-      "note": "ledger row: page.hyphenation-options"
-    },
-    "multilevel": {
-      "effektClass": "dialog",
-      "selector": "[data-cmd=\"multilevel\"]",
-      "assertion": {
-        "kind": "dom-mutation",
-        "selector": "#editor li li"
-      },
-      "woTab": "home",
-      "note": "ledger row: formatting.multilevel-list — ribbon button nests the caret li under its previous sibling (direct DOM op, not a dialog); bullets-numbering-dialog lives on the list ctx menu",
-      "pre": "list"
-    },
-    "file.view": {
-      "effektClass": "dialog",
-      "selector": ".ribbon-page[data-tab=\"view\"] [data-cmd=\"displayMode\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#displaymode-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "mode select",
-          "selector": "#displaymode-mode"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-displaymode-ok"
-        }
-      ],
-      "woTab": "view",
-      "note": "ledger row: file.view"
-    },
-    "review.display-mode": {
-      "effektClass": "dialog",
-      "selector": ".ribbon-page[data-tab=\"collaboration\"] [data-cmd=\"displayMode\"]",
-      "assertion": {
-        "kind": "dialog-visible",
-        "dialogSelector": "#displaymode-dialog"
-      },
-      "subFeatures": [
-        {
-          "name": "mode select",
-          "selector": "#displaymode-mode"
-        },
-        {
-          "name": "apply action",
-          "selector": "#btn-displaymode-ok"
-        }
-      ],
-      "woTab": "collaboration",
-      "note": "ledger row: review.display-mode"
+    {
+     "name": "apply action",
+     "selector": "#btn-protect-apply"
     }
+   ],
+   "woTab": "protection"
+  },
+  "formatting.paragraph-line-spacing": {
+   "effektClass": "dialog",
+   "woTab": "home",
+   "selector": "#line-spacing",
+   "setValue": "options",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#paragraph-settings-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "spacing before numeric",
+     "selector": "[name=spacing-before]"
+    },
+    {
+     "name": "spacing after numeric",
+     "selector": "[name=spacing-after]"
+    },
+    {
+     "name": "first-line indent",
+     "selector": "[name=first-line]"
+    },
+    {
+     "name": "widow/orphan control",
+     "selector": "[name=widow]"
+    }
+   ],
+   "note": "ledger row promoted (L2N-01): the #line-spacing select carries a trailing value=options entry ('Line spacing options\u2026', index.html) whose change handler (editor.js) opens openParagraphSettingsDialog -> #paragraph-settings-dialog, mirroring OO's line-spacing picker leading to the paragraph dialog. setValue drives it headless (a plain .click() on a <select> fires no change); the dialog now carries the OO Spacing group fields \u2014 before/after number inputs (name=spacing-before/spacing-after -> margin-top/bottom via applyParagraphSettings) and the widow/orphan checkbox (name=widow -> class widow-control) alongside the pre-existing first-line/line-spacing/keeps. Residual divergence: OO's dialog also has 'Don't add interval between paragraphs of the same style' (right-panel census); WO defers that to the right panel."
+  },
+  "info": {
+   "effektClass": "dialog",
+   "selector": "#btn-fileinfo",
+   "pre": "backstage:info",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#info-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "document name",
+     "selector": "#info-name"
+    },
+    {
+     "name": "document path",
+     "selector": "#info-path"
+    },
+    {
+     "name": "language",
+     "selector": "#info-lang"
+    },
+    {
+     "name": "word/char stats",
+     "selector": "#info-stats"
+    },
+    {
+     "name": "file size",
+     "selector": "#info-size"
+    }
+   ]
+  },
+  "toggledropcap": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleDropcap\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#dropcap-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "position select",
+     "selector": "#dropcap-position"
+    },
+    {
+     "name": "lines",
+     "selector": "#dropcap-lines"
+    },
+    {
+     "name": "distance",
+     "selector": "#dropcap-distance"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-dropcap-ok"
+    }
+   ],
+   "woTab": "insert",
+   "note": "ledger row: insert.drop-cap"
+  },
+  "togglelinenumbers": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleLineNumbers\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#linenumbers-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "mode select",
+     "selector": "#ln-mode"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-linenumbers-ok"
+    }
+   ],
+   "woTab": "layout",
+   "note": "ledger row: page.line-numbers"
+  },
+  "togglewatermark": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleWatermark\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#watermark-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "mode select",
+     "selector": "#wm-mode"
+    },
+    {
+     "name": "custom text",
+     "selector": "#wm-text"
+    },
+    {
+     "name": "color",
+     "selector": "#wm-color"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-watermark-ok"
+    }
+   ],
+   "woTab": "layout",
+   "note": "ledger row: page.watermark"
+  },
+  "togglehyphenation": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleHyphenation\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hyphenation-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "mode select",
+     "selector": "#hy-mode"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-hyphenation-ok"
+    }
+   ],
+   "woTab": "layout",
+   "note": "ledger row: page.hyphenation-options"
+  },
+  "multilevel": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"multilevel\"]",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor li li"
+   },
+   "woTab": "home",
+   "note": "ledger row: formatting.multilevel-list \u2014 ribbon button nests the caret li under its previous sibling (direct DOM op, not a dialog); bullets-numbering-dialog lives on the list ctx menu",
+   "pre": "list"
+  },
+  "file.view": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"view\"] [data-cmd=\"displayMode\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#displaymode-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "mode select",
+     "selector": "#displaymode-mode"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-displaymode-ok"
+    }
+   ],
+   "woTab": "view",
+   "note": "ledger row: file.view"
+  },
+  "review.display-mode": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"collaboration\"] [data-cmd=\"displayMode\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#displaymode-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "mode select",
+     "selector": "#displaymode-mode"
+    },
+    {
+     "name": "apply action",
+     "selector": "#btn-displaymode-ok"
+    }
+   ],
+   "woTab": "collaboration",
+   "note": "ledger row: review.display-mode"
+  },
+  "formatting.heading-1": {
+   "effektClass": "format",
+   "note": "Heading 1 style card -> formatBlock H1 (first h1 in the fixture doc)",
+   "selector": ".ribbon-page[data-tab=\"home\"] .gallery-card.gc-h1",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "<h1"
+   },
+   "woTab": "home"
+  },
+  "dialog.linenumbers-dialog.l4": {
+   "effektClass": "dialog",
+   "note": "L4 route: line numbers dialog",
+   "selector": "[data-cmd=\"toggleLineNumbers\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "linenumbers-dialog"
+   },
+   "subFeatures": [],
+   "woTab": "layout"
+  },
+  "dialog.text-to-table-dialog.l4": {
+   "effektClass": "dialog",
+   "note": "L4 route: text-to-table dialog",
+   "pre": "menu:[data-i18n=\"Insert.TableMenu\"]",
+   "selector": "[data-cmd=\"convertTextToTable\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#text-to-table-dialog"
+   },
+   "subFeatures": []
+  },
+  "dialog.dropcap-dialog.l4": {
+   "effektClass": "dialog",
+   "note": "L4 route: drop cap dialog",
+   "pre": "ctx-menu",
+   "selector": "[data-ctx=\"DropcapSettings\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "dropcap-dialog"
+   },
+   "subFeatures": []
+  },
+  "dialog.tableoffigures-dialog.l4": {
+   "effektClass": "dialog",
+   "note": "L4 route: table of figures dialog",
+   "selector": "[data-cmd=\"insertTableOfFigures\"]",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "tableoffigures-dialog"
+   },
+   "subFeatures": [],
+   "woTab": "references"
+  },
+  "page.dlg-hyphenation": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleHyphenation\"]",
+   "woTab": "layout",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hyphenation-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #hyphenation-dialog"
+  },
+  "dialog.symbol-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-symbol",
+   "woTab": "insert",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#symbol-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #symbol-dialog"
+  },
+  "dialog.image-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-image",
+   "woTab": "insert",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#image-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #image-dialog"
+  },
+  "dialog.paragraph-settings-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "[data-ctx=\"ParagraphSettings\"]",
+   "pre": "ctx-menu",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#paragraph-settings-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #paragraph-settings-dialog"
+  },
+  "dialog.chart-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-chart",
+   "woTab": "insert",
+   "pre": "menu:#btn-insert-more",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#chart-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #chart-dialog"
+  },
+  "dialog.speech-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"plugins\"] [data-cmd=\"readAloud\"]",
+   "woTab": "plugins",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#speech-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #speech-dialog"
+  },
+  "dialog.hr-settings-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "[data-ctx=\"HorizontalLineSettings\"]",
+   "pre": "ctx-menu",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#hr-settings-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #hr-settings-dialog"
+  },
+  "dialog.find-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-find",
+   "woTab": "home",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#find-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #find-dialog"
+  },
+  "dialog.watermark-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"toggleWatermark\"]",
+   "woTab": "layout",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#watermark-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #watermark-dialog"
+  },
+  "dialog.pagenumber-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-pagenumber",
+   "woTab": "insert",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#pagenumber-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #pagenumber-dialog"
+  },
+  "dialog.bookmark-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-bookmark",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#bookmark-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #bookmark-dialog"
+  },
+  "dialog.toc-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "#btn-toc",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#toc-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #toc-dialog"
+  },
+  "dialog.crossref-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"openCrossref\"]",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#crossref-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #crossref-dialog"
+  },
+  "dialog.caption-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": "[data-cmd=\"insertCaption\"]",
+   "woTab": "references",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#caption-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #caption-dialog"
+  },
+  "page-setup-dialog": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"layout\"] #btn-page-setup",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 page-setup modal (Margins + Page size share the dialog)"
+  },
+  "dialog.columns-dialog.l4": {
+   "effektClass": "dialog",
+   "selector": ".ribbon-page[data-tab=\"layout\"] #btn-columns",
+   "woTab": "layout",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#columns-dialog"
+   },
+   "subFeatures": [],
+   "note": "l4 census route -> #columns-dialog via #btn-columns"
   }
+ }
 }

@@ -1,8 +1,8 @@
 {
- "ranAt": "2026-11-12T17:00:54.297Z",
- "total": 646,
- "pass": 595,
- "knownGap": 51,
+ "ranAt": "2026-11-12T22:41:28.397Z",
+ "total": 668,
+ "pass": 642,
+ "knownGap": 26,
  "fail": 0,
  "results": [
   {
@@ -616,7 +616,7 @@
    "observed": "dialog visible (dropcap-dialog)"
   },
   {
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "insert.date-time",
    "tab": "tab:ins",
    "cls": "structure",
@@ -936,7 +936,7 @@
    "observed": "dialog visible (crossref-dialog)"
   },
   {
-   "token": "inserttableoffigures",
+   "token": "tableoffigures-dialog",
    "feature": "table.table-of-figures",
    "tab": "tab:links",
    "cls": "structure",
@@ -1336,7 +1336,7 @@
    "observed": "dialog visible (pagenumber-dialog)"
   },
   {
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "headerfooter.date-time",
    "tab": "tab:headerfooter",
    "cls": "structure",
@@ -2106,7 +2106,7 @@
    "observed": "found"
   },
   {
-   "token": "pagenumber-dialog",
+   "token": "insert.dlg-date-time",
    "feature": "insert.dlg-date-time",
    "tab": "dialog:Date & time",
    "cls": "dialog",
@@ -2156,13 +2156,13 @@
    "observed": "dialog visible (columns-dialog)"
   },
   {
-   "token": "hyphenation-dialog",
+   "token": "page.dlg-hyphenation",
    "feature": "page.dlg-hyphenation",
    "tab": "dialog:Hyphenation",
-   "cls": "structure",
+   "cls": "dialog",
    "xfail": false,
    "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#hyphenation-dialog\"} +1 subFeatures",
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#hyphenation-dialog\"} +0 subFeatures",
    "observed": "dialog visible (hyphenation-dialog)"
   },
   {
@@ -2196,7 +2196,7 @@
    "observed": "dialog visible (crossref-dialog)"
   },
   {
-   "token": "inserttableoffigures",
+   "token": "tableoffigures-dialog",
    "feature": "table.dlg-table-of-figures",
    "tab": "dialog:Table of figures",
    "cls": "structure",
@@ -2206,7 +2206,7 @@
    "observed": "found"
   },
   {
-   "token": "updatetoc-dialog",
+   "token": "toc-dialog",
    "feature": "table.dlg-table-of-contents",
    "tab": "dialog:Table of contents",
    "cls": "structure",
@@ -2226,7 +2226,7 @@
    "observed": "dialog visible (macro-dialog)"
   },
   {
-   "token": "pagenumber-dialog",
+   "token": "btn-datetime",
    "feature": "headerfooter.dlg-date-time",
    "tab": "dialog:Date & time",
    "cls": "dialog",
@@ -2867,9 +2867,10 @@
    "feature": "shortcut.visithyperlink",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#status\",\"contains\":\"Link \"}",
+   "observed": "text matches \"Link \""
   },
   {
    "token": "ctrl+a",
@@ -3075,10 +3076,11 @@
    "token": "shortcut.resetchar",
    "feature": "shortcut.resetchar",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"lacks\":\"<b>\"}",
+   "observed": "found"
   },
   {
    "token": "ctrl+]",
@@ -3131,14 +3133,14 @@
    "observed": "text-align=right"
   },
   {
-   "token": "ctrl+shift+l",
+   "token": "ctrl+l",
    "feature": "shortcut.leftpara",
    "tab": "shortcut",
-   "cls": "structure",
+   "cls": "format",
    "xfail": false,
    "ok": true,
-   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"contains\":\"<ul>\"}",
-   "observed": "found"
+   "expected": "{\"kind\":\"computed-style\",\"prop\":\"text-align\",\"equals\":\"start\"}",
+   "observed": "text-align=start"
   },
   {
    "token": "ctrl+enter",
@@ -3241,73 +3243,81 @@
    "token": "shortcut.editshape",
    "feature": "shortcut.editshape",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"object-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (object-dialog)"
   },
   {
    "token": "shortcut.editchart",
    "feature": "shortcut.editchart",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"object-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (chart-dialog)"
   },
   {
    "token": "shortcut.bigmoveobjectleft",
    "feature": "shortcut.bigmoveobjectleft",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.bigmoveobjectright",
    "feature": "shortcut.bigmoveobjectright",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.bigmoveobjectup",
    "feature": "shortcut.bigmoveobjectup",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.bigmoveobjectdown",
    "feature": "shortcut.bigmoveobjectdown",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.movefocustonextobject",
    "feature": "shortcut.movefocustonextobject",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "view",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [5,5,\"FIRST\",true,0] -> [2,3,\"DIV\",false,0]"
   },
   {
    "token": "shortcut.movefocustopreviousobject",
    "feature": "shortcut.movefocustopreviousobject",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "view",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [5,5,\"FIRST\",true,0] -> [1,2,\"DIV\",false,0]"
   },
   {
    "token": "ctrl+alt+d",
@@ -3323,37 +3333,41 @@
    "token": "shortcut.movetonextcell",
    "feature": "shortcut.movetonextcell",
    "tab": "shortcut",
-   "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"alpha cell\",true,0] -> [0,0,\"TD\",true,0]"
   },
   {
    "token": "shortcut.movetopreviouscell",
    "feature": "shortcut.movetopreviouscell",
    "tab": "shortcut",
-   "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"delta\",true,0] -> [0,0,\"TD\",true,0]"
   },
   {
    "token": "shortcut.movetonextrow",
    "feature": "shortcut.movetonextrow",
    "tab": "shortcut",
-   "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"delta\",true,0] -> [0,0,\"TD\",true,0]"
   },
   {
    "token": "shortcut.movetopreviousrow",
    "feature": "shortcut.movetopreviousrow",
    "tab": "shortcut",
-   "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"delta\",true,0] -> [0,0,\"TD\",true,0]"
   },
   {
    "token": "shortcut.endparagraphcell",
@@ -3369,10 +3383,11 @@
    "token": "shortcut.addnewrow",
    "feature": "shortcut.addnewrow",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"delta</td></tr><tr>\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.inserttablebreak",
@@ -3493,10 +3508,11 @@
    "token": "shortcut.opencommentfield",
    "feature": "shortcut.opencommentfield",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"comment-dialog\",\"subFeatures\":[]} +0 subFeatures",
+   "observed": "dialog visible (comment-dialog)"
   },
   {
    "token": "ctrl+alt+q",
@@ -3513,18 +3529,20 @@
    "feature": "shortcut.movetostartpreviouspage",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [0,0,\"P\",true,0] -> [0,0,\"Willkommen bei World Office\",true,0]"
   },
   {
    "token": "shortcut.movetostartnextpage",
    "feature": "shortcut.movetostartnextpage",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [3,3,\" zzWillkommen bei World Office\",true,0] -> [0,0,\"P\",true,0]"
   },
   {
    "token": "shortcut.movetostartword",
@@ -3551,18 +3569,20 @@
    "feature": "shortcut.deleteleftword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"lacks\":\" zz\"}",
+   "observed": "found"
   },
   {
    "token": "alt+delete",
    "feature": "shortcut.deleterightword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"lacks\":\" zz\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.cut",
@@ -3668,37 +3688,41 @@
    "token": "shortcut.littlemoveobjectleft",
    "feature": "shortcut.littlemoveobjectleft",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.littlemoveobjectright",
    "feature": "shortcut.littlemoveobjectright",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.littlemoveobjectup",
    "feature": "shortcut.littlemoveobjectup",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.littlemoveobjectdown",
    "feature": "shortcut.littlemoveobjectdown",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"margin-\"}",
+   "observed": "found"
   },
   {
    "token": "ctrl+alt+=",
@@ -3724,10 +3748,11 @@
    "token": "shortcut.replaceunicodetosymbol",
    "feature": "shortcut.replaceunicodetosymbol",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"contains\":\"\\\\u\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.movetonextpage",
@@ -3816,6 +3841,36 @@
    "ok": true,
    "expected": "{\"kind\":\"op-emitted\",\"event\":\"wo:close-document\"}",
    "observed": "events: wo:close-document"
+  },
+  {
+   "token": "applyheading1",
+   "feature": "formatting.heading-1",
+   "tab": "style-gallery",
+   "cls": "format",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"html\":true,\"contains\":\"<h1\"}",
+   "observed": "found"
+  },
+  {
+   "token": "applyheading2",
+   "feature": "formatting.heading-2",
+   "tab": "style-gallery",
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor h2\"}",
+   "observed": "found"
+  },
+  {
+   "token": "applyheading3",
+   "feature": "formatting.heading-3",
+   "tab": "style-gallery",
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor h3\"}",
+   "observed": "found"
   },
   {
    "token": "ctx.insert-caption",
@@ -4965,6 +5020,306 @@
    "observed": "gone"
   },
   {
+   "token": "link-dialog",
+   "feature": "dialog.link-dialog.l4",
+   "tab": "dialog:Hyperlink",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#link-dialog\"} +4 subFeatures",
+   "observed": "dialog visible (link-dialog)"
+  },
+  {
+   "token": "dialog.font-dialog.l4",
+   "feature": "dialog.font-dialog.l4",
+   "tab": "tab:home (font group)",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#font-dialog\"} +10 subFeatures",
+   "observed": "dialog visible (font-dialog)"
+  },
+  {
+   "token": "table-dialog",
+   "feature": "dialog.table-dialog.l4",
+   "tab": "insert:btn-inserttable",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#table-dialog\"} +4 subFeatures",
+   "observed": "dialog visible (table-dialog)"
+  },
+  {
+   "token": "dialog.symbol-dialog.l4",
+   "feature": "dialog.symbol-dialog.l4",
+   "tab": "dialog:Symbol",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#symbol-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (symbol-dialog)"
+  },
+  {
+   "token": "dialog.image-dialog.l4",
+   "feature": "dialog.image-dialog.l4",
+   "tab": "insert:btn-image",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#image-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (image-dialog)"
+  },
+  {
+   "token": "dialog.paragraph-settings-dialog.l4",
+   "feature": "dialog.paragraph-settings-dialog.l4",
+   "tab": "ctx-menu:ParagraphSettings",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#paragraph-settings-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (paragraph-settings-dialog)"
+  },
+  {
+   "token": "dialog.equation-dialog.l4",
+   "feature": "dialog.equation-dialog.l4",
+   "tab": "dialog:equation-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#equation-dialog\"} +4 subFeatures",
+   "observed": "dialog visible (equation-dialog)"
+  },
+  {
+   "token": "dialog.pagecolor-dialog.l4",
+   "feature": "dialog.pagecolor-dialog.l4",
+   "tab": "dialog:pagecolor-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#pagecolor-dialog\"} +2 subFeatures",
+   "observed": "dialog visible (pagecolor-dialog)"
+  },
+  {
+   "token": "dialog.chart-dialog.l4",
+   "feature": "dialog.chart-dialog.l4",
+   "tab": "dialog:chart-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#chart-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (chart-dialog)"
+  },
+  {
+   "token": "dialog.comment-dialog.l4",
+   "feature": "dialog.comment-dialog.l4",
+   "tab": "dialog:comment-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#comment-dialog\"} +3 subFeatures",
+   "observed": "dialog visible (comment-dialog)"
+  },
+  {
+   "token": "dialog.compare-dialog.l4",
+   "feature": "dialog.compare-dialog.l4",
+   "tab": "dialog:compare-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#compare-dialog\"} +3 subFeatures",
+   "observed": "dialog visible (compare-dialog)"
+  },
+  {
+   "token": "dialog.combine-dialog.l4",
+   "feature": "dialog.combine-dialog.l4",
+   "tab": "dialog:combine-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#combine-dialog\"} +3 subFeatures",
+   "observed": "dialog visible (combine-dialog)"
+  },
+  {
+   "token": "dialog.textfromfile-dialog.l4",
+   "feature": "dialog.textfromfile-dialog.l4",
+   "tab": "dialog:textfromfile-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#textfromfile-dialog\"} +3 subFeatures",
+   "observed": "dialog visible (textfromfile-dialog)"
+  },
+  {
+   "token": "dialog.field-dialog.l4",
+   "feature": "dialog.field-dialog.l4",
+   "tab": "dialog:field-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#field-dialog\"} +3 subFeatures",
+   "observed": "dialog visible (field-dialog)"
+  },
+  {
+   "token": "dialog.speech-dialog.l4",
+   "feature": "dialog.speech-dialog.l4",
+   "tab": "dialog:speech-dialog",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#speech-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (speech-dialog)"
+  },
+  {
+   "token": "dialog.hr-settings-dialog.l4",
+   "feature": "dialog.hr-settings-dialog.l4",
+   "tab": "ctx-menu:HorizontalLineSettings",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#hr-settings-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (hr-settings-dialog)"
+  },
+  {
+   "token": "dialog.linenumbers-dialog.l4",
+   "feature": "dialog.linenumbers-dialog.l4",
+   "tab": "layout:btn-linenumbers",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"linenumbers-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (linenumbers-dialog)"
+  },
+  {
+   "token": "dialog.find-dialog.l4",
+   "feature": "dialog.find-dialog.l4",
+   "tab": "toolbar:btn-find",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#find-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (find-dialog)"
+  },
+  {
+   "token": "dialog.text-to-table-dialog.l4",
+   "feature": "dialog.text-to-table-dialog.l4",
+   "tab": "insert:btn-table (Table menu: Convert)",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#text-to-table-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (text-to-table-dialog)"
+  },
+  {
+   "token": "dialog.dropcap-dialog.l4",
+   "feature": "dialog.dropcap-dialog.l4",
+   "tab": "ctx-menu:DropcapSettings",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"dropcap-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (dropcap-dialog)"
+  },
+  {
+   "token": "dialog.watermark-dialog.l4",
+   "feature": "dialog.watermark-dialog.l4",
+   "tab": "layout:btn-watermark",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#watermark-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (watermark-dialog)"
+  },
+  {
+   "token": "dialog.pagenumber-dialog.l4",
+   "feature": "dialog.pagenumber-dialog.l4",
+   "tab": "insert:btn-pagenumber",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#pagenumber-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (pagenumber-dialog)"
+  },
+  {
+   "token": "dialog.bookmark-dialog.l4",
+   "feature": "dialog.bookmark-dialog.l4",
+   "tab": "references:btn-bookmark",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#bookmark-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (bookmark-dialog)"
+  },
+  {
+   "token": "dialog.toc-dialog.l4",
+   "feature": "dialog.toc-dialog.l4",
+   "tab": "references:btn-toc",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#toc-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (toc-dialog)"
+  },
+  {
+   "token": "dialog.crossref-dialog.l4",
+   "feature": "dialog.crossref-dialog.l4",
+   "tab": "references:openCrossref",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#crossref-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (crossref-dialog)"
+  },
+  {
+   "token": "dialog.caption-dialog.l4",
+   "feature": "dialog.caption-dialog.l4",
+   "tab": "references:insertCaption",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#caption-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (caption-dialog)"
+  },
+  {
+   "token": "dialog.tableoffigures-dialog.l4",
+   "feature": "dialog.tableoffigures-dialog.l4",
+   "tab": "references:insertTableOfFigures",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogId\":\"tableoffigures-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (tableoffigures-dialog)"
+  },
+  {
+   "token": "page-setup-dialog",
+   "feature": "dialog.margins-dialog.l4",
+   "tab": "dialog:Margins",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#page-setup-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (page-setup-dialog)"
+  },
+  {
+   "token": "page-setup-dialog",
+   "feature": "dialog.page-size-dialog.l4",
+   "tab": "dialog:Page size",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#page-setup-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (page-setup-dialog)"
+  },
+  {
+   "token": "columns-dialog",
+   "feature": "dialog.columns-dialog.l4",
+   "tab": "dialog:Columns",
+   "cls": "dialog",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#columns-dialog\"} +0 subFeatures",
+   "observed": "dialog visible (columns-dialog)"
+  },
+  {
    "token": "info",
    "feature": "info",
    "tab": "",
@@ -5223,96 +5578,6 @@
    "ok": true,
    "expected": "{\"kind\":\"viewport-flag\",\"rootSelector\":\".backstage-row[data-pane=\\\"settings\\\"]\",\"attr\":\"aria-current\",\"equals\":\"true\"}",
    "observed": "aria-current=true"
-  },
-  {
-   "token": "dialog.link-dialog.l4",
-   "feature": "dialog.link-dialog.l4",
-   "tab": "insert",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#link-dialog\"} +4 subFeatures",
-   "observed": "dialog visible (link-dialog)"
-  },
-  {
-   "token": "dialog.table-dialog.l4",
-   "feature": "dialog.table-dialog.l4",
-   "tab": "insert",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#table-dialog\"} +4 subFeatures",
-   "observed": "dialog visible (table-dialog)"
-  },
-  {
-   "token": "dialog.equation-dialog.l4",
-   "feature": "dialog.equation-dialog.l4",
-   "tab": "insert",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#equation-dialog\"} +4 subFeatures",
-   "observed": "dialog visible (equation-dialog)"
-  },
-  {
-   "token": "dialog.pagecolor-dialog.l4",
-   "feature": "dialog.pagecolor-dialog.l4",
-   "tab": "layout",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#pagecolor-dialog\"} +2 subFeatures",
-   "observed": "dialog visible (pagecolor-dialog)"
-  },
-  {
-   "token": "dialog.comment-dialog.l4",
-   "feature": "dialog.comment-dialog.l4",
-   "tab": "collaboration",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#comment-dialog\"} +3 subFeatures",
-   "observed": "dialog visible (comment-dialog)"
-  },
-  {
-   "token": "dialog.compare-dialog.l4",
-   "feature": "dialog.compare-dialog.l4",
-   "tab": "collaboration",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#compare-dialog\"} +3 subFeatures",
-   "observed": "dialog visible (compare-dialog)"
-  },
-  {
-   "token": "dialog.combine-dialog.l4",
-   "feature": "dialog.combine-dialog.l4",
-   "tab": "collaboration",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#combine-dialog\"} +3 subFeatures",
-   "observed": "dialog visible (combine-dialog)"
-  },
-  {
-   "token": "dialog.textfromfile-dialog.l4",
-   "feature": "dialog.textfromfile-dialog.l4",
-   "tab": "insert",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#textfromfile-dialog\"} +3 subFeatures",
-   "observed": "dialog visible (textfromfile-dialog)"
-  },
-  {
-   "token": "dialog.field-dialog.l4",
-   "feature": "dialog.field-dialog.l4",
-   "tab": "references",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#field-dialog\"} +3 subFeatures",
-   "observed": "dialog visible (field-dialog)"
   },
   {
    "token": "chart.advanced-settings",
@@ -6095,36 +6360,6 @@
    "observed": "dialog closed after #btn-crossref-cancel"
   },
   {
-   "token": "formatting.heading-2",
-   "feature": "formatting.heading-2",
-   "tab": "home",
-   "cls": "structure",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor h2\"}",
-   "observed": "found"
-  },
-  {
-   "token": "formatting.heading-3",
-   "feature": "formatting.heading-3",
-   "tab": "home",
-   "cls": "structure",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor h3\"}",
-   "observed": "found"
-  },
-  {
-   "token": "dialog.font-dialog.l4",
-   "feature": "dialog.font-dialog.l4",
-   "tab": "home",
-   "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#font-dialog\"} +10 subFeatures",
-   "observed": "dialog visible (font-dialog)"
-  },
-  {
    "token": "file.file",
    "feature": "file.file",
    "tab": "insert",
@@ -6163,16 +6398,6 @@
    "ok": true,
    "expected": "{\"kind\":\"computed-style\",\"prop\":\"text-decoration-line\",\"equals\":\"underline\"}",
    "observed": "text-decoration-line=underline"
-  },
-  {
-   "token": "shortcut.leftpara",
-   "feature": "shortcut.leftpara",
-   "tab": "",
-   "cls": "format",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"computed-style\",\"prop\":\"text-align\",\"equals\":\"start\"}",
-   "observed": "text-align=start"
   },
   {
    "token": "shortcut.nonbreakingspace",
@@ -6285,6 +6510,16 @@
    "observed": "found"
   },
   {
+   "token": "ctrl+shift+l",
+   "feature": "ctrl+shift+l",
+   "tab": "",
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor\",\"contains\":\"<ul>\"}",
+   "observed": "found"
+  },
+  {
    "token": "emdash",
    "feature": "emdash",
    "tab": "",
@@ -6383,6 +6618,16 @@
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#editor\",\"contains\":\"PASTE-MARKER\"}",
    "observed": "text matches \"PASTE-MARKER\""
+  },
+  {
+   "token": "hyphenation-dialog",
+   "feature": "hyphenation-dialog",
+   "tab": "layout",
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#hyphenation-dialog\"} +1 subFeatures",
+   "observed": "dialog visible (hyphenation-dialog)"
   },
   {
    "token": "file.editing",

@@ -381,16 +381,27 @@
    "effektClass": "op"
   },
   "shortcut.visithyperlink": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: visit-hyperlink key \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Enter with caret in a hyperlink opens it (VisitHyperlink) \u2014 statusbar note is the headless-observable",
+   "effektClass": "op",
+   "key": "Enter",
+   "pre": "link-at-caret",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#status",
+    "contains": "Link "
+   }
   },
   "shortcut.resetchar": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: ctrl+space reset char format \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Ctrl+Space strips direct char formatting (ResetChar)",
+   "effektClass": "format",
+   "key": "Control+Space",
+   "pre": "resetchar-bold",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "lacks": "<b>"
+   }
   },
   "shortcut.mixedindent": {
    "xfail": true,
@@ -405,16 +416,26 @@
    "effektClass": "op"
   },
   "shortcut.editshape": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: edit-shape key \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Enter on selected shape opens the object dialog (EditShape)",
+   "effektClass": "dialog",
+   "key": "Enter",
+   "pre": "object-selection",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "object-dialog"
+   },
+   "subFeatures": []
   },
   "shortcut.editchart": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: edit-chart key \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Enter on selected chart opens the chart editor (EditChart)",
+   "effektClass": "dialog",
+   "key": "Enter",
+   "pre": "chart-selection",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "object-dialog"
+   },
+   "subFeatures": []
   },
   "shortcut.insertlinebreakmultilineform": {
    "xfail": true,
@@ -423,28 +444,49 @@
    "effektClass": "op"
   },
   "shortcut.opencommentfield": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: open comment field key \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Alt+Meta+A opens the comment field dialog (openCommentDialog, editor.js ~12846) \u2014 ported from OO",
+   "effektClass": "dialog",
+   "key": "Alt+Meta+a",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogId": "comment-dialog",
+    "subFeatures": []
+   },
+   "subFeatures": []
   },
   "alt+backspace": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: delete word left \u2014 bare-Alt keys unhandled \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Alt+Backspace deletes the word left of the caret (DeleteWordLeft)",
+   "effektClass": "op",
+   "key": "Alt+Backspace",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
+   }
   },
   "alt+delete": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: delete word right \u2014 bare-Alt keys unhandled \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Alt+Delete deletes the word right of the caret (DeleteWordRight)",
+   "effektClass": "op",
+   "key": "Alt+Delete",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "lacks": " zz"
+   }
   },
   "shortcut.replaceunicodetosymbol": {
-   "xfail": true,
-   "knownGap": true,
-   "note": "KNOWN-GAP: niche symbol macro \u2014 no WO handler \u2014 OO-only until ported",
-   "effektClass": "op"
+   "note": "Alt+Meta+X converts \\uXXXX left of caret (replaceUnicodeEscape, editor.js ~12601) \u2014 ported from OO",
+   "effektClass": "format",
+   "key": "Alt+Meta+x",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "\\u"
+   }
   },
   "shortcut.inserttab": {
    "key": "Tab",
@@ -499,6 +541,168 @@
     "lacks": "indent-"
    },
    "note": "Ctrl+Shift+M outdent removes the indent marker again"
+  },
+  "shortcut.movetonextcell": {
+   "key": "Tab",
+   "pre": "in-table",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Tab in table cell -> next cell (MoveToNextCell)"
+  },
+  "shortcut.movetopreviouscell": {
+   "key": "Shift+Tab",
+   "pre": "in-table-last",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Shift+Tab -> previous cell (MoveToPreviousCell)"
+  },
+  "shortcut.movetonextrow": {
+   "key": "Tab",
+   "pre": "in-table-last",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Tab from last cell wraps to next row (MoveToNextRow); the AddNewRow mutation is its own contract"
+  },
+  "shortcut.movetopreviousrow": {
+   "key": "Shift+Tab",
+   "pre": "in-table-last",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Shift+Tab -> previous row first cell (MoveToPreviousRow)"
+  },
+  "shortcut.addnewrow": {
+   "key": "Tab",
+   "pre": "in-table-last",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "delta</td></tr><tr>"
+   },
+   "note": "Tab in last cell of last row appends a fresh row (AddNewRow)"
+  },
+  "shortcut.movefocustonextobject": {
+   "key": "Tab",
+   "pre": "object-selection",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Tab with object selected -> next object (MoveFocusToNextObject)"
+  },
+  "shortcut.movefocustopreviousobject": {
+   "key": "Shift+Tab",
+   "pre": "object-selection",
+   "effektClass": "view",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "Shift+Tab -> previous object (MoveFocusToPreviousObject)"
+  },
+  "shortcut.bigmoveobjectleft": {
+   "key": "ArrowLeft",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "ArrowLeft with object selected moves it 10px (BigMoveObjectLeft)"
+  },
+  "shortcut.littlemoveobjectleft": {
+   "key": "Meta+ArrowLeft",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "Meta+ArrowLeft nudge 1px (LittleMoveObjectLeft)"
+  },
+  "shortcut.bigmoveobjectright": {
+   "key": "ArrowRight",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "ArrowRight with object selected moves it 10px (BigMoveObjectRight)"
+  },
+  "shortcut.littlemoveobjectright": {
+   "key": "Meta+ArrowRight",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "Meta+ArrowRight nudge 1px (LittleMoveObjectRight)"
+  },
+  "shortcut.bigmoveobjectup": {
+   "key": "ArrowUp",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "ArrowUp with object selected moves it 10px (BigMoveObjectUp)"
+  },
+  "shortcut.littlemoveobjectup": {
+   "key": "Meta+ArrowUp",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "Meta+ArrowUp nudge 1px (LittleMoveObjectUp)"
+  },
+  "shortcut.bigmoveobjectdown": {
+   "key": "ArrowDown",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "ArrowDown with object selected moves it 10px (BigMoveObjectDown)"
+  },
+  "shortcut.littlemoveobjectdown": {
+   "key": "Meta+ArrowDown",
+   "pre": "object-selection",
+   "effektClass": "format",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "html": true,
+    "contains": "margin-"
+   },
+   "note": "Meta+ArrowDown nudge 1px (LittleMoveObjectDown)"
   }
  }
 }
