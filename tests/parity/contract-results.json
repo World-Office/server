@@ -1,8 +1,8 @@
 {
- "ranAt": "2026-11-12T22:41:28.397Z",
+ "ranAt": "2026-11-13T05:42:07.637Z",
  "total": 668,
- "pass": 642,
- "knownGap": 26,
+ "pass": 659,
+ "knownGap": 9,
  "fail": 0,
  "results": [
   {
@@ -623,7 +623,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#editor\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-12/2026-11-11)"
+   "observed": "text contains today/yesterday (2026-11-13/2026-11-12)"
   },
   {
    "token": "btn-textfile",
@@ -1343,7 +1343,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#editor\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-12/2026-11-11)"
+   "observed": "text contains today/yesterday (2026-11-13/2026-11-12)"
   },
   {
    "token": "btn-field",
@@ -2312,7 +2312,8 @@
    "cls": "view",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#doc-lang\"} +1 subFeatures",
+   "observed": "no visible dialog among 1 × #doc-lang"
   },
   {
    "token": "sb-lang",
@@ -2321,7 +2322,8 @@
    "cls": "view",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#doc-lang\"} +1 subFeatures",
+   "observed": "no visible dialog among 1 × #doc-lang"
   },
   {
    "token": "sb-doc-spell",
@@ -2440,7 +2442,7 @@
    "cls": "op",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "observed": "ERROR: control not found: [data-cmd=\"[object Object]\"]"
   },
   {
    "token": "shortcut.saveas",
@@ -2647,36 +2649,40 @@
    "feature": "shortcut.movetolowerheaderfooter",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"Willkommen bei World Office\",true,0] -> [5,5,\"Die Überschrift oben beginnt eine neue Seite — Paginierung, Shared Strings und Einheitenkonvertierung folgen den OO-Core-Verträgen.\",true,0]"
   },
   {
    "token": "shortcut.movetoupperheaderfooter",
    "feature": "shortcut.movetoupperheaderfooter",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"Willkommen bei World Office\",true,0] -> [0,0,\"Head text\",true,0]"
   },
   {
    "token": "shortcut.movetolowerheader",
    "feature": "shortcut.movetolowerheader",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"Willkommen bei World Office\",true,0] -> [1,1,\"Foot text\",true,0]"
   },
   {
    "token": "shortcut.movetoupperheader",
    "feature": "shortcut.movetoupperheader",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [2,2,\"Willkommen bei World Office\",true,0] -> [1,1,\"Head text\",true,0]"
   },
   {
    "token": "shortcut.endparagraph",
@@ -2723,18 +2729,20 @@
    "feature": "shortcut.equationchangealignmentleft",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"img.vector-object[data-eq-align=\\\"left\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.equationchangealignmentright",
    "feature": "shortcut.equationchangealignmentright",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"img.vector-object[data-eq-align=\\\"right\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "backspace",
@@ -2823,16 +2831,17 @@
    "cls": "op",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "observed": "ERROR: control not found: [data-cmd=\"[object Object]\"]"
   },
   {
    "token": "shortcut.specialoptionskeeptextonly",
    "feature": "shortcut.specialoptionskeeptextonly",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#editor\",\"contains\":\"PASTE-MARKER\"}",
+   "observed": "text matches \"PASTE-MARKER\""
   },
   {
    "token": "shortcut.specialoptionsoverwritecells",
@@ -2841,7 +2850,7 @@
    "cls": "op",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "observed": "ERROR: control not found: [data-cmd=\"[object Object]\"]"
   },
   {
    "token": "shortcut.specialoptionsnesttable",
@@ -2850,7 +2859,7 @@
    "cls": "op",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "observed": "ERROR: control not found: [data-cmd=\"[object Object]\"]"
   },
   {
    "token": "ctrl+k",
@@ -3217,27 +3226,30 @@
    "feature": "shortcut.inserttab",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#editor\",\"contains\":\"\\t\"}",
+   "observed": "text matches \"\\t\""
   },
   {
    "token": "shortcut.mixedindent",
    "feature": "shortcut.mixedindent",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor ul ul li\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.mixedunindent",
    "feature": "shortcut.mixedunindent",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#editor ul ul li\",\"absent\":true}",
+   "observed": "gone"
   },
   {
    "token": "shortcut.editshape",
@@ -3404,45 +3416,50 @@
    "feature": "shortcut.movetonextform",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus ff-1 -> ff-2"
   },
   {
    "token": "shortcut.movetopreviousform",
    "feature": "shortcut.movetopreviousform",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus ff-1 -> BODY"
   },
   {
    "token": "shortcut.choosenextcomboboxoption",
    "feature": "shortcut.choosenextcomboboxoption",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"wo:field-op\"}",
+   "observed": "events: wo:field-op"
   },
   {
    "token": "shortcut.choosepreviouscomboboxoption",
    "feature": "shortcut.choosepreviouscomboboxoption",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"wo:field-op\"}",
+   "observed": "events: wo:field-op"
   },
   {
    "token": "shortcut.insertlinebreakmultilineform",
    "feature": "shortcut.insertlinebreakmultilineform",
    "tab": "shortcut",
-   "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "cls": "structure",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#ff-ml\",\"html\":true,\"contains\":\"<br>\"}",
+   "observed": "text matches \"<br>\""
   },
   {
    "token": "ctrl+alt+g",
@@ -3811,7 +3828,8 @@
    "cls": "view",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "expected": "undefined",
+   "observed": "unknown assertion.kind unspecified"
   },
   {
    "token": "shortcut.previousfiletab",
@@ -3820,7 +3838,8 @@
    "cls": "view",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "expected": "undefined",
+   "observed": "unknown assertion.kind unspecified"
   },
   {
    "token": "shortcut.openexistingfile",
@@ -4117,9 +4136,10 @@
    "feature": "ctx.edit-wrap-boundary",
    "tab": "ctx-menu",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"wo:edit-wrap-boundary\"}",
+   "observed": "events: wo:edit-wrap-boundary"
   },
   {
    "token": "ctx.in-line-with-text",
@@ -4336,9 +4356,10 @@
    "feature": "ctx.edit-points",
    "tab": "ctx-menu",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"wo:edit-points\"}",
+   "observed": "events: wo:edit-points"
   },
   {
    "token": "ctx.edit-object",
@@ -4607,7 +4628,8 @@
    "cls": "dialog",
    "xfail": true,
    "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\"#doc-lang\"} +1 subFeatures",
+   "observed": "no visible dialog among 1 × #doc-lang"
   },
   {
    "token": "ctx.ignore",

@@ -1,0 +1,173 @@
+{
+ "entries": {
+  "shortcut.specialoptionskeeptextonly": {
+   "effektClass": "op",
+   "key": "Control+KeyT",
+   "seedClipboard": "PASTE-MARKER keep-text-only",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "PASTE-MARKER"
+   },
+   "note": "PROMOTED: bare Ctrl+T is bound in editor.js (pasteTextOnly, same path as Ctrl+Shift+V) — OO SpecialOptionsKeepTextOnly"
+  },
+  "shortcut.inserttab": {
+   "effektClass": "structure",
+   "key": "Tab",
+   "pre": "dirty-type",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#editor",
+    "contains": "\t"
+   },
+   "note": "PROMOTED: Tab block fallback inserts a tab character in plain body (OO InsertTab); object/table/list/form contexts keep their handlers"
+  },
+  "shortcut.mixedindent": {
+   "effektClass": "op",
+   "key": "Tab",
+   "pre": "in-list",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor ul ul li"
+   },
+   "note": "PROMOTED: Tab inside a list item indents it (OO MixedIndent — the list-context Tab branch, execCommand indent, native undoable)"
+  },
+  "shortcut.mixedunindent": {
+   "effektClass": "op",
+   "key": "Shift+Tab",
+   "pre": "in-nested-list",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor ul ul li",
+    "absent": true
+   },
+   "note": "PROMOTED: Shift+Tab inside a nested list item outdents it (OO MixedUnIndent — execCommand outdent)"
+  },
+  "shortcut.equationchangealignmentright": {
+   "effektClass": "op",
+   "key": "Tab",
+   "pre": "equation-selection",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "img.vector-object[data-eq-align=\"right\"]"
+   },
+   "note": "PROMOTED: Tab with an equation selected aligns right (OO EquationChangeAlignmentRight) — data-eq-align attr + margin auto, round-trips via data-spec"
+  },
+  "shortcut.equationchangealignmentleft": {
+   "effektClass": "op",
+   "key": "Shift+Tab",
+   "pre": "equation-selection",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "img.vector-object[data-eq-align=\"left\"]"
+   },
+   "note": "PROMOTED: Shift+Tab with an equation selected aligns left (OO EquationChangeAlignmentLeft)"
+  },
+  "shortcut.movetonextform": {
+   "effektClass": "view",
+   "key": "Tab",
+   "pre": "form-fields",
+   "assertion": {
+    "kind": "focus-moved"
+   },
+   "note": "PROMOTED: Tab from inside a form control focuses the next .wo-form-field control (OO MoveToNextForm)"
+  },
+  "shortcut.movetopreviousform": {
+   "effektClass": "view",
+   "key": "Shift+Tab",
+   "pre": "form-fields",
+   "assertion": {
+    "kind": "focus-moved"
+   },
+   "note": "PROMOTED: Shift+Tab from inside a form control focuses the previous one (OO MoveToPreviousForm)"
+  },
+  "shortcut.choosenextcomboboxoption": {
+   "effektClass": "op",
+   "key": "ArrowDown",
+   "pre": "form-combobox",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:field-op"
+   },
+   "note": "PROMOTED: ArrowDown in a dropdown form field picks the next option and emits wo:field-op (OO ChooseNextComboBoxOption)"
+  },
+  "shortcut.choosepreviouscomboboxoption": {
+   "effektClass": "op",
+   "key": "ArrowUp",
+   "pre": "form-combobox-last",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:field-op"
+   },
+   "note": "PROMOTED: ArrowUp in a dropdown form field picks the previous option and emits wo:field-op (OO ChoosePreviousComboBoxOption)"
+  },
+  "shortcut.insertlinebreakmultilineform": {
+   "effektClass": "structure",
+   "key": "Enter",
+   "pre": "form-multiline",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#ff-ml",
+    "html": true,
+    "contains": "<br>"
+   },
+   "note": "PROMOTED: Enter inside a multiline form field inserts a line break instead of splitting the paragraph (OO InsertLineBreakMultilineForm; new Forms-tab multiline field)"
+  },
+  "shortcut.movetoupperheader": {
+   "effektClass": "view",
+   "key": "Alt+PageUp",
+   "pre": "hf-doc",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "PROMOTED: Alt+PageUp with a page header present moves the caret into it (OO MoveToUpperHeader); without page parts Alt+Page stays page-start nav"
+  },
+  "shortcut.movetolowerheader": {
+   "effektClass": "view",
+   "key": "Alt+PageDown",
+   "pre": "hf-doc",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "PROMOTED: Alt+PageDown with a page footer present moves the caret into it (OO MoveToLowerHeader)"
+  },
+  "shortcut.movetoupperheaderfooter": {
+   "effektClass": "view",
+   "key": "PageUp",
+   "pre": "hf-doc",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "PROMOTED: bare PageUp on the first page with a header present jumps into the header (OO MoveToUpperHeaderFooter); mid-document paging stays native"
+  },
+  "shortcut.movetolowerheaderfooter": {
+   "effektClass": "view",
+   "key": "PageDown",
+   "pre": "hf-doc",
+   "assertion": {
+    "kind": "selection-moved"
+   },
+   "note": "PROMOTED: bare PageDown on the last page with a footer present jumps into the footer (OO MoveToLowerHeaderFooter)"
+  },
+  "ctx.edit-wrap-boundary": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "selector": "[data-ctx=\"EditWrapBoundary\"]",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:edit-wrap-boundary"
+   },
+   "note": "PROMOTED: loud-limited divergence has a real observable — the wo:edit-wrap-boundary CustomEvent with detail {available:false, onObject:true} is the honest WO surface until a vector contour model exists"
+  },
+  "ctx.edit-points": {
+   "effektClass": "op",
+   "pre": "ctx-menu-on-image",
+   "selector": "[data-ctx=\"EditPoints\"]",
+   "assertion": {
+    "kind": "op-emitted",
+    "event": "wo:edit-points"
+   },
+   "note": "PROMOTED: wo:edit-points CustomEvent marker is the observable (no shape contour editor subsystem; status + console marker per WO-22 decision)"
+  }
+ }
+}

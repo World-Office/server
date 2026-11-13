@@ -12685,6 +12685,18 @@
     const sel = window.getSelection();
     const nd = sel && sel.anchorNode;
     const host = nd && (nd.nodeType === 1 ? nd : nd.parentElement);
+    // Enter inside a multiline form field inserts a line break instead of
+    // splitting the paragraph (InsertLineBreakMultilineForm).
+    const mfld = host && host.closest ? host.closest(".wo-form-field[data-form-field=\"multiline\"]") : null;
+    if (mfld && document.getElementById("editor").contains(mfld)) {
+      ev.preventDefault(); ev.stopPropagation();
+      const r2 = sel.getRangeAt(0);
+      const br = document.createElement("br");
+      r2.insertNode(br);
+      r2.setStartAfter(br); r2.collapse(true);
+      sel.removeAllRanges(); sel.addRange(r2);
+      return;
+    }
     const link = host && host.closest ? host.closest("#editor a[href]") : null;
     if (link) {
       ev.preventDefault(); ev.stopPropagation();
@@ -12786,27 +12798,82 @@
     // Word-wise delete: bare Alt+Backspace deletes the word left of the
     // caret, Alt+Delete the word right (DeleteWordLeft/Right). Selection
     // modify("extend", "word") + delete is the standard DOM trick.
-    // OO page-start navigation: Alt+PageDown/Alt+PageUp (MoveToStartNextPage
-    // / MoveToStartPreviousPage) — caret to the first text position of the
-    // next/previous paginated sheet. The browser does not consume Alt+Page.
+    // Combobox form fields: ArrowDown/ArrowUp pick the next/previous
+    // option (ChooseNextComboBoxOption / ChoosePreviousComboBoxOption) and
+    // report it as a wo:field-op like every other form interaction.
+    if ((ev.key === "ArrowDown" || ev.key === "ArrowUp") && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      const fe = document.activeElement;
+      if (fe && fe.tagName === "SELECT" && fe.closest && fe.closest(".wo-form-field") && editor.contains(fe)) {
+        ev.preventDefault();
+        const n = ev.key === "ArrowDown" ? fe.selectedIndex + 1 : fe.selectedIndex - 1;
+        if (n >= 0 && n < fe.options.length) {
+          fe.selectedIndex = n;
+          fe.dispatchEvent(new Event("change", { bubbles: true }));
+          setStatus((fe.options[n].text || "").slice(0, 60) || (n + 1) + "/" + fe.options.length);
+          window.dispatchEvent(new CustomEvent("wo:field-op", { detail: { op: "combobox-option", index: n } }));
+        }
+        return;
+      }
+    }
+    // OO header/footer navigation + page-start navigation on Alt+PageDown /
+    // Alt+PageUp (MoveToLowerHeader / MoveToUpperHeader when the document
+    // has the corresponding page part, MoveToStartNextPage /
+    // MoveToStartPreviousPage otherwise). The browser does not consume
+    // Alt+Page.
     if (ev.altKey && !ev.ctrlKey && !ev.metaKey && (ev.key === "PageDown" || ev.key === "PageUp")) {
-      const pages = Array.from(editor.querySelectorAll('[class*="wo-page"]'));
-      if (pages.length > 0) {
-        const sel = window.getSelection();
-        let cur = sel && sel.anchorNode;
-        while (cur && cur !== editor) { if (pages.includes(cur)) break; cur = cur.parentNode; }
-        const i = pages.indexOf(cur);
-        const nx = pages[ev.key === "PageDown" ? Math.min(pages.length - 1, i + 1) : Math.max(0, i - 1)];
-        if (nx && nx !== cur) {
+      const hf = ev.key === "PageDown" ? editor.querySelector(":scope > footer.page-footer") : editor.querySelector(":scope > header.page-header");
+      if (hf) {
+        ev.preventDefault();
+        editor.focus();
+        const r = document.createRange();
+        r.setStart(hf.firstChild || hf, Math.min(1, (hf.firstChild && hf.firstChild.length) || 1));
+        r.collapse(true);
+        const sl = window.getSelection();
+        sl.removeAllRanges(); sl.addRange(r);
+        setStatus(ev.key === "PageDown" ? (t.lng === "de" ? "Fußzeile" : "Footer") : (t.lng === "de" ? "Kopfzeile" : "Header"));
+      } else {
+        const pages = Array.from(editor.querySelectorAll('[class*="wo-page"]'));
+        if (pages.length > 0) {
+          const sel = window.getSelection();
+          let cur = sel && sel.anchorNode;
+          while (cur && cur !== editor) { if (pages.includes(cur)) break; cur = cur.parentNode; }
+          const i = pages.indexOf(cur);
+          const nx = pages[ev.key === "PageDown" ? Math.min(pages.length - 1, i + 1) : Math.max(0, i - 1)];
+          if (nx && nx !== cur) {
+            ev.preventDefault();
+            editor.focus();
+            const r = document.createRange();
+            const tgt = nx.querySelector("p, h1, h2, td") || nx;
+            r.setStart(tgt.firstChild || tgt, 0);
+            r.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(r);
+            setStatus((t.lng === "de" ? "Seite " : "Page ") + (pages.indexOf(nx) + 1));
+          }
+        }
+      }
+    }
+    // Bare PageUp/PageDown at the document edges jump to the page part
+    // (MoveToUpperHeaderFooter / MoveToLowerHeaderFooter): PageUp from the
+    // FIRST page goes to the header, PageDown from the LAST page to the
+    // footer. Mid-document paging stays native (caret/scroll).
+    if (!ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && (ev.key === "PageDown" || ev.key === "PageUp")) {
+      const pages = Array.from(editor.querySelectorAll(':scope > [class*="wo-page"]'));
+      const sel = window.getSelection();
+      let cur = sel && sel.anchorNode;
+      while (cur && cur !== editor && cur.nodeType === 1) { if (pages.includes(cur)) break; cur = cur.parentNode; }
+      const onEdge = pages.length > 0 && pages.includes(cur) &&
+        (ev.key === "PageUp" ? cur === pages[0] : cur === pages[pages.length - 1]);
+      if (onEdge) {
+        const hf = ev.key === "PageUp" ? editor.querySelector(":scope > header.page-header") : editor.querySelector(":scope > footer.page-footer");
+        if (hf) {
           ev.preventDefault();
           editor.focus();
           const r = document.createRange();
-          const tgt = nx.querySelector("p, h1, h2, td") || nx;
-          r.setStart(tgt.firstChild || tgt, 0);
+          r.setStart(hf.firstChild || hf, Math.min(1, (hf.firstChild && hf.firstChild.length) || 1));
           r.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(r);
-          setStatus((t.lng === "de" ? "Seite " : "Page ") + (pages.indexOf(nx) + 1));
+          sel.removeAllRanges(); sel.addRange(r);
+          setStatus(ev.key === "PageUp" ? (t.lng === "de" ? "Kopfzeile" : "Header") : (t.lng === "de" ? "Fußzeile" : "Footer"));
         }
       }
     }
@@ -13061,12 +13128,44 @@
     // round-trip the resulting nested <ul>/<ol> as "List Bullet/Number 2".
     // Elsewhere Tab keeps its default focus-navigation behaviour (WCAG).
     if (ev.key === "Tab" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      // Form-field focus cycle (MoveToNextForm / MoveToPreviousForm): when
+      // focus sits inside a form control, Tab/Shift+Tab walks the
+      // document's form fields instead of leaving the editor.
+      const fe = document.activeElement;
+      if (fe && fe !== editor && fe.closest && fe.closest(".wo-form-field") && editor.contains(fe)) {
+        ev.preventDefault();
+        const fields = Array.from(editor.querySelectorAll(".wo-form-field"));
+        const cur = fe.closest(".wo-form-field");
+        const i = fields.indexOf(cur);
+        const nx = fields[ev.shiftKey ? Math.max(0, i - 1) : Math.min(fields.length - 1, i + 1)] || cur;
+        const ctl = nx.querySelector("input, select, textarea") || nx;
+        ctl.focus();
+        setStatus(ev.shiftKey ? "Formularfeld: vorheriges" : "Formularfeld: nächstes");
+        return;
+      }
       // Tab with a floating object selected moves the OBJECT focus instead
       // of the caret (MoveFocusToNext/PreviousObject; Shift = previous).
       {
         const obj = selectedObject();
         if (obj) {
           ev.preventDefault();
+          // Equation alignment: Tab = right, Shift+Tab = left
+          // (EquationChangeAlignmentRight/Left) — recorded on the vector
+          // object's data-eq-align attribute (and spec) so it round-trips.
+          if ((obj.getAttribute("data-kind") || obj.getAttribute("data-object")) === "equation") {
+            const align = ev.shiftKey ? "left" : "right";
+            obj.setAttribute("data-eq-align", align);
+            obj.style.marginLeft = align === "right" ? "auto" : "";
+            obj.style.marginRight = align === "left" ? "auto" : "";
+            try {
+              const spec = JSON.parse(obj.getAttribute("data-spec") || "{}");
+              spec.align = align;
+              obj.setAttribute("data-spec", JSON.stringify(spec));
+            } catch (err) { /* attribute-only fallback */ }
+            setStatus(t.lng === "de" ? ("Formel: " + (ev.shiftKey ? "links" : "rechts")) : ("Equation: " + align));
+            markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+            return;
+          }
           const objs = Array.from(editor.querySelectorAll("div.object, img.vector-object, svg.wo-equation"))
             .filter((o) => editor.contains(o));
           const i = objs.indexOf(obj);
@@ -13131,6 +13230,15 @@
         } catch (err) {
           /* fall back to default */
         }
+        return;
+      }
+      // Plain body text: Tab inserts a tab character (OO InsertTab). The
+      // editor is a document surface — Tab is a document key. Shift+Tab
+      // keeps its native focus-back behaviour for keyboard users.
+      if (!ev.shiftKey && !READ_ONLY) {
+        ev.preventDefault();
+        document.execCommand("insertText", false, "\t");
+        markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
         return;
       }
     }
@@ -15990,6 +16098,14 @@
       field.innerHTML = '<select style="pointer-events:auto"><option value="">Option 1</option><option value="">Option 2</option></select>';
     } else if (fieldType === "insertDateField") {
       field.innerHTML = '<input type="date" style="pointer-events:auto">';
+    } else if (fieldType === "insertMultilineField") {
+      field.setAttribute("contenteditable", "true");
+      field.setAttribute("data-placeholder", "Enter text");
+      field.style.display = "inline-block";
+      field.style.minWidth = "180px";
+      field.style.minHeight = "2em";
+      field.style.border = "1px dashed var(--border, #bbb)";
+      field.textContent = " ";
     } else {
       field.innerHTML = '<input type="text" placeholder="Enter text" style="pointer-events:auto">';
     }

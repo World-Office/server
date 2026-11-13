@@ -386,7 +386,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
@@ -483,6 +483,128 @@ async function subFeatureAudit(page, ov, dialogSel) {
           const sel = window.getSelection();
           sel.removeAllRanges();
           sel.addRange(range);
+          ed.focus();
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'equation-selection') {
+        // equation alignment contracts: a vector-object equation, selected
+        // via real click (sets lastObjectPick)
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>before</p><img id="fixture-eq" class="inline-object vector-object" data-kind="equation" data-spec=\"{\"family\":\"linear\",\"text\":\"y=x\"}\" alt="__wo-equation__" style="width:200px;height:60px" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><p>after</p>';
+          ed.focus();
+        });
+        await page.waitForSelector('#fixture-eq', { timeout: 3000 });
+        await page.locator('#fixture-eq').click({ timeout: 5000 });
+        await sleep(200);
+      }
+      else if (ov.pre === 'form-fields') {
+        // form-field focus cycle: two fields, focus in the first input
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>F1 <span class="form-field wo-form-field" contenteditable="false" data-form-field="text"><input type="text" id="ff-1" value="one" style="pointer-events:auto"></span> mid <span class="form-field wo-form-field" contenteditable="false" data-form-field="dropdown"><select id="ff-2" style="pointer-events:auto"><option value="a">Alpha</option><option value="b">Beta</option></select></span> F2</p>';
+          const first = ed.querySelector('#ff-1');
+          if (first) first.focus();
+        });
+        await sleep(150);
+      }
+      else if (ov.pre === 'form-combobox') {
+        // combobox option picking: focus inside the dropdown select
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>Combo <span class="form-field wo-form-field" contenteditable="false" data-form-field="dropdown"><select id="ff-cb" style="pointer-events:auto"><option value="a">Alpha</option><option value="b">Beta</option><option value="c">Gamma</option></select></span> end</p>';
+          const cb = ed.querySelector('#ff-cb');
+          if (cb) cb.focus();
+        });
+        await sleep(150);
+      }
+      else if (ov.pre === 'form-combobox-last') {
+        // combobox option picking UPWARD: focus at the LAST option so
+        // ArrowUp has an option to fall back to
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>Combo <span class="form-field wo-form-field" contenteditable="false" data-form-field="dropdown"><select id="ff-cb" style="pointer-events:auto"><option value="a">Alpha</option><option value="b">Beta</option><option value="c">Gamma</option></select></span> end</p>';
+          const cb = ed.querySelector('#ff-cb');
+          if (cb) { cb.selectedIndex = cb.options.length - 1; cb.focus(); }
+        });
+        await sleep(150);
+      }
+      else if (ov.pre === 'form-multiline') {
+        // multiline form line break: caret inside the editable field
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>ML <span class="form-field wo-form-field" data-form-field="multiline" contenteditable="true" id="ff-ml">first line</span> end</p>';
+          const ml = ed.querySelector('#ff-ml');
+          if (!ml) throw new Error('multiline field missing');
+          ed.focus();
+          const r = document.createRange();
+          r.setStart(ml.firstChild, ml.firstChild.length);
+          r.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(r);
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'in-list') {
+        // list indent: caret in a flat list item
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<ul><li id="li-mark">item one</li><li>item two</li></ul>';
+          ed.focus();
+          const li = ed.querySelector('#li-mark');
+          const r = document.createRange();
+          r.setStart(li.firstChild, 2);
+          r.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(r);
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'in-nested-list') {
+        // list outdent: caret in the nested (indented) item
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<ul><li>outer<ul><li id="li-nested">inner</li></ul></li></ul>';
+          ed.focus();
+          const li = ed.querySelector('#li-nested');
+          const r = document.createRange();
+          r.setStart(li.firstChild, 2);
+          r.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(r);
+        });
+        await sleep(120);
+      }
+      else if (ov.pre === 'hf-doc') {
+        // header/footer navigation: keep the paginated demo doc, add both
+        // page parts, caret at the start of the FIRST page body
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const pages = ed.querySelectorAll(':scope > [class*="wo-page"]');
+          if (!pages.length) throw new Error('no wo-page sheets');
+          const hdr = document.createElement('header');
+          hdr.className = 'page-header';
+          hdr.textContent = 'Head text';
+          const ftr = document.createElement('footer');
+          ftr.className = 'page-footer';
+          ftr.textContent = 'Foot text';
+          ed.insertBefore(hdr, ed.firstChild);
+          ed.appendChild(ftr);
+          const t = pages[0].querySelector('p, h1, h2, td') || pages[0];
+          const range = document.createRange();
+          range.setStart(t.firstChild || t, 2);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges(); sel.addRange(range);
           ed.focus();
         });
         await sleep(120);
@@ -1382,6 +1504,8 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:chart-elements', window.__woCollect);
           window.addEventListener('wo:coedit-mode', window.__woCollect);
           window.addEventListener('wo:object-op', window.__woCollect);
+          window.addEventListener('wo:edit-points', window.__woCollect);
+          window.addEventListener('wo:edit-wrap-boundary', window.__woCollect);
           window.addEventListener('wo:macro', window.__woCollect);
           window.addEventListener('wo:macro-manager', window.__woCollect);
           window.addEventListener('wo:header-field', window.__woCollect);
