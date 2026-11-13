@@ -139,7 +139,7 @@
        all ids intact. Tabs keep role=tablist/tab + aria-selected; aria-
        haspopup / aria-expanded still drive the File dropdown disclosure. -->
   <div class="titlebar">
-    <span class="wordmark">WorldOffice</span>
+    <span class="wordmark" style="flex:0 0 130px;width:130px;text-align:center">WorldOffice</span>
     <!-- Ribbon tab strip (moved from #toolbar into the title row, OO
          parity): File trigger is the FIRST entry, then the fixed tabs and
          the 2 contextual ones (hidden until object selection). -->
@@ -158,7 +158,7 @@
     <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" data-i18n="Tab.Plugins">Plugins</button>
     <button type="button" class="ribbon-tab contextual" data-tab="header-footer" role="tab" aria-selected="false" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
     <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" data-i18n="Tab.AI">AI</button>
-    <button type="button" class="ribbon-tab" data-tab="forms" role="tab" aria-selected="false" data-i18n="Tab.Forms">Forms</button>
+    <button type="button" class="ribbon-tab" data-tab="forms" role="tab" aria-selected="false" data-i18n="Tab.Forms" hidden>Forms</button>
     <button type="button" class="ribbon-tab contextual" data-tab="chart-design" role="tab" aria-selected="false" data-i18n="Tab.ChartDesign" hidden>Chart design</button>
     </div>
     <span class="spacer"></span>
@@ -1034,7 +1034,7 @@
     <button type="button" id="btn-create-ai-assistant" data-cmd="createAiAssistant" data-i18n="AI.CreateAssistant">Create AI assistant</button>
     </div>
     </div>
-    <div class="ribbon-page" data-tab="forms" role="group" aria-label="Forms ribbon" data-i18n-aria-label="Tab.Forms">
+    <div class="ribbon-page" data-tab="forms" role="group" aria-label="Forms ribbon" data-i18n-aria-label="Tab.Forms" hidden>
     <!-- Forms tab: field palette (row 1: text/checkbox/dropdown/date) + view-fill-mode toggle (row 2) -->
     <div class="ribbon-row">
     <div class="rb-group" role="group" aria-label="Form fields">
