@@ -416,7 +416,7 @@ select option { background: var(--bg); color: var(--text); }
    the right-edge tool cluster (collapse/theme/find/fullscreen) pins via
    margin-left:auto. Dropdown .menu-lists anchor to their (relative) .menu
    span as before. Works at any viewport width; groups wrap on narrow ones. */
-.ribbon-row { position: relative; min-height: 24px; flex-wrap: nowrap; row-gap: 6px; }
+.ribbon-row { position: relative; height: 24px; flex-wrap: nowrap; row-gap: 12px; }
 .ribbon-row[hidden] { display: none; }
 .toolbar .ribbon-page.active { align-self: stretch; height: 100%; justify-content: center; }
 .ribbon-page.active { flex-wrap: nowrap; align-items: stretch; }
