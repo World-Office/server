@@ -86,10 +86,10 @@ assert.ok(/\.toolbar \.qat-strip \.oo-ic\s*\{/.test(css),
 // --- CSS: 2 columns x 4 rows grid, strip fixed, page shrinks ----------------
 const stripCss = css.match(/\.toolbar \.qat-strip\s*\{[^}]*\}/);
 assert.ok(stripCss, ".toolbar .qat-strip grid rule exists");
-assert.ok(/grid-template-columns:\s*repeat\(2,\s*24px\)/.test(stripCss[0]),
-  "strip grid pins exactly TWO 24px columns");
-assert.ok(/grid-auto-rows:\s*1fr/.test(stripCss[0]),
-  "strip rows are 4 equal 1fr tracks (2x4 grid)");
+assert.ok(/grid-template-columns:\s*repeat\(4,\s*24px\)/.test(stripCss[0]),
+  "strip grid pins exactly FOUR 24px columns (4x2, OO panel.static)");
+assert.ok(/grid-template-rows:\s*repeat\(2,\s*24px\)/.test(stripCss[0]),
+  "strip rows are TWO 24px 1fr tracks (4x2 grid)");
 assert.ok(/flex:\s*0 0 auto/.test(stripCss[0]), "strip keeps a fixed slot in the band");
 const qatCss = css.match(/\.toolbar \.qat-strip button\.qat\s*\{[^}]*\}/);
 assert.ok(qatCss, ".qat cell style exists");

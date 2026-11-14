@@ -131,8 +131,7 @@ const zoneCss = css.match(/\.toolbar \.toolbar-tools\s*\{[^}]*\}/);
 assert.ok(zoneCss, ".toolbar .toolbar-tools zone rule exists");
 assert.ok(/order:\s*2/.test(zoneCss[0]), "zone takes flex order 2 (after the active page)");
 assert.ok(/flex:\s*0 0 auto/.test(zoneCss[0]), "zone keeps a fixed slot in the band");
-assert.ok(/border-left:\s*1px solid var\(--border\)/.test(zoneCss[0]),
-  "zone carries the mirror hairline of the QAT strip's border-right");
+assert.ok(/margin-left:\s*auto/.test(zoneCss[0]), "zone pins to the right edge (OO: no border-left in white theme)");
 const cellCss = css.match(/\.toolbar \.toolbar-tools \.rb\s*\{[^}]*\}/);
 assert.ok(cellCss && /width:\s*26px/.test(cellCss[0]) && /padding:\s*0/.test(cellCss[0]),
   "zone tools are compact 26px icon squares");

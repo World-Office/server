@@ -66,9 +66,9 @@ assert.ok(/\.toolbar button\[aria-disabled="true"\],[\s\S]*?opacity:\s*0\.45/.te
 // --- tab strip typography + tinted File tab ----------------------------------
 const tabRule = css.match(/\.titlebar button\.ribbon-tab\s*\{[^}]*\}/);
 assert.ok(tabRule, ".titlebar button.ribbon-tab typography rule must exist");
-assert.ok(/height:\s*28px/.test(tabRule[0]) && /font-size:\s*12\.5px/.test(tabRule[0])
+assert.ok(/height:\s*32px/.test(tabRule[0]) && /font-size:\s*13px/.test(tabRule[0])
   && /padding:\s*0 12px/.test(tabRule[0]) && /font-weight:\s*400/.test(tabRule[0]),
-  "tab strip: 28px band, 12.5px label, 12px side padding, regular weight");
+  "tab strip: 32px band (OO box-tabs), 13px label, 12px side padding, regular weight");
 const pillRule = css.match(/\.ribbon-tab\[aria-selected="true"\]\s*\{[^}]*\}/);
 assert.ok(pillRule && /font-weight:\s*500/.test(pillRule[0]),
   "active tab label weight is medium (500)");

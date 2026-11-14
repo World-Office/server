@@ -79,10 +79,10 @@ assert.ok(activeBlocks.some((b) => /flex-direction:\s*column/.test(b)),
 assert.ok(/\.ribbon-row\s*\{[^}]*flex-wrap:\s*nowrap/.test(css), ".ribbon-row stays nowrap");
 assert.ok(!/\.ribbon-row\s*\{[^}]*overflow-x:\s*clip/.test(css),
   ".ribbon-row must not clip (transform scroll relies on the band clip)");
-assert.ok(/min-height:\s*104px/.test(css), "band min-height 104px for the two-row band");
-assert.ok(/--ribbon-hover:\s*#e8e8e8/.test(css) && /--ribbon-active:\s*#d8d8d8/.test(css),
+assert.ok(/height:\s*84px/.test(css), "band fixed 84px (OO box-controls, source-accurate)");
+assert.ok(/--ribbon-hover:\s*#eaeaea/.test(css) && /--ribbon-active:\s*#e1e1e1/.test(css),
   "light theme carries OO group hover/active tokens");
 assert.ok(/\.ribbon-row \.rb-group:hover/.test(css), "group hover polish present");
-assert.ok(/\.ribbon-row \.rb-sep\s*\{[^}]*height:\s*40px/.test(css), "row separators sized for a 34px-control row");
+assert.ok(/\.ribbon-row \.rb-sep\s*\{[^}]*height:\s*56px/.test(css), "row separators sized for a 60px-control row");
 
 console.log("rows-gate: two-row structure, census anchors, column band OK");
