@@ -59,9 +59,14 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  font-size: 12px;
+  font-family: "Segoe UI", Arial, Helvetica, "Helvetica Neue", sans-serif;
+  font-size: 11px;
 }
+
+/* OO 9.4 theme-white: the document body is white; the chrome bands paint
+   their own surfaces (titlebar #f3f3f3, function band white, ruler). --bg
+   stays for those bands; only the body backdrop flips to paper. */
+html.light body { background: var(--paper); }
 
 body {
   display: flex;
