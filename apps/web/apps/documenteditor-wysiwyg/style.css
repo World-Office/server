@@ -183,7 +183,7 @@ body {
    align-items: center;
    padding: 0 12px;
    height: auto;
-   min-height: 104px;
+   min-height: 84px;
   /* clip (not hidden/auto): the active page is translated horizontally by
      the chevron scroll logic, so the band must clip the horizontal overflow
      while staying overflow-y: visible — a scroll container (auto) would force
