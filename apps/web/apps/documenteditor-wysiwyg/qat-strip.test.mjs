@@ -83,18 +83,22 @@ for (const id of ORDER) {
 assert.ok(/\.toolbar \.qat-strip \.oo-ic\s*\{/.test(css),
   "CSS must style .toolbar .qat-strip .oo-ic for icon sizing");
 
-// --- CSS: 2 columns x 4 rows grid, strip fixed, page shrinks ----------------
+// --- CSS: OO panel.static table geometry (164px, uneven column pitch) --------
 const stripCss = css.match(/\.toolbar \.qat-strip\s*\{[^}]*\}/);
 assert.ok(stripCss, ".toolbar .qat-strip grid rule exists");
-assert.ok(/grid-template-columns:\s*repeat\(4,\s*24px\)/.test(stripCss[0]),
-  "strip grid pins exactly FOUR 24px columns (4x2, OO panel.static)");
-assert.ok(/grid-template-rows:\s*repeat\(2,\s*24px\)/.test(stripCss[0]),
-  "strip rows are TWO 24px 1fr tracks (4x2 grid)");
+// OO 9.4 renders the QAT as an uneven-pitch table: buttons at x 20/65/105/139
+// (rel. 0/45/85/119), rows 36px apart -> 164px strip. A uniform repeat(4,24px)
+// grid measured 119px, so the tracks below are OO-source-accurate.
+assert.ok(/grid-template-columns:\s*45px\s+40px\s+34px\s+24px/.test(stripCss[0]),
+  "strip grid pins OO's uneven column tracks (45/40/34/24, strip = 164px)");
+assert.ok(/grid-template-rows:\s*36px\s+36px/.test(stripCss[0]),
+  "strip rows are OO's 36px-apart tracks (button y 44/80)");
 assert.ok(/flex:\s*0 0 auto/.test(stripCss[0]), "strip keeps a fixed slot in the band");
+assert.ok(/padding:\s*0 11px 0 10px/.test(stripCss[0]), "strip pad = OO 164px total");
 const qatCss = css.match(/\.toolbar \.qat-strip button\.qat\s*\{[^}]*\}/);
 assert.ok(qatCss, ".qat cell style exists");
-assert.ok(/width:\s*24px/.test(qatCss[0]) && /padding:\s*0/.test(qatCss[0]),
-  "qat cells are 24px icon squares");
+assert.ok(/justify-self:\s*start/.test(qatCss[0]) && /align-self:\s*start/.test(qatCss[0]),
+  "qat cells sit at each track's start (buttons at rel. x 0/45/85/119)");
 const pressedCss = css.match(/\.toolbar \.qat-strip button\.qat\[aria-pressed="true"\]\s*\{[^}]*\}/);
 assert.ok(pressedCss, "pressed painter cell gets the accent face");
 const pageOverride = css.match(/\.toolbar > \.ribbon-page\.active\s*\{[^}]*\}/);
