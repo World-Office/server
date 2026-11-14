@@ -289,16 +289,16 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 28px;
-  padding: 0 6px;
+  height: 32px;
+  padding: 0;
 }
 /* .titlebar button (below) out-specifies .ribbon-tab — pin the tabs to the
-   28px band with the OO label pitch (CHROME5: 12.5px, 12px side padding). */
+   32px band with the OO label pitch (font-size 13px, 12px side padding). */
 .titlebar button.ribbon-tab {
-  height: 28px;
+  height: 32px;
   min-width: 0;
   padding: 0 12px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 400;
 }
 .titlebar button {
@@ -1073,19 +1073,19 @@ select option { background: var(--bg); color: var(--text); }
 .ribbon-tabs .ribbon-file {
   display: flex;
   align-items: center;
-  height: 28px;
+  height: 32px;
 }
 /* CHROME5: the File tab is tinted (OO: the app-menu entry sits apart from
    the document tabs). */
 .ribbon-tabs .menu-trigger.file-tab {
-  height: 28px;
+  height: 32px;
   padding: 0 12px;
   border: none;
   border-radius: 0;
   border-bottom: 2px solid transparent;
   background: var(--tab-file-tint);
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .ribbon-tabs .menu-trigger.file-tab:hover { color: var(--text); background: var(--hover); }
 .ribbon-tabs .menu-trigger.file-tab[aria-expanded="true"] {
