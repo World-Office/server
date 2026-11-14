@@ -459,18 +459,19 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar .qat-strip {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, 24px);
-  grid-auto-rows: 1fr;
+  grid-template-columns: repeat(4, 24px);
+  grid-template-rows: repeat(2, 24px);
   gap: 1px;
-  align-self: stretch;
-  padding: 5px 0;
+  align-self: center;
+  height: 60px;
+  padding: 0 6px;
   margin-right: 3px;
   border-right: 1px solid var(--border);
 }
 .toolbar .qat-strip button.qat {
   min-width: 24px;
   width: 24px;
-  height: auto;
+  height: 24px;
   min-height: 0;
   padding: 0;
   display: flex;
@@ -524,9 +525,9 @@ select option { background: var(--bg); color: var(--text); }
   gap: 1px;
   align-self: stretch;
   padding: 5px 22px 5px 3px;
-  margin-left: 3px;
-  border-left: 1px solid var(--border);
+  margin-left: auto;
 }
+/* OO has no border-left on the right zone — the Mehr button sits at the far right. */
 .toolbar .toolbar-tools .rb {
   min-width: 26px;
   width: 26px;
