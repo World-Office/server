@@ -288,7 +288,7 @@ body {
   position: static;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   height: 32px;
   padding: 0;
 }
