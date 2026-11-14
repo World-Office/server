@@ -32,17 +32,17 @@ html.light {
   color-scheme: light;
   --bg: #f3f3f3;
   --surface: #f2f2f2;
-  --border: #e1e1e1;
+  --border: #cbcbcb;
   --text: #383838;
   --muted: #8a8a8a;
   --accent: #37608f;
   --accent-hover: #2f527b;
   --paper: #ffffff;
   --ink: #1a1a1a;
-  --hover: rgba(0, 0, 0, 0.06);
+  --hover: #eaeaea;
   --ribbon: #ffffff;   /* OO classic-light function band (white, matches OO box-controls) */
-  --ribbon-hover: #e8e8e8;   /* OO group hover */
-  --ribbon-active: #d8d8d8;  /* OO group pressed */
+  --ribbon-hover: #eaeaea;   /* OO --highlight-button-hover */
+  --ribbon-active: #e1e1e1;  /* OO --highlight-button-pressed */
   --titlebar: #f3f3f3; /* OO classic-light title row (#f3f3f3, matches OO toolbar bg) */
   --tab-active-bg: #ffffff; /* filled contrast pill for the active tab */
   --tab-file-tint: rgba(55, 96, 143, 0.08);
@@ -59,7 +59,8 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  font-size: 12px;
 }
 
 body {
@@ -181,9 +182,9 @@ body {
    display: flex;
    flex-wrap: nowrap;
    align-items: center;
-   padding: 0 12px;
-   height: auto;
-   min-height: 84px;
+   padding: 0 10px;
+   height: 84px;
+   flex: 0 0 84px;
   /* clip (not hidden/auto): the active page is translated horizontally by
      the chevron scroll logic, so the band must clip the horizontal overflow
      while staying overflow-y: visible — a scroll container (auto) would force
@@ -214,7 +215,7 @@ body {
    flex-wrap: nowrap;
    justify-content: center;
    align-items: stretch;
-   gap: 2px;
+   gap: 12px;
    width: 100%;
  }
 
@@ -224,7 +225,7 @@ body {
    84px wrapped right-edge tools), now mapped into the 84px control band via
    calc(--rb-y * 0.72 + 28px): primary ~52px, wrapped ~88px — both fully
    under the strip. */
- .ribbon-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 2px; }
+ .ribbon-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 2px; height: 24px; }
 .ribbon-page.active .ribbon-row { width: 100%; align-self: stretch; }
 
 /* Title bar (band y0–32, CHROME1-TITLE-TAB-ROW): wordmark + ribbon tab
@@ -235,10 +236,10 @@ body {
   gap: 4px;
   height: 32px;
   flex: 0 0 auto;
-  padding: 0 12px;
+  padding: 0 10px;
   background: var(--titlebar);
   /* OO golden: no separator line under the titlebar — flat backdrop field */
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   /* the tab strip is wider than the window at small viewports: clip so the
      page never h-scrolls (name + quick access stay reachable via the strip
@@ -464,9 +465,9 @@ select option { background: var(--bg); color: var(--text); }
   gap: 1px;
   align-self: center;
   height: 60px;
-  padding: 0 6px;
-  margin-right: 3px;
-  border-right: 1px solid var(--border);
+  padding: 0 10px;
+  margin-right: 0;
+  border-right: none;
 }
 .toolbar .qat-strip button.qat {
   min-width: 24px;
@@ -488,9 +489,10 @@ select option { background: var(--bg); color: var(--text); }
 .ribbon-row .rb-group {
    display: flex;
    align-items: center;
-   gap: 2px;
+   gap: 4px;
    flex: 0 0 auto;
-   padding: 2px 4px;
+   padding: 0 6px;
+   height: 60px;
    border-radius: 5px;
    transition: background-color 120ms ease;
  }
@@ -871,7 +873,7 @@ select option { background: var(--bg); color: var(--text); }
 /* Text-capable caret (change-case split): OO 40x24 — keep natural width. */
 .rb-grid .caret-btn.case-btn { width: auto; min-width: 30px; padding: 0 5px; font-size: 11px; gap: 2px; }
 /* OO group separators: 1px x ~56px with 5px gutters. */
-.ribbon-row .rb-sep { height: 40px; margin: 0 5px; align-self: center; }
+.ribbon-row .rb-sep { height: 56px; margin: 0 5px; align-self: center; }
 /* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle.
    CHROME1-TITLE-TAB-ROW: needs (0,3,0) specificity to beat .ribbon-row
    .rb-group's flex: 0 0 auto — the gallery is the Home row's release valve:
