@@ -3530,9 +3530,16 @@ body.forms-design-mode .form-field {
 .ribbon-page .hf-spin label { font-size: 12px; white-space: nowrap; }
 .ribbon-page .hf-spin input[type="number"] { width: 52px; padding: 2px 4px; font-size: 12px; }
 
-/* CHROME-G overflow parity: OO collapses low-priority ribbon groups behind
-   the tab-level Mehr at 1280+. .wo-ovf mirrors that set — hidden-but-wired;
+/* CHROME-G overflow parity: OO collapses low-priority ribbon groups but ONLY
+   below ~845px editor width (measured live: OO@830 shows 25 home buttons,
+   OO@845+ shows all 44/46 incl. decoffset/outdent, align-left, select-all).
+   The earlier "collapses at 1280+" assumption came from reading OO while its
+   demo iframe was 807px wide — a narrow-window artefact, not real behaviour.
+   .wo-ovf mirrors the same hide-set, gated to the same narrow range; at
+   desktop widths the buttons must be visible (hidden-but-wired only < 845px),
    commands stay reachable through the Mehr menu (data-menu-cmd) and
    [data-cmd] selectors. */
-.wo-ovf { display: none !important; }
+@media (max-width: 844px) {
+  .wo-ovf { display: none !important; }
+}
 [hidden] { display: none !important; }
