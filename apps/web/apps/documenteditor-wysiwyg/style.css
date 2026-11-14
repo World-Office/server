@@ -876,7 +876,7 @@ select option { background: var(--bg); color: var(--text); }
    .rb-group's flex: 0 0 auto — the gallery is the Home row's release valve:
    floor 340px so Home FITS at 1440 (chevrons hidden) but overflows below
    ~1200px (chevron scroll takes over). */
-.ribbon-row .rb-group.rb-styles { flex: 1 1 340px; min-width: 340px; height: 46px; gap: 0; align-items: stretch; }
+.ribbon-row .rb-group.rb-styles { flex: 0 0 auto; min-width: 0; height: 46px; gap: 0; align-items: stretch; }
 /* OO insert-tab x-huge buttons: 35x60 icon-top with 28x28 icon + caption below.
    WO insert ribbon buttons get the same vertical stack layout. */
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger),
@@ -924,22 +924,23 @@ select option { background: var(--bg); color: var(--text); }
   align-items: flex-start;
   justify-content: center;
   gap: 3px;
-  width: 110px;
+  width: 78px;
   flex: 0 0 auto;
-  padding: 0 8px;
+  padding: 0 6px;
   border: none;
   border-right: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
   cursor: pointer;
   text-align: left;
+  height: 46px;
 }
 .gallery-card:last-child { border-right: none; }
 .gallery-card:hover { background: var(--hover); }
 .gallery-card.active,
 .gallery-card[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.gc-name { font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; max-width: 94px; }
-.gc-preview { display: block; width: 78%; height: 2px; background: currentColor; opacity: 0.35; box-shadow: 0 5px 0 currentColor; }
+.gc-name { font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; max-width: 66px; }
+.gc-preview { display: block; width: 70%; height: 2px; background: currentColor; opacity: 0.35; box-shadow: 0 5px 0 currentColor; }
 /* Card name rendered in its target style (OO preview typography). */
 .gc-p .gc-name { font-size: 11px; }
 .gc-h4 .gc-name { font-size: 13px; font-weight: 700; }
