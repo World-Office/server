@@ -40,10 +40,10 @@ html.light {
   --paper: #ffffff;
   --ink: #1a1a1a;
   --hover: rgba(0, 0, 0, 0.06);
-  --ribbon: #f7f7f7;   /* OO classic-light function band (light gray) */
+  --ribbon: #ffffff;   /* OO classic-light function band (white, matches OO box-controls) */
   --ribbon-hover: #e8e8e8;   /* OO group hover */
   --ribbon-active: #d8d8d8;  /* OO group pressed */
-  --titlebar: #f7f7f7; /* OO classic-light title row (same gray family) */
+  --titlebar: #f3f3f3; /* OO classic-light title row (#f3f3f3, matches OO toolbar bg) */
   --tab-active-bg: #ffffff; /* filled contrast pill for the active tab */
   --tab-file-tint: rgba(55, 96, 143, 0.08);
   --ctx-tab-tint: rgba(55, 96, 143, 0.10);
@@ -192,7 +192,6 @@ body {
   overflow-x: clip;
   overflow-y: visible;
   background: var(--ribbon);
-  border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
   position: relative;        /* containing block for the chevron buttons */
   z-index: 10;               /* stack above the editor pages so the absolute
