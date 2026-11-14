@@ -460,12 +460,12 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar .qat-strip {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 24px);
-  grid-template-rows: repeat(2, 24px);
+  grid-template-columns: repeat(2, 24px);
+  grid-auto-rows: 1fr;
   gap: 1px;
   align-self: center;
   height: 60px;
-  padding: 0 10px;
+  padding: 0 57.5px;
   margin-right: 0;
   border-right: none;
 }
@@ -909,6 +909,27 @@ select option { background: var(--bg); color: var(--text); }
   height: 28px;
   font-size: 9px;
   padding: 0 2px;
+}
+/* CHROME-H2: OO Insert "Mehr" (More) overflow button — 37x60 x-huge icon-top
+   at the right edge of row 1 (census x=1040). Same vertical stack as the
+   sibling 35x60 x-huge controls but slightly wider, with the wo-ovf overflow
+   items reachable through its data-menu-target list. */
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu#btn-insert-more-wrap,
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu#btn-insert-more-wrap > button#btn-insert-more {
+  height: 60px;
+}
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu#btn-insert-more-wrap > button#btn-insert-more {
+  flex-direction: column;
+  width: 37px;
+  gap: 1px;
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu#btn-insert-more-wrap > button#btn-insert-more svg {
+  width: 28px;
+  height: 28px;
 }
 .gallery-track {
   display: flex;

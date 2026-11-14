@@ -536,8 +536,8 @@
       <button type="button" id="btn-textart" data-cmd="insertTextart" data-i18n="Insert.TextArt"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 4l3 8 3-8M5 8h0M9 4l3 8 3-8M12 8h0"/></svg> TextArt</button>
     </span>
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 13c2 0 3-1 3-3V5c0-1-1-2-3-2M7 13h6"/></svg> Drop cap</button>
-    <button id="btn-datetime" class="wo-ovf" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
-    <button type="button" id="btn-textfile" class="wo-ovf" data-i18n="Insert.TextFromFile"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h6l3 3v8h-9z"/><path d="M9 2.5v3h3"/><path d="M5 8h6M5 10.5h6M5 13h4"/></svg> Text from File</button>
+    <button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" data-i18n-aria-label="Toolbar.DateTimeTitle" aria-label="Insert date"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
+    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 2.5h6l3 3v8h-9z"/><path d="M9 2.5v3h3"/><path d="M5 8h6M5 10.5h6M5 13h4"/></svg> Text from File</button>
     <span class="rb-sep" aria-hidden="true"></span>
     <!-- DEVIIATION (CHROME-G): OO@1920 hides the Formel caret behind its insert overflow, but the equation template catalog (accents/brackets/fractions/…, 10 L1 contract flows) hangs off this menu — collapsing the span display:none's the whole catalog. Kept visible as a documented 1-control deviation on Einfügen. -->
     <span class="menu rb-menu" data-wo-id="btn-equation" data-wo-cmd="btn-equation" data-wo-interact="opens:modal">
@@ -623,22 +623,12 @@
         </li>
       </ul>
     </span>
-    <span class="wo-ovf" data-wo-id="btn-symbol" data-wo-cmd="btn-symbol" data-wo-interact="opens:modal">
+    <span data-wo-id="btn-symbol" data-wo-cmd="btn-symbol" data-wo-interact="opens:modal">
       <button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     </span>
-    <span class="wo-ovf" data-wo-id="btn-contentcontrol" data-wo-cmd="btn-contentcontrol" data-wo-interact="opens:modal">
+    <span data-wo-id="btn-contentcontrol" data-wo-cmd="btn-contentcontrol" data-wo-interact="opens:modal">
       <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6h12M5 3v10"/></svg> Content Controls</button>
     </span>
-    </div>
-    <div class="ribbon-row">
-    <!-- CHROME2: WO-only insert controls (absent from OO census), kept in their original relative order -->
-    <button id="btn-table-ops" class="wo-ovf" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
-    <button id="btn-hr" class="wo-ovf" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
-    <button id="btn-object" class="wo-ovf" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
-    <button id="btn-crossref" class="wo-ovf" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Cross-reference" aria-label="Cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
-    <button id="btn-header" class="wo-ovf" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
-    <button id="btn-footer" class="wo-ovf" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
-    <button type="button" id="btn-addtext" class="wo-ovf" data-i18n="Insert.AddText"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3h10M3 8h7M3 13h10M11 6.5l2 2-2 2M13 8.5l-2-2"/></svg> Add text</button>
     <span class="menu rb-menu" >
     <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Home.More" data-i18n-title="Home.More" title="More"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg> Insert tools ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -661,6 +651,16 @@
         <li role="none"><button type="button" role="menuitem" data-menu-target="#btn-addtext" data-i18n="Insert.AddText">Add Text</button></li>
       </ul>
     </span>
+    </div>
+    <div class="ribbon-row">
+    <!-- CHROME2: WO-only insert controls (absent from OO census), kept in their original relative order -->
+    <button id="btn-table-ops" class="wo-ovf" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
+    <button id="btn-hr" class="wo-ovf" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button id="btn-object" class="wo-ovf" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
+    <button id="btn-crossref" class="wo-ovf" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Cross-reference" aria-label="Cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
+    <button id="btn-header" class="wo-ovf" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
+    <button id="btn-footer" class="wo-ovf" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
+    <button type="button" id="btn-addtext" class="wo-ovf" data-i18n="Insert.AddText"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3h10M3 8h7M3 13h10M11 6.5l2 2-2 2M13 8.5l-2-2"/></svg> Add text</button>
     </div>
     </div>
     <!-- OO-parity tab pages. Buttons for features WO lacks carry data-stub="<ref>":
@@ -862,7 +862,7 @@
     <span data-wo-id="btn-bookmark" data-wo-cmd="btn-bookmark" data-wo-interact="opens:modal">
       <button id="btn-bookmark" data-cmd="bookmark" data-i18n="Ref.Bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Bookmark" aria-label="Bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
     </span>
-    <span class="wo-ovf" data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
+    <span data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
       <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
     </span>
     <button type="button" data-cmd="insertCaption" data-i18n="Ref.Caption">Caption</button>
