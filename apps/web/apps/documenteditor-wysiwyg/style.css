@@ -887,10 +887,12 @@ select option { background: var(--bg); color: var(--text); }
 .ribbon-row .rb-sep { height: 56px; margin: 0 5px; align-self: center; }
 /* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle.
    CHROME1-TITLE-TAB-ROW: needs (0,3,0) specificity to beat .ribbon-row
-   .rb-group's flex: 0 0 auto — the gallery is the Home row's release valve:
-   floor 340px so Home FITS at 1440 (chevrons hidden) but overflows below
-   ~1200px (chevron scroll takes over). */
-.ribbon-row .rb-group.rb-styles { flex: 0 0 auto; min-width: 0; height: 46px; gap: 0; align-items: stretch; }
+   .rb-group's flex: 0 0 auto. The gallery is the Home row's release valve:
+   flex-shrink 1 lets it compress like OO's fluid combo-styles field (chip
+   count drops as width shrinks — OO@1280 field=357px/3 chips vs 1680=803/7);
+   the inner .gallery-track's overflow:hidden clips the tail cards instead of
+   pushing them under the right-edge tools. */
+.ribbon-row .rb-group.rb-styles { flex: 1 1 auto; min-width: 0; height: 46px; gap: 0; align-items: stretch; }
 /* OO insert-tab x-huge buttons: 35x60 icon-top with 28x28 icon + caption below.
    WO insert ribbon buttons get the same vertical stack layout. */
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger),
