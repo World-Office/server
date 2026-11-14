@@ -877,6 +877,34 @@ select option { background: var(--bg); color: var(--text); }
    floor 340px so Home FITS at 1440 (chevrons hidden) but overflows below
    ~1200px (chevron scroll takes over). */
 .ribbon-row .rb-group.rb-styles { flex: 1 1 340px; min-width: 340px; height: 46px; gap: 0; align-items: stretch; }
+/* OO insert-tab x-huge buttons: 35x60 icon-top with 28x28 icon + caption below.
+   WO insert ribbon buttons get the same vertical stack layout. */
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger),
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .rb-menu > button:not(.caret-btn):not(.menu-trigger) {
+  flex-direction: column;
+  width: 35px;
+  height: 60px;
+  padding: 2px 0 0;
+  gap: 1px;
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger) svg,
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .rb-menu > button:not(.caret-btn):not(.menu-trigger) svg {
+  width: 28px;
+  height: 28px;
+}
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu {
+  height: 60px;
+  align-items: stretch;
+}
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .menu.rb-menu > .caret-btn {
+  height: 28px;
+  font-size: 9px;
+  padding: 0 2px;
+}
 .gallery-track {
   display: flex;
   align-items: stretch;
