@@ -880,6 +880,7 @@ select option { background: var(--bg); color: var(--text); }
 /* OO insert-tab x-huge buttons: 35x60 icon-top with 28x28 icon + caption below.
    WO insert ribbon buttons get the same vertical stack layout. */
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger),
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > span[data-wo-id] > button:not(.rb):not(.caret-btn):not(.menu-trigger),
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .rb-menu > button:not(.caret-btn):not(.menu-trigger) {
   flex-direction: column;
   width: 35px;
@@ -892,6 +893,7 @@ select option { background: var(--bg); color: var(--text); }
   text-align: center;
 }
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > button:not(.rb):not(.caret-btn):not(.menu-trigger) svg,
+.ribbon-page[data-tab="insert"] > .ribbon-row:first-child > span[data-wo-id] > button:not(.rb):not(.caret-btn):not(.menu-trigger) svg,
 .ribbon-page[data-tab="insert"] > .ribbon-row:first-child > .rb-menu > button:not(.caret-btn):not(.menu-trigger) svg {
   width: 28px;
   height: 28px;
