@@ -1,0 +1,108 @@
+{
+  "tasks": [
+    {
+      "id": "CHROME-H1",
+      "repo": "server",
+      "deps": [],
+      "priority": 10,
+      "title": "chrome: Home ribbon — add missing Paragraph group (bullets, numbering, indent, line-spacing, text-direction, alignment, nonprinting, shading, borders) to match OO Home at 1680px",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# (pass|fail)' | head -2",
+      "note": "OO Home ribbon (from census at 1680px viewport) has these groups visible:\nRow 1 (y=44): QAT(20-163) | font-family(184,125px) font-size(313,45px) dropdown(292,17px) dropdown(341,17px) incfont(362,24px) decfont(390,24px) case(420,40px) | bullets(396,24px)+caret(420,16px) numbering(436,24px)+caret(460,16px) multilevel(476,40px) decindent(516,24px) incindent(556,24px) linespacing(596,40px) textdir(636,40px) | Mehr(754,37x60)\nRow 2 (y=80): print(20) undo(65) redo(105) copystyle(139) | bold(184) italic(212) underline(240) strikeout(268) superscript(296) subscript(324) highlight(352,24px)+caret(376,16px) fontcolor(394,24px)+caret(418,16px) clearstyle(436,24px) | alignleft(396) aligncenter(436) alignright(476) just(516) nonprint(556,24px)+caret(580,16px) shading(596,24px)+caret(620,16px) borders(636,24px)+caret(660,16px) | selectall(1489,24px)\n\nWO currently only has: font group + styles gallery on row 1, BIUS+colors on row 2. The Paragraph group (bullets/numbering/indent/alignment/etc) is MISSING from the visible Home ribbon — it may exist but be hidden or in wrong place. ADD the full paragraph group between the font group and styles gallery, matching OO x-positions relative to the QAT strip. Use rb-sep separators between groups (1px wide, 56px tall, margin 0 5px, color #cbcbcb). Keep all existing button ids/data-cmd intact. The styles gallery should NOT take flex-grow (already fixed). Verify with: /usr/bin/node chrome-census2.cjs from wo-test-harness/census/ and check home btnCount goes from 22 to ~40+."
+    },
+    {
+      "id": "CHROME-H2",
+      "repo": "server",
+      "deps": [],
+      "priority": 10,
+      "title": "chrome: Insert tab — match OO button order and add missing buttons (Drop Cap, Date&Time, Text from File, Field, Symbol, Content Controls, Mehr overflow)",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/i18n.js"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# (pass|fail)' | head -2",
+      "note": "OO Insert tab button order at 1680px (all 35x60 x-huge icon-top except splits):\n  blankpage(180) | breaks-split(215, 35x32+35x28) | table(263) | image(311) | shape(346) | smartart(381) | chart(416) | comment(464) | link(499) | headerfooter(547) | pagenumber(582) | textbox-split(630, 35x32+35x28) | textart(665) | dropcap(700) | datetime(745) | textfromfile(790) | field(840) | equation-split(880, 47x32+47x28) | symbol(930) | contentcontrols(985) | Mehr(1040, 37x60)\n\nWO Insert currently has: LeereSeite, Umbrüche▾, Tabelle+▾, Bild, Form, SmartArt, Diagramm, Kommentar, Link, ──, #, Textfeld, TextArt, Initialbuchstaben, Formel, Symbole▾, Mehr▾ (row2)\n\nReorder to match OO exactly. Add missing: Drop Cap, Date&Time, Text from File, Field, Symbol (as its own button not just menu), Content Controls, and a proper Mehr overflow button (37x60) at the end. The equation should be a split button (icon + caret). Use the existing 35x60 x-huge CSS already in style.css for insert tab. Add German i18n labels matching OO: 'Initialbuchstaben'→'Drop Cap' German label, etc. Keep all data-cmd and ids."
+    },
+    {
+      "id": "CHROME-H3",
+      "repo": "server",
+      "deps": [],
+      "priority": 8,
+      "title": "chrome: QAT strip width 119→164px to match OO panel.static, add save/print as separate left column",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/index.html"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/index.html"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# (pass|fail)' | head -2",
+      "note": "OO QAT (panel.static) is 164px wide with 4 columns x 2 rows:\n  Row 1: save(20) copy(65) paste(105) cut(139) — all 24x24\n  Row 2: print(20) undo(65) redo(105) copystyle(139) — all 24x24\nWO qat-strip is 119px with same 4x2 grid but tighter padding. Fix: increase qat-strip padding from '0 10px' to '0 10px' but add margin-right to reach 164px total, OR set grid-template-columns to repeat(4, 24px) with gap 12px (OO uses ~12px between columns: 20→65 = 45px pitch = 24px button + 21px gap... actually OO uses float layout with margin). Simplest: set .toolbar .qat-strip { padding: 0 10px; } and add column gap of ~13px (grid gap: 1px 13px). Also ensure the border-right is removed (already done). Target: qat-strip total width = 164px."
+    },
+    {
+      "id": "CHROME-H4",
+      "repo": "server",
+      "deps": ["CHROME-H1"],
+      "priority": 7,
+      "title": "chrome: Home ribbon — add 'Mehr' overflow button (37x60) at right edge like OO, move WO-only extras into it",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# (pass|fail)' | head -2",
+      "note": "OO has a 'Mehr' (More) button at x=754, 37x60, x-huge icon-top style with a big-more icon. It's a dropdown that shows overflow. WO currently has a 'Mehr Mehr ▾' menu at the end of the styles gallery group. Replace with a proper 37x60 x-huge Mehr button at the right edge of the Home ribbon (before toolbar-tools), matching OO position. Move WO-only home extras (table-ops, hr, etc if present on home) into this Mehr dropdown menu."
+    },
+    {
+      "id": "CHROME-H5",
+      "repo": "server",
+      "deps": ["CHROME-H1", "CHROME-H2"],
+      "priority": 6,
+      "title": "chrome: verify all tabs (Draw, Layout, References, Collaboration, Protection, View, Plugins, AI) have OO-matching button layout via census rig",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && /usr/bin/node --test *.test.mjs 2>&1 | grep -E '^# (pass|fail)' | head -2",
+      "note": "Extend wo-test-harness/census/chrome-census2.cjs to capture ALL tabs (not just home/insert), run it, and fix any tabs where WO button layout diverges from OO. OO tab census data is in wo-test-harness/census/census/census-oo-deep.json under tabs key (tabs: home, ins, layout, links, draw, etc). For each tab: match button order, sizes (35x60 for x-huge insert-style, 24x24 for standard), group separators. Focus on Draw, Layout, References tabs first (most visible)."
+    },
+    {
+      "id": "CHROME-H6",
+      "repo": "harness",
+      "deps": [],
+      "priority": 5,
+      "title": "census: extend chrome-census2.cjs to capture ALL tabs + statusbar + right panel, produce full diff report",
+      "scope": [
+        "census/chrome-census2.cjs",
+        "census/chrome-census-all.cjs"
+      ],
+      "touch": [
+        "census/chrome-census2.cjs",
+        "census/chrome-census-all.cjs"
+      ],
+      "accept": "cd /home/weiss/git/World-Office/wo-test-harness/census && /usr/bin/node chrome-census-all.cjs --out /tmp/census-all.json 2>&1 | grep 'CENSUS'",
+      "note": "Create census/chrome-census-all.cjs that captures EVERY tab (home, insert, draw, layout, references, collaboration, protection, view, plugins, ai) for both OO and WO, plus statusbar items and right panel toggles. Output JSON with per-tab button arrays for both engines. This becomes the authoritative visual diff tool. Reuse captureWO/captureOO patterns from chrome-census2.cjs but loop over all tab names. OO tab names: home(Startseite), ins(Einfügen), draw(Zeichnen), layout(Layout), links(Verweise), collaboration(Zusammenarbeit), protection(Schutz), view(Ansicht), plugins(Plugins), ai(AI). WO tab data-tab values: home, insert, draw, layout, references, collaboration, protection, view, plugins, ai."
+    }
+  ]
+}
