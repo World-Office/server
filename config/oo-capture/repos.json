@@ -1,0 +1,7 @@
+{
+  "repos": {
+    "server": "/home/weiss/git/World-Office/server",
+    "harness": "/home/weiss/git/World-Office/wo-test-harness",
+    "website": "/home/weiss/git/wo-website"
+  }
+}

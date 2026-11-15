@@ -1,0 +1,111 @@
+{
+  "tasks": [
+    {
+      "id": "CAP-1",
+      "repo": "server",
+      "deps": [],
+      "priority": 10,
+      "title": "fix(ui): remove the non-OO blue focus ring around the editor content surface",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/style.css"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && timeout 300 /usr/bin/node --test *.test.mjs 2>&1 | grep -qE '^# (tests|pass) ' && timeout 300 /usr/bin/node --test *.test.mjs 2>&1 | grep -Eq '^# fail 0$'",
+      "acceptance_prose": "The #editor:focus box-shadow rule is gone from style.css and the full test suite passes with 0 failures.",
+      "note": "VERIFIED FACT (live 2026-11-15): OO's document editor draws NO box-shadow/outline ring around the content/viewer surface on focus. Live probe of the OO demo (onlyoffice 9.4.0, world-office.graphwiz.ai/demo, frameEditor iframe): computed style of #id_viewer = box-shadow:none, outline:none; a blue-halo scan (every element >=300x300 with a bluish box-shadow) returned ZERO hits. OO's focus signal is the text caret + canvas selection highlight, NOT a shell ring.\n\nWO currently has this rule in apps/web/apps/documenteditor-wysiwyg/style.css:\n    #editor:focus { box-shadow: 0 0 0 2px var(--accent); }\n\nIt draws a 2px rgb(55,96,143) frame around the whole 1648x746 #editor scroll surface (all pages + empty backdrop) whenever the editor gets focus. This is (a) wrong vs OO and (b) reads as a bug: the ring spans the entire canvas area and clips/pulses while typing/selecting.\n\nTASK: delete that exact rule (the line `#editor:focus { box-shadow: ... }`). Do NOT add a replacement ring/outline on #editor, .wo-page, or the canvas. Do NOT touch the ::selection styling, the caret, @media print rules, or anything else. The editor already has role=\"textbox\" + aria-label so accessibility is intact without the ring.\n\nAlso verify no other rule targets #editor with a focus box-shadow/outline (grep 'editor:focus' and '#editor.*focus'). Commit only style.css. The test suite must stay at # fail 0 (currently 158 tests, 0 fail). There is no test asserting this ring today (verified: no test greps for editor:focus box-shadow), so removing it cannot break a gate.",
+      "manual": false
+    },
+    {
+      "id": "CAP-2",
+      "repo": "server",
+      "deps": ["CAP-1"],
+      "priority": 10,
+      "title": "fix(ui): context menu — OO-parity plain-text gating (hide formatting/list/insert/TOC/accept rows unless their context is true); keep OO row order",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js",
+        "apps/web/apps/documenteditor-wysiwyg/ctx-parity.test.mjs"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-wysiwyg && timeout 300 /usr/bin/node --test *.test.mjs 2>&1 | grep -Eq '^# fail 0$' && timeout 300 /usr/bin/node --test ctx-parity.test.mjs 2>&1 | grep -Eq '^# fail 0$'",
+      "acceptance_prose": "ctx-parity.test.mjs exists and passes; full suite stays at 0 failures; plain-text right-click shows only OO's text-menu rows in OO order.",
+      "note": "VERIFIED FACTS (OO 9.4.0, live + source) — OO's TEXT context menu (right-click on paragraph text, no object/table/spell/revision):\n\nOO visible rows, in order (German labels observed live):\n  1. (spell block, ONLY when a misspelled word is at the caret: suggestion / Ignore / Ignore all / ▸ Select language — WO already gates these via data-showif=\"misspelled\", KEEP IT)\n  2. Cut, 3. Copy, 4. Paste\n  5. Print selection\n  6. Seite vorumbruch / Page break before (WO: PageBreakBefore)\n  7. Absatz zusammenhalten / Keep lines together (WO: KeepLines)\n  8. Absatz - Erweiterte Einstellungen / Paragraph advanced settings (WO: ParagraphSettings)\n  9. Kommentar hinzufügen / Add comment (WO: AddComment)\n 10. Link (WO: Link)\n 11. Formatierung als Formatvorlage / Formatting as style (WO: FormattingAsStyle)\n 12. AI (submenu)\n\nCRITICAL: OO's text menu DOES NOT contain, on plain text: Undo, Redo, Bold, Italic, Underline, Strikethrough, clear formatting, TextDirection, lists (bullet/numbered/start-new/continue/setvalue/listindents/bullets&numbering), horizontal rule, caption, footnote, endnote, symbol, date, page number, UpdateTOC, field codes, AcceptChange, RejectChange, dropcap/frame/equation/content-control settings. OO's pictureMenu (image selected) and tableMenu (table cell) and shape menus are SEPARATE scenarios shown only in those contexts. The CHARACTER FORMATTING block (bold/italic/underline/strikeout) never appears in OO's text menu even with a selection — confirmed twice live: right-click on plain text and on a selected word produce the SAME 15-row (or 12-row clean) menu.\n\nWO's current markup (index.html id=\"ctx-menu\") has 74 data-ctx rows; the following are currently ALWAYS visible (no data-showif) and MUST become hidden on plain text:\n  - Undo, Redo (formatting block)\n  - Bold, Italic, Underline, StrikeThrough, RemoveFormat\n  - TextDirection + TextDirHorizontal/RotateDown/RotateUp\n  - AI submenu rows are fine to keep gated to AI group\n  - BulletList, NumberedList, StartNewList, ContinueNumbering, SetNumberingValue, AdjustListIndents, BulletsAndNumbering\n  - HorizontalRule, HorizontalLineSettings, Caption, Footnote, Endnote, Symbol, Date, PageNumber\n  - UpdateTOC, TocSettings, UpdateField, EditField, ToggleFieldCodes, PageBreakBefore(keep visible!), AcceptChange, RejectChange\n  - DropcapSettings, FrameSettings, EquationSettings, ContentControlSettings, RemoveContentControl\n  - PrintSelection, SelectAll\n\nAPPROACH (do NOT delete any data-ctx buttons — existing tests (ctx-menu.test.mjs, ctx-convert-to-shape, ctx-distribute-*, ctx-edit-*, etc.) assert >=20 data-ctx buttons exist, each has a Ctx.* i18n key, and each is handled in the editor.js dispatcher; deleting buttons BREAKS those tests. Instead:\n1. In index.html give every row that OO hides on plain text a data-showif attribute with the correct context name: formatting rows (Undo/Redo/Bold/Italic/Underline/StrikeThrough/RemoveFormat) -> data-showif=\"format\"; list rows -> data-showif=\"list\"; insert rows (HorizontalRule..PageNumber) -> data-showif=\"insert-ctx\" or keep them but gate to a context that is FALSE on plain paragraph text; TextDirection rows -> data-showif=\"shapetext\" (OO shows text-direction only inside shapes); AcceptChange/RejectChange -> data-showif=\"trackchanges\"; UpdateTOC/TocSettings -> data-showif=\"toc\"; UpdateField/EditField/ToggleFieldCodes -> data-showif=\"field\"; DropcapSettings -> data-showif=\"dropcap\"; FrameSettings -> data-showif=\"frame\"; EquationSettings -> data-showif=\"equation\"; ContentControlSettings/RemoveContentControl -> data-showif=\"control\". Pick sensible names; the existing ctx-menu.test.mjs checks data-showif attributes exist on advanced-settings rows and that the build step refreshes them — keep collab-dialogs/consistency-gate happy.\n2. In editor.js contextmenu handler (around L11372-11470, function attached to editorEl 'contextmenu'), compute the NEW contexts: hasSelection (window.getSelection() not collapsed), inList (selectionIsInList() — implement: walk ancestors of selection anchorNode for OL/UL or elements with data-listid), inTOC (closest .toc-container or [data-field=sdt] / data-field with fieldKind TOC), inField (existing ctxNode logic already gates data-showif='field'), hasObjectSelection (existing selectedObject / selectedObjects), canRevise (trackChangesOn for Accept/Reject — already gated). Then set el.hidden = !ctx[name] for every [data-showif] in the menu.\n3. Ensure on a PLAIN paragraph right-click (no selection, no table, no object, no spell, no revision) the visible rows are EXACTLY, in this order: Cut, Copy, Paste, [sep], PrintSelection, PageBreakBefore, KeepLines, ParagraphSettings, [sep], AddComment, Link, [sep], FormattingAsStyle, AI. (numerical x/order = DOM order in #ctx-menu; if the DOM order differs you may REORDER those rows in index.html to match; keep all buttons present.) Use the existing hidden/hide() mechanism (ctxMenu.querySelectorAll + el.hidden) already used for misspelled/table/object.\n4. ADD apps/web/apps/documenteditor-wysiwyg/ctx-parity.test.mjs (node:test + node:assert, zero deps, reads index.html + editor.js source): (a) assert the plain-text visible set from DOM order — extract the ordered list of data-ctx values that have NO data-showif and whose data-showif context is false-by-default, and assert it equals [Cut,Copy,Paste,PrintSelection,PageBreakBefore,KeepLines,ParagraphSettings,AddComment,Link,FormattingAsStyle,AI] in that relative order; (b) assert Undo/Redo/Bold/Italic/Underline/StrikeThrough/RemoveFormat/BulletList/NumberedList/HorizontalRule/Caption/Footnote/Endnote/Symbol/Date/PageNumber/TextDirection/UpdateTOC/UpdateField/DropcapSettings/FrameSettings/EquationSettings/ContentControlSettings/AcceptChange/RejectChange each carry a data-showif OR a JS gating line in editor.js (at minimum assert they are NOT in the always-visible list computed in (a)); (c) assert editor.js handler has code setting el.hidden from the new contexts (grep for 'data-showif' loop). Test must pass standalone: `node --test ctx-parity.test.mjs`.\n\nConstraint: full suite `timeout 300 /usr/bin/node --test *.test.mjs` must stay # fail 0. Do NOT remove any data-ctx button, do NOT change Ctx.* i18n keys, do NOT break the dispatcher switch. Keep diff boring.",
+      "manual": false
+    },
+    {
+      "id": "CAP-3",
+      "repo": "harness",
+      "deps": [],
+      "priority": 10,
+      "title": "capture: ctx-scenarios.cjs — scenario walker that right-clicks each interaction context (text/selection/table/image/shape/misspelled/field/toc/tracked-changes) on WO and OO and emits normalized visible-row JSON per scenario",
+      "scope": [
+        "census/ctx-scenarios.cjs"
+      ],
+      "touch": [
+        "census/ctx-scenarios.cjs"
+      ],
+      "accept": "cd /home/weiss/git/World-Office/wo-test-harness && /usr/bin/node --check census/ctx-scenarios.cjs && timeout 60 /usr/bin/node census/ctx-scenarios.cjs --self 2>&1 | grep -q 'SELF-OK'",
+      "acceptance_prose": "ctx-scenarios.cjs parses and its --self mode runs green; the walker is wired for WO+OO live capture.",
+      "note": "Build the systematic scenario walker that the research prescribed (wo-test-harness/census/RESEARCH-CAPTURE-ALL.md, section 4A). It must be a self-contained /usr/bin/node CJS script using the already-installed playwright at /home/weiss/.npm-global/lib/node_modules/playwright/index.mjs (require it; do not add npm deps). Reuse the proven capture recipe from census/chrome-census2.cjs (viewports, waits, iframe handling).\n\nREQUIRED BEHAVIOR:\n- Provides `--self` mode: no network, just prints 'SELF-OK' (used by the acceptance gate).\n- Default mode (live): opens WO editor at https://editor.cloud.graphwiz.ai/word/ (viewport 1680x950, locale de-DE, wait ~6s after domcontentloaded) and the OO demo reference at https://world-office.graphwiz.ai/demo (viewport 1760x950; click the .file 'Bericht.docx' entry; wait ~15-20s for the editor; widen the frameEditor iframe to 1680x950 via injected style 'iframe[name=\"frameEditor\"] { width: 1680px !important; height: 950px !important; }' and wait ~3s; find the frame named frameEditor and wait for its .toolbar).\n- For the WO side, for each scenario below, position the mouse, right-click, read the #ctx-menu visible buttons (offsetParent !== null / el.hidden === false) in order (text + data-ctx), collapse, move on:\n  scenarios: text (right-click x=800 y=500 paragraph area), selection (select a word first via dblclick / keyboard, then right-click), misspelled (only if a misspell exists), table (insert a table via the Insert ribbon if available or skip with note), image (skip with note if Bericht.docx has none), field (skip if none), toc (skip if none), trackchanges-on (toggle via Review ribbon if available).\n- For the OO side, right-click inside the widened frameEditor at the same coordinates, collect the OS menu (menu-item / .menu-item / .dropdown-submenu elements visible, ordered by y), map captions to best-effort canonical names.\n- Emit, to stdout and to census/ctx-scenarios.json, one normalized record per scenario per engine:\n  { \"scenario\": \"text\", \"engine\": \"wo\" | \"oo\", \"rows\": [ {\"key\": \"Cut\", \"caption\": \"Ausschneiden\"} ... ] } — for WO derive key from data-ctx; for OO use a best-effort canonical key from the caption (keep an ooRawCaption field).\n- On network/load failure of either engine, print a clear NOTICE line and continue (never hang; wrap every wait with a try/catch and a sane timeout). Exit 0 if at least one engine was captured.\n- Do NOT commit any captured JSON, API keys, or screenshots. Commit only census/ctx-scenarios.cjs.\n- Keep the file boring: one file, no classes unless needed, no extra deps, no README.",
+      "manual": false
+    },
+    {
+      "id": "CAP-4",
+      "repo": "harness",
+      "deps": [],
+      "priority": 10,
+      "title": "capture: chrome-surface.cjs — live probe comparing focus/hover/click chrome (box-shadow, outline, cursor, focus ring, tooltip) per control across WO and OO",
+      "scope": [
+        "census/chrome-surface.cjs"
+      ],
+      "touch": [
+        "census/chrome-surface.cjs"
+      ],
+      "accept": "cd /home/weiss/git/World-Office/wo-test-harness && /usr/bin/node --check census/chrome-surface.cjs && timeout 60 /usr/bin/node census/chrome-surface.cjs --self 2>&1 | grep -q 'SELF-OK'",
+      "acceptance_prose": "chrome-surface.cjs parses and its --self mode runs green; the chrome probe is wired for WO+OO live capture.",
+      "note": "Build the chrome-surface probe that the research prescribed (wo-test-harness/census/RESEARCH-CAPTURE-ALL.md, section 4C): a live probe that diffs the interaction chrome — box-shadow, outline, cursor, focus-ring behavior, and hover background — per control across WO and OO. This is exactly the class of defect that hid the blue #editor:focus ring.\n\nREQUIRED BEHAVIOR:\n- Self-contained CJS using playwright at /home/weiss/.npm-global/lib/node_modules/playwright/index.mjs (require; no npm deps).\n- `--self` mode: no network, prints 'SELF-OK' (gate).\n- Config-driven probe list, at minimum targeting: #editor, #toolbar (and its tab buttons), the QAT strip (#qat or the buttons at x20/65/105/139), .wo-page, the statusbar, the right settings panel (#right-panel), #ctx-menu, the primary dialog surface (.dialog-overlay / the font dialog), and the styles gallery (#btn-font-dialog / #gallery).\n- For each target, capture AT REST and ON FOCUS (focus via element.focus() in the page, then read getComputedStyle): boxShadow, outline, outlineWidth, cursor, borderColor, background, transition. Also hover over the element and record the computed background + boxShadow after 500ms.\n- Same probes against the OO demo (world-office.graphwiz.ai/demo -> .file -> frameEditor iframe widened to 1680x950, same recipe as census/chrome-census2.cjs) with best-effort selector mapping (map OO's .toolbar/ribbon buttons onto the same slot names).\n- Emit to stdout + census/chrome-surface.json records { \"ctl\": \"#editor\", \"state\": \"rest\" | \"focus\" | \"hover\", \"engine\": \"wo\" | \"oo\", \"p\": { \"boxShadow\": ..., \"outline\": ..., \"cursor\": ... } }.\n- Boring: one file, no deps, no README. Exit 0 with at least one engine captured; NOTICE lines on failures; never hang.",
+      "manual": false
+    },
+    {
+      "id": "CAP-5",
+      "repo": "harness",
+      "deps": ["CAP-3"],
+      "priority": 10,
+      "title": "capture: ctx-contracts — per-scenario behavior contracts (expected visible rows in OO) + a reconcile runner that reports WO divergences",
+      "scope": [
+        "census/ctx-contracts.json",
+        "census/reconcile-ctx.cjs"
+      ],
+      "touch": [
+        "census/ctx-contracts.json",
+        "census/reconcile-ctx.cjs"
+      ],
+      "accept": "cd /home/weiss/git/World-Office/wo-test-harness && /usr/bin/node --check census/reconcile-ctx.cjs && /usr/bin/node census/reconcile-ctx.cjs --offline 2>&1 | grep -q 'RECONCILE-OK'",
+      "acceptance_prose": "ctx-contracts.json and reconcile-ctx.cjs exist; contract validation runs green offline.",
+      "note": "Build the behavior-contract layer the research prescribed (wo-test-harness/census/RESEARCH-CAPTURE-ALL.md, section 4B). The contracts encode what OO actually shows per scenario — the verified ground truth from the 2026-11-15 research (which you can also re-derive from the OO source ref at /home/weiss/git/OO/DocumentServer/web-apps/apps/documenteditor/main/app/view/DocumentHolderExt.js, textMenu items around L2461-2755 / pictureMenu L915 / tableMenu L1793).\n\ncensus/ctx-contracts.json must contain, per scenario key, the EXPECTED visible row keys in order:\n  \"text\":      [\"Cut\",\"Copy\",\"Paste\",\"PrintSelection\",\"PageBreakBefore\",\"KeepLines\",\"ParagraphSettings\",\"AddComment\",\"Link\",\"FormattingAsStyle\",\"AI\"]  (spell rows Ignore/IgnoreAll/SelectLanguage are a separate \"misspelled\" scenario)\n  \"misspelled\": [\"Ignore\",\"IgnoreAll\",\"AddToDictionary\",\"SelectLanguage\",\"Cut\",\"Copy\",\"Paste\",\"PrintSelection\",\"PageBreakBefore\",\"KeepLines\",\"ParagraphSettings\",\"AddComment\",\"Link\",\"FormattingAsStyle\",\"AI\"]  (spell block appears ABOVE the clipboard block)\n  \"table\":     [\"Cut\",\"Copy\",\"Paste\",\"TextAlignment\",\"TableRowAbove\",\"TableRowBelow\",\"TableColLeft\",\"TableColRight\",\"TableMergeCells\",\"TableSplitCell\",\"ParagraphSettings\"...]  (best-effort reconstruction from tableMenu; mark with \"approx\": true if you only have source, not a live capture)\n  \"image\":     [\"Cut\",\"Copy\",\"Paste\",\"EditAltText\",\"WrapInline\",\"WrapSquare\",\"WrapTight\",\"WrapBehind\",\"WrapFront\",\"WrapThrough\",\"TopAndBottom\",\"EditObject\",\"ConvertToShape\"...] (approx, from pictureMenu)\nAdd a top-level \"_meta\": { \"source\": \"OO 9.4.0 source + 2026-11-15 live capture\", \"baseline\": \"text/misspelled verified live; table/image approx\" }.\ncensus/reconcile-ctx.cjs: reads contracts + an optional WO capture (census/ctx-scenarios.json if present, else a small inline fixture for the text scenario), and for every scenario present BOTH in contract and capture prints per-row MISSING / EXTRA / OK lines and ends with a summary. `--offline` mode (gate): uses the inline text-scenario fixture internally, validates the contract file schema (arrays of strings), prints RECONCILE-OK, exit 0. Default mode: run reconcile over census/ctx-scenarios.json if it exists and exit 0 regardless (report only; this is a capture tool, not a hard gate).",
+      "manual": false
+    },
+    {
+      "id": "CAP-6",
+      "repo": "website",
+      "deps": [],
+      "priority": 5,
+      "title": "demo: pin onlyoffice/documentserver:latest -> :9.4.0 in demo/docker-compose.yml to stop silent reference drift",
+      "scope": [
+        "demo/docker-compose.yml"
+      ],
+      "touch": [
+        "demo/docker-compose.yml"
+      ],
+      "accept": "grep -q 'onlyoffice/documentserver:9.4.0' demo/docker-compose.yml",
+      "acceptance_prose": "demo/docker-compose.yml references onlyoffice/documentserver:9.4.0 (pinned) instead of :latest.",
+      "note": "VERIFIED FACT (2026-11-15): the WO demo's OO reference engine is embedded via iframe from the documentserver container defined in demo/docker-compose.yml line 13: `image: onlyoffice/documentserver:latest`. Because it is :latest, the reference silently drifts — it already moved from the 9.4.0 build the parity/census baselines were captured against (frameEditor iframe src currently `.../9.4.0-399562084f7f743cbd97220e359936c4/web-apps/...`, _dc=9.4.0-129) to wherever :latest points next. Latest is 10.0.0 (2026-10-12) which breaks the parity baseline (JWT on by default, WOPI host allowlist, ribbon/context-menu changes). DECISION RECORDED: keep the reference pinned at 9.4.0 until the parity suite is re-baselined; do NOT bump.\n\nTASK: change line 13 in demo/docker-compose.yml to:\n    image: onlyoffice/documentserver:9.4.0\nChange ONLY that line. Do not touch JWT_ENABLED, labels, resource caps, or anything else. Keep the existing comment block above the service unchanged (you may add one short comment line under the image if helpful). Commit only demo/docker-compose.yml.",
+      "manual": false
+    }
+  ]
+}
