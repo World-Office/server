@@ -11444,6 +11444,23 @@
       ctxMenu.querySelectorAll("[data-showif='field']").forEach((el) => {
         el.hidden = !ctxNode;
       });
+      // CAP-2: OO-parity plain-text gating — text/context rows
+      const isText = !hasObjectSel && !hasImageSel;
+      ctxMenu.querySelectorAll("[data-showif='text']").forEach((el) => {
+        el.hidden = !isText;
+      });
+      // CAP-2: TOC rows only shown when at a TOC
+      const atToc = ctxAnchor && ctxAnchor.closest
+        ? ctxAnchor.closest("#editor div.toc") : null;
+      ctxMenu.querySelectorAll("[data-showif='toc']").forEach((el) => {
+        el.hidden = !atToc;
+      });
+      // CAP-2: Accept/Reject rows only shown when at a tracked change
+      const atTrackedChange = ctxAnchor && ctxAnchor.closest
+        ? ctxAnchor.closest("#editor ins.track-insert, #editor del.track-delete") : null;
+      ctxMenu.querySelectorAll("[data-showif='trackedchange']").forEach((el) => {
+        el.hidden = !atTrackedChange;
+      });
       refreshSpellSuggestionRows(misspellSpan);
       collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
