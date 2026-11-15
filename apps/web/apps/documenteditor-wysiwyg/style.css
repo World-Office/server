@@ -1613,7 +1613,7 @@ main {
   .wo-page:last-child { page-break-after: auto; }
 }
 
-#editor:focus { box-shadow: 0 0 0 2px var(--accent); }
+
 
 /* Ink canvas overlay for Draw tab drawing. Positioned over the editor. */
 #ink-canvas.ink-canvas {
