@@ -961,9 +961,9 @@ select option { background: var(--bg); color: var(--text); }
   align-items: flex-start;
   justify-content: center;
   gap: 3px;
-  width: 78px;
+  width: 104px;
   flex: 0 0 auto;
-  padding: 0 6px;
+  padding: 0 8px;
   border: none;
   border-right: 1px solid var(--border);
   background: var(--bg);
@@ -976,15 +976,26 @@ select option { background: var(--bg); color: var(--text); }
 .gallery-card:hover { background: var(--hover); }
 .gallery-card.active,
 .gallery-card[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.gc-name { font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; max-width: 66px; }
-.gc-preview { display: block; width: 70%; height: 2px; background: currentColor; opacity: 0.35; box-shadow: 0 5px 0 currentColor; }
+.gc-name { font-size: 10px; line-height: 1.1; white-space: nowrap; overflow: hidden; max-width: 90px; }
+/* OO combo-styles chip preview: the style name rendered in its target
+   typography, headings tinted with OO's accent blue (#376092), plus a
+   gray body-line mockup below (OO chips embed a mini paragraph render:
+   colored heading + body lines — measured 104x40 with ~5.9% color). */
+.gc-preview {
+  display: block;
+  width: 95%;
+  height: 2px;
+  background: #c9ccd2;
+  opacity: 1;
+  box-shadow: 0 4px 0 #d8dae0, 0 8px 0 #e2e4e9;
+}
 /* Card name rendered in its target style (OO preview typography). */
-.gc-p .gc-name { font-size: 11px; }
-.gc-h4 .gc-name { font-size: 13px; font-weight: 700; }
-.gc-h5 .gc-name { font-size: 12px; font-weight: 600; font-style: italic; }
-.gc-h1 .gc-name { font-size: 14px; font-weight: 800; }
-.gc-h2 .gc-name { font-size: 13px; font-weight: 700; }
-.gc-h3 .gc-name { font-size: 12px; font-weight: 700; }
+.gc-p .gc-name { font-size: 11px; color: #3a3d42; }
+.gc-h4 .gc-name { font-size: 13px; font-weight: 700; color: #3a3d42; }
+.gc-h5 .gc-name { font-size: 12px; font-weight: 600; font-style: italic; color: #3a3d42; }
+.gc-h1 .gc-name { font-size: 14px; font-weight: 800; color: #376092; }
+.gc-h2 .gc-name { font-size: 13px; font-weight: 700; color: #376092; }
+.gc-h3 .gc-name { font-size: 12px; font-weight: 700; color: #376092; }
 /* Toggle: 30x46 at the gallery's right edge (OO btn.dropdown-toggle). */
 .rb-styles .styles-trigger {
   width: 30px;
