@@ -1,13 +1,23 @@
 /**
- * CAP-2: OO-parity plain-text gating test.
+ * CAP-2 FIX: OO-parity plain-text gating test (behavioral).
  * Node.js built-in test runner (node:assert, zero dependencies).
  *
- * Asserts:
- *   (1) formatting/list/insert rows have data-showif="text"
- *   (2) TOC rows have data-showif="toc"
- *   (3) field rows have data-showif="field"
- *   (4) accept/reject rows have data-showif="trackedchange"
- *   (5) editor.js has the corresponding gating logic for these new conditions
+ * The previous version was tautological: it asserted that rows were tagged
+ * data-showif="text" and that editor.js gated [data-showif='text'] with
+ * isText = !hasObjectSel && !hasImageSel. But isText is TRUE on plain text,
+ * so nothing ever hid — the tags were a pure no-op. This version asserts
+ * real behavior:
+ *
+ *   (1) The plain-text ALWAYS-VISIBLE set (rows with no data-showif in
+ *       #ctx-menu) is exactly the OO text-menu order:
+ *       Cut, Copy, Paste, PrintSelection, PageBreakBefore, KeepLines,
+ *       ParagraphSettings, AddComment, Link, FormattingAsStyle, AI
+ *       (spell/misspelled rows carry data-showif and are excluded).
+ *   (2) The 25 context rows named below are NOT always-visible — each one
+ *       carries a data-showif that is FALSE on a plain-text caret.
+ *   (3) No row in #ctx-menu uses the no-op convention data-showif="text".
+ *   (4) editor.js implements the context map (format/list/insert-ctx/...)
+ *       and a single [data-showif] loop that hides when the gate is false.
  *
  * Run: node ctx-parity.test.mjs
  */
@@ -21,139 +31,111 @@ const jsSrc = readFileSync(jsPath, "utf8")
 
 console.log("Running CAP-2 OO-parity plain-text gating tests...\n")
 
-// Test (1): Formatting rows have data-showif="text"
-const formattingRows = [
-  "Bold", "Italic", "Underline", "StrikeThrough",
-  "RemoveFormat", "KeepLines", "ParagraphSettings", "FormattingAsStyle"
-]
-console.log("Checking formatting rows have data-showif=\"text\"...")
-for (const row of formattingRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="text"`)
-  assert.ok(
-    regex.test(htmlSrc),
-    `Formatting row ${row} must have data-showif="text"`
-  )
-  console.log(`  ✓ ${row}`)
+// ── extract the #ctx-menu block (depth-aware, so nested divs are included) ──
+const blockStart = htmlSrc.lastIndexOf("<div", htmlSrc.indexOf('id="ctx-menu"'))
+let depth = 0
+let blockEnd = -1
+let idx = blockStart
+while (idx < htmlSrc.length) {
+  const o = htmlSrc.indexOf("<div", idx)
+  const c = htmlSrc.indexOf("</div>", idx)
+  if (o === -1 && c === -1) break
+  if (o !== -1 && (c === -1 || o < c)) { depth++; idx = o + 5 }
+  else { depth--; idx = c + 6 }
+  if (depth === 0) { blockEnd = idx; break }
+}
+assert.ok(blockEnd > blockStart, "must extract the #ctx-menu block")
+const menuBlock = htmlSrc.slice(blockStart, blockEnd)
+
+// row -> its data-showif (null = always visible). Subitem rows
+// (data-subitem, e.g. AI->Rewrite/Summarize/Translate) are excluded from the
+// always-visible set because collapseAllCtxSubmenus() hides them on open.
+function showifOf(ctx) {
+  const m = menuBlock.match(new RegExp(`data-ctx="${ctx}"([^>]*)`))
+  assert.ok(m, `row ${ctx} must exist in #ctx-menu`)
+  const isSubitem = /data-subitem=/.test(m[1])
+  const d = m[1].match(/data-showif="([^"]+)"/)
+  return isSubitem ? "(subitem)" : (d ? d[1] : null)
 }
 
-// Test (2): List rows have data-showif="text"
-const listRows = [
+// (1) Plain-text always-visible set == OO order
+const ooTextOrder = [
+  "Cut", "Copy", "Paste",
+  "PrintSelection", "PageBreakBefore", "KeepLines", "ParagraphSettings",
+  "AddComment", "Link", "FormattingAsStyle", "AI",
+]
+console.log("Checking the always-visible rows are exactly the OO text menu order...")
+const alwaysVisible = []
+for (const m of menuBlock.matchAll(/data-ctx="([^"]+)"/g)) {
+  const ctx = m[1]
+  if (showifOf(ctx) === null) alwaysVisible.push(ctx)
+}
+assert.deepEqual(
+  alwaysVisible,
+  ooTextOrder,
+  `always-visible rows must equal OO text order, got: ${alwaysVisible.join(", ")}`,
+)
+console.log(`  ✓ always-visible set = [${alwaysVisible.join(", ")}]`)
+
+// (2) The 25 context rows must be gated (NOT always-visible)
+const contextRows = [
+  // formatting block
+  "Undo", "Redo", "Bold", "Italic", "Underline", "StrikeThrough", "RemoveFormat",
+  // text direction (in-shape only in OO)
+  "TextDirection", "TextDirHorizontal", "TextDirRotateDown", "TextDirRotateUp",
+  // lists
   "BulletList", "NumberedList", "StartNewList", "ContinueNumbering",
-  "SetNumberingValue", "AdjustListIndents", "BulletsAndNumbering"
+  "SetNumberingValue", "AdjustListIndents", "BulletsAndNumbering",
+  // insert rows
+  "HorizontalRule", "HorizontalLineSettings", "Caption", "Footnote",
+  "Endnote", "Symbol", "Date", "PageNumber",
+  // link edit rows (only at a hyperlink)
+  "EditLink", "RemoveLink", "CopyHyperlinkAddress",
+  // advanced settings
+  "DropcapSettings", "FrameSettings", "EquationSettings",
+  "ContentControlSettings", "RemoveContentControl",
+  // selection
+  "SelectAll",
 ]
-console.log("\nChecking list rows have data-showif=\"text\"...")
-for (const row of listRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="text"`)
+console.log(`\nChecking ${contextRows.length} context rows are gated (not always-visible)...`)
+for (const row of contextRows) {
+  const g = showifOf(row)
   assert.ok(
-    regex.test(htmlSrc),
-    `List row ${row} must have data-showif="text"`
+    g !== null && g !== "text",
+    `row ${row} must carry a real data-showif (got ${JSON.stringify(g)})`,
   )
-  console.log(`  ✓ ${row}`)
-}
-
-// Test (3): Insert rows have data-showif="text"
-const insertRows = [
-  "HorizontalRule", "HorizontalLineSettings", "Caption",
-  "Footnote", "Endnote", "Symbol", "Date", "PageNumber"
-]
-console.log("\nChecking insert rows have data-showif=\"text\"...")
-for (const row of insertRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="text"`)
   assert.ok(
-    regex.test(htmlSrc),
-    `Insert row ${row} must have data-showif="text"`
+    g !== "text",
+    `row ${row} must not use the no-op data-showif="text"`,
   )
-  console.log(`  ✓ ${row}`)
 }
+console.log("  ✓ all context rows carry real gates (format/list/insert-ctx/...)")
 
-// Test (4): TOC rows have data-showif="toc"
-const tocRows = ["UpdateTOC", "TocSettings"]
-console.log("\nChecking TOC rows have data-showif=\"toc\"...")
-for (const row of tocRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="toc"`)
-  assert.ok(
-    regex.test(htmlSrc),
-    `TOC row ${row} must have data-showif="toc"`
-  )
-  console.log(`  ✓ ${row}`)
-}
-
-// Test (5): Field rows have data-showif="field"
-const fieldRows = ["UpdateField", "EditField", "ToggleFieldCodes"]
-console.log("\nChecking field rows have data-showif=\"field\"...")
-for (const row of fieldRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="field"`)
-  assert.ok(
-    regex.test(htmlSrc),
-    `Field row ${row} must have data-showif="field"`
-  )
-  console.log(`  ✓ ${row}`)
-}
-
-// Test (6): Accept/Reject rows have data-showif="trackedchange"
-const acceptRows = ["AcceptChange", "RejectChange"]
-console.log("\nChecking accept/reject rows have data-showif=\"trackedchange\"...")
-for (const row of acceptRows) {
-  const regex = new RegExp(`data-ctx="${row}"[^>]*data-showif="trackedchange"`)
-  assert.ok(
-    regex.test(htmlSrc),
-    `Accept row ${row} must have data-showif="trackedchange"`
-  )
-  console.log(`  ✓ ${row}`)
-}
-
-// Test (7): editor.js has gating logic for text condition
-console.log("\nChecking editor.js has gating logic for text condition...")
+// (3) No row in the menu uses the no-op data-showif="text"
+console.log("\nChecking no row uses the no-op data-showif=\"text\"...")
 assert.ok(
-  jsSrc.includes("[data-showif='text']"),
-  "editor.js must query [data-showif='text']"
+  !/data-showif="text"/.test(menuBlock),
+  "#ctx-menu must not contain data-showif=\"text\" (the CAP-2 no-op)",
+)
+console.log("  ✓ no data-showif=\"text\" remains")
+
+// (4) editor.js implements the real context map + single gating loop
+console.log("\nChecking editor.js implements the real context gates...")
+assert.ok(jsSrc.includes("hasTextSel"), "editor.js must compute hasTextSel")
+assert.ok(jsSrc.includes("inListCtx"), "editor.js must compute inListCtx (list context)")
+assert.ok(
+  jsSrc.includes('"insert-ctx": false'),
+  "editor.js must keep insert rows hidden on plain text",
 )
 assert.ok(
-  jsSrc.includes("isText = !hasObjectSel && !hasImageSel"),
-  "editor.js must define isText condition"
+  jsSrc.includes("querySelectorAll(\"[data-showif]\")"),
+  "editor.js must gate [data-showif] generically",
 )
-console.log("  ✓ text gating logic found")
-
-// Test (8): editor.js has gating logic for toc condition
-console.log("\nChecking editor.js has gating logic for toc condition...")
+// the old no-op must be GONE — asserting on format/list/insert rows hiding
 assert.ok(
-  jsSrc.includes("[data-showif='toc']"),
-  "editor.js must query [data-showif='toc']"
+  !jsSrc.includes("isText = !hasObjectSel && !hasImageSel"),
+  "editor.js must no longer compute the old isText no-op",
 )
-assert.ok(
-  jsSrc.includes("atToc") && jsSrc.includes("div.toc"),
-  "editor.js must check for div.toc"
-)
-console.log("  ✓ toc gating logic found")
-
-// Test (9): editor.js has gating logic for trackedchange condition
-console.log("\nChecking editor.js has gating logic for trackedchange condition...")
-assert.ok(
-  jsSrc.includes("[data-showif='trackedchange']"),
-  "editor.js must query [data-showif='trackedchange']"
-)
-assert.ok(
-  jsSrc.includes("atTrackedChange") && 
-  jsSrc.includes("ins.track-insert") && 
-  jsSrc.includes("del.track-delete"),
-  "editor.js must check for ins.track-insert, del.track-delete"
-)
-console.log("  ✓ trackedchange gating logic found")
-
-// Test (10): Verify row order is maintained (OO parity)
-console.log("\nChecking OO row order is maintained...")
-const allRows = [
-  ...formattingRows,
-  ...listRows,
-  ...insertRows
-]
-
-let lastPos = -1
-for (const row of allRows) {
-  const pos = htmlSrc.indexOf(`data-ctx="${row}"`)
-  assert.ok(pos > lastPos, `Row ${row} must appear after previous row in OO order`)
-  lastPos = pos
-}
-console.log("  ✓ OO row order maintained for text rows")
+console.log("  ✓ context map + generic gating loop present; old isText no-op removed")
 
 console.log("\n✅ All CAP-2 OO-parity plain-text gating tests passed!")

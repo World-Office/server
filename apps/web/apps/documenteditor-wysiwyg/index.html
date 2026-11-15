@@ -1777,10 +1777,6 @@
        actions WO can really perform — OO's spellcheck/language/style/AI rows
        are features WO does not implement (see features.yaml divergences). -->
   <div id="ctx-menu" role="menu" aria-label="Context menu" hidden>
-    <!-- Clipboard block -->
-    <button type="button" role="menuitem" data-ctx="Cut" data-i18n="Ctx.Cut">Cut</button>
-    <button type="button" role="menuitem" data-ctx="Copy" data-i18n="Ctx.Copy">Copy</button>
-    <button type="button" role="menuitem" data-ctx="Paste" data-i18n="Ctx.Paste">Paste</button>
     <div class="ctx-sep" role="separator" data-showif="misspelled"></div>
     <!-- AF11-SPELLCHECK-CLOSEOUT: spell rows, visible only when a misspelled
          word sits in or next to the selection (data-showif="misspelled"). -->
@@ -1788,6 +1784,25 @@
     <button type="button" role="menuitem" data-ctx="IgnoreAll" data-showif="misspelled" data-i18n="Ctx.IgnoreAll">Ignore all</button>
     <button type="button" role="menuitem" data-ctx="AddToDictionary" data-showif="misspelled" data-i18n="Ctx.AddToDictionary">Add to dictionary</button>
     <button type="button" role="menuitem" data-ctx="SelectLanguage" data-showif="misspelled" data-i18n="Ctx.SelectLanguage">Select language</button>
+    <!-- Clipboard block -->
+    <button type="button" role="menuitem" data-ctx="Cut" data-i18n="Ctx.Cut">Cut</button>
+    <button type="button" role="menuitem" data-ctx="Copy" data-i18n="Ctx.Copy">Copy</button>
+    <button type="button" role="menuitem" data-ctx="Paste" data-i18n="Ctx.Paste">Paste</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Selection -->
+    <button type="button" role="menuitem" data-ctx="PrintSelection" data-i18n="Ctx.PrintSelection">Print selection</button>
+    <button type="button" role="menuitem" data-ctx="PageBreakBefore" data-i18n="Ctx.PageBreakBefore">Page break before</button>
+    <button type="button" role="menuitem" data-ctx="KeepLines" data-i18n="Ctx.KeepLines">Keep lines together</button>
+    <button type="button" role="menuitem" data-ctx="ParagraphSettings" data-i18n="Ctx.ParagraphSettings">Paragraph advanced settings</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Document block -->
+    <button type="button" role="menuitem" data-ctx="AddComment" data-i18n="Ctx.AddComment">Add comment</button>
+    <button type="button" role="menuitem" data-ctx="Link" data-i18n="Ctx.Link">Link</button>
+    <button type="button" role="menuitem" data-ctx="FormattingAsStyle" data-i18n="Ctx.FormattingAsStyle">Formatting as style</button>
+    <button type="button" role="menuitem" data-ctx="AI" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.AI">AI</button>
+    <button type="button" role="menuitem" data-ctx="AIRewrite" data-subitem="ai" data-i18n="Ctx.AIRewrite">AI Rewrite</button>
+    <button type="button" role="menuitem" data-ctx="AISummarize" data-subitem="ai" data-i18n="Ctx.AISummarize">AI Summarize</button>
+    <button type="button" role="menuitem" data-ctx="AITranslate" data-subitem="ai" data-i18n="Ctx.AITranslate">AI Translate</button>
     <!-- AF14-CTX-DEPTH: spelling suggestion rows are inserted dynamically
          right before the Ignore row when the menu opens (SpellSuggest rows
          carrying data-word = candidate); no static placeholder rows. -->
@@ -1825,57 +1840,46 @@
     <!-- AF14-CTX-DEPTH: Text direction submenu — writing-mode on the block
          under the selection, persisted as data-textdir + a wo-textdir-* class
          so it round-trips flatHtml()/save. -->
-    <button type="button" role="menuitem" data-ctx="TextDirection" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.TextDirection">Text direction</button>
-    <button type="button" role="menuitem" data-ctx="TextDirHorizontal" data-subitem="text-dir" data-i18n="Ctx.TextDirHorizontal">Horizontal</button>
-    <button type="button" role="menuitem" data-ctx="TextDirRotateDown" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateDown">Rotate text down</button>
-    <button type="button" role="menuitem" data-ctx="TextDirRotateUp" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateUp">Rotate text up</button>
+    <button type="button" role="menuitem" data-ctx="TextDirection" data-showif="shapetext" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.TextDirection">Text direction</button>
+    <button type="button" role="menuitem" data-ctx="TextDirHorizontal" data-showif="shapetext" data-subitem="text-dir" data-i18n="Ctx.TextDirHorizontal">Horizontal</button>
+    <button type="button" role="menuitem" data-ctx="TextDirRotateDown" data-showif="shapetext" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateDown">Rotate text down</button>
+    <button type="button" role="menuitem" data-ctx="TextDirRotateUp" data-showif="shapetext" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateUp">Rotate text up</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- AF14-CTX-DEPTH: Follow move (tracked changes only) + AI submenu
          (Rewrite/Summarize/Translate reusing the ai* command handlers). -->
     <button type="button" role="menuitem" data-ctx="FollowMove" data-showif="trackchanges" data-i18n="Ctx.FollowMove">Follow move</button>
-    <button type="button" role="menuitem" data-ctx="AI" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.AI">AI</button>
-    <button type="button" role="menuitem" data-ctx="AIRewrite" data-subitem="ai" data-i18n="Ctx.AIRewrite">AI Rewrite</button>
-    <button type="button" role="menuitem" data-ctx="AISummarize" data-subitem="ai" data-i18n="Ctx.AISummarize">AI Summarize</button>
-    <button type="button" role="menuitem" data-ctx="AITranslate" data-subitem="ai" data-i18n="Ctx.AITranslate">AI Translate</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Undo/Redo -->
-    <button type="button" role="menuitem" data-ctx="Undo" data-i18n="Ctx.Undo">Undo</button>
-    <button type="button" role="menuitem" data-ctx="Redo" data-i18n="Ctx.Redo">Redo</button>
+    <button type="button" role="menuitem" data-ctx="Undo" data-showif="format" data-i18n="Ctx.Undo">Undo</button>
+    <button type="button" role="menuitem" data-ctx="Redo" data-showif="format" data-i18n="Ctx.Redo">Redo</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Formatting block -->
-    <button type="button" role="menuitem" data-ctx="Bold" data-showif="text" data-i18n="Ctx.Bold">Bold</button>
-    <button type="button" role="menuitem" data-ctx="Italic" data-showif="text" data-i18n="Ctx.Italic">Italic</button>
-    <button type="button" role="menuitem" data-ctx="Underline" data-showif="text" data-i18n="Ctx.Underline">Underline</button>
-    <button type="button" role="menuitem" data-ctx="StrikeThrough" data-showif="text" data-i18n="Ctx.StrikeThrough">Strikethrough</button>
-    <button type="button" role="menuitem" data-ctx="RemoveFormat" data-showif="text" data-i18n="Ctx.RemoveFormat">Clear formatting</button>
-    <button type="button" role="menuitem" data-ctx="KeepLines" data-showif="text" data-i18n="Ctx.KeepLines">Keep lines together</button>
-    <button type="button" role="menuitem" data-ctx="ParagraphSettings" data-showif="text" data-i18n="Ctx.ParagraphSettings">Paragraph advanced settings</button>
-    <button type="button" role="menuitem" data-ctx="FormattingAsStyle" data-showif="text" data-i18n="Ctx.FormattingAsStyle">Formatting as style</button>
+    <button type="button" role="menuitem" data-ctx="Bold" data-showif="format" data-i18n="Ctx.Bold">Bold</button>
+    <button type="button" role="menuitem" data-ctx="Italic" data-showif="format" data-i18n="Ctx.Italic">Italic</button>
+    <button type="button" role="menuitem" data-ctx="Underline" data-showif="format" data-i18n="Ctx.Underline">Underline</button>
+    <button type="button" role="menuitem" data-ctx="StrikeThrough" data-showif="format" data-i18n="Ctx.StrikeThrough">Strikethrough</button>
+    <button type="button" role="menuitem" data-ctx="RemoveFormat" data-showif="format" data-i18n="Ctx.RemoveFormat">Clear formatting</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Lists -->
-    <button type="button" role="menuitem" data-ctx="BulletList" data-showif="text" data-i18n="Ctx.BulletList">Bullet list</button>
-    <button type="button" role="menuitem" data-ctx="NumberedList" data-showif="text" data-i18n="Ctx.NumberedList">Numbered list</button>
-    <button type="button" role="menuitem" data-ctx="StartNewList" data-showif="text" data-i18n="Ctx.StartNewList">Start new list</button>
-    <button type="button" role="menuitem" data-ctx="ContinueNumbering" data-showif="text" data-i18n="Ctx.ContinueNumbering">Continue numbering</button>
-    <button type="button" role="menuitem" data-ctx="SetNumberingValue" data-showif="text" data-i18n="Ctx.SetNumberingValue">Set numbering value</button>
-    <button type="button" role="menuitem" data-ctx="AdjustListIndents" data-showif="text" data-i18n="Ctx.AdjustListIndents">Adjust list indents</button>
-    <button type="button" role="menuitem" data-ctx="BulletsAndNumbering" data-showif="text" data-i18n="Ctx.BulletsAndNumbering">Bullets and numbering…</button>
+    <button type="button" role="menuitem" data-ctx="BulletList" data-showif="list" data-i18n="Ctx.BulletList">Bullet list</button>
+    <button type="button" role="menuitem" data-ctx="NumberedList" data-showif="list" data-i18n="Ctx.NumberedList">Numbered list</button>
+    <button type="button" role="menuitem" data-ctx="StartNewList" data-showif="list" data-i18n="Ctx.StartNewList">Start new list</button>
+    <button type="button" role="menuitem" data-ctx="ContinueNumbering" data-showif="list" data-i18n="Ctx.ContinueNumbering">Continue numbering</button>
+    <button type="button" role="menuitem" data-ctx="SetNumberingValue" data-showif="list" data-i18n="Ctx.SetNumberingValue">Set numbering value</button>
+    <button type="button" role="menuitem" data-ctx="AdjustListIndents" data-showif="list" data-i18n="Ctx.AdjustListIndents">Adjust list indents</button>
+    <button type="button" role="menuitem" data-ctx="BulletsAndNumbering" data-showif="list" data-i18n="Ctx.BulletsAndNumbering">Bullets and numbering…</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Insert block -->
-    <button type="button" role="menuitem" data-ctx="HorizontalRule" data-showif="text" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
-    <button type="button" role="menuitem" data-ctx="HorizontalLineSettings" data-showif="text" data-i18n="Ctx.HorizontalLineSettings">Horizontal line settings…</button>
-    <button type="button" role="menuitem" data-ctx="Caption" data-showif="text" data-i18n="Ctx.Caption">Caption</button>
-    <button type="button" role="menuitem" data-ctx="Footnote" data-showif="text" data-i18n="Ctx.Footnote">Footnote</button>
-    <button type="button" role="menuitem" data-ctx="Endnote" data-showif="text" data-i18n="Ctx.Endnote">Endnote</button>
-    <button type="button" role="menuitem" data-ctx="Symbol" data-showif="text" data-i18n="Ctx.Symbol">Symbol</button>
-    <button type="button" role="menuitem" data-ctx="Date" data-showif="text" data-i18n="Ctx.Date">Date</button>
-    <button type="button" role="menuitem" data-ctx="PageNumber" data-showif="text" data-i18n="Ctx.PageNumber">Page number</button>
-    <div class="ctx-sep" role="separator"></div>
-    <!-- Document block -->
-    <button type="button" role="menuitem" data-ctx="AddComment" data-i18n="Ctx.AddComment">Add comment</button>
-    <button type="button" role="menuitem" data-ctx="Link" data-i18n="Ctx.Link">Link</button>
-    <button type="button" role="menuitem" data-ctx="EditLink" data-i18n="Ctx.EditLink">Edit link</button>
-    <button type="button" role="menuitem" data-ctx="RemoveLink" data-i18n="Ctx.RemoveLink">Remove link</button>
+    <button type="button" role="menuitem" data-ctx="HorizontalRule" data-showif="insert-ctx" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
+    <button type="button" role="menuitem" data-ctx="HorizontalLineSettings" data-showif="insert-ctx" data-i18n="Ctx.HorizontalLineSettings">Horizontal line settings…</button>
+    <button type="button" role="menuitem" data-ctx="Caption" data-showif="insert-ctx" data-i18n="Ctx.Caption">Caption</button>
+    <button type="button" role="menuitem" data-ctx="Footnote" data-showif="insert-ctx" data-i18n="Ctx.Footnote">Footnote</button>
+    <button type="button" role="menuitem" data-ctx="Endnote" data-showif="insert-ctx" data-i18n="Ctx.Endnote">Endnote</button>
+    <button type="button" role="menuitem" data-ctx="Symbol" data-showif="insert-ctx" data-i18n="Ctx.Symbol">Symbol</button>
+    <button type="button" role="menuitem" data-ctx="Date" data-showif="insert-ctx" data-i18n="Ctx.Date">Date</button>
+    <button type="button" role="menuitem" data-ctx="PageNumber" data-showif="insert-ctx" data-i18n="Ctx.PageNumber">Page number</button>
+    <button type="button" role="menuitem" data-ctx="EditLink" data-showif="link" data-i18n="Ctx.EditLink">Edit link</button>
+    <button type="button" role="menuitem" data-ctx="RemoveLink" data-showif="link" data-i18n="Ctx.RemoveLink">Remove link</button>
     <!-- BUG8-STATE-CONSISTENCY: alt text editing (a11y) — row only shows
          when a plain (non-vector) image is selected; opens image-alt-dialog. -->
     <button type="button" role="menuitem" data-ctx="EditAltText" data-showif="image" data-i18n="Ctx.EditAltText">Edit alt text…</button>
@@ -1949,20 +1953,16 @@
     <button type="button" role="menuitem" data-ctx="UpdateField" data-showif="field" data-i18n="Ctx.UpdateField">Update field</button>
     <button type="button" role="menuitem" data-ctx="EditField" data-showif="field" data-i18n="Ctx.EditField">Edit field</button>
     <button type="button" role="menuitem" data-ctx="ToggleFieldCodes" data-showif="field" data-i18n="Ctx.ToggleFieldCodes">Toggle field codes</button>
-    <button type="button" role="menuitem" data-ctx="PageBreakBefore" data-i18n="Ctx.PageBreakBefore">Page break before</button>
     <button type="button" role="menuitem" data-ctx="AcceptChange" data-showif="trackedchange" data-i18n="Ctx.AcceptChange">Accept change</button>
     <button type="button" role="menuitem" data-ctx="RejectChange" data-showif="trackedchange" data-i18n="Ctx.RejectChange">Reject change</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Advanced settings -->
-    <button type="button" role="menuitem" data-ctx="DropcapSettings" data-i18n="Ctx.DropcapSettings">Drop cap settings</button>
-    <button type="button" role="menuitem" data-ctx="FrameSettings" data-i18n="Ctx.FrameSettings">Frame advanced settings</button>
-    <button type="button" role="menuitem" data-ctx="EquationSettings" data-i18n="Ctx.EquationSettings">Equation settings</button>
-    <button type="button" role="menuitem" data-ctx="ContentControlSettings" data-i18n="Ctx.ContentControlSettings">Content control settings</button>
-    <button type="button" role="menuitem" data-ctx="RemoveContentControl" data-i18n="Ctx.RemoveContentControl">Remove content control</button>
-    <div class="ctx-sep" role="separator"></div>
-    <!-- Selection -->
-    <button type="button" role="menuitem" data-ctx="PrintSelection" data-i18n="Ctx.PrintSelection">Print selection</button>
-    <button type="button" role="menuitem" data-ctx="SelectAll" data-i18n="Ctx.SelectAll">Select all</button>
+    <button type="button" role="menuitem" data-ctx="DropcapSettings" data-showif="dropcap" data-i18n="Ctx.DropcapSettings">Drop cap settings</button>
+    <button type="button" role="menuitem" data-ctx="FrameSettings" data-showif="frame" data-i18n="Ctx.FrameSettings">Frame advanced settings</button>
+    <button type="button" role="menuitem" data-ctx="EquationSettings" data-showif="equation" data-i18n="Ctx.EquationSettings">Equation settings</button>
+    <button type="button" role="menuitem" data-ctx="ContentControlSettings" data-showif="control" data-i18n="Ctx.ContentControlSettings">Content control settings</button>
+    <button type="button" role="menuitem" data-ctx="RemoveContentControl" data-showif="control" data-i18n="Ctx.RemoveContentControl">Remove content control</button>
+    <button type="button" role="menuitem" data-ctx="SelectAll" data-showif="textsel" data-i18n="Ctx.SelectAll">Select all</button>
   </div>
   </div>
 

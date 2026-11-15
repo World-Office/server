@@ -11444,10 +11444,37 @@
       ctxMenu.querySelectorAll("[data-showif='field']").forEach((el) => {
         el.hidden = !ctxNode;
       });
-      // CAP-2: OO-parity plain-text gating — text/context rows
-      const isText = !hasObjectSel && !hasImageSel;
-      ctxMenu.querySelectorAll("[data-showif='text']").forEach((el) => {
-        el.hidden = !isText;
+      // CAP-2 FIX: OO-parity context gating. The old code gated
+      // The old code gated data-showif="text" with an isText flag that was
+      // is TRUE on plain text — so Bold/Italic/lists/insert never hid: a pure
+      // no-op. OO's plain-text menu shows only Cut/Copy/Paste, PrintSelection,
+      // PageBreakBefore, KeepLines, ParagraphSettings, AddComment, Link,
+      // FormattingAsStyle, AI (never character formatting, bullet toggles,
+      // or insert rows). Each gate below is FALSE on a plain-text caret.
+      // format: hidden unless there is a non-collapsed text selection.
+      // list: hidden unless the caret sits inside a list.
+      // insert-ctx / shapetext / dropcap / frame / equation / control / toc:
+      // hidden unless their (rare) context applies.
+      const selNow = window.getSelection && window.getSelection();
+      const hasTextSel = !!(selNow && !selNow.isCollapsed && selNow.toString().trim().length > 0);
+      const inListCtx = !!(ctxAnchor && ctxAnchor.closest &&
+        ctxAnchor.closest("#editor ol, #editor ul, #editor [data-listid]"));
+      const ctxGates = {
+        format: hasTextSel,
+        list: inListCtx,
+        "insert-ctx": false,
+        shapetext: false,
+        dropcap: false,
+        frame: false,
+        equation: false,
+        control: false,
+        textsel: hasTextSel,
+      };
+      ctxMenu.querySelectorAll("[data-showif]").forEach((el) => {
+        const k = el.getAttribute("data-showif");
+        if (Object.prototype.hasOwnProperty.call(ctxGates, k)) {
+          el.hidden = !ctxGates[k];
+        }
       });
       // CAP-2: TOC rows only shown when at a TOC
       const atToc = ctxAnchor && ctxAnchor.closest
