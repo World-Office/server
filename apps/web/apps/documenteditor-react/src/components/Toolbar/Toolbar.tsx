@@ -72,6 +72,10 @@ const ObservedToolbar = observer(function ObservedToolbar({
         documentStore.toggleGridlines()
       } else if (cmd === "toggleNavigation") {
         documentStore.toggleNavigation()
+      } else if (cmd === "toggleMultiplePages") {
+        documentStore.setMultiplePages(!documentStore.multiplePages)
+      } else if (cmd === "toggleDarkDocument") {
+        documentStore.setDarkDocument(!documentStore.darkDocument)
       } else if (cmd === "removeHeader") {
         documentStore.clearHeader()
         documentStore.headerFooterMode = "none"
