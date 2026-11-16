@@ -113,6 +113,8 @@ export type RichTextCommand =
   | "toggleRuler"
   | "toggleGridlines"
   | "toggleNavigation"
+  | "toggleMultiplePages"
+  | "toggleDarkDocument"
   | "toggleTrackChanges"
   | "acceptChange"
   | "rejectChange"
@@ -249,6 +251,8 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "toggleRuler",
   "toggleGridlines",
   "toggleNavigation",
+  "toggleMultiplePages",
+  "toggleDarkDocument",
   "toggleTrackChanges",
   "acceptChange",
   "rejectChange",
@@ -745,6 +749,12 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     case "toggleNavigation":
       documentStore.toggleNavigation()
+      return true
+    case "toggleMultiplePages":
+      documentStore.setMultiplePages(!documentStore.multiplePages)
+      return true
+    case "toggleDarkDocument":
+      documentStore.setDarkDocument(!documentStore.darkDocument)
       return true
     case "toggleTrackChanges":
       return toggleTrackChanges(editor, currentUser.username, currentUser.id)

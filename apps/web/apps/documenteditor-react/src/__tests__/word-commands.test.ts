@@ -862,6 +862,8 @@ describe("word-commands", () => {
     expect(documentStore.setDarkDocument).toHaveBeenCalledWith(true)
     handler({ command: "toggleDarkDocument", value: "false" })
     expect(documentStore.setDarkDocument).toHaveBeenCalledWith(false)
+    handler({ command: "toggleMultiplePages" })
+    expect(documentStore.setMultiplePages).toHaveBeenCalledWith(true)
   })
 
   it("should handle view-tab macro commands", () => {

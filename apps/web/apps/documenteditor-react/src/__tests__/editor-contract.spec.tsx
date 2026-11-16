@@ -739,6 +739,18 @@ describe("View tab", () => {
     dispatchRichTextCommand("toggleNavigation")
     expect(documentStore.navigationVisible).toBe(!before)
   })
+
+  it("toggleMultiplePages flips multiplePages in store", () => {
+    const before = documentStore.multiplePages
+    dispatchRichTextCommand("toggleMultiplePages")
+    expect(documentStore.multiplePages).toBe(!before)
+  })
+
+  it("toggleDarkDocument flips darkDocument in store", () => {
+    const before = documentStore.darkDocument
+    dispatchRichTextCommand("toggleDarkDocument")
+    expect(documentStore.darkDocument).toBe(!before)
+  })
 })
 
 // ----------------------------------------------------------------------
