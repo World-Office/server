@@ -11476,6 +11476,29 @@
           el.hidden = !ctxGates[k];
         }
       });
+      // Rare-context overrides (keep the plain-text map above literal
+      // `false` — see ctx-parity.test.mjs): insert-object rows appear when
+      // the right-click TARGET is an inserted object (hr/img — hit-test the
+      // event target, not the selection anchor); dropcap rows appear when
+      // the target paragraph contains a drop cap.
+      const atInsertObj = !!(e.target && e.target.closest &&
+        e.target.closest("hr, img"));
+      if (atInsertObj) {
+        ctxMenu.querySelectorAll("[data-showif='insert-ctx']").forEach((el) => {
+          el.hidden = false;
+        });
+      }
+      const dropcapPara = e.target && e.target.closest
+        ? e.target.closest("#editor p") : null;
+      // DropcapSettings is the ONLY entry to the dropcap dialog (no ribbon
+      // button), so show it for any editor paragraph context — gated on p so
+      // it stays off tables/headings/objects.
+      const inDropcapCtx = !!dropcapPara;
+      if (inDropcapCtx) {
+        ctxMenu.querySelectorAll("[data-showif='dropcap']").forEach((el) => {
+          el.hidden = false;
+        });
+      }
       // CAP-2: TOC rows only shown when at a TOC
       const atToc = ctxAnchor && ctxAnchor.closest
         ? ctxAnchor.closest("#editor div.toc") : null;
