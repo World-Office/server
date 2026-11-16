@@ -1,6 +1,7 @@
 import { CollaborationStatus } from "@world-office/collaboration-react"
-import { Ribbon, wordRibbonSpec } from "@world-office/editor-common"
+import { Ribbon } from "@world-office/editor-common"
 import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common"
+import { wordRibbonSpec } from "../../lib/word-ribbon-spec"
 import { detectWopiParams } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { collaborationStore } from "../../lib/collaboration"
