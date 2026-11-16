@@ -326,12 +326,26 @@ describe("word-commands", () => {
       expect(documentStore.footerHtml).toMatch(/data-wo-field="DATETIME"/)
     })
 
-    it("should insert a named field, defaulting to PAGE", () => {
+    it("should insert a named field into the header when header mode is active", () => {
+      documentStore.headerFooterMode = "header"
       handler({ command: "insertField" })
-      expect(documentStore.headerFooterMode).toBe("header")
       expect(documentStore.headerHtml).toMatch(/data-wo-field="PAGE"/)
       handler({ command: "insertField", value: "NUMPAGES" })
       expect(documentStore.headerHtml).toMatch(/data-wo-field="NUMPAGES"/)
+    })
+
+    it("should insert a named field into the footer when footer mode is active", () => {
+      documentStore.headerFooterMode = "footer"
+      handler({ command: "insertField", value: "DATE" })
+      expect(documentStore.footerHtml).toMatch(/data-wo-field="DATE"/)
+      expect(documentStore.headerFooterMode).toBe("footer")
+    })
+
+    it("should not hijack body insertion: field goes to the body when no region is active", () => {
+      documentStore.headerFooterMode = "none"
+      handler({ command: "insertField" })
+      expect(documentStore.headerFooterMode).toBe("none")
+      expect(documentStore.headerHtml).not.toMatch(/data-wo-field/)
     })
 
     it("should close header/footer editing mode", () => {

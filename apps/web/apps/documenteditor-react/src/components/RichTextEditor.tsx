@@ -32,6 +32,7 @@ import {
 import { CrossReference } from "../lib/cross-ref"
 import { IndexEntry, IndexListNode } from "../lib/document-index"
 import { EndnoteMark } from "../lib/endnote-mark"
+import { FieldSpan } from "../lib/field-span"
 import { FontSize } from "../lib/font-size-extension"
 import {
   FootnoteItem,
@@ -97,6 +98,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         Placeholder.configure({ placeholder: "Start typing\u2026" }),
         CommentMark,
         EndnoteMark,
+        FieldSpan,
         FootnoteReference,
         FootnoteSection,
         FootnoteItem,

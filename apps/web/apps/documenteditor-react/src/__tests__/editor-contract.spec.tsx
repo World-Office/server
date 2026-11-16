@@ -39,6 +39,7 @@ import {
   PlainTextControl,
 } from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
+import { FieldSpan } from "../lib/field-span"
 import { FontSize } from "../lib/font-size-extension"
 import {
   FootnoteItem,
@@ -101,6 +102,7 @@ function buildEditor(content: string): Editor {
       Placeholder.configure({ placeholder: "Start typing\u2026" }),
       CommentMark,
       EndnoteMark,
+      FieldSpan,
       FootnoteReference,
       FootnoteSection,
       FootnoteItem,

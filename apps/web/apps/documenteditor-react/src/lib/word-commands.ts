@@ -309,13 +309,17 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       }
       case "insertField": {
         // OO field dialog inserts a named field (PAGE, NUMPAGES, …);
-        // default to PAGE when opened without a selection
+        // default to PAGE when opened without a selection.
+        // Only divert into the header/footer html when that region is ACTIVE —
+        // at rest the field belongs in the body (editor-contract.spec.tsx).
         const name = typeof value === "string" && value ? value : "PAGE"
         if (documentStore.headerFooterMode === "footer") {
           documentStore.footerHtml += `<span data-wo-field="${name}">${name}</span>`
-        } else {
-          documentStore.headerFooterMode = "header"
+        } else if (documentStore.headerFooterMode === "header") {
           documentStore.headerHtml += `<span data-wo-field="${name}">${name}</span>`
+        } else {
+          // no region active → the field belongs in the body (rte-command path)
+          onRichTextCommand("insertField" as RichTextCommand, value)
         }
         return
       }
