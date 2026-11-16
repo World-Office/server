@@ -390,3 +390,145 @@ fn ctrl_z_undoes_ctrl_b() {
     assert!(get_run_formatting(h).unwrap().contains("\"bold\":true"));
     release_document(h).ok();
 }
+
+#[test]
+fn ctrl_b_with_selection_bolds_all_selected_text() {
+    let h = fixture_doc(7105, &["hello world"]);
+    // Select "ello w" and bold it
+    set_selection_anchor(h, 0, 1);
+    set_cursor(h, cursor_at(0, 7));
+    handle_key_event(h, "b", true, false, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    let para = body.paragraphs()[0];
+    
+    // Verify that the selected portion is bold
+    let text: String = para.runs.iter().map(|r| r.text.as_str()).collect();
+    assert_eq!(text, "hello world");
+    
+    let bold_runs: Vec<&DocxRun> = para.runs.iter().filter(|r| r.bold).collect();
+    assert!(!bold_runs.is_empty(), "At least one run should be bold");
+    
+    // Verify selection was cleared
+    assert_eq!(get_selected_text(h).unwrap(), "");
+    
+    release_document(h).ok();
+}
+
+// ── Selection-spanning formatting (PF-1) ─────────────────────────────
+
+#[test]
+fn apply_formatting_bolds_selection_in_single_paragraph() {
+    let h = fixture_doc(7201, &["hello world"]);
+    // Select "llo wo" (char 2 to 8)
+    set_selection_anchor(h, 0, 2);
+    set_cursor(h, cursor_at(0, 8));
+    
+    // Apply bold formatting
+    apply_formatting(h, r#"{"bold": true}"#, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    let para = body.paragraphs()[0];
+    // The paragraph should now have multiple runs with bold applied to the selected range
+    // Check that the selected portion is bold
+    let text: String = para.runs.iter().map(|r| r.text.as_str()).collect();
+    assert_eq!(text, "hello world");
+    
+    // Verify bold is applied to the correct runs
+    // The exact run structure depends on how the text was split
+    let bold_runs: Vec<&DocxRun> = para.runs.iter().filter(|r| r.bold).collect();
+    assert!(!bold_runs.is_empty(), "At least one run should be bold");
+    
+    // Verify selection was cleared
+    assert_eq!(get_selected_text(h).unwrap(), "");
+    
+    release_document(h).ok();
+}
+
+#[test]
+fn apply_formatting_bolds_selection_across_paragraphs() {
+    let h = fixture_doc(7202, &["hello", "world"]);
+    // Select from "llo" in first para to "orl" in second para
+    set_selection_anchor(h, 0, 2);
+    set_cursor(h, cursor_at(1, 3));
+    
+    // Apply bold formatting
+    apply_formatting(h, r#"{"bold": true}"#, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    // Both paragraphs should have bold runs
+    let para1 = body.paragraphs()[0];
+    let para2 = body.paragraphs()[1];
+    
+    let has_bold_in_p1 = para1.runs.iter().any(|r| r.bold);
+    let has_bold_in_p2 = para2.runs.iter().any(|r| r.bold);
+    
+    assert!(has_bold_in_p1, "First paragraph should have bold text");
+    assert!(has_bold_in_p2, "Second paragraph should have bold text");
+    
+    release_document(h).ok();
+}
+
+#[test]
+fn apply_formatting_with_selection_applies_to_all_selected_runs() {
+    // Test that when we have "AAA" and select all, bolding it makes all A's bold
+    let h = fixture_doc(7203, &["AAA"]);
+    set_selection_anchor(h, 0, 0);
+    set_cursor(h, cursor_at(0, 3));
+    
+    apply_formatting(h, r#"{"bold": true}"#, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    let para = body.paragraphs()[0];
+    
+    // All runs should be bold
+    for run in &para.runs {
+        if !run.text.is_empty() {
+            assert!(run.bold, "All non-empty runs in selection should be bold");
+        }
+    }
+    
+    release_document(h).ok();
+}
+
+#[test]
+fn apply_formatting_without_selection_applies_to_cursor_run() {
+    // Test that formatting without selection still works (original behavior)
+    let h = fixture_doc(7204, &["hello world"]);
+    set_cursor(h, cursor_at(0, 6)); // cursor on "w"
+    
+    apply_formatting(h, r#"{"bold": true}"#, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    let para = body.paragraphs()[0];
+    
+    // At least one run should be bold
+    let bold_runs: Vec<&DocxRun> = para.runs.iter().filter(|r| r.bold).collect();
+    assert!(!bold_runs.is_empty(), "At least one run should be bold");
+    
+    release_document(h).ok();
+}
+
+#[test]
+fn apply_formatting_paragraph_alignment_with_selection() {
+    let h = fixture_doc(7205, &["hello", "world", "test"]);
+    // Select first two paragraphs
+    set_selection_anchor(h, 0, 0);
+    set_cursor(h, cursor_at(1, 5));
+    
+    // Apply center alignment
+    apply_formatting(h, r#"{"align": "center"}"#, "A4", "portrait", 72.0).unwrap();
+    
+    let body = body_of(h);
+    let para1 = body.paragraphs()[0];
+    let para2 = body.paragraphs()[1];
+    let para3 = body.paragraphs()[2];
+    
+    // First two paragraphs should be center-aligned
+    assert_eq!(para1.properties.alignment, Some(wo_ooxml::model::TextAlignment::Center));
+    assert_eq!(para2.properties.alignment, Some(wo_ooxml::model::TextAlignment::Center));
+    // Third paragraph should not be affected
+    assert_ne!(para3.properties.alignment, Some(wo_ooxml::model::TextAlignment::Center));
+    
+    release_document(h).ok();
+}

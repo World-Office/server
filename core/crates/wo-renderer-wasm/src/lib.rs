@@ -2273,12 +2273,9 @@ pub fn handle_key_event(
         }
         _ => {
             // Modifier combos: Ctrl+A select-all, Ctrl+Z/Ctrl+Y(+Shift+Z)
-            // undo/redo, Ctrl+B/I/U toggle formatting at the cursor run
+            // undo/redo, Ctrl+B/I/U toggle formatting at the cursor run or selection
             // (same apply_formatting path the ribbon buttons use via
             // word-commands.ts).
-            // ponytail: formatting targets the cursor's RUN, not the whole
-            // anchor→head selection — span the range when the ORM-02 push
-            // frames land.
             if _ctrl && key.len() == 1 {
                 let k = key.to_ascii_lowercase();
                 match k.as_str() {
@@ -3123,12 +3120,215 @@ pub fn get_cursor_position(doc_handle: u32) -> String {
     }
 }
 
-/// Apply formatting to the run at the current cursor position.
+/// Apply formatting to a single run based on the format JSON.
+/// Returns true if run-level formatting keys are present.
+fn apply_run_formatting(run: &mut DocxRun, format: &serde_json::Value) -> bool {
+    const RUN_FMT_KEYS: [&str; 10] = [
+        "bold",
+        "italic",
+        "underline",
+        "strikethrough",
+        "fontSize",
+        "fontName",
+        "textColor",
+        "highlight",
+        "clearFormatting",
+        "verticalAlignment",
+    ];
+
+    let has_run_fmt = RUN_FMT_KEYS.iter().any(|k| format.get(*k).is_some());
+
+    if has_run_fmt {
+        run.raw_rpr = None;
+    }
+
+    if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
+        run.bold = bold;
+    }
+    if let Some(italic) = format.get("italic").and_then(|v| v.as_bool()) {
+        run.italic = italic;
+    }
+    if let Some(underline) = format.get("underline").and_then(|v| v.as_str()) {
+        use wo_ooxml::model::UnderlineType;
+        run.underline = Some(match underline {
+            "single" => UnderlineType::Single,
+            "double" => UnderlineType::Double,
+            "thick" => UnderlineType::Thick,
+            "dotted" => UnderlineType::Dotted,
+            "dashed" => UnderlineType::Dashed,
+            "wave" => UnderlineType::Wave,
+            _ => UnderlineType::None,
+        });
+    }
+    if let Some(strike) = format.get("strikethrough").and_then(|v| v.as_bool()) {
+        run.strikethrough = strike;
+    }
+    if let Some(font_size) = format.get("fontSize").and_then(|v| v.as_u64()) {
+        run.font_size = Some(font_size as u32); // half-points
+    }
+    if let Some(font_name) = format.get("fontName").and_then(|v| v.as_str()) {
+        run.font = Some(font_name.to_string());
+    }
+    if let Some(color) = format.get("textColor").and_then(|v| v.as_str()) {
+        let clean = color.trim_start_matches('#');
+        run.color = Some(clean.to_string());
+    }
+    if let Some(highlight) = format.get("highlight").and_then(|v| v.as_str()) {
+        let clean = highlight.trim_start_matches('#');
+        run.highlight = Some(clean.to_string());
+    }
+    if let Some(clear) = format.get("clearFormatting").and_then(|v| v.as_bool()) {
+        if clear {
+            use wo_ooxml::model::UnderlineType;
+            run.bold = false;
+            run.italic = false;
+            run.underline = Some(UnderlineType::None);
+            run.strikethrough = false;
+            run.font = None;
+            run.font_size = None;
+            run.color = None;
+            run.highlight = None;
+            run.vertical_alignment = None;
+            run.small_caps = false;
+            run.all_caps = false;
+        }
+    }
+    if let Some(vert) = format.get("verticalAlignment").and_then(|v| v.as_str()) {
+        use wo_ooxml::model::VerticalAlignment;
+        run.vertical_alignment = Some(match vert {
+            "subscript" => VerticalAlignment::Subscript,
+            "superscript" => VerticalAlignment::Superscript,
+            _ => VerticalAlignment::Baseline,
+        });
+    }
+
+    has_run_fmt
+}
+
+/// Apply paragraph-level formatting based on the format JSON.
+/// Returns true if paragraph-level formatting keys are present.
+fn apply_para_formatting(para: &mut DocxParagraph, format: &serde_json::Value) -> bool {
+    const PARA_FMT_KEYS: [&str; 5] = [
+        "align",
+        "heading",
+        "lineSpacing",
+        "spacingBefore",
+        "spacingAfter",
+    ];
+
+    let has_para_fmt = PARA_FMT_KEYS.iter().any(|k| format.get(*k).is_some());
+
+    if has_para_fmt {
+        para.raw_ppr = None;
+    }
+
+    if let Some(align) = format.get("align").and_then(|v| v.as_str()) {
+        use wo_ooxml::model::TextAlignment;
+        para.properties.alignment = Some(match align {
+            "left" => TextAlignment::Left,
+            "center" => TextAlignment::Center,
+            "right" => TextAlignment::Right,
+            "justify" => TextAlignment::Both,
+            _ => TextAlignment::Left,
+        });
+    }
+    if let Some(heading) = format.get("heading").and_then(|v| v.as_u64()) {
+        para.properties.outline_level = Some(heading as u32);
+    }
+    if let Some(line_spacing) = format.get("lineSpacing").and_then(|v| v.as_u64()) {
+        para.properties.spacing_line = Some(line_spacing as i32);
+    }
+    if let Some(spacing_before) = format.get("spacingBefore").and_then(|v| v.as_u64()) {
+        para.properties.spacing_before = Some(spacing_before as i32);
+    }
+    if let Some(spacing_after) = format.get("spacingAfter").and_then(|v| v.as_u64()) {
+        para.properties.spacing_after = Some(spacing_after as i32);
+    }
+
+    has_para_fmt
+}
+
+/// Apply run formatting to all runs in body that intersect with the character range
+/// [start_para, start_char) to [end_para, end_char).
+fn format_runs_in_range(
+    body: &mut DocxBody,
+    start_para: usize,
+    start_char: usize,
+    end_para: usize,
+    end_char: usize,
+    format: &serde_json::Value,
+) {
+    let flat = flat_paragraphs(body);
+    if flat.is_empty() {
+        return;
+    }
+
+    // Clamp the end to the last paragraph
+    let last_para = flat.len().saturating_sub(1);
+    let end_para = end_para.min(last_para);
+
+    for pi in start_para..=end_para {
+        if let Some(path) = flat.get(pi) {
+            if let Some(para) = paragraph_at_mut(body, *path) {
+                // Determine the character range within this paragraph
+                let para_start_char = if pi == start_para { start_char } else { 0 };
+                let para_end_char = if pi == end_para { end_char } else { usize::MAX };
+
+                // Apply formatting to runs that intersect with [para_start_char, para_end_char)
+                let mut global_pos = 0usize;
+                for run in para.runs.iter_mut() {
+                    let run_len = run.text.chars().count();
+                    let run_start = global_pos;
+                    let run_end = global_pos + run_len;
+
+                    // Check if this run intersects with the selection
+                    let intersects = run_start < para_end_char && run_end > para_start_char;
+
+                    if intersects {
+                        apply_run_formatting(run, format);
+                    }
+
+                    global_pos = run_end;
+                }
+            }
+        }
+    }
+}
+
+/// Apply paragraph formatting to all paragraphs in the range.
+fn format_paragraphs_in_range(
+    body: &mut DocxBody,
+    start_para: usize,
+    end_para: usize,
+    format: &serde_json::Value,
+) {
+    let flat = flat_paragraphs(body);
+    if flat.is_empty() {
+        return;
+    }
+
+    let last_para = flat.len().saturating_sub(1);
+    let end_para = end_para.min(last_para);
+
+    for pi in start_para..=end_para {
+        if let Some(path) = flat.get(pi) {
+            if let Some(para) = paragraph_at_mut(body, *path) {
+                apply_para_formatting(para, format);
+            }
+        }
+    }
+}
+
+/// Apply formatting to the run at the current cursor position or to the selection range.
 ///
 /// Takes a JSON string with formatting properties:
 /// `{"bold": true, "italic": false, "underline": "single",
 ///   "strikethrough": false, "fontSize": 24, "fontName": "Arial",
 ///   "textColor": "FF0000", "highlight": "FFFF00"}`
+///
+/// When there is an active selection (anchor != cursor), formatting is applied to all runs
+/// and paragraphs in the selection range. Otherwise, formatting is applied to the run and
+/// paragraph at the cursor position.
 ///
 /// Only properties present in the JSON are changed; omitted properties
 /// are left as-is. Returns the updated layout JSON.
@@ -3150,6 +3350,40 @@ pub fn apply_formatting(
         return Err("Document body is empty".to_string());
     }
 
+    // Check if there's an active selection
+    let anchor = get_anchor(doc_handle);
+    let has_selection = anchor.map_or(false, |a| (a.para, a.char_idx) != (cursor.para, cursor.char_idx));
+
+    if let Some(anchor_pos) = anchor {
+        if has_selection {
+            // We have an active selection - apply formatting to the range
+            let (start_para, start_char, end_para, end_char) = selection_bounds(anchor_pos, cursor);
+
+            // Apply run-level formatting to all runs in the selection
+            format_runs_in_range(&mut body, start_para, start_char, end_para, end_char, &format);
+
+            // Apply paragraph-level formatting to all paragraphs in the selection
+            // For paragraph formatting, we apply to all paragraphs that contain selected text
+            format_paragraphs_in_range(&mut body, start_para, end_para, &format);
+
+            // Clear the selection after applying formatting (like most editors do)
+            clear_anchor(doc_handle);
+        } else {
+            // No selection - apply to current paragraph/runs at cursor
+            // This is the original behavior
+            apply_formatting_at_cursor(&mut body, cursor, &format);
+        }
+    } else {
+        // No anchor set - apply to current paragraph/runs at cursor (original behavior)
+        apply_formatting_at_cursor(&mut body, cursor, &format);
+    }
+
+    store_body(doc_handle, body)?;
+    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
+}
+
+/// Apply formatting at the cursor position (no selection).
+fn apply_formatting_at_cursor(body: &mut DocxBody, cursor: CursorPos, format: &serde_json::Value) {
     let pidx = cursor.para.min(body.paragraphs().len().saturating_sub(1));
     if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
         // Find or create the run at cursor position
@@ -3171,123 +3405,12 @@ pub fn apply_formatting(
 
         // Apply formatting to the target run
         if let Some(run) = para.runs.get_mut(target_run_idx) {
-            // Formatting edits must win at save time: the verbatim rPr
-            // capture would shadow the typed properties below, so drop it.
-            const RUN_FMT_KEYS: [&str; 10] = [
-                "bold",
-                "italic",
-                "underline",
-                "strikethrough",
-                "fontSize",
-                "fontName",
-                "textColor",
-                "highlight",
-                "clearFormatting",
-                "verticalAlignment",
-            ];
-            if RUN_FMT_KEYS.iter().any(|k| format.get(*k).is_some()) {
-                run.raw_rpr = None;
-            }
-            if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
-                run.bold = bold;
-            }
-            if let Some(italic) = format.get("italic").and_then(|v| v.as_bool()) {
-                run.italic = italic;
-            }
-            if let Some(underline) = format.get("underline").and_then(|v| v.as_str()) {
-                use wo_ooxml::model::UnderlineType;
-                run.underline = Some(match underline {
-                    "single" => UnderlineType::Single,
-                    "double" => UnderlineType::Double,
-                    "thick" => UnderlineType::Thick,
-                    "dotted" => UnderlineType::Dotted,
-                    "dashed" => UnderlineType::Dashed,
-                    "wave" => UnderlineType::Wave,
-                    _ => UnderlineType::None,
-                });
-            }
-            if let Some(strike) = format.get("strikethrough").and_then(|v| v.as_bool()) {
-                run.strikethrough = strike;
-            }
-            if let Some(font_size) = format.get("fontSize").and_then(|v| v.as_u64()) {
-                run.font_size = Some(font_size as u32); // half-points
-            }
-            if let Some(font_name) = format.get("fontName").and_then(|v| v.as_str()) {
-                run.font = Some(font_name.to_string());
-            }
-            if let Some(color) = format.get("textColor").and_then(|v| v.as_str()) {
-                let clean = color.trim_start_matches('#');
-                run.color = Some(clean.to_string());
-            }
-            if let Some(highlight) = format.get("highlight").and_then(|v| v.as_str()) {
-                let clean = highlight.trim_start_matches('#');
-                run.highlight = Some(clean.to_string());
-            }
-            if let Some(clear) = format.get("clearFormatting").and_then(|v| v.as_bool()) {
-                if clear {
-                    use wo_ooxml::model::UnderlineType;
-                    run.bold = false;
-                    run.italic = false;
-                    run.underline = Some(UnderlineType::None);
-                    run.strikethrough = false;
-                    run.font = None;
-                    run.font_size = None;
-                    run.color = None;
-                    run.highlight = None;
-                    run.vertical_alignment = None;
-                    run.small_caps = false;
-                    run.all_caps = false;
-                }
-            }
-            if let Some(vert) = format.get("verticalAlignment").and_then(|v| v.as_str()) {
-                use wo_ooxml::model::VerticalAlignment;
-                run.vertical_alignment = Some(match vert {
-                    "subscript" => VerticalAlignment::Subscript,
-                    "superscript" => VerticalAlignment::Superscript,
-                    _ => VerticalAlignment::Baseline,
-                });
-            }
+            apply_run_formatting(run, format);
         }
 
-        // Paragraph-level formatting (alignment, heading level, line spacing).
-        // Same rule as runs: an edited paragraph must serialize its typed
-        // properties, so the verbatim pPr capture has to go.
-        const PARA_FMT_KEYS: [&str; 5] = [
-            "align",
-            "heading",
-            "lineSpacing",
-            "spacingBefore",
-            "spacingAfter",
-        ];
-        if PARA_FMT_KEYS.iter().any(|k| format.get(*k).is_some()) {
-            para.raw_ppr = None;
-        }
-        if let Some(align) = format.get("align").and_then(|v| v.as_str()) {
-            use wo_ooxml::model::TextAlignment;
-            para.properties.alignment = Some(match align {
-                "left" => TextAlignment::Left,
-                "center" => TextAlignment::Center,
-                "right" => TextAlignment::Right,
-                "justify" => TextAlignment::Both,
-                _ => TextAlignment::Left,
-            });
-        }
-        if let Some(heading) = format.get("heading").and_then(|v| v.as_u64()) {
-            para.properties.outline_level = Some(heading as u32);
-        }
-        if let Some(line_spacing) = format.get("lineSpacing").and_then(|v| v.as_u64()) {
-            para.properties.spacing_line = Some(line_spacing as i32);
-        }
-        if let Some(spacing_before) = format.get("spacingBefore").and_then(|v| v.as_u64()) {
-            para.properties.spacing_before = Some(spacing_before as i32);
-        }
-        if let Some(spacing_after) = format.get("spacingAfter").and_then(|v| v.as_u64()) {
-            para.properties.spacing_after = Some(spacing_after as i32);
-        }
+        // Apply paragraph-level formatting
+        apply_para_formatting(para, format);
     }
-
-    store_body(doc_handle, body)?;
-    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
 }
 
 /// Get the formatting of the run at the current cursor position.
