@@ -137,6 +137,8 @@ export type RichTextCommand =
   | "insertIndexEntry"
   | "insertIndex"
   | "updateIndex"
+  | "insertDateTime"
+  | "insertField"
 
 export interface PageLayoutSettings {
   orientation?: "portrait" | "landscape"
@@ -271,6 +273,8 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "insertIndexEntry",
   "insertIndex",
   "updateIndex",
+  "insertDateTime",
+  "insertField",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -890,6 +894,22 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
         .run()
     case "updateIndex": {
       return updateDocIndex(editor)
+    }
+    case "insertDateTime": {
+      const stamp = new Date().toISOString()
+      return editor
+        .chain()
+        .focus()
+        .insertContent(`<span data-wo-field="DATETIME">${stamp}</span>`)
+        .run()
+    }
+    case "insertField": {
+      const name = value || "PAGE"
+      return editor
+        .chain()
+        .focus()
+        .insertContent(`<span data-wo-field="${name}">${name}</span>`)
+        .run()
     }
   }
 }
