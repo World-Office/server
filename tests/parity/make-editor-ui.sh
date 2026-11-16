@@ -6,7 +6,11 @@
 # There is NO automated deploy (see .github/workflows/deploy.yml NOTE):
 # production is VPN-only, GitHub runners cannot reach it.
 #
-# word/  = the vanilla wysiwyg app, 5 runtime files from the repo source
+# word/  = the React canvas editor (documenteditor-react), vite build from
+#          the tree (see build-word() below). The vanilla wysiwyg app
+#          (python-lineage, contenteditable) was RETIRED as the deployed
+#          editor on 2026-11-16 — its source stays in-tree for its test
+#          corpus until the census/gates migrate to the react app.
 # sheet|slide|diagram|pdf = vite builds from the latest green Deploy run
 #          (`gh api repos/:owner/:repo/actions/runs/<id>/artifacts`,
 #           artifact name "frontend-dist")
@@ -35,6 +39,17 @@ else
   echo "  fetch: cd $REPO/server && gh api repos/:owner/:repo/actions/runs/<deploy-run-id>/artifacts" >&2
   exit 1
 fi
+build_word() {
+  local OUT="$1"
+  (cd "$REPO/apps/web/apps/documenteditor-react" && pnpm install --frozen-lockfile >/dev/null 2>&1; pnpm build >/dev/null) \
+    || { echo "word react build failed" >&2; exit 1; }
+  mkdir -p "$OUT/word"
+  cp -r "$REPO/apps/web/apps/documenteditor-react/dist/." "$OUT/word/"
+}
+case "${2:-}" in
+  --build-word) build_word "$STAGE" ;;
+  *) : ;;  # default: word/ must arrive inside the artifact zip (CI builds it) ;;
+esac
 for d in sheet slide diagram pdf; do
   [ -d "$STAGE/$d" ] || { echo "missing $d in artifact" >&2; exit 1; }
 done

@@ -21,14 +21,9 @@ function path0() { return require('path').resolve(__dirname, '..', '..', '..'); 
 const opts = { cwd: path0() };
 // Freshness is about DEPLOYED CONTENT, not harness commits: compare prod
 // against the newest commit that touched any deployed editor surface.
-// wysiwyg: only the 5 runtime files ship (test gates live in the same dir);
-// react apps: everything under src/ ships via the vite build.
+// 2026-11-16: /word deploys the React canvas editor (documenteditor-react
+// vite build). The wysiwyg app is retired from deployment.
 const UI_PATHS = [
-  'apps/web/apps/documenteditor-wysiwyg/index.html',
-  'apps/web/apps/documenteditor-wysiwyg/editor.js',
-  'apps/web/apps/documenteditor-wysiwyg/i18n.js',
-  'apps/web/apps/documenteditor-wysiwyg/style.css',
-  'apps/web/apps/documenteditor-wysiwyg/wo-bridge.js',
   'apps/web/apps/documenteditor-react',
   'apps/web/apps/spreadsheeteditor-react',
   'apps/web/apps/presentationeditor-react',
