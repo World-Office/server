@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "project": "port-finish",
+    "goal": "Port 100%: OO ribbon parity + engine selection semantics, all verified E2E (react-e2e suite + coverage gate). Supervisor: config/port-finish/wo-port-loop.sh injects follow-up tasks here (af hot-reloads this file).",
+    "verified_facts": "see per-task notes; do NOT re-derive facts stated there"
+  },
+  "tasks": [
+    {
+      "id": "PF-1",
+      "repo": "server",
+      "deps": [],
+      "priority": 10,
+      "title": "Engine: selection-spanning formatting (apply_formatting over anchor→head range)",
+      "scope": [
+        "core/crates/wo-renderer-wasm/src/lib.rs",
+        "core/crates/wo-renderer-wasm/src/selection_undo_tests.rs"
+      ],
+      "touch": [
+        "core/crates/wo-renderer-wasm/src/lib.rs",
+        "core/crates/wo-renderer-wasm/src/selection_undo_tests.rs"
+      ],
+      "accept": "cd core && cargo test -p wo-renderer-wasm 2>&1 | tail -2 | grep -q 'test result: ok'",
+      "note": "VERIFIED FACTS (2026-11-16, do not re-derive):\n- apply_formatting (lib.rs ~3078) today formats ONLY the run containing the cursor: single pidx = get_cursor(doc_handle).para, walk para.runs accumulating char counts to find target run.\n- Selection exists: SELECTION_STORE (lib.rs :63); set_anchor/get_anchor/selection_active helpers near :2720-2772. Anchor+cursor = (para, char_idx) each. get_selected_text already joins the range.\n- BEFORE mutating a run: run.raw_rpr = None (verbatim rPr capture shadows typed props), and push_history(doc_handle) (lib.rs :2816) so undo works. Follow the pattern already inside apply_formatting.\n- Underline is a STRING in format JSON ('single'|'double'|...|'none' → UnderlineType), bold/italic/strikethrough are bools, fontSize half-points.\n- Engine tests: core/crates/wo-renderer-wasm/src/selection_undo_tests.rs — fixture_doc(handle, &['text']) injects into DOC_MODEL_STORE; FREE HANDLES ≥ 7101; teardown release_document(h).ok(); drive keys via handle_key_event(h, 'b', true, false, 'A4', 'portrait', 72.0).\n\nDESIGN (required):\n1. In apply_formatting, when selection_active(doc_handle): compute (start_para,start_char,end_para,end_char) = ordered anchor/cursor pair.\n2. For each paragraph in range: split boundary runs at char offsets (clone run, slice text by chars — text is String, count chars not bytes), apply the format to runs fully inside the range; at range ends apply to the sliced part only. Middle paragraphs: all runs. Empty selection (anchor==cursor) → keep today's cursor-run behavior unchanged.\n3. Add exported get_selection_formatting(doc_handle) -> String: JSON of the MAJORITY formatting across covered runs ({bold:true} only if ALL covered runs bold) — the ribbon needs it for toggle state. Selection-inactive → same as get_run_formatting.\n4. Also extend the existing Ctrl+B/I/U branch in handle_key_event to use range semantics automatically (it already routes through apply_formatting — verify with a test that types 'abcdef', selects chars 2-5 via set_selection_anchor + set_cursor, Ctrl+B, and asserts via get_selection_formatting / serialize bytes).\n\nTESTS TO ADD (selection_undo_tests.rs, handles 7101+): partial-run bold (2 chars of 6), cross-paragraph bold (both paras get runs bolded; paragraph mark formatting may stay unbolded), toggle-off over mixed runs (some bold, some not → majority rule flips per the explicit value passed), undo restores, selection-inactive path unchanged (existing tests keep passing).\n\nGATE: full cargo test -p wo-renderer-wasm green (245+ existing, plus yours). Do NOT touch the react app (PF-2 does)."
+    },
+    {
+      "id": "PF-2",
+      "repo": "server",
+      "deps": [
+        "PF-1"
+      ],
+      "priority": 9,
+      "title": "React ribbon: toggle semantics for Bold/Italic/Underline/Strikethrough (read state, flip)",
+      "scope": [
+        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+        "apps/web/apps/documenteditor-react/src/components/CanvasEditor.tsx",
+        "apps/web/apps/documenteditor-react/src/__tests__/"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+        "apps/web/apps/documenteditor-react/src/components/CanvasEditor.tsx",
+        "apps/web/apps/documenteditor-react/src/__tests__/toggle-format.test.ts"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tail -4 | grep -qE 'passed|✓'",
+      "note": "VERIFIED FACTS:\n- word-commands.ts :99 commandToFormat('bold') returns {bold:true} STATIC — the ribbon Bold button can never unbold. E2E proof: wo-test-harness census/react-e2e/probe-ribbon.cjs 'second Bold click untoggles' FAILS today.\n- CanvasEditor.tsx :336 calls wasm apply_formatting; the wasm glue is imported via @world-office/wo-renderer-wasm (workspace pkg at core/crates/wo-renderer-wasm/pkg).\n- PF-1 (merged before you start) adds get_selection_formatting(doc_handle) -> '{\"bold\":bool,...}' majority-over-selection. If PF-1 is missing it, fall back to get_run_formatting.\n- Worktree has NO node_modules: the gate symlinks the main checkout's — run `ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules` first.\n\nDESIGN: in the formatting-command path (CanvasEditor or word-commands), for bold/italic/strikethrough: read current via get_selection_formatting, send the FLIPPED bool to apply_formatting. Underline: 'single' ↔ 'none'. Do NOT hardcode {bold:true}. Keep unknown formats passthrough.\n\nTEST: add src/__tests__/toggle-format.test.ts — pure-function test of the flip logic (mock the wasm import) covering bold on/off, underline single→none, selection-mixed majority. Keep existing suite green (vitest run).\n\nE2E proof happens in the supervisor's master gate (probe-ribbon.cjs) — your unit test pins the logic."
+    },
+    {
+      "id": "PF-3",
+      "repo": "server",
+      "deps": [],
+      "priority": 8,
+      "title": "Insert tab: Header & Footer entry, Page Number, Date & Time, Field, Comment",
+      "scope": [
+        "apps/web/apps/documenteditor-react/src/"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-react/src/components/",
+        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+        "apps/web/apps/documenteditor-react/src/__tests__/insert-extras.test.ts"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tail -4 | grep -qE 'passed|✓'",
+      "note": "OO golden labels missing today (coverage-check.py): 'Comment', 'Header & Footer', 'Page Number', 'Date & Time', 'Field' (Insert tab 75% → 100%).\n\nVERIFIED FACTS:\n- Insert tab markup lives in the react app components (search src/components for existing Insert entries: Table, Picture, Shape, Text Box, Page Break, Blank Page already exist).\n- Engine ops: insert_text/typed ops via word-commands → wasm exports; serializer writes headers/footers if the doc model has them (wo-ooxml serializer.rs has header/footer parts).\n- Ribbon buttons expose aria-label OR title OR textContent — census + E2E match on the trimmed label exactly; use 'Header & Footer', 'Page Number', 'Date & Time', 'Field', 'Comment' (EN labels; i18n via existing catalog keys pattern from commit 1cc342147).\n\nMINIMAL VIABLE per control (be honest, no dead buttons):\n- Page Number: insert PAGE field at cursor — if the engine lacks field runs, insert the rendered page number as a text run + wire a follow-up note; check core/crates/wo-renderer-wasm/src/lib.rs exports for field support FIRST.\n- Date & Time: small dialog/picker (native <input type=date/time> — no lib), inserts formatted date text run at cursor.\n- Header & Footer: activate a header/footer editing region if the engine model supports it; otherwise reveal the Header & Footer contextual controls (links to harness PV-1 activation capture) — if the model truly lacks headers, implement the button + a visible 'not available in demo' state and note it in the task completion message (supervisor files a divergence).\n- Field: dropdown (PAGE, NUMPAGES, DATE, TIME) → same insert path as Page Number.\n- Comment: a CommentsStore already exists (src/__tests__/CommentsStore.test.ts) — surface an 'Add comment' flow tied to the current selection.\n\nTEST: src/__tests__/insert-extras.test.ts asserting each control renders with the exact label + handler registered (command map or store action). Vitest suite green."
+    },
+    {
+      "id": "PF-4",
+      "repo": "server",
+      "deps": [],
+      "priority": 8,
+      "title": "View tab: Headings, Multiple Pages, Dark Document",
+      "scope": [
+        "apps/web/apps/documenteditor-react/src/"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-react/src/components/",
+        "apps/web/apps/documenteditor-react/src/__tests__/view-extras.test.ts"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tail -4 | grep -qE 'passed|✓'",
+      "note": "OO golden labels missing (View tab 70% → 100%): 'Headings', 'Multiple Pages', 'Dark Document'. Existing View controls (Rulers, Gridlines, Zoom In/Out, Fit Page…) set the pattern — follow it (state + engine/layout flag).\n\nMINIMAL VIABLE:\n- Headings: navigation pane toggle listing document headings (engine exports a layout/outline JSON — check lib.rs for heading/outline getters; if none, derive from paragraph styles in the layout JSON the canvas already renders).\n- Multiple Pages: zoom mode that scales the page container so ≥2 pages fit the viewport width (CSS transform/width on the page stack; canvas re-layout via existing zoom plumbing).\n- Dark Document: document-area dark scheme (page background stays white by default in OO; this dims the app around the page + optional page tint) — match OO behavior: OO's 'Dark Document' inverts the PAGE to dark; implement as a .wo-dark-document class toggling page bg + canvas ink colors via the layout pipeline if exposed, else CSS filter on the canvas container.\n\nTEST: src/__tests__/view-extras.test.ts — each control present with exact label, toggles state (store/local state), Multiple Pages changes page scale, Dark Document toggles class. Vitest suite green."
+    },
+    {
+      "id": "PF-5",
+      "repo": "server",
+      "deps": [],
+      "priority": 8,
+      "title": "References: Link · Collaboration: Co-editing Mode · Home: Font size label",
+      "scope": [
+        "apps/web/apps/documenteditor-react/src/"
+      ],
+      "touch": [
+        "apps/web/apps/documenteditor-react/src/components/",
+        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+        "apps/web/apps/documenteditor-react/src/__tests__/misc-parity.test.ts"
+      ],
+      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tail -4 | grep -qE 'passed|✓'",
+      "note": "Three stragglers from coverage-check.py: References 'Link' (90%), Collaboration 'Co-editing Mode' (92.9%), Home 'Font size' (97.3%).\n\nVERIFIED FACTS:\n- 'Font size': the react Home tab HAS a size select, but its accessible label does not match OO 'Font size' — census reads aria-label || title || textContent. Check the select's label; commit 1cc342147 added de-DE aria-labels for font family/size inputs (follow that pattern; EN label must be exactly 'Font size').\n- Collaboration tab already exists (Review→Collaboration rename done); 'Co-editing Mode' in OO opens a mode picker (Fast/Strict). Demo deployment has no collab backend: implement the button + a small Fast/Strict picker that is DISABLED with a tooltip when no collab server is configured (honest dead-state, not a dead button) — collab-config.test.ts shows how config presence is detected.\n- References 'Link': hyperlink dialog (Text + Address fields, native inputs) that inserts/edits a link on the selection. Engine: check word-commands.ts + wasm exports for link support; if the engine lacks hyperlink runs, apply OO-default link styling (color 0563C1 + single underline) via apply_formatting on the selection (PF-1 semantics) and keep the href in a React-side link registry keyed by the anchor range — note in completion message that engine-level w:hyperlink roundtrip is a follow-up (supervisor files divergence).\n\nTEST: src/__tests__/misc-parity.test.ts — Link dialog opens/validates, Co-editing Mode disabled-without-backend + enabled-with-mock-config, Font size select carries exact accessible label. Vitest green."
+    },
+    {
+      "id": "PF-6",
+      "repo": "harness",
+      "deps": [],
+      "priority": 7,
+      "title": "Harness: activation census for Header & Footer + Chart Design contextual tabs",
+      "scope": [
+        "census/census-react-deep.cjs",
+        "census/react-e2e/coverage-check.py"
+      ],
+      "touch": [
+        "census/census-react-deep.cjs",
+        "census/react-e2e/coverage-check.py"
+      ],
+      "accept": "/usr/bin/node --check census/census-react-deep.cjs && /usr/bin/python3 census/react-e2e/coverage-check.py 2>&1 | grep -v 'PENDING ACTIVATION' | grep -c 'PENDING ACTIVATION' | grep -q '^0$'",
+      "note": "VERIFIED FACTS:\n- census-react-deep.cjs boots the rig (URL_BASE env, default :8932), clicks each [role=tab], harvests visible buttons/selects (aria-label||title||textContent), writes census/census/census-react-deep.json {tabs, ribbon{tab:[{label,disabled,kind}]}, fileMenu, pageErrors}. Boot sleep 9000ms, per-tab settle 700ms, Playwright at /home/weiss/.npm-global/lib/node_modules/playwright/index.mjs (already imported there).\n- 'Header & Footer' and 'Chart Design' tabs exist in the react tab strip but are EMPTY at rest — they only render controls after activation (header/footer region focused / chart selected). Coverage-check.py therefore reports PENDING ACTIVATION (2 tabs).\n- react tab names appear duplicated in textContent ('HomeHome') — dedupeTabText already handles it.\n\nDESIGN: after the per-tab loop, add an ACTIVATION phase: (a) Header & Footer — if PF-3's header/footer entry exists: trigger it (its DOM selector, e.g. [aria-label='Header & Footer'] click), sleep 700, harvest visible buttons into ribbon['Header & Footer'], then deactivate/close; (b) Chart Design — insert a chart if the app exposes one (Insert→Chart; if absent, skip with a note), click the chart canvas element, harvest ribbon['Chart Design']. Capture failures must degrade to the current PENDING state, never crash the census.\n- Coverage-check.py already maps OO 'headerfooter' → 'Header & Footer' and chart-uuid → 'Chart Design'; no change needed unless the tab name differs — verify with a live run if a rig is up (http://127.0.0.1:8932/word/), else static gate only.\n\nGATE: node --check + coverage-check reports zero 'PENDING ACTIVATION' lines (activation entries land in the committed census JSON when a rig is available; if the rig is down, commit the code change + the stale census and note it — the supervisor re-captures)."
+    }
+  ]
+}
