@@ -26,7 +26,7 @@ while [ "$iter" -lt "$MAX_ITERS" ]; do
       --tasks config/port-finish/tasks.json \
       --workers config/port-finish/workers.json \
       --repos config/port-finish/repos.json ) >> "$SERVER/.af-state/port-finish.log" 2>&1
-  echo "[loop] af wave exited rc=$"
+  echo "[loop] af wave exited rc=$?"
 
   # 2) build server HEAD into the rig (wasm-pack BEFORE vite build — else stale engine)
   echo "[loop] rebuilding engine + dist"
@@ -40,14 +40,19 @@ while [ "$iter" -lt "$MAX_ITERS" ]; do
   for i in $(seq 1 30); do sleep 2; curl -s -o /dev/null "http://127.0.0.1:$PORT/word/" && break; done
   sleep 5
 
-  # 3) master gate
+  # 3) re-capture the deep census against the FRESH build (else coverage reads stale data)
+  echo "[loop] capturing fresh census"
+  ( cd "$HARNESS/census" && URL_BASE="http://127.0.0.1:$PORT/word/" /usr/bin/node census-react-deep.cjs ) \
+    || echo "[loop] census capture FAILED — coverage will use the previous snapshot"
+
+  # 4) master gate
   if bash "$HARNESS/census/react-e2e/master-gate.sh"; then
     echo "[loop] MASTER GATE PASS — port 100% verified E2E (iteration $iter)"
     touch "$CAMP/.done"
     exit 0
   fi
 
-  # 4) derive gaps → inject follow-up tasks (af hot-reload picks them up next wave)
+  # 5) derive gaps → inject follow-up tasks (af hot-reload picks them up next wave)
   echo "[loop] deriving gaps"
   /usr/bin/python3 "$CAMP/derive-gaps.py" || true
 done

@@ -65,16 +65,23 @@ def main() -> int:
     covered_tabs = {
         tuple(t.get("touch", [])) for t in tasks["tasks"]
     }
+    # in-flight task ids — done tasks may be re-derived against a fresh census
+    try:
+        state = json.loads((SERVER / ".af-state/port-finish/run-state.json").read_text())
+        inflight = {tid for tid, v in state.items() if v.get("state") != "done"}
+    except Exception:  # noqa: BLE001
+        inflight = set()
     n = 0
     for tab, labels in parse_gaps(coverage_text()):
-        # skip tabs an existing task already targets (title or note mentions it)
-        if any(tab.lower() in (t.get('title', '') + ' '.join(t.get('note', ''))).lower()
-               for t in tasks['tasks']):
+        # skip only tabs an IN-FLIGHT task already targets
+        if any(tab.lower() in (t.get("title", "") + " ".join(t.get("note", ""))).lower()
+               and t["id"] in inflight for t in tasks["tasks"]):
             continue
         n += 1
         tid = f"PF-GAP-{n}"
-        if tid in known:
-            continue
+        while tid in known:
+            n += 1
+            tid = f"PF-GAP-{n}"
         tasks["tasks"].append({
             "id": tid, "repo": "server", "deps": [], "priority": 5,
             "title": f"Parity fill: {tab} — {', '.join(labels[:4])}{' …' if len(labels) > 4 else ''}",
