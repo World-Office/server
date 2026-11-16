@@ -478,6 +478,29 @@ describe("Insert tab", () => {
     expect(thCount).toBe(2) // header row has 2 cells
     expect(tdCount).toBe(2) // body row has 2 cells
   })
+
+  it("insertDateTime inserts a DATETIME field span", () => {
+    editor.commands.setTextSelection(4)
+    dispatchRichTextCommand("insertDateTime")
+    const html = editor.getHTML()
+    expect(html).toContain('data-wo-field="DATETIME"')
+  })
+
+  it("insertField inserts a named field span, defaulting to PAGE", () => {
+    editor.commands.setTextSelection(4)
+    dispatchRichTextCommand("insertField")
+    const html = editor.getHTML()
+    expect(html).toContain('data-wo-field="PAGE"')
+    expect(html).toContain(">PAGE<")
+  })
+
+  it("insertField with value inserts a custom field span", () => {
+    editor.commands.setTextSelection(4)
+    dispatchRichTextCommand("insertField", "NUMPAGES")
+    const html = editor.getHTML()
+    expect(html).toContain('data-wo-field="NUMPAGES"')
+    expect(html).toContain(">NUMPAGES<")
+  })
 })
 
 // ----------------------------------------------------------------------
