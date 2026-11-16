@@ -180,6 +180,127 @@ describe("word-commands", () => {
       handler({ command: "lineSpacing" })
       expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ lineSpacing: 276 }) // default 1.15 * 240
     })
+
+    describe("toggle formatting (bold, italic, underline, strikethrough)", () => {
+      const DOC_HANDLE = 42
+
+      beforeEach(() => {
+        // Mock WASM API with get_run_formatting support
+        const mockApi = {
+          get_run_formatting: vi.fn(() => "{}"),
+        }
+        wasmMocks.getWasmApi.mockReturnValue(mockApi as unknown as import("../lib/wasm-renderer").WasmRenderApi)
+        editorHandle = {
+          applyFormatting: vi.fn(),
+          applyStructureOp: vi.fn(),
+          getDocHandle: vi.fn(() => DOC_HANDLE),
+        } as unknown as CanvasEditorHandle
+        deps = {
+          editorRef: { current: editorHandle },
+          onRichTextCommand: vi.fn(),
+          onFind: vi.fn(),
+        }
+        handler = createWordCommandHandler(deps)
+      })
+
+      it("should toggle bold off when currently bold", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ bold: true }))
+        
+        handler({ command: "bold" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ bold: false })
+      })
+
+      it("should toggle bold on when not currently bold", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ bold: false }))
+        
+        handler({ command: "bold" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ bold: true })
+      })
+
+      it("should toggle italic off when currently italic", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ italic: true }))
+        
+        handler({ command: "italic" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ italic: false })
+      })
+
+      it("should toggle italic on when not currently italic", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ italic: false }))
+        
+        handler({ command: "italic" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ italic: true })
+      })
+
+      it("should toggle underline off when currently underline", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ underline: "single" }))
+        
+        handler({ command: "underline" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ underline: null })
+      })
+
+      it("should toggle underline on with default when not currently underline", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({}))
+        
+        handler({ command: "underline" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ underline: "single" })
+      })
+
+      it("should toggle underline on with value when not currently underline", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({}))
+        
+        handler({ command: "underline", value: "double" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ underline: "double" })
+      })
+
+      it("should toggle strikethrough off when currently strikethrough", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ strikethrough: true }))
+        
+        handler({ command: "strikethrough" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ strikethrough: false })
+      })
+
+      it("should toggle strikethrough on when not currently strikethrough", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ strikethrough: false }))
+        
+        handler({ command: "strikethrough" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ strikethrough: true })
+      })
+
+      it("should toggle strike command (alias for strikethrough)", () => {
+        const mockApi = wasmMocks.getWasmApi() as unknown as { get_run_formatting: Mock }
+        mockApi.get_run_formatting.mockReturnValue(JSON.stringify({ strikethrough: true }))
+        
+        handler({ command: "strike" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ strikethrough: false })
+      })
+
+      it("should fall back to setting true when WASM is not available", () => {
+        wasmMocks.getWasmApi.mockReturnValue(null)
+        editorHandle = {
+          applyFormatting: vi.fn(),
+          applyStructureOp: vi.fn(),
+          getDocHandle: vi.fn(() => null),
+        } as unknown as CanvasEditorHandle
+        deps = {
+          editorRef: { current: editorHandle },
+          onRichTextCommand: vi.fn(),
+          onFind: vi.fn(),
+        }
+        handler = createWordCommandHandler(deps)
+        
+        handler({ command: "bold" })
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ bold: true })
+      })
+    })
   })
 
   describe("structure operations", () => {
