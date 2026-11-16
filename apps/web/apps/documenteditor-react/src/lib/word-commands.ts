@@ -166,7 +166,59 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     const command = cmd.command
     const value = typeof cmd.value === "string" ? cmd.value : undefined
 
-    // 1. Formatting commands → WASM applyFormatting
+    // 1. Toggle formatting commands (bold, italic, underline, strikethrough)
+    //    Read current state from WASM and flip it
+    if (command === "bold" || command === "italic" || command === "underline" || command === "strike" || command === "strikethrough") {
+      const editorHandle = editorRef.current
+      if (editorHandle) {
+        const docHandle = editorHandle.getDocHandle?.() ?? null
+        const api = docHandle !== null ? getWasmApi() : null
+        if (api !== null && docHandle !== null) {
+          try {
+            const currentFormatting = api.get_run_formatting(docHandle)
+            const current = currentFormatting ? JSON.parse(currentFormatting) : {}
+            
+            // Determine the formatting key and toggle value
+            let format: Record<string, unknown>
+            switch (command) {
+              case "bold":
+                format = { bold: !current.bold }
+                break
+              case "italic":
+                format = { italic: !current.italic }
+                break
+              case "underline":
+                // If underline is currently set, remove it (null); otherwise set to value or "single"
+                format = { underline: current.underline ? null : (value ?? "single") }
+                break
+              case "strike":
+              case "strikethrough":
+                format = { strikethrough: !current.strikethrough }
+                break
+              default:
+                // Fall through to regular formatting
+                format = commandToFormat(command, value) ?? {}
+            }
+            editorHandle.applyFormatting(format)
+          } catch {
+            // If reading formatting fails, fall back to setting it to true
+            const format = commandToFormat(command, value)
+            if (format) {
+              editorHandle.applyFormatting(format)
+            }
+          }
+        } else {
+          // No WASM handle available, fall back to setting it to true
+          const format = commandToFormat(command, value)
+          if (format) {
+            editorRef.current?.applyFormatting(format)
+          }
+        }
+        return
+      }
+    }
+
+    // 2. Formatting commands → WASM applyFormatting
     const format = commandToFormat(command, value)
     if (format) {
       editorRef.current?.applyFormatting(format)
