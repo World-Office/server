@@ -25,7 +25,7 @@ CHECK = HARNESS / "census" / "react-e2e" / "coverage-check.py"
 REACT_GATE = (
     "cd apps/web/apps/documenteditor-react && ln -sfn "
     "/home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules "
-    "node_modules && timeout 300 npx vitest run 2>&1 | tail -4 | grep -qE 'passed|✓'"
+    "node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-out.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log"
 )
 
 FACTS = (
@@ -33,7 +33,8 @@ FACTS = (
     "vitest; worktree has no node_modules (gate symlinks the main checkout). "
     "Ribbon buttons must expose the label via aria-label||title||textContent "
     "(exact trimmed label). E2E + coverage proof runs in the supervisor's "
-    "master gate after merge. i18n: follow the catalog-key pattern of 1cc342147."
+    "master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. "
+    "WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
 )
 
 
