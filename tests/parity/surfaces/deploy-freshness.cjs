@@ -54,7 +54,7 @@ https.get(url, { timeout: 20000 }, (res) => {
       console.log(`deploy freshness: ok — prod serves ${info.sha} (covers UI head ${head})`);
       process.exit(0);
     }
-    finish(`deploy freshness: STALE — prod serves ${info.sha}, local HEAD is ${head}. Deploy: download frontend-dist artifact for the react editors + copy apps/web/apps/documenteditor-wysiwyg/{index.html,editor.js,i18n.js,style.css,wo-bridge.js,build-info.json} to legion ~/editor-ui-${head}/, flip compose mounts, up -d docserver.`);
+    finish(`deploy freshness: STALE — prod serves ${info.sha}, local HEAD is ${head}. Deploy: download frontend-dist artifact, then make-editor-ui.sh ${head} builds word/ from documenteditor-react; rsync ~/editor-ui-${head}/ to legion, flip compose mounts, up -d docserver.`);
   });
 }).on('error', (e) => finish(`deploy freshness: fetch failed — ${e.message}`));
 

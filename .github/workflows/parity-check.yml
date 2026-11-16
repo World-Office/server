@@ -4,7 +4,6 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'apps/web/apps/documenteditor-wysiwyg/**'
       - 'core/crates/wo-**'
       - 'tests/parity/**'
       - '.github/workflows/parity-check.yml'
@@ -107,28 +106,6 @@ jobs:
           name: ledger-report
           path: wo-test-harness/census/ledger/ledger.json
 
-  editor-gates:
-    name: Editor Gate Suite
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run editor *.test.mjs gates
-        run: |
-          cd apps/web/apps/documenteditor-wysiwyg
-          fails=0
-          # Every gate is a plain ESM node script. shift-enter-behavior.test.mjs
-          # also drives a live editor via WO_EDITOR_URL/playwright — its live
-          # layer self-skips (exit 0) when that stack is unavailable, so its
-          # static chain pins still run here.
-          for f in *.test.mjs; do
-            echo "-- $f"
-            node "$f" || fails=$((fails+1))
-          done
-          echo "editor gates: $(( $(ls *.test.mjs | wc -l ) - fails )) pass, $fails fail"
-          exit $fails
-
   visual-diff:
     name: Visual Diff
     needs: build
@@ -191,7 +168,7 @@ jobs:
 
   report:
     name: Generate Parity Report
-    needs: [ledger-build, editor-gates, visual-diff, performance]
+    needs: [ledger-build, visual-diff, performance]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -229,7 +206,6 @@ jobs:
             echo "| Build | ${{ needs.build.result }} | Core compilation |"
             echo "| Tests | ${{ needs.test-core.result }} | Unit tests |"
             echo "| Ledger | ${{ needs.ledger-build.result }} | Feature tracking |"
-            echo "| Editor Gates | ${{ needs.editor-gates.result }} | documenteditor-wysiwyg *.test.mjs suite |"
             echo "| Visual | ${{ needs.visual-diff.result }} | Screenshot comparison |"
             echo "| Performance | ${{ needs.performance.result }} | Benchmark results |"
             echo

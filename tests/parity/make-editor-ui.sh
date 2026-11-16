@@ -9,8 +9,8 @@
 # word/  = the React canvas editor (documenteditor-react), vite build from
 #          the tree (see build-word() below). The vanilla wysiwyg app
 #          (python-lineage, contenteditable) was RETIRED as the deployed
-#          editor on 2026-11-16 — its source stays in-tree for its test
-#          corpus until the census/gates migrate to the react app.
+#          editor on 2026-11-16 and moved to branch
+#          legacy/wysiwyg-python-editor (with its 159-test gate suite).
 # sheet|slide|diagram|pdf = vite builds from the latest green Deploy run
 #          (`gh api repos/:owner/:repo/actions/runs/<id>/artifacts`,
 #           artifact name "frontend-dist")
@@ -24,7 +24,6 @@ set -euo pipefail
 SHA="${1:?usage: make-editor-ui.sh <sha7> [artifact-zip|artifact-id]}"
 ZIP="${2:-}"
 REPO="$(git rev-parse --show-toplevel)"
-WYS="$REPO/apps/web/apps/documenteditor-wysiwyg"
 STAGE="/tmp/editor-ui-$SHA"
 
 rm -rf "$STAGE" && mkdir -p "$STAGE"
@@ -53,8 +52,9 @@ esac
 for d in sheet slide diagram pdf; do
   [ -d "$STAGE/$d" ] || { echo "missing $d in artifact" >&2; exit 1; }
 done
+# word/ comes from build_word (--build-word) or the artifact zip — nothing
+# to copy from the tree since the wysiwyg retirement.
 mkdir -p "$STAGE/word"
-cp "$WYS"/index.html "$WYS"/editor.js "$WYS"/i18n.js "$WYS"/style.css "$WYS"/wo-bridge.js "$STAGE/word/"
 printf '{"sha":"%s","builtAt":"%s"}\n' "$SHA" "$(date -u +%F)" > "$STAGE/build-info.json"
 for d in word sheet slide diagram pdf; do cp "$STAGE/build-info.json" "$STAGE/$d/build-info.json"; done
 
