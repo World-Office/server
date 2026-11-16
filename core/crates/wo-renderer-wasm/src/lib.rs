@@ -2272,6 +2272,64 @@ pub fn handle_key_event(
             Ok("{}".to_string())
         }
         _ => {
+            // Modifier combos: Ctrl+A select-all, Ctrl+Z/Ctrl+Y(+Shift+Z)
+            // undo/redo, Ctrl+B/I/U toggle formatting at the cursor run
+            // (same apply_formatting path the ribbon buttons use via
+            // word-commands.ts).
+            // ponytail: formatting targets the cursor's RUN, not the whole
+            // anchor→head selection — span the range when the ORM-02 push
+            // frames land.
+            if _ctrl && key.len() == 1 {
+                let k = key.to_ascii_lowercase();
+                match k.as_str() {
+                    "a" => {
+                        let body = extract_body(doc_handle)?;
+                        let start = doc_home_end(doc_handle, &body, false);
+                        let end = doc_home_end(doc_handle, &body, true);
+                        set_anchor(doc_handle, start);
+                        set_cursor(doc_handle, end);
+                        return layout_document_and_return_json(
+                            doc_handle,
+                            page_size,
+                            orientation,
+                            margin_pt,
+                        );
+                    }
+                    "z" | "y" => {
+                        if k == "z" && !_shift {
+                            return undo(doc_handle, page_size, orientation, margin_pt);
+                        }
+                        return redo(doc_handle, page_size, orientation, margin_pt);
+                    }
+                    "b" | "i" | "u" => {
+                        let prop = match k.as_str() {
+                            "b" => "bold",
+                            "i" => "italic",
+                            _ => "underline",
+                        };
+                        let cur =
+                            get_run_formatting(doc_handle).unwrap_or_else(|_| "{}".to_string());
+                        let cur_v: serde_json::Value =
+                            serde_json::from_str(&cur).unwrap_or(serde_json::Value::Null);
+                        let on = cur_v.get(prop).and_then(|x| x.as_bool()).unwrap_or(false);
+                        let fmt = match (prop, on) {
+                            ("underline", true) => r#"{"underline": "none"}"#.to_string(),
+                            ("underline", false) => r#"{"underline": "single"}"#.to_string(),
+                            (p, true) => format!(r#"{{"{}": false}}"#, p),
+                            (p, false) => format!(r#"{{"{}": true}}"#, p),
+                        };
+                        push_history(doc_handle);
+                        return apply_formatting(
+                            doc_handle,
+                            &fmt,
+                            page_size,
+                            orientation,
+                            margin_pt,
+                        );
+                    }
+                    _ => return Ok("{}".to_string()),
+                }
+            }
             // Insert printable character. Modifier combos (Ctrl+C/X/V/S …) must
             // never insert letters; clipboard paste goes through insert_text.
             if key.len() != 1 || _ctrl {

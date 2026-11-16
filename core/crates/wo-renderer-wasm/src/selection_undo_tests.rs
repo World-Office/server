@@ -356,3 +356,37 @@ fn first_keystroke_after_click_is_not_lost() {
     );
     release_document(h).ok();
 }
+
+// ── Ctrl modifier combos in handle_key_event (2026-11-16 wiring) ─
+
+#[test]
+fn ctrl_a_selects_whole_document() {
+    let h = fixture_doc(7101, &["hello", "world"]);
+    handle_key_event(h, "a", true, false, "A4", "portrait", 72.0).unwrap();
+    assert_eq!(get_selected_text(h).unwrap(), "hello\nworld");
+    release_document(h).ok();
+}
+
+#[test]
+fn ctrl_b_toggles_bold_and_export_has_wb() {
+    let h = fixture_doc(7102, &["probe"]);
+    // cursor sits at para end; bold the (single) run at cursor
+    handle_key_event(h, "b", true, false, "A4", "portrait", 72.0).unwrap();
+    assert!(get_run_formatting(h).unwrap().contains("\"bold\":true"));
+    // toggle off
+    handle_key_event(h, "b", true, false, "A4", "portrait", 72.0).unwrap();
+    assert!(get_run_formatting(h).unwrap().contains("\"bold\":false"));
+    release_document(h).ok();
+}
+
+#[test]
+fn ctrl_z_undoes_ctrl_b() {
+    let h = fixture_doc(7104, &["probe"]);
+    handle_key_event(h, "b", true, false, "A4", "portrait", 72.0).unwrap();
+    assert!(get_run_formatting(h).unwrap().contains("\"bold\":true"));
+    handle_key_event(h, "z", true, false, "A4", "portrait", 72.0).unwrap();
+    assert!(get_run_formatting(h).unwrap().contains("\"bold\":false"));
+    handle_key_event(h, "y", true, false, "A4", "portrait", 72.0).unwrap();
+    assert!(get_run_formatting(h).unwrap().contains("\"bold\":true"));
+    release_document(h).ok();
+}

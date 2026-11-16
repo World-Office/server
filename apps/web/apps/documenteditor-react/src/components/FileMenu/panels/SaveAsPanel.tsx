@@ -24,6 +24,24 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
   const [converting, setConverting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Source of truth for export: the live canvas document (via
+  // buildDocumentBlob → canvasSerializer.serialize_document), NOT the
+  // load-time richTextHtml snapshot — canvas edits never touch richTextHtml
+  // (same class of bug as the production "save drops typed edits" incident
+  // fixed in buildDocumentBlob). Only formats the canvas cannot produce
+  // (pdf/txt/… via html conversion) fall back to the snapshot.
+  // ponytail: non-docx formats still convert from the load-time HTML; make
+  // them canvas-truth when wasm gains docx→html export.
+  async function exportSource(format: FormatOption): Promise<Blob> {
+    if (format.id === "docx") {
+      return await documentStore.buildDocumentBlob()
+    }
+    if (!documentStore.richTextHtml) {
+      throw new Error("No document content to export")
+    }
+    return await convertFromHtml(documentStore.richTextHtml, format.id)
+  }
+
   async function handleExport(format: FormatOption): Promise<void> {
     if (!documentStore.richTextHtml) {
       setError("No document content to export")
@@ -38,7 +56,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
       setConverting(format.id)
       setError(null)
       try {
-        const blob = await convertFromHtml(documentStore.richTextHtml, format.id)
+        const blob = await exportSource(format)
         let content: string
         if (isBinary) {
           const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -69,7 +87,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
     setError(null)
 
     try {
-      const blob = await convertFromHtml(documentStore.richTextHtml, format.id)
+      const blob = await exportSource(format)
       const fileName = documentStore.fileName
         ? documentStore.fileName.replace(/\.[^.]+$/, format.extension)
         : `Untitled${format.extension}`
