@@ -354,6 +354,7 @@ function CheckboxControl({
       checked={isChecked}
       disabled={!enabled}
       label={t(spec.label ?? "")}
+      aria-label={t(spec.label ?? "")}
       title={spec.tooltip ? t(spec.tooltip) : ""}
       onChange={(e) => {
         const checked = e.target.checked

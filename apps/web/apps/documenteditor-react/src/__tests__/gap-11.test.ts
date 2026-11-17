@@ -1,103 +1,40 @@
 // @vitest-environment jsdom
 /**
- * PF-GAP-11 — Parity fill: View — Headings, Multiple Pages, Dark
- * covers ONLYOFFICE golden labels: ["Headings", "Multiple Pages", "Dark"]
- * Tests that the View tab's Show group contains checkboxes with correct labels:
- * Headings, Multiple Pages, and Dark
+ * View tab parity vs ONLYOFFICE golden census (census-oo-deep.json ▸ view):
+ *   Show group checkboxes: Spell Check, Ruler, Gridlines, Headings, Dark Document
+ *   Zoom cluster: Fit To Page, Fit To Width, Multiple Pages, Zoom to 100%
+ * "Multiple Pages" is a zoom-cluster control in OO, NOT a Show checkbox.
  */
 import { describe, expect, it } from "vitest"
 import { wordRibbonSpec } from "../lib/word-ribbon-spec"
 
-describe("PF-GAP-11: View tab Show group checkbox labels", () => {
-  it("has a View tab", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    expect(viewTab?.label).toContain("View")
+const viewTab = () => wordRibbonSpec.tabs.find((tab) => tab.id === "view")
+const showGroup = () =>
+  viewTab()?.groups.find((g) => g.id === "show" || g.label === "Show")
+const allLabels = () =>
+  (viewTab()?.groups ?? []).flatMap((g) =>
+    g.controls.map((c) => c.label ?? ""),
+  )
+
+describe("View tab parity (OO golden)", () => {
+  it("has a View tab with a Show group", () => {
+    expect(viewTab()).toBeDefined()
+    expect(showGroup()).toBeDefined()
   })
 
-  it("View tab has a Show group", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    
-    const showGroup = viewTab?.groups.find((group) => group.id === "show")
-    expect(showGroup).toBeDefined()
-    expect(showGroup?.label).toBe("Show")
+  it("Show group contains Headings and Dark Document checkboxes (OO golden)", () => {
+    const labels = (showGroup()?.controls ?? []).map((c) => c.label)
+    expect(labels).toContain("Headings")
+    expect(labels).toContain("Dark Document")
   })
 
-  it("Show group contains a Headings checkbox with label 'Headings'", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    
-    const showGroup = viewTab?.groups.find((group) => group.id === "show")
-    expect(showGroup).toBeDefined()
-    
-    const headingsCheckbox = showGroup?.controls.find(
-      (control) => control.id === "headings" && control.type === "checkbox",
-    )
-    expect(headingsCheckbox).toBeDefined()
-    expect(headingsCheckbox?.label).toBe("Headings")
-    expect(headingsCheckbox?.command).toBe("toggleNavigation")
+  it("Show group does NOT duplicate zoom controls (no Multiple Pages checkbox)", () => {
+    const labels = (showGroup()?.controls ?? []).map((c) => c.label)
+    expect(labels).not.toContain("Multiple Pages")
+    expect(labels).not.toContain("Dark")
   })
 
-  it("Show group contains a Multiple Pages checkbox with label 'Multiple Pages'", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    
-    const showGroup = viewTab?.groups.find((group) => group.id === "show")
-    expect(showGroup).toBeDefined()
-    
-    const multiplePagesCheckbox = showGroup?.controls.find(
-      (control) => control.id === "multiple-pages-checkbox" && control.type === "checkbox",
-    )
-    expect(multiplePagesCheckbox).toBeDefined()
-    expect(multiplePagesCheckbox?.label).toBe("Multiple Pages")
-    expect(multiplePagesCheckbox?.command).toBe("toggleMultiplePages")
-  })
-
-  it("Show group contains a Dark checkbox with label 'Dark'", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    
-    const showGroup = viewTab?.groups.find((group) => group.id === "show")
-    expect(showGroup).toBeDefined()
-    
-    const darkCheckbox = showGroup?.controls.find(
-      (control) => control.id === "dark-document" && control.type === "checkbox",
-    )
-    expect(darkCheckbox).toBeDefined()
-    expect(darkCheckbox?.label).toBe("Dark")
-    expect(darkCheckbox?.command).toBe("toggleDarkDocument")
-  })
-
-  it("checkboxes are in the correct order: Headings, Multiple Pages, Dark", () => {
-    const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-    expect(viewTab).toBeDefined()
-    
-    const showGroup = viewTab?.groups.find((group) => group.id === "show")
-    expect(showGroup).toBeDefined()
-    
-    const controls = showGroup?.controls || []
-    
-    // Find the indices of our checkboxes
-    const headingsIndex = controls.findIndex(
-      (control) => control.id === "headings" && control.type === "checkbox",
-    )
-    const multiplePagesIndex = controls.findIndex(
-      (control) => control.id === "multiple-pages-checkbox" && control.type === "checkbox",
-    )
-    const darkIndex = controls.findIndex(
-      (control) => control.id === "dark-document" && control.type === "checkbox",
-    )
-    
-    // All checkboxes should be found
-    expect(headingsIndex).not.toBe(-1)
-    expect(multiplePagesIndex).not.toBe(-1)
-    expect(darkIndex).not.toBe(-1)
-    
-    // Headings should come before Multiple Pages
-    expect(headingsIndex).toBeLessThan(multiplePagesIndex)
-    
-    // Multiple Pages should come before Dark
-    expect(multiplePagesIndex).toBeLessThan(darkIndex)
+  it("zoom cluster provides Multiple Pages (OO places it there)", () => {
+    expect(allLabels()).toContain("Multiple Pages")
   })
 })

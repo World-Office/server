@@ -41,6 +41,8 @@ export interface RibbonContext {
   multiplePages?: boolean
   /** Dark document (view) mode is active */
   darkDocument?: boolean
+  /** Active header/footer editing region ("header" | "footer" | "none") */
+  headerFooterMode?: "header" | "footer" | "none"
   /** Spell check is enabled */
   spellcheckEnabled?: boolean
   /** Different first page header/footer */

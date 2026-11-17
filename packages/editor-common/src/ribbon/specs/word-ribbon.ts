@@ -1940,6 +1940,56 @@ export const wordRibbonSpec: RibbonSpec = {
             },
           ],
         },
+        {
+          // OO Chart Design ▸ size/advanced — mirror the right-panel controls
+          id: "chart-size-advanced",
+          label: "Size",
+          controls: [
+            {
+              id: "chart-advanced-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Advanced settings",
+              command: "chartAdvancedSettings",
+            },
+            {
+              id: "chart-width",
+              type: "select",
+              label: "Width",
+              options: [
+                { value: "", label: "Auto" },
+                { value: "400", label: "400" },
+                { value: "600", label: "600" },
+                { value: "800", label: "800" },
+              ],
+              value: () => "",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", {
+                    detail: { command: "chartWidth", value: val },
+                  }),
+                ),
+            },
+            {
+              id: "chart-height",
+              type: "select",
+              label: "Height",
+              options: [
+                { value: "", label: "Auto" },
+                { value: "300", label: "300" },
+                { value: "500", label: "500" },
+                { value: "700", label: "700" },
+              ],
+              value: () => "",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", {
+                    detail: { command: "chartHeight", value: val },
+                  }),
+                ),
+            },
+          ],
+        },
       ],
     },
 

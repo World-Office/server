@@ -3,7 +3,7 @@
  * This file extends and modifies the base wordRibbonSpec from editor-common.
  */
 
-import type { RibbonControlSpec, RibbonSpec } from "@world-office/editor-common"
+import type { RibbonContext, RibbonControlSpec, RibbonSpec } from "@world-office/editor-common"
 import { wordRibbonSpec as baseWordRibbonSpec } from "@world-office/editor-common"
 
 /**
@@ -180,53 +180,8 @@ modifiedSpec = addControlToGroup(
   0, // Insert at the beginning of the zoom group
 )
 
-// Fix #5: View tab - Add Headings, Multiple Pages, and Dark checkboxes to Show group
-// Add checkboxes to the View tab's Show group to achieve parity with ONLYOFFICE's View > Show group (PF-GAP-6, PF-GAP-11)
-// ONLYOFFICE's View > Show group includes: Headings, Multiple Pages, and Dark checkboxes
-modifiedSpec = addControlToGroup(
-  modifiedSpec,
-  "view",
-  "show",
-  {
-    id: "headings",
-    type: "checkbox",
-    label: "Headings",
-    checked: (ctx) => ctx.navigationVisible ?? false,
-    onChange: () => {},
-    command: "toggleNavigation",
-  },
-  4, // Insert after spellcheck, ruler, gridlines, navigation (position 4)
-)
-
-modifiedSpec = addControlToGroup(
-  modifiedSpec,
-  "view",
-  "show",
-  {
-    id: "multiple-pages-checkbox",
-    type: "checkbox",
-    label: "Multiple Pages",
-    checked: (ctx) => ctx.multiplePages ?? false,
-    onChange: () => {},
-    command: "toggleMultiplePages",
-  },
-  5, // Insert after Headings (position 5)
-)
-
-modifiedSpec = addControlToGroup(
-  modifiedSpec,
-  "view",
-  "show",
-  {
-    id: "dark-document",
-    type: "checkbox",
-    label: "Dark",
-    checked: (ctx) => ctx.darkDocument ?? false,
-    onChange: () => {},
-    command: "toggleDarkDocument",
-  },
-  6, // Insert after Multiple Pages (position 6)
-)
+// Fix #5 note: base spec provides Headings + Dark Document in the Show group;
+// the zoom-group "Multiple Pages" button above covers OO's View ▸ Multiple Pages.
 
 // Fix #6: Insert tab - Add Header & Footer group (PF-3)
 // Add Header & Footer group to the Insert tab with Header, Footer, Page Number, Date & Time, Field, and Comment
@@ -283,6 +238,65 @@ modifiedSpec = addGroupToTab(modifiedSpec, "insert", {
       icon: "TextQuote",
       label: "Comment",
       command: "addComment",
+    },
+  ],
+})
+
+// Fix #7: Contextual Header & Footer tab (OO parity)
+// Visible only while header/footer editing is active (RibbonContext.headerFooterMode).
+// OO's contextual tab: Close, Header & Footer, Page Number, Date & Time, Field, Image.
+modifiedSpec.tabs.push({
+  id: "header-footer-contextual",
+  label: "Header & Footer",
+  visible: (ctx: RibbonContext) => ctx.headerFooterMode !== "none" && !!ctx.headerFooterMode,
+  groups: [
+    {
+      id: "hf-contextual-main",
+      label: "Header & Footer",
+      controls: [
+        {
+          id: "close-header-footer-ctx",
+          type: "button",
+          icon: "X",
+          label: "Close",
+          command: "closeHeaderFooter",
+        },
+        {
+          id: "hf-insert-header",
+          type: "button",
+          icon: "AlignJustify",
+          label: "Header & Footer",
+          command: "editHeader",
+        },
+        {
+          id: "hf-insert-page-number",
+          type: "button",
+          icon: "Hash",
+          label: "Page Number",
+          command: "insertPageNumber",
+        },
+        {
+          id: "hf-insert-datetime",
+          type: "button",
+          icon: "Clock",
+          label: "Date & Time",
+          command: "insertDateTime",
+        },
+        {
+          id: "hf-insert-field",
+          type: "button",
+          icon: "Braces",
+          label: "Field",
+          command: "insertField",
+        },
+        {
+          id: "hf-insert-image",
+          type: "button",
+          icon: "Image",
+          label: "Image",
+          command: "insertImage",
+        },
+      ],
     },
   ],
 })
