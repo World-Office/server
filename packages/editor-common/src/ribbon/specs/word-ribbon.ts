@@ -1,5 +1,4 @@
 import type { RibbonGroupSpec, RibbonSpec } from "../types"
-import { cloudTab } from "./cloud-spec"
 
 /**
  * Global quick-access groups shown at the trail of OO's Home and Plugins
@@ -92,84 +91,6 @@ export const globalViewGroup: RibbonGroupSpec = {
  */
 export const wordRibbonSpec: RibbonSpec = {
   tabs: [
-    {
-      id: "file",
-      label: "File",
-      // OnlyOffice backstage (File tab) — each button opens the matching
-      // FileMenu backstage panel via a real command in word-commands.ts.
-      groups: [
-        {
-          id: "backstage",
-          label: "File",
-          controls: [
-            {
-              id: "backstage-back",
-              type: "button",
-              icon: "ChevronLeft",
-              label: "Back",
-              command: "back",
-            },
-            {
-              id: "backstage-save",
-              type: "button",
-              icon: "Save",
-              label: "Save",
-              command: "save",
-            },
-            {
-              id: "backstage-download-as",
-              type: "button",
-              icon: "Download",
-              label: "Download As",
-              command: "downloadAs",
-            },
-            {
-              id: "backstage-print",
-              type: "button",
-              icon: "Printer",
-              label: "Print",
-              command: "print",
-            },
-            {
-              id: "backstage-protect",
-              type: "button",
-              icon: "Lock",
-              label: "Protect",
-              command: "protect",
-            },
-            {
-              id: "backstage-info",
-              type: "button",
-              icon: "FileText",
-              label: "Info",
-              command: "info",
-            },
-            {
-              id: "backstage-advanced-settings",
-              type: "button",
-              icon: "Settings",
-              label: "Advanced Settings",
-              command: "advancedSettings",
-            },
-            {
-              id: "backstage-help",
-              type: "button",
-              icon: "HelpCircle",
-              label: "Help",
-              command: "help",
-            },
-            {
-              id: "backstage-suggest-feature",
-              type: "button",
-              icon: "MessageSquare",
-              label: "Suggest a Feature",
-              command: "suggestFeature",
-            },
-          ],
-        },
-      ],
-    },
-
     {
       id: "home",
       label: "Home",
@@ -739,10 +660,191 @@ export const wordRibbonSpec: RibbonSpec = {
           controls: [
             {
               id: "insert-content-control",
-              type: "button",
+              type: "dropdown",
               icon: "CheckSquare",
               label: "Content Controls",
-              command: "insertContentControl",
+              items: [
+                { id: "cc-rich", label: "Rich Text Content Control", command: "insertContentControl" },
+                { id: "cc-plain", label: "Plain Text Content Control", command: "insertPlainTextControl" },
+                { id: "cc-checkbox", label: "Checkbox Content Control", command: "insertCheckboxControl" },
+                { id: "cc-dropdown", label: "Drop-Down List Content Control", command: "insertDropdownControl" },
+                { id: "cc-datepicker", label: "Date Picker Content Control", command: "insertDatePickerControl" },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: "draw",
+      label: "Draw",
+      visible: (ctx) => ctx.isEditMode,
+      groups: [
+        {
+          id: "draw-clipboard",
+          label: "Clipboard",
+          controls: [
+            {
+              id: "draw-cut",
+              type: "button",
+              icon: "Scissors",
+              label: "Cut",
+              command: "cut",
+              shortcut: "Ctrl+X",
+            },
+            {
+              id: "draw-copy",
+              type: "button",
+              icon: "Copy",
+              label: "Copy",
+              command: "copy",
+              shortcut: "Ctrl+C",
+            },
+            {
+              id: "draw-paste",
+              type: "button",
+              icon: "ClipboardPaste",
+              label: "Paste",
+              command: "paste",
+              shortcut: "Ctrl+V",
+            },
+            {
+              id: "draw-copy-style",
+              type: "button",
+              icon: "Copy",
+              label: "Copy style",
+              command: "copyStyle",
+              shortcut: "Ctrl+Alt+C",
+            },
+          ],
+        },
+        {
+          id: "draw-tools",
+          label: "Tools",
+          controls: [
+            {
+              id: "draw-select",
+              type: "button",
+              icon: "MousePointer2",
+              label: "Select",
+              command: "drawSelect",
+            },
+            {
+              id: "draw-eraser",
+              type: "button",
+              icon: "Eraser",
+              label: "Eraser",
+              command: "drawEraser",
+            },
+          ],
+        },
+        {
+          id: "draw-info",
+          label: "Info",
+          controls: [
+            {
+              id: "draw-word-count",
+              type: "button",
+              icon: "FileText",
+              label: "Word count",
+              command: "wordCount",
+            },
+          ],
+        },
+        {
+          id: "draw-language",
+          label: "Language",
+          controls: [
+            {
+              id: "draw-language-select",
+              type: "select",
+              label: "English – United States",
+              options: [
+                { value: "en-US", label: "English – United States" },
+                { value: "en-GB", label: "English – United Kingdom" },
+                { value: "de-DE", label: "German" },
+                { value: "fr-FR", label: "French" },
+              ],
+              value: () => "en-US",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", {
+                    detail: { command: "setDocumentLanguage", value: val },
+                  }),
+                ),
+            },
+            {
+              id: "draw-set-language",
+              type: "button",
+              icon: "Globe",
+              label: "Set document language",
+              command: "setDocumentLanguage",
+            },
+            {
+              id: "draw-spell-checking",
+              type: "checkbox",
+              label: "Spell checking",
+              checked: (ctx) => ctx.spellcheckEnabled ?? true,
+              onChange: () => {},
+              command: "toggleSpellCheck",
+            },
+          ],
+        },
+        {
+          id: "draw-review",
+          label: "Review",
+          controls: [
+            {
+              id: "draw-track-changes",
+              type: "checkbox",
+              label: "Track changes",
+              checked: (ctx) => ctx.trackChangesEnabled ?? false,
+              onChange: () => {},
+              command: "toggleTrackChanges",
+            },
+          ],
+        },
+        {
+          id: "draw-view",
+          label: "View",
+          controls: [
+            {
+              id: "draw-multiple-pages",
+              type: "button",
+              icon: "Layout",
+              label: "Multiple pages",
+              command: "toggleMultiplePages",
+            },
+            {
+              id: "draw-fit-to-page",
+              type: "button",
+              icon: "Maximize",
+              label: "Fit to page",
+              command: "fitToPage",
+            },
+            {
+              id: "draw-fit-to-width",
+              type: "button",
+              icon: "Maximize",
+              label: "Fit to width",
+              command: "fitToWidth",
+            },
+            {
+              id: "draw-zoom-out",
+              type: "button",
+              icon: "ZoomOut",
+              label: "Zoom out",
+              command: "zoomOut",
+              shortcut: "Ctrl+-",
+            },
+            {
+              id: "draw-zoom-in",
+              type: "button",
+              icon: "ZoomIn",
+              label: "Zoom in",
+              command: "zoomIn",
+              shortcut: "Ctrl+Num +",
             },
           ],
         },
@@ -1302,180 +1404,6 @@ export const wordRibbonSpec: RibbonSpec = {
       ],
     },
 
-    {
-      id: "draw",
-      label: "Draw",
-      visible: (ctx) => ctx.isEditMode,
-      groups: [
-        {
-          id: "draw-clipboard",
-          label: "Clipboard",
-          controls: [
-            {
-              id: "draw-cut",
-              type: "button",
-              icon: "Scissors",
-              label: "Cut",
-              command: "cut",
-              shortcut: "Ctrl+X",
-            },
-            {
-              id: "draw-copy",
-              type: "button",
-              icon: "Copy",
-              label: "Copy",
-              command: "copy",
-              shortcut: "Ctrl+C",
-            },
-            {
-              id: "draw-paste",
-              type: "button",
-              icon: "ClipboardPaste",
-              label: "Paste",
-              command: "paste",
-              shortcut: "Ctrl+V",
-            },
-            {
-              id: "draw-copy-style",
-              type: "button",
-              icon: "Copy",
-              label: "Copy style",
-              command: "copyStyle",
-              shortcut: "Ctrl+Alt+C",
-            },
-          ],
-        },
-        {
-          id: "draw-tools",
-          label: "Tools",
-          controls: [
-            {
-              id: "draw-select",
-              type: "button",
-              icon: "MousePointer2",
-              label: "Select",
-              command: "drawSelect",
-            },
-            {
-              id: "draw-eraser",
-              type: "button",
-              icon: "Eraser",
-              label: "Eraser",
-              command: "drawEraser",
-            },
-          ],
-        },
-        {
-          id: "draw-info",
-          label: "Info",
-          controls: [
-            {
-              id: "draw-word-count",
-              type: "button",
-              icon: "FileText",
-              label: "Word count",
-              command: "wordCount",
-            },
-          ],
-        },
-        {
-          id: "draw-language",
-          label: "Language",
-          controls: [
-            {
-              id: "draw-language-select",
-              type: "select",
-              label: "English – United States",
-              options: [
-                { value: "en-US", label: "English – United States" },
-                { value: "en-GB", label: "English – United Kingdom" },
-                { value: "de-DE", label: "German" },
-                { value: "fr-FR", label: "French" },
-              ],
-              value: () => "en-US",
-              onChange: (val: string) =>
-                window.dispatchEvent(
-                  new CustomEvent("wo-command", {
-                    detail: { command: "setDocumentLanguage", value: val },
-                  }),
-                ),
-            },
-            {
-              id: "draw-set-language",
-              type: "button",
-              icon: "Globe",
-              label: "Set document language",
-              command: "setDocumentLanguage",
-            },
-            {
-              id: "draw-spell-checking",
-              type: "checkbox",
-              label: "Spell checking",
-              checked: (ctx) => ctx.spellcheckEnabled ?? true,
-              onChange: () => {},
-              command: "toggleSpellCheck",
-            },
-          ],
-        },
-        {
-          id: "draw-review",
-          label: "Review",
-          controls: [
-            {
-              id: "draw-track-changes",
-              type: "checkbox",
-              label: "Track changes",
-              checked: (ctx) => ctx.trackChangesEnabled ?? false,
-              onChange: () => {},
-              command: "toggleTrackChanges",
-            },
-          ],
-        },
-        {
-          id: "draw-view",
-          label: "View",
-          controls: [
-            {
-              id: "draw-multiple-pages",
-              type: "button",
-              icon: "Layout",
-              label: "Multiple pages",
-              command: "toggleMultiplePages",
-            },
-            {
-              id: "draw-fit-to-page",
-              type: "button",
-              icon: "Maximize",
-              label: "Fit to page",
-              command: "fitToPage",
-            },
-            {
-              id: "draw-fit-to-width",
-              type: "button",
-              icon: "Maximize",
-              label: "Fit to width",
-              command: "fitToWidth",
-            },
-            {
-              id: "draw-zoom-out",
-              type: "button",
-              icon: "ZoomOut",
-              label: "Zoom out",
-              command: "zoomOut",
-              shortcut: "Ctrl+-",
-            },
-            {
-              id: "draw-zoom-in",
-              type: "button",
-              icon: "ZoomIn",
-              label: "Zoom in",
-              command: "zoomIn",
-              shortcut: "Ctrl+Num +",
-            },
-          ],
-        },
-      ],
-    },
 
     {
       id: "view",
@@ -1596,54 +1524,6 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "Timer",
               label: "Pause Recording",
               command: "pauseMacroRecording",
-            },
-          ],
-        },
-      ],
-    },
-
-    {
-      id: "forms",
-      label: "Forms",
-      groups: [
-        {
-          id: "form-controls",
-          label: "Form Controls",
-          controls: [
-            {
-              id: "text-input",
-              type: "button",
-              icon: "TextCursorInput",
-              label: "Text Input",
-              command: "insertPlainTextControl",
-            },
-            {
-              id: "checkbox-control",
-              type: "button",
-              icon: "CheckSquare",
-              label: "Checkbox",
-              command: "insertCheckboxControl",
-            },
-            {
-              id: "dropdown",
-              type: "button",
-              icon: "ChevronDown",
-              label: "Dropdown",
-              command: "insertDropdownControl",
-            },
-            {
-              id: "date-picker",
-              type: "button",
-              icon: "Calendar",
-              label: "Date Picker",
-              command: "insertDatePickerControl",
-            },
-            {
-              id: "combo-box",
-              type: "button",
-              icon: "ChevronDown",
-              label: "Combo Box",
-              command: "insertDropdownControl",
             },
           ],
         },
@@ -1992,7 +1872,5 @@ export const wordRibbonSpec: RibbonSpec = {
         },
       ],
     },
-
-    cloudTab,
   ],
 }
