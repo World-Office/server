@@ -211,7 +211,7 @@ impl StorageRepository {
             "SELECT id, file_id, content_hash, agent_name, summary, created_at
              FROM snapshots WHERE file_id = ?1 ORDER BY created_at DESC LIMIT ?2",
         )?;
-        let rows = stmt.query_map(rusqlite::params![file_id, effective_limit], |row| {
+        let rows = stmt.query_map(rusqlite::params![file_id, effective_limit as i64], |row| {
             Ok(Snapshot {
                 id: row.get(0)?,
                 file_id: row.get(1)?,
@@ -262,7 +262,7 @@ impl StorageRepository {
             "DELETE FROM snapshots WHERE file_id = ?1 AND id NOT IN (
                 SELECT id FROM snapshots WHERE file_id = ?1 ORDER BY created_at DESC LIMIT ?2
             )",
-            rusqlite::params![file_id, max_per_file],
+            rusqlite::params![file_id, max_per_file as i64],
         )?;
         let count: i64 = self
             .conn
