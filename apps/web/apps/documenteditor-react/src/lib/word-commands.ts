@@ -745,6 +745,9 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "toggleTrackChanges":
         documentStore.setTrackChanges(!documentStore.trackChanges)
         return
+      case "toggleCoEditingMode":
+        documentStore.setCoEditingMode(!documentStore.coEditingMode)
+        return
       case "acceptChange":
       case "acceptAllChanges":
       case "rejectChange":

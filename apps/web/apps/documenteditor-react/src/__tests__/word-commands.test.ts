@@ -28,6 +28,8 @@ vi.mock("../stores/DocumentStore", () => ({
     differentOddEven: false,
     setTrackChanges: vi.fn(),
     trackChanges: false,
+    setCoEditingMode: vi.fn(),
+    coEditingMode: false,
     setMultiplePages: vi.fn(),
     toggleMultiplePages: vi.fn(),
     multiplePages: false,
@@ -594,6 +596,15 @@ describe("word-commands", () => {
       documentStore.trackChanges = true
       handler({ command: "toggleTrackChanges" })
       expect(documentStore.setTrackChanges).toHaveBeenCalledWith(false)
+    })
+
+    it("should toggle co-editing mode setting", () => {
+      documentStore.coEditingMode = false
+      handler({ command: "toggleCoEditingMode" })
+      expect(documentStore.setCoEditingMode).toHaveBeenCalledWith(true)
+      documentStore.coEditingMode = true
+      handler({ command: "toggleCoEditingMode" })
+      expect(documentStore.setCoEditingMode).toHaveBeenCalledWith(false)
     })
 
     it("should toggle store settings", () => {
