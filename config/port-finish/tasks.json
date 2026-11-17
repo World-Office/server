@@ -33,12 +33,14 @@
       "scope": [
         "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
         "apps/web/apps/documenteditor-react/src/components/CanvasEditor.tsx",
-        "apps/web/apps/documenteditor-react/src/__tests__/"
+        "apps/web/apps/documenteditor-react/src/__tests__/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
         "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
         "apps/web/apps/documenteditor-react/src/components/CanvasEditor.tsx",
-        "apps/web/apps/documenteditor-react/src/__tests__/toggle-format.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/toggle-format.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "VERIFIED FACTS:\n- word-commands.ts :99 commandToFormat('bold') returns {bold:true} STATIC — the ribbon Bold button can never unbold. E2E proof: wo-test-harness census/react-e2e/probe-ribbon.cjs 'second Bold click untoggles' FAILS today.\n- CanvasEditor.tsx :336 calls wasm apply_formatting; the wasm glue is imported via @world-office/wo-renderer-wasm (workspace pkg at core/crates/wo-renderer-wasm/pkg).\n- PF-1 (merged before you start) adds get_selection_formatting(doc_handle) -> '{\"bold\":bool,...}' majority-over-selection. If PF-1 is missing it, fall back to get_run_formatting.\n- Worktree has NO node_modules: the gate symlinks the main checkout's — run `ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules` first.\n\nDESIGN: in the formatting-command path (CanvasEditor or word-commands), for bold/italic/strikethrough: read current via get_selection_formatting, send the FLIPPED bool to apply_formatting. Underline: 'single' ↔ 'none'. Do NOT hardcode {bold:true}. Keep unknown formats passthrough.\n\nTEST: add src/__tests__/toggle-format.test.ts — pure-function test of the flip logic (mock the wasm import) covering bold on/off, underline single→none, selection-mixed majority. Keep existing suite green (vitest run).\n\nE2E proof happens in the supervisor's master gate (probe-ribbon.cjs) — your unit test pins the logic.\n\n⚠️ WORKTREE DISCIPLINE (learned 2026-11-16): do ALL work inside YOUR task worktree (pwd starts with /home/weiss/git/World-Office/server/state/worktrees/). The main checkout /home/weiss/git/World-Office/server is the MERGE TARGET — NEVER edit files there; the node_modules symlink in your gate points there for DEPENDENCIES ONLY."
@@ -50,12 +52,14 @@
       "priority": 8,
       "title": "Insert tab: Header & Footer entry, Page Number, Date & Time, Field, Comment",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
         "apps/web/apps/documenteditor-react/src/components/",
         "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/__tests__/insert-extras.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/insert-extras.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "OO golden labels missing today (coverage-check.py): 'Comment', 'Header & Footer', 'Page Number', 'Date & Time', 'Field' (Insert tab 75% → 100%).\n\nVERIFIED FACTS:\n- Insert tab markup lives in the react app components (search src/components for existing Insert entries: Table, Picture, Shape, Text Box, Page Break, Blank Page already exist).\n- Engine ops: insert_text/typed ops via word-commands → wasm exports; serializer writes headers/footers if the doc model has them (wo-ooxml serializer.rs has header/footer parts).\n- Ribbon buttons expose aria-label OR title OR textContent — census + E2E match on the trimmed label exactly; use 'Header & Footer', 'Page Number', 'Date & Time', 'Field', 'Comment' (EN labels; i18n via existing catalog keys pattern from commit 1cc342147).\n\nMINIMAL VIABLE per control (be honest, no dead buttons):\n- Page Number: insert PAGE field at cursor — if the engine lacks field runs, insert the rendered page number as a text run + wire a follow-up note; check core/crates/wo-renderer-wasm/src/lib.rs exports for field support FIRST.\n- Date & Time: small dialog/picker (native <input type=date/time> — no lib), inserts formatted date text run at cursor.\n- Header & Footer: activate a header/footer editing region if the engine model supports it; otherwise reveal the Header & Footer contextual controls (links to harness PV-1 activation capture) — if the model truly lacks headers, implement the button + a visible 'not available in demo' state and note it in the task completion message (supervisor files a divergence).\n- Field: dropdown (PAGE, NUMPAGES, DATE, TIME) → same insert path as Page Number.\n- Comment: a CommentsStore already exists (src/__tests__/CommentsStore.test.ts) — surface an 'Add comment' flow tied to the current selection.\n\nTEST: src/__tests__/insert-extras.test.ts asserting each control renders with the exact label + handler registered (command map or store action). Vitest suite green."
@@ -67,11 +71,13 @@
       "priority": 8,
       "title": "View tab: Headings, Multiple Pages, Dark Document",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
         "apps/web/apps/documenteditor-react/src/components/",
-        "apps/web/apps/documenteditor-react/src/__tests__/view-extras.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/view-extras.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "OO golden labels missing (View tab 70% → 100%): 'Headings', 'Multiple Pages', 'Dark Document'. Existing View controls (Rulers, Gridlines, Zoom In/Out, Fit Page…) set the pattern — follow it (state + engine/layout flag).\n\nMINIMAL VIABLE:\n- Headings: navigation pane toggle listing document headings (engine exports a layout/outline JSON — check lib.rs for heading/outline getters; if none, derive from paragraph styles in the layout JSON the canvas already renders).\n- Multiple Pages: zoom mode that scales the page container so ≥2 pages fit the viewport width (CSS transform/width on the page stack; canvas re-layout via existing zoom plumbing).\n- Dark Document: document-area dark scheme (page background stays white by default in OO; this dims the app around the page + optional page tint) — match OO behavior: OO's 'Dark Document' inverts the PAGE to dark; implement as a .wo-dark-document class toggling page bg + canvas ink colors via the layout pipeline if exposed, else CSS filter on the canvas container.\n\nTEST: src/__tests__/view-extras.test.ts — each control present with exact label, toggles state (store/local state), Multiple Pages changes page scale, Dark Document toggles class. Vitest suite green."
@@ -83,12 +89,14 @@
       "priority": 8,
       "title": "References: Link · Collaboration: Co-editing Mode · Home: Font size label",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
         "apps/web/apps/documenteditor-react/src/components/",
         "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/__tests__/misc-parity.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/misc-parity.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Three stragglers from coverage-check.py: References 'Link' (90%), Collaboration 'Co-editing Mode' (92.9%), Home 'Font size' (97.3%).\n\nVERIFIED FACTS:\n- 'Font size': the react Home tab HAS a size select, but its accessible label does not match OO 'Font size' — census reads aria-label || title || textContent. Check the select's label; commit 1cc342147 added de-DE aria-labels for font family/size inputs (follow that pattern; EN label must be exactly 'Font size').\n- Collaboration tab already exists (Review→Collaboration rename done); 'Co-editing Mode' in OO opens a mode picker (Fast/Strict). Demo deployment has no collab backend: implement the button + a small Fast/Strict picker that is DISABLED with a tooltip when no collab server is configured (honest dead-state, not a dead button) — collab-config.test.ts shows how config presence is detected.\n- References 'Link': hyperlink dialog (Text + Address fields, native inputs) that inserts/edits a link on the selection. Engine: check word-commands.ts + wasm exports for link support; if the engine lacks hyperlink runs, apply OO-default link styling (color 0563C1 + single underline) via apply_formatting on the selection (PF-1 semantics) and keep the href in a React-side link registry keyed by the anchor range — note in completion message that engine-level w:hyperlink roundtrip is a follow-up (supervisor files divergence).\n\nTEST: src/__tests__/misc-parity.test.ts — Link dialog opens/validates, Co-editing Mode disabled-without-backend + enabled-with-mock-config, Font size select carries exact accessible label. Vitest green.\n\n⚠️ WORKTREE DISCIPLINE (learned 2026-11-16): do ALL work inside YOUR task worktree (pwd starts with /home/weiss/git/World-Office/server/state/worktrees/). The main checkout /home/weiss/git/World-Office/server is the MERGE TARGET — NEVER edit files there; the node_modules symlink in your gate points there for DEPENDENCIES ONLY."
@@ -117,10 +125,12 @@
       "priority": 5,
       "title": "Parity fill: Chart design — Advanced settings, Width, Height",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-1.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-1.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Chart design': [\"Advanced settings\", \"Width\", \"Height\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -132,10 +142,12 @@
       "priority": 5,
       "title": "Parity fill: Collaboration — Co-editing",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-2.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-2.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Collaboration': [\"Co-editing\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -147,10 +159,12 @@
       "priority": 5,
       "title": "Parity fill: Home — Font size",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-3.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-3.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Home': [\"Font size\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -162,10 +176,12 @@
       "priority": 5,
       "title": "Parity fill: Insert — Comment, Header &",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-4.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-4.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Insert': [\"Comment\", \"Header &\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -177,10 +193,12 @@
       "priority": 5,
       "title": "Parity fill: References — Link",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-5.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-5.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'References': [\"Link\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -192,10 +210,12 @@
       "priority": 5,
       "title": "Parity fill: View — Headings, Multiple Pages, Dark",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-6.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-6.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'View': [\"Headings\", \"Multiple Pages\", \"Dark\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -207,10 +227,12 @@
       "priority": 5,
       "title": "Parity fill: Chart design — Advanced settings, Width, Height",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-7.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-7.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Chart design': [\"Advanced settings\", \"Width\", \"Height\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -222,10 +244,12 @@
       "priority": 5,
       "title": "Parity fill: Collaboration — Co-editing",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-8.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-8.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Collaboration': [\"Co-editing\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -237,10 +261,12 @@
       "priority": 5,
       "title": "Parity fill: Insert — Comment, Header &",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-9.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-9.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Insert': [\"Comment\", \"Header &\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -252,10 +278,12 @@
       "priority": 5,
       "title": "Parity fill: References — Link",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-10.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-10.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'References': [\"Link\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
@@ -267,10 +295,12 @@
       "priority": 5,
       "title": "Parity fill: View — Headings, Multiple Pages, Dark",
       "scope": [
-        "apps/web/apps/documenteditor-react/src/"
+        "apps/web/apps/documenteditor-react/src/",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-11.test.ts"
+        "apps/web/apps/documenteditor-react/src/__tests__/gap-11.test.ts",
+        "apps/web/apps/documenteditor-react/node_modules"
       ],
       "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
       "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'View': [\"Headings\", \"Multiple Pages\", \"Dark\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
