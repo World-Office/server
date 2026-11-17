@@ -47,7 +47,7 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 # Install runtime dependencies: curl for the HEALTHCHECK, ca-certificates for
 # HTTPS outbound requests (WOPI callbacks, reqwest).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl && \
+    apt-get install -y --no-install-recommends ca-certificates curl libxmlsec1-openssl libxml2 && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user and group (matching the docserver Dockerfile pattern).
