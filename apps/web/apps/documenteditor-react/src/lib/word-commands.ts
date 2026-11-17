@@ -339,6 +339,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.headerFooterMode = "none"
         return
       case "editHeader":
+      case "insertHeaderFooter":
         documentStore.headerFooterMode = "header"
         return
       case "editFooter":
@@ -572,6 +573,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "toggleComment":
       case "deleteComment":
       case "resolveComment":
+      case "insertComment":
         documentStore.toggleRightPanel("comments")
         return
       case "image":
