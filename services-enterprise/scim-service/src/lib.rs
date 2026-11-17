@@ -124,7 +124,7 @@ pub async fn create_user(
         })
         .unwrap_or_default();
 
-    if !schemas.contains(&SCHEMA_USER.to_string()) {
+    if !schemas.iter().any(|s| s == SCHEMA_USER) {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ScimError::new(
@@ -428,7 +428,7 @@ pub async fn create_group(
         })
         .unwrap_or_default();
 
-    if !schemas.contains(&SCHEMA_GROUP.to_string()) {
+    if !schemas.iter().any(|s| s == SCHEMA_GROUP) {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ScimError::new(
