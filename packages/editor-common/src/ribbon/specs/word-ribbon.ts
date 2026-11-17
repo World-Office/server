@@ -664,11 +664,31 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "CheckSquare",
               label: "Content Controls",
               items: [
-                { id: "cc-rich", label: "Rich Text Content Control", command: "insertContentControl" },
-                { id: "cc-plain", label: "Plain Text Content Control", command: "insertPlainTextControl" },
-                { id: "cc-checkbox", label: "Checkbox Content Control", command: "insertCheckboxControl" },
-                { id: "cc-dropdown", label: "Drop-Down List Content Control", command: "insertDropdownControl" },
-                { id: "cc-datepicker", label: "Date Picker Content Control", command: "insertDatePickerControl" },
+                {
+                  id: "cc-rich",
+                  label: "Rich Text Content Control",
+                  command: "insertContentControl",
+                },
+                {
+                  id: "cc-plain",
+                  label: "Plain Text Content Control",
+                  command: "insertPlainTextControl",
+                },
+                {
+                  id: "cc-checkbox",
+                  label: "Checkbox Content Control",
+                  command: "insertCheckboxControl",
+                },
+                {
+                  id: "cc-dropdown",
+                  label: "Drop-Down List Content Control",
+                  command: "insertDropdownControl",
+                },
+                {
+                  id: "cc-datepicker",
+                  label: "Date Picker Content Control",
+                  command: "insertDatePickerControl",
+                },
               ],
             },
           ],
@@ -1403,7 +1423,6 @@ export const wordRibbonSpec: RibbonSpec = {
         },
       ],
     },
-
 
     {
       id: "view",
