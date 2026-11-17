@@ -235,8 +235,8 @@ fn integration_merge_from_other_session() {
             _ => None,
         })
         .collect();
-    assert!(texts.contains(&"A".to_string()));
-    assert!(texts.contains(&"B".to_string()));
+    assert!(texts.iter().any(|t| t == "A"));
+    assert!(texts.iter().any(|t| t == "B"));
 }
 
 #[test]

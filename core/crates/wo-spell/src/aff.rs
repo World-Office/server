@@ -701,8 +701,8 @@ mod tests {
         assert!(result.is_ok());
         let aff = result.unwrap();
         assert_eq!(aff.compound_rules.len(), 2);
-        assert!(aff.compound_rules.contains(&"2".to_string()));
-        assert!(aff.compound_rules.contains(&"n*1t".to_string()));
+        assert!(aff.compound_rules.iter().any(|r| r == "2"));
+        assert!(aff.compound_rules.iter().any(|r| r == "n*1t"));
     }
 
     #[test]
