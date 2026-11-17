@@ -107,6 +107,9 @@ export class DocumentStore {
   /* Track changes */
   trackChanges = false
 
+  /* Co-editing mode (Collaboration tab) */
+  coEditingMode = false
+
   /**
    * Format JSON captured by OO "Copy style" (Ctrl+Alt+C) — the run
    * formatting snapshot read off the WASM engine, ready to be re-applied.
@@ -339,6 +342,10 @@ export class DocumentStore {
 
   setTrackChanges(enabled: boolean): void {
     this.trackChanges = enabled
+  }
+
+  setCoEditingMode(enabled: boolean): void {
+    this.coEditingMode = enabled
   }
 
   setDifferentFirstPage(value: boolean): void {
