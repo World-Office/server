@@ -29,6 +29,7 @@ vi.mock("../stores/DocumentStore", () => ({
     setTrackChanges: vi.fn(),
     trackChanges: false,
     setMultiplePages: vi.fn(),
+    toggleMultiplePages: vi.fn(),
     multiplePages: false,
     formatPainterFormat: null,
     clearHeader: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock("../stores/DocumentStore", () => ({
     setZoomLevel: vi.fn(),
     setTheme: vi.fn(),
     setDarkDocument: vi.fn(),
+    toggleDarkDocument: vi.fn(),
     toggleMacroRecording: vi.fn(),
     toggleMacroPause: vi.fn(),
     setLanguage: vi.fn(),
@@ -619,7 +621,6 @@ describe("word-commands", () => {
         "speechInput",
         "wordCount",
         "setDocumentLanguage",
-        "multiplePages",
       ]
       for (const cmd of cmds) {
         handler({ command: cmd })
@@ -884,8 +885,12 @@ describe("word-commands", () => {
     expect(documentStore.setDarkDocument).toHaveBeenCalledWith(true)
     handler({ command: "toggleDarkDocument", value: "false" })
     expect(documentStore.setDarkDocument).toHaveBeenCalledWith(false)
+    handler({ command: "toggleDarkDocument" })
+    expect(documentStore.toggleDarkDocument).toHaveBeenCalled()
     handler({ command: "toggleMultiplePages" })
-    expect(documentStore.setMultiplePages).toHaveBeenCalledWith(true)
+    expect(documentStore.toggleMultiplePages).toHaveBeenCalled()
+    handler({ command: "multiplePages" })
+    expect(documentStore.toggleMultiplePages).toHaveBeenCalled()
   })
 
   it("should handle view-tab macro commands", () => {

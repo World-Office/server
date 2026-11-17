@@ -180,4 +180,23 @@ modifiedSpec = addControlToGroup(
   0, // Insert at the beginning of the zoom group
 )
 
+// Fix #5: View tab - Add Multiple Pages checkbox to Show group
+// Add a Multiple Pages checkbox to the View tab's Show group (PF-GAP-11)
+// This achieves parity with ONLYOFFICE's View > Show group which includes
+// Headings, Multiple Pages, and Dark Document checkboxes
+modifiedSpec = addControlToGroup(
+  modifiedSpec,
+  "view",
+  "show",
+  {
+    id: "multiple-pages-checkbox",
+    type: "checkbox",
+    label: "Multiple pages",
+    checked: (ctx) => ctx.multiplePages ?? false,
+    onChange: () => {},
+    command: "toggleMultiplePages",
+  },
+  4, // Insert after Headings (position 4: after spellcheck, ruler, gridlines, navigation)
+)
+
 export const wordRibbonSpec = modifiedSpec

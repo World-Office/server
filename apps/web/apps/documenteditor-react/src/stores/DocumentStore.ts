@@ -353,6 +353,10 @@ export class DocumentStore {
     this.multiplePages = value
   }
 
+  toggleMultiplePages(): void {
+    this.multiplePages = !this.multiplePages
+  }
+
   clearHeader(): void {
     this.headerHtml = ""
   }
@@ -405,6 +409,10 @@ export class DocumentStore {
   /* Dark document + macros (view tab) */
   setDarkDocument(enabled: boolean): void {
     this.darkDocument = enabled
+  }
+
+  toggleDarkDocument(): void {
+    this.darkDocument = !this.darkDocument
   }
 
   toggleMacroRecording(): void {
