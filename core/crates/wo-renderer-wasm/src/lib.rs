@@ -3352,9 +3352,8 @@ pub fn apply_formatting(
 
     // Check if there's an active selection
     let anchor = get_anchor(doc_handle);
-    let has_selection = anchor.map_or(false, |a| {
-        (a.para, a.char_idx) != (cursor.para, cursor.char_idx)
-    });
+    let has_selection =
+        anchor.is_some_and(|a| (a.para, a.char_idx) != (cursor.para, cursor.char_idx));
 
     if let Some(anchor_pos) = anchor {
         if has_selection {
