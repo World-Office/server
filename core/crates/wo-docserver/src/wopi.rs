@@ -248,14 +248,14 @@ impl WopiClient {
 
     /// Validate a JWT access token using the shared secret.
     pub fn validate_token(token: &str, secret: &str) -> Result<Claims> {
-        let key = DecodingKey::from_secret(secret.as_bytes());
+        let key = DecodingKey::from_secret(secret.as_bytes()).expect("jwt key");
         let data = decode::<Claims>(token, &key, &Validation::default())?;
         Ok(data.claims)
     }
 
     /// Encode a JWT token with the given claims and secret.
     pub fn encode_token(claims: &Claims, secret: &str) -> Result<String> {
-        let key = EncodingKey::from_secret(secret.as_bytes());
+        let key = EncodingKey::from_secret(secret.as_bytes()).expect("jwt key");
         let token = encode(&Header::default(), claims, &key)?;
         Ok(token)
     }

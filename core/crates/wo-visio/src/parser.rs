@@ -112,7 +112,10 @@ impl VisioParser {
                     // Strip namespace prefix (e.g., "dc:title" -> "title")
                     let tag = raw_tag.rsplit(':').next().unwrap_or(&raw_tag).to_string();
                     if let Ok(Event::Text(ref t)) = reader.read_event_into(&mut Vec::new()) {
-                        let val = t.unescape().unwrap_or_default().trim().to_string();
+                        let val = quick_xml::escape::unescape(&t.decode().unwrap_or_default())
+                            .unwrap_or_default()
+                            .trim()
+                            .to_string();
                         if val.is_empty() {
                             continue;
                         }
@@ -447,7 +450,10 @@ impl VisioParser {
                     }
                 }
                 Ok(Event::Text(ref t)) => {
-                    if in_text && let Ok(escaped) = t.unescape() {
+                    if in_text
+                        && let Ok(dec) = t.decode()
+                        && let Ok(escaped) = quick_xml::escape::unescape(&dec)
+                    {
                         text_parts.push(escaped.to_string());
                     }
                 }

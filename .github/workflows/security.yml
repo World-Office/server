@@ -3,6 +3,7 @@ name: Security
 on:
   schedule:
     - cron: "0 6 * * 1" # Every Monday at 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   cargo-audit:
@@ -14,7 +15,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-audit
         run: cargo install cargo-audit
-      - name: Run audit
+      - name: Run audit (root workspace)
+        run: cargo audit
+      - name: Run audit (core workspace — prod docserver lockfile)
+        working-directory: core
         run: cargo audit
 
   npm-audit:

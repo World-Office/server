@@ -111,7 +111,7 @@ async fn auth_middleware(
     let validation = Validation::new(Algorithm::HS256);
     match decode::<Claims>(
         token,
-        &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &DecodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
         &validation,
     ) {
         Ok(token_data) => {
@@ -424,7 +424,7 @@ mod tests {
         encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret(secret.as_bytes()),
+            &EncodingKey::from_secret(secret.as_bytes()).expect("jwt key"),
         )
         .unwrap()
     }
@@ -440,7 +440,7 @@ mod tests {
         encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret(secret.as_bytes()),
+            &EncodingKey::from_secret(secret.as_bytes()).expect("jwt key"),
         )
         .unwrap()
     }

@@ -1189,7 +1189,7 @@ fn issue_jwt(state: &AppState, user: &User) -> String {
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
     )
     .unwrap_or_default()
 }
@@ -1319,7 +1319,7 @@ async fn verify(
 ) -> Result<Json<VerifyResponse>, (StatusCode, Json<ErrorResponse>)> {
     let validation = decode::<Claims>(
         &payload.token,
-        &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &DecodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
         &Validation::new(Algorithm::HS256),
     );
 

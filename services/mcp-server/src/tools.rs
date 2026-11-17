@@ -197,33 +197,26 @@ impl McpTools {
     }
 
     fn error_result(msg: String) -> CallToolResult {
-        CallToolResult {
-            content: vec![Content::text(msg)],
-            structured_content: None,
-            meta: None,
-            is_error: Some(true),
-        }
+        CallToolResult::error(vec![ContentBlock::text(msg)])
     }
 }
 
 impl ServerHandler for McpTools {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            protocol_version: ProtocolVersion::default(),
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
-            server_info: Implementation {
-                name: "World Office MCP Server".to_string(),
-                version: "0.1.0".to_string(),
-                ..Default::default()
-            },
-            instructions: Some(
-                "Read, write, and manage World Office documents with automatic version snapshots. "
-                    .to_string()
-                    + "Comment on documents with @agent mentions and resolve threads. "
-                    + "Agents can check their @mentions to discover when they've been referenced. "
-                    + "Create cross-document content links to embed live references between documents.",
-            ),
-        }
+    fn get_info(&self) -> rmcp::model::ServerConfig {
+        let mut info =
+            rmcp::model::ServerConfig::new(ServerCapabilities::builder().enable_tools().build());
+        let mut impl_info = Implementation::default();
+        impl_info.name = "World Office MCP Server".to_string();
+        impl_info.version = "0.1.0".to_string();
+        info.server_info = impl_info;
+        info.instructions = Some(
+            "Read, write, and manage World Office documents with automatic version snapshots. "
+                .to_string()
+                + "Comment on documents with @agent mentions and resolve threads. "
+                + "Agents can check their @mentions to discover when they've been referenced. "
+                + "Create cross-document content links to embed live references between documents.",
+        );
+        info
     }
 
     fn get_tool(&self, name: &str) -> Option<Tool> {
@@ -241,6 +234,9 @@ impl ServerHandler for McpTools {
             tools: Self::tool_definitions(),
             meta: None,
             next_cursor: None,
+            result_type: None,
+            ttl_ms: None,
+            cache_scope: None,
         })
     }
 
@@ -248,16 +244,14 @@ impl ServerHandler for McpTools {
         &self,
         request: CallToolRequestParams,
         _context: RequestContext<rmcp::RoleServer>,
-    ) -> Result<CallToolResult, ErrorData> {
+    ) -> Result<CallToolResponse, ErrorData> {
         match request.name.as_ref() {
             "list_documents" => match self.client.list_files().await {
                 Ok(files) => {
                     let data = json!(files);
-                    Ok(CallToolResult::success(vec![Content::text(
-                        data.to_string(),
-                    )]))
+                    Ok(CallToolResult::success(vec![ContentBlock::text(data.to_string())]).into())
                 }
-                Err(e) => Ok(Self::error_result(e.to_string())),
+                Err(e) => Ok(Self::error_result(e.to_string()).into()),
             },
             "get_document_info" => {
                 let id = Self::get_arg(&request.arguments, "id").ok_or_else(|| {
@@ -266,11 +260,12 @@ impl ServerHandler for McpTools {
                 match self.client.get_file(id).await {
                     Ok(file) => {
                         let data = json!(file);
-                        Ok(CallToolResult::success(vec![Content::text(
-                            data.to_string(),
-                        )]))
+                        Ok(
+                            CallToolResult::success(vec![ContentBlock::text(data.to_string())])
+                                .into(),
+                        )
                     }
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "read_document" => {
@@ -280,11 +275,12 @@ impl ServerHandler for McpTools {
                 match self.client.read_content(id).await {
                     Ok(content) => {
                         let data = json!({ "content": content });
-                        Ok(CallToolResult::success(vec![Content::text(
-                            data.to_string(),
-                        )]))
+                        Ok(
+                            CallToolResult::success(vec![ContentBlock::text(data.to_string())])
+                                .into(),
+                        )
                     }
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "create_document" => {
@@ -295,11 +291,12 @@ impl ServerHandler for McpTools {
                 match self.client.create_file(name, content).await {
                     Ok(id) => {
                         let data = json!({ "id": id });
-                        Ok(CallToolResult::success(vec![Content::text(
-                            data.to_string(),
-                        )]))
+                        Ok(
+                            CallToolResult::success(vec![ContentBlock::text(data.to_string())])
+                                .into(),
+                        )
                     }
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "write_document" => {
@@ -312,11 +309,12 @@ impl ServerHandler for McpTools {
                 match self.client.write_file(id, content).await {
                     Ok(_) => {
                         let _ = crate::snapshots::auto_snapshot(&self.client, id, content).await;
-                        Ok(CallToolResult::success(vec![Content::text(
+                        Ok(CallToolResult::success(vec![ContentBlock::text(
                             json!({ "status": "success" }).to_string(),
-                        )]))
+                        )])
+                        .into())
                     }
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "list_snapshots" => {
@@ -326,11 +324,12 @@ impl ServerHandler for McpTools {
                 match self.client.list_snapshots(id).await {
                     Ok(snapshots) => {
                         let data = json!(snapshots);
-                        Ok(CallToolResult::success(vec![Content::text(
-                            data.to_string(),
-                        )]))
+                        Ok(
+                            CallToolResult::success(vec![ContentBlock::text(data.to_string())])
+                                .into(),
+                        )
                     }
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "restore_snapshot" => {
@@ -342,10 +341,11 @@ impl ServerHandler for McpTools {
                         ErrorData::invalid_params("Missing required parameter: snapshot_id", None)
                     })?;
                 match self.client.restore_snapshot(file_id, snapshot_id).await {
-                    Ok(_) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(_) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         json!({ "status": "success" }).to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             // ── Comment tool handlers ──
@@ -354,10 +354,11 @@ impl ServerHandler for McpTools {
                     ErrorData::invalid_params("Missing required parameter: document_id", None)
                 })?;
                 match self.client.list_comments(doc_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "add_comment" => {
@@ -378,10 +379,11 @@ impl ServerHandler for McpTools {
                     .add_comment(doc_id, &author_id, author_name, text)
                     .await
                 {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "resolve_comment" => {
@@ -390,10 +392,11 @@ impl ServerHandler for McpTools {
                         ErrorData::invalid_params("Missing required parameter: comment_id", None)
                     })?;
                 match self.client.resolve_comment(comment_id).await {
-                    Ok(_) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(_) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         json!({ "status": "success" }).to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "list_mentions" => {
@@ -402,10 +405,11 @@ impl ServerHandler for McpTools {
                         ErrorData::invalid_params("Missing required parameter: agent_name", None)
                     })?;
                 match self.client.list_mentions(agent_name).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             // ── ContentLink tool handlers ──
@@ -440,10 +444,11 @@ impl ServerHandler for McpTools {
                     )
                     .await
                 {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "list_contentlinks" => {
@@ -451,20 +456,22 @@ impl ServerHandler for McpTools {
                     ErrorData::invalid_params("Missing required: document_id", None)
                 })?;
                 match self.client.list_content_links(doc_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "resolve_contentlink" => {
                 let link_id = Self::get_arg(&request.arguments, "link_id")
                     .ok_or_else(|| ErrorData::invalid_params("Missing required: link_id", None))?;
                 match self.client.resolve_content_link(link_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                    Ok(data) => Ok(CallToolResult::success(vec![ContentBlock::text(
                         data.to_string(),
-                    )])),
-                    Err(e) => Ok(Self::error_result(e.to_string())),
+                    )])
+                    .into()),
+                    Err(e) => Ok(Self::error_result(e.to_string()).into()),
                 }
             }
             "health" => {
@@ -480,9 +487,7 @@ impl ServerHandler for McpTools {
                     "storage_service": storage_health,
                     "tools_available": Self::tool_definitions().len()
                 });
-                Ok(CallToolResult::success(vec![Content::text(
-                    data.to_string(),
-                )]))
+                Ok(CallToolResult::success(vec![ContentBlock::text(data.to_string())]).into())
             }
             other => Err(ErrorData::invalid_params(
                 format!("Unknown tool: {}", other),
@@ -675,12 +680,10 @@ mod tests {
         use std::sync::Arc;
         use tokio_util::sync::CancellationToken;
 
-        let config = StreamableHttpServerConfig {
-            sse_keep_alive: None,
-            sse_retry: Some(std::time::Duration::from_secs(3)),
-            stateful_mode: true,
-            cancellation_token: CancellationToken::new(),
-        };
+        let mut config = StreamableHttpServerConfig::default();
+        config.sse_keep_alive = None;
+        config.sse_retry = Some(std::time::Duration::from_secs(3));
+        config.cancellation_token = CancellationToken::new();
         let session_manager = Arc::new(LocalSessionManager::default());
         let service: StreamableHttpService<McpTools, LocalSessionManager> =
             StreamableHttpService::new(

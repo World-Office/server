@@ -336,7 +336,7 @@ async fn create_session(
     let access_token = encode(
         &Header::default(),
         &access_claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
     )
     .unwrap_or_default();
 
@@ -353,7 +353,7 @@ async fn create_session(
     let refresh_token = encode(
         &Header::default(),
         &refresh_claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
     )
     .unwrap_or_default();
 
@@ -395,7 +395,7 @@ async fn refresh_session(
 
     let token_data = decode::<SessionClaims>(
         &payload.refresh_token,
-        &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &DecodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
         &Validation::new(Algorithm::HS256),
     )
     .map_err(|_| {
@@ -473,7 +473,7 @@ async fn refresh_session(
     let access_token = encode(
         &Header::default(),
         &new_access_claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()).expect("jwt key"),
     )
     .unwrap_or_default();
 

@@ -1,0 +1,24 @@
+# cargo-audit policy — reviewed 2026-11-17
+# All ignores below are tracked; revisit dates are hard deadlines to re-evaluate.
+
+[advisories]
+ignore = [
+    # zip 2.4.2 extract()-family advisories. Codebase never calls
+    # ZipArchive::extract / ZipStreamReader::extract (grep-verified);
+    # wo-* crates only read entries via by_name/by_index into memory.
+    # Remove when the zip 2 -> 9 migration lands.
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+    "RUSTSEC-2026-0429",
+    "RUSTSEC-2026-0545",
+    "RUSTSEC-2026-0548",
+    # rsa 0.9 Marvin timing attack. Upstream openidconnect 4.1.0 still pins
+    # rsa 0.9; identity-service only VERIFIES IdP tokens (public-key ops),
+    # the private-key timing channel does not apply.
+    "RUSTSEC-2023-0071",
+    # lz4_flex uninitialized-memory read on invalid input. Via diamond-types
+    # 1.0.0 (last release 2023, no fix exists). coauthoring-service only
+    # decompresses CRDT snapshots it compressed itself, not attacker input.
+    "RUSTSEC-2026-0041",
+]
