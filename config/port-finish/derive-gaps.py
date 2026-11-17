@@ -25,7 +25,7 @@ CHECK = HARNESS / "census" / "react-e2e" / "coverage-check.py"
 REACT_GATE = (
     "cd apps/web/apps/documenteditor-react && ln -sfn "
     "/home/weiss/.wo-deps/documenteditor-react-node_modules "
-    "node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log"
+    "node_modules && npx tsc --noEmit && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log"
 )
 
 FACTS = (
