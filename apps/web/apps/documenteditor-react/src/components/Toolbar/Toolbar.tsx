@@ -44,6 +44,7 @@ const ObservedToolbar = observer(function ObservedToolbar({
     rulerVisible: documentStore.rulerVisible,
     gridlinesVisible: documentStore.gridlinesVisible,
     navigationVisible: documentStore.navigationVisible,
+    multiplePages: documentStore.multiplePages,
     spellcheckEnabled: documentStore.spellingEnabled,
     differentFirstPage: documentStore.differentFirstPage,
     differentOddEven: documentStore.differentOddEven,
