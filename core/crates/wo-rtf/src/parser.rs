@@ -965,7 +965,9 @@ mod tests {
             word: "fs".to_string(),
             param: Some(24),
         }));
-        assert!(tokens.iter().any(|x| *x == RtfToken::Text("Hello".to_string())));
+        assert!(tokens
+            .iter()
+            .any(|x| *x == RtfToken::Text("Hello".to_string())));
     }
 
     #[test]

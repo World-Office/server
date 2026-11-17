@@ -16692,10 +16692,7 @@ mod tests {
             lines.iter().any(|x| x == "  -- Translator"),
             "should have text author"
         );
-        assert!(
-            lines.iter().any(|x| x == "*Ode*"),
-            "should have poem title"
-        );
+        assert!(lines.iter().any(|x| x == "*Ode*"), "should have poem title");
         assert!(
             lines.iter().any(|x| x == "  A line"),
             "should have poem line"
@@ -16779,10 +16776,7 @@ mod tests {
         fb2_section_to_lines(&parent, &mut lines);
         assert!(lines.iter().any(|x| x == "## Parent"), "parent title");
         assert!(lines.iter().any(|x| x == "## Child"), "child title");
-        assert!(
-            lines.iter().any(|x| x == "Child content"),
-            "child content"
-        );
+        assert!(lines.iter().any(|x| x == "Child content"), "child content");
     }
 
     // ── EPUB → DOCX ──────────────────────────────────────────────────

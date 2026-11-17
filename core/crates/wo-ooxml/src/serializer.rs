@@ -6746,7 +6746,9 @@ mod tests {
         assert!(entries.iter().any(|x| x == "[Content_Types].xml"));
         assert!(entries.iter().any(|x| x == "_rels/.rels"));
         assert!(entries.iter().any(|x| x == "ppt/presentation.xml"));
-        assert!(entries.iter().any(|x| x == "ppt/_rels/presentation.xml.rels"));
+        assert!(entries
+            .iter()
+            .any(|x| x == "ppt/_rels/presentation.xml.rels"));
         assert!(entries.iter().any(|x| x == "ppt/slides/slide1.xml"));
         assert!(entries.iter().any(|x| x == "docProps/core.xml"));
 
