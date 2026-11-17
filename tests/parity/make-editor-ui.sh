@@ -42,13 +42,13 @@ build_word() {
   local OUT="$1"
   (cd "$REPO/apps/web/apps/documenteditor-react" && pnpm install --frozen-lockfile >/dev/null 2>&1; pnpm build >/dev/null) \
     || { echo "word react build failed" >&2; exit 1; }
-  mkdir -p "$OUT/word"
+  mkdir -p "$OUT/word" && rm -rf "$OUT/word"/*
   cp -r "$REPO/apps/web/apps/documenteditor-react/dist/." "$OUT/word/"
 }
-case "${2:-}" in
-  --build-word) build_word "$STAGE" ;;
-  *) : ;;  # default: word/ must arrive inside the artifact zip (CI builds it) ;;
-esac
+# guard: refuse to ship a zip-stale word/ when --build-word was requested —
+# the artifact's word/ is CI-built and can lag HEAD by a full day.
+if [[ " $* " == *" --build-word "* ]]; then build_word "$STAGE"; fi
+# (default, no --build-word: word/ comes from the artifact zip — CI builds it)
 for d in sheet slide diagram pdf; do
   [ -d "$STAGE/$d" ] || { echo "missing $d in artifact" >&2; exit 1; }
 done
