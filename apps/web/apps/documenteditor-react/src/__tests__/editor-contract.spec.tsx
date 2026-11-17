@@ -605,7 +605,7 @@ describe("References tab", () => {
     expect(html).toMatch(/footnote/i)
   })
 
-  it("link renders <a href> (PF-GAP-10)", () => {
+  it("link renders <a href> (PF-GAP-5)", () => {
     selectFirstTextNode(editor)
     dispatchRichTextCommand("link", "https://x.test")
     const html = editor.getHTML()
