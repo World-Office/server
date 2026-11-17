@@ -16,6 +16,14 @@ const BASE = `http://127.0.0.1:${PORT}`;
 // (not a possibly-stale deployed bundle)
 function defaultUiDir() {
   const src = path.resolve(__dirname, '..', '..', 'apps', 'web', 'apps', 'documenteditor-wysiwyg');
+  if (!fs.existsSync(src)) {
+    // deleted with the react flip — a dangling symlink would boot a 404ing
+    // /word/ and every contract would die as "testserver did not come up".
+    // Retarget decision: plan/PARITY_TODO.md "CI parity lane retarget".
+    throw new Error('parity boot: apps/web/apps/documenteditor-wysiwyg no longer exists ' +
+      '(retired to legacy/wysiwyg-python-editor) — set EDITOR_UI_DIR to a built editor ' +
+      'bundle or see plan/PARITY_TODO.md');
+  }
   const root = fs.mkdtempSync('/tmp/wo-parity-ui-');
   fs.symlinkSync(src, path.join(root, 'word'));
   return root;
