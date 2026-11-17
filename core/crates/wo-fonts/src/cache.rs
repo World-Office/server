@@ -325,9 +325,9 @@ mod tests {
 
         let families = cache.list_families();
         assert_eq!(families.len(), 3);
-        assert!(families.contains(&"Arial".to_string()));
-        assert!(families.contains(&"Times".to_string()));
-        assert!(families.contains(&"Courier".to_string()));
+        assert!(families.iter().any(|x| x == "Arial"));
+        assert!(families.iter().any(|x| x == "Times"));
+        assert!(families.iter().any(|x| x == "Courier"));
         // Should be sorted
         assert_eq!(families[0], "Arial");
         assert_eq!(families[1], "Courier");

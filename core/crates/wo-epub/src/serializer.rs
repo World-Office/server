@@ -651,9 +651,9 @@ mod tests {
 
         // Verify valid ZIP
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"mimetype".to_string()));
-        assert!(names.contains(&"META-INF/container.xml".to_string()));
-        assert!(names.contains(&"OEBPS/content.opf".to_string()));
+        assert!(names.iter().any(|x| x == "mimetype"));
+        assert!(names.iter().any(|x| x == "META-INF/container.xml"));
+        assert!(names.iter().any(|x| x == "OEBPS/content.opf"));
 
         // Verify mimetype is first
         assert_eq!(names[0], "mimetype");

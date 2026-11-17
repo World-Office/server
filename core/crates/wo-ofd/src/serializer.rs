@@ -354,9 +354,9 @@ mod tests {
         let bytes = OfdSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"OFD.xml".to_string()));
-        assert!(names.contains(&"Doc_0/Document.xml".to_string()));
-        assert!(names.contains(&"Doc_0/Pages/Page_0.xml".to_string()));
+        assert!(names.iter().any(|x| x == "OFD.xml"));
+        assert!(names.iter().any(|x| x == "Doc_0/Document.xml"));
+        assert!(names.iter().any(|x| x == "Doc_0/Pages/Page_0.xml"));
     }
 
     // --- 2. OFD.xml is first and uncompressed ---
@@ -582,9 +582,9 @@ mod tests {
         let bytes = OfdSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"Doc_0/Pages/Page_0.xml".to_string()));
-        assert!(names.contains(&"Doc_0/Pages/Page_1.xml".to_string()));
-        assert!(names.contains(&"Doc_0/Pages/Page_2.xml".to_string()));
+        assert!(names.iter().any(|x| x == "Doc_0/Pages/Page_0.xml"));
+        assert!(names.iter().any(|x| x == "Doc_0/Pages/Page_1.xml"));
+        assert!(names.iter().any(|x| x == "Doc_0/Pages/Page_2.xml"));
 
         let doc_xml = zip_read(&bytes, "Doc_0/Document.xml");
         assert!(doc_xml.contains("Page ID=\"1\""));
@@ -605,8 +605,8 @@ mod tests {
         let bytes = OfdSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"OFD.xml".to_string()));
-        assert!(names.contains(&"Doc_0/Document.xml".to_string()));
+        assert!(names.iter().any(|x| x == "OFD.xml"));
+        assert!(names.iter().any(|x| x == "Doc_0/Document.xml"));
     }
 
     // --- 12. Roundtrip: serialize → parse ---

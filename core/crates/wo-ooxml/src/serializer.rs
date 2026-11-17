@@ -6022,12 +6022,12 @@ mod tests {
 
         // Check required entries
         let entries = zip_entry_names(&bytes);
-        assert!(entries.contains(&"[Content_Types].xml".to_string()));
-        assert!(entries.contains(&"_rels/.rels".to_string()));
-        assert!(entries.contains(&"word/document.xml".to_string()));
-        assert!(entries.contains(&"word/_rels/document.xml.rels".to_string()));
-        assert!(entries.contains(&"word/styles.xml".to_string()));
-        assert!(entries.contains(&"docProps/core.xml".to_string()));
+        assert!(entries.iter().any(|x| x == "[Content_Types].xml"));
+        assert!(entries.iter().any(|x| x == "_rels/.rels"));
+        assert!(entries.iter().any(|x| x == "word/document.xml"));
+        assert!(entries.iter().any(|x| x == "word/_rels/document.xml.rels"));
+        assert!(entries.iter().any(|x| x == "word/styles.xml"));
+        assert!(entries.iter().any(|x| x == "docProps/core.xml"));
 
         // Verify document content
         let doc_xml = read_zip_entry(&bytes, "word/document.xml");
@@ -6615,8 +6615,8 @@ mod tests {
         assert_eq!(bytes[1], 0x4B);
 
         let entries = zip_entry_names(&bytes);
-        assert!(entries.contains(&"[Content_Types].xml".to_string()));
-        assert!(entries.contains(&"word/document.xml".to_string()));
+        assert!(entries.iter().any(|x| x == "[Content_Types].xml"));
+        assert!(entries.iter().any(|x| x == "word/document.xml"));
 
         // Document should have an empty body
         let doc_xml = read_zip_entry(&bytes, "word/document.xml");
@@ -6743,12 +6743,12 @@ mod tests {
         assert_eq!(bytes[1], 0x4B);
 
         let entries = zip_entry_names(&bytes);
-        assert!(entries.contains(&"[Content_Types].xml".to_string()));
-        assert!(entries.contains(&"_rels/.rels".to_string()));
-        assert!(entries.contains(&"ppt/presentation.xml".to_string()));
-        assert!(entries.contains(&"ppt/_rels/presentation.xml.rels".to_string()));
-        assert!(entries.contains(&"ppt/slides/slide1.xml".to_string()));
-        assert!(entries.contains(&"docProps/core.xml".to_string()));
+        assert!(entries.iter().any(|x| x == "[Content_Types].xml"));
+        assert!(entries.iter().any(|x| x == "_rels/.rels"));
+        assert!(entries.iter().any(|x| x == "ppt/presentation.xml"));
+        assert!(entries.iter().any(|x| x == "ppt/_rels/presentation.xml.rels"));
+        assert!(entries.iter().any(|x| x == "ppt/slides/slide1.xml"));
+        assert!(entries.iter().any(|x| x == "docProps/core.xml"));
 
         let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
         assert!(slide_xml.contains("Hello PPTX"));
@@ -6852,8 +6852,8 @@ mod tests {
         let bytes = ser.serialize_pptx(&pres).unwrap();
 
         let entries = zip_entry_names(&bytes);
-        assert!(entries.contains(&"ppt/slides/slide1.xml".to_string()));
-        assert!(entries.contains(&"ppt/slides/slide2.xml".to_string()));
+        assert!(entries.iter().any(|x| x == "ppt/slides/slide1.xml"));
+        assert!(entries.iter().any(|x| x == "ppt/slides/slide2.xml"));
 
         let slide1 = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
         let slide2 = read_zip_entry(&bytes, "ppt/slides/slide2.xml");
@@ -7428,7 +7428,7 @@ mod tests {
         let bytes = ser.serialize_pptx(&pres).unwrap();
 
         let entries = zip_entry_names(&bytes);
-        assert!(entries.contains(&"ppt/theme/theme1.xml".to_string()));
+        assert!(entries.iter().any(|x| x == "ppt/theme/theme1.xml"));
         let theme_xml = read_zip_entry(&bytes, "ppt/theme/theme1.xml");
         assert!(theme_xml.contains("Office Theme"));
         assert!(theme_xml.contains("clrScheme"));

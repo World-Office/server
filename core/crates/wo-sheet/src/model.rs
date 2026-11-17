@@ -161,7 +161,7 @@ impl SheetProtection {
         // Check group exemption
         groups
             .iter()
-            .any(|g| self.exempt_groups.contains(&g.to_string()))
+            .any(|g| self.exempt_groups.iter().any(|x| x == g))
     }
 }
 

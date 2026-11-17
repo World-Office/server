@@ -1106,8 +1106,8 @@ mod tests {
         let doc = OleCompoundDoc::parse(&data).unwrap();
 
         let streams = doc.list_streams();
-        assert!(streams.contains(&"Root Entry".to_string()));
-        assert!(streams.contains(&"WordDocument".to_string()));
+        assert!(streams.iter().any(|x| x == "Root Entry"));
+        assert!(streams.iter().any(|x| x == "WordDocument"));
     }
 
     #[test]

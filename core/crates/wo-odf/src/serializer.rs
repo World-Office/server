@@ -1177,9 +1177,9 @@ mod tests {
 
         // Valid ZIP
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"mimetype".to_string()));
-        assert!(names.contains(&"content.xml".to_string()));
-        assert!(names.contains(&"META-INF/manifest.xml".to_string()));
+        assert!(names.iter().any(|x| x == "mimetype"));
+        assert!(names.iter().any(|x| x == "content.xml"));
+        assert!(names.iter().any(|x| x == "META-INF/manifest.xml"));
 
         // Content present
         let content = zip_read(&bytes, "content.xml");
@@ -1299,8 +1299,8 @@ mod tests {
         let bytes = OdfSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"mimetype".to_string()));
-        assert!(names.contains(&"content.xml".to_string()));
+        assert!(names.iter().any(|x| x == "mimetype"));
+        assert!(names.iter().any(|x| x == "content.xml"));
 
         let content = zip_read(&bytes, "content.xml");
         assert!(content.contains("<office:text>"));

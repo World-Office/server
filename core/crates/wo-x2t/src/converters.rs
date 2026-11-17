@@ -16668,40 +16668,40 @@ mod tests {
         let mut lines = Vec::new();
         fb2_body_to_lines(&body, &mut lines);
         assert!(
-            lines.contains(&"## Chapter 1".to_string()),
+            lines.iter().any(|x| x == "## Chapter 1"),
             "should have section title"
         );
         assert!(
-            lines.contains(&"Hello world".to_string()),
+            lines.iter().any(|x| x == "Hello world"),
             "should have paragraph text"
         );
         assert!(
-            lines.contains(&"### A subtitle".to_string()),
+            lines.iter().any(|x| x == "### A subtitle"),
             "should have subtitle"
         );
-        assert!(lines.contains(&"2024".to_string()), "should have date");
+        assert!(lines.iter().any(|x| x == "2024"), "should have date");
         assert!(
-            lines.contains(&"[image: Diagram]".to_string()),
+            lines.iter().any(|x| x == "[image: Diagram]"),
             "should have image alt"
         );
         assert!(
-            lines.contains(&"> Cited text".to_string()),
+            lines.iter().any(|x| x == "> Cited text"),
             "should have cite text"
         );
         assert!(
-            lines.contains(&"  -- Translator".to_string()),
+            lines.iter().any(|x| x == "  -- Translator"),
             "should have text author"
         );
         assert!(
-            lines.contains(&"*Ode*".to_string()),
+            lines.iter().any(|x| x == "*Ode*"),
             "should have poem title"
         );
         assert!(
-            lines.contains(&"  A line".to_string()),
+            lines.iter().any(|x| x == "  A line"),
             "should have poem line"
         );
         assert!(
-            lines.contains(&"  -- Author".to_string()),
+            lines.iter().any(|x| x == "  -- Author"),
             "should have cite author"
         );
     }
@@ -16777,10 +16777,10 @@ mod tests {
         };
         let mut lines = Vec::new();
         fb2_section_to_lines(&parent, &mut lines);
-        assert!(lines.contains(&"## Parent".to_string()), "parent title");
-        assert!(lines.contains(&"## Child".to_string()), "child title");
+        assert!(lines.iter().any(|x| x == "## Parent"), "parent title");
+        assert!(lines.iter().any(|x| x == "## Child"), "child title");
         assert!(
-            lines.contains(&"Child content".to_string()),
+            lines.iter().any(|x| x == "Child content"),
             "child content"
         );
     }

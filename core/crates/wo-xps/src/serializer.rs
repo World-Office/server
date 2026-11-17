@@ -454,11 +454,11 @@ mod tests {
         let bytes = XpsSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"[Content_Types].xml".to_string()));
-        assert!(names.contains(&"_rels/.rels".to_string()));
-        assert!(names.contains(&"Documents/1/Pages/1.fpage".to_string()));
-        assert!(names.contains(&"Documents/1/FixedDocSeq.fdseq".to_string()));
-        assert!(names.contains(&"Documents/1/FixedDocument.fdoc".to_string()));
+        assert!(names.iter().any(|x| x == "[Content_Types].xml"));
+        assert!(names.iter().any(|x| x == "_rels/.rels"));
+        assert!(names.iter().any(|x| x == "Documents/1/Pages/1.fpage"));
+        assert!(names.iter().any(|x| x == "Documents/1/FixedDocSeq.fdseq"));
+        assert!(names.iter().any(|x| x == "Documents/1/FixedDocument.fdoc"));
     }
 
     // --- 2. Content types are valid ---
@@ -596,9 +596,9 @@ mod tests {
         let bytes = XpsSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"Documents/1/Pages/1.fpage".to_string()));
-        assert!(names.contains(&"Documents/1/Pages/2.fpage".to_string()));
-        assert!(names.contains(&"Documents/1/Pages/3.fpage".to_string()));
+        assert!(names.iter().any(|x| x == "Documents/1/Pages/1.fpage"));
+        assert!(names.iter().any(|x| x == "Documents/1/Pages/2.fpage"));
+        assert!(names.iter().any(|x| x == "Documents/1/Pages/3.fpage"));
 
         let fdoc = zip_read(&bytes, "Documents/1/FixedDocument.fdoc");
         assert!(fdoc.contains("1.fpage"));
@@ -690,7 +690,7 @@ mod tests {
         let bytes = XpsSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"Documents/1/Metadata/Core.xml".to_string()));
+        assert!(names.iter().any(|x| x == "Documents/1/Metadata/Core.xml"));
 
         let core = zip_read(&bytes, "Documents/1/Metadata/Core.xml");
         assert!(core.contains("<dc:title>Test Document</dc:title>"));
@@ -724,8 +724,8 @@ mod tests {
         let bytes = XpsSerializer::new().serialize(&doc).unwrap();
 
         let names = zip_entry_names(&bytes);
-        assert!(names.contains(&"[Content_Types].xml".to_string()));
-        assert!(names.contains(&"_rels/.rels".to_string()));
+        assert!(names.iter().any(|x| x == "[Content_Types].xml"));
+        assert!(names.iter().any(|x| x == "_rels/.rels"));
     }
 
     // --- 12. Additional relationships ---
