@@ -54,7 +54,7 @@ jobs:
       - name: Build frontend
         run: |-
           pnpm install --frozen-lockfile
-          pnpm build --filter='!@world-office/tauri-poc'
+          pnpm exec turbo run build --filter='!@world-office/tauri-poc'
         env:
           # parallel vite builds OOM the 7GB runner (exit 137) — serialize the
           # heavy bundlers and keep node heaps modest

@@ -60,7 +60,7 @@ jobs:
           exit 1
 
       - name: Run build
-        run: pnpm build --filter='!@world-office/tauri-poc'
+        run: pnpm exec turbo run build --filter='!@world-office/tauri-poc'
         timeout-minutes: 15
 
       - name: Restructure dist directories
