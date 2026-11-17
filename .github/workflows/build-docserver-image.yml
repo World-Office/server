@@ -23,8 +23,9 @@ jobs:
       - name: Prepare frontend-dist build context
         run: |
           SRC=/home/weiss/editor-ui-b2c1c282
-          # fallback: current live bundle (b2c1c282 staging dir may be gone)
+          # fallbacks: current live bundle dirs (compose bind-mounts override anyway)
           [ -d "$SRC/word" ] || SRC=/home/weiss/editor-ui-ebae8fc3
+          [ -d "$SRC/word" ] || SRC=/home/weiss/editor-ui-latest
           [ -d "$SRC/word" ] || { echo "staged UI missing ($SRC) — run stage-ui first"; exit 1; }
           mkdir -p frontend-dist
           cp -a "$SRC/." frontend-dist/
