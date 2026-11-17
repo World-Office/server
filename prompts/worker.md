@@ -56,3 +56,8 @@ the blocker in your summary.
    describing what you implemented and any deviations).
 4. Reply with a concise summary: what you implemented, tests added/passed,
    deviations and follow-ups.
+
+**THE GATE IS THE FINISH LINE.** The moment the acceptance gate exits green
+AND your work is committed, reply with the summary and STOP. Do not polish,
+refactor, or "improve" anything further — extra turns burn the turn budget,
+and exceeding it rejects an otherwise-green task.
