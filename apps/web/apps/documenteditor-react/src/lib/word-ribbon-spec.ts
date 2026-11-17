@@ -131,7 +131,7 @@ modifiedSpec = modifyControl(
   }),
 )
 
-// Fix #2: References tab - Add Link button (PF-GAP-10)
+// Fix #2: References tab - Add Link button (PF-GAP-5)
 // Add a Link button to the References tab, in a new "Links" group
 modifiedSpec = addGroupToTab(modifiedSpec, "references", {
   id: "links",
