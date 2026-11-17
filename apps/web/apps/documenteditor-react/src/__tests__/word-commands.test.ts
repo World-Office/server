@@ -28,6 +28,8 @@ vi.mock("../stores/DocumentStore", () => ({
     differentOddEven: false,
     setTrackChanges: vi.fn(),
     trackChanges: false,
+    setMultiplePages: vi.fn(),
+    multiplePages: false,
     formatPainterFormat: null,
     clearHeader: vi.fn(),
     clearFooter: vi.fn(),
