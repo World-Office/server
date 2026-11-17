@@ -71,7 +71,7 @@ fontdb = { version = "0.16", default-features = false }
 swash = "0.2"
 rustybuzz = "0.20"
 pdf-writer = "0.12"
-jsonwebtoken = "9.0"
+jsonwebtoken = { version = "12", default-features = false, features = ["aws_lc_rs"] }
 tracing-subscriber = "0.3"
 proptest = "1"
 wasm-bindgen-test = "0.3"
