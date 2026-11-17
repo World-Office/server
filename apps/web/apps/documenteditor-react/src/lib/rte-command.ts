@@ -141,6 +141,8 @@ export type RichTextCommand =
   | "updateIndex"
   | "insertDateTime"
   | "insertField"
+  | "increaseFontSize"
+  | "decreaseFontSize"
 
 export interface PageLayoutSettings {
   orientation?: "portrait" | "landscape"
@@ -279,6 +281,8 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "updateIndex",
   "insertDateTime",
   "insertField",
+  "increaseFontSize",
+  "decreaseFontSize",
 ] as const
 
 export type RichTextCommandSurface = Editor
