@@ -168,7 +168,13 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
 
     // 1. Toggle formatting commands (bold, italic, underline, strikethrough)
     //    Read current state from WASM and flip it
-    if (command === "bold" || command === "italic" || command === "underline" || command === "strike" || command === "strikethrough") {
+    if (
+      command === "bold" ||
+      command === "italic" ||
+      command === "underline" ||
+      command === "strike" ||
+      command === "strikethrough"
+    ) {
       const editorHandle = editorRef.current
       if (editorHandle) {
         const docHandle = editorHandle.getDocHandle?.() ?? null
@@ -177,7 +183,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
           try {
             const currentFormatting = api.get_run_formatting(docHandle)
             const current = currentFormatting ? JSON.parse(currentFormatting) : {}
-            
+
             // Determine the formatting key and toggle value
             let format: Record<string, unknown>
             switch (command) {

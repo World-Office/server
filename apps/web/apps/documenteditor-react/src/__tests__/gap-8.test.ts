@@ -17,7 +17,7 @@ describe("PF-GAP-8: Collaboration tab Co-editing Mode button", () => {
   it("Collaboration tab has a tracking group", () => {
     const collaborationTab = wordRibbonSpec.tabs.find((tab) => tab.id === "collaboration")
     expect(collaborationTab).toBeDefined()
-    
+
     const trackingGroup = collaborationTab?.groups.find((group) => group.id === "tracking")
     expect(trackingGroup).toBeDefined()
     expect(trackingGroup?.label).toBe("Tracking")
@@ -26,10 +26,10 @@ describe("PF-GAP-8: Collaboration tab Co-editing Mode button", () => {
   it("Tracking group contains a Co-editing Mode button", () => {
     const collaborationTab = wordRibbonSpec.tabs.find((tab) => tab.id === "collaboration")
     expect(collaborationTab).toBeDefined()
-    
+
     const trackingGroup = collaborationTab?.groups.find((group) => group.id === "tracking")
     expect(trackingGroup).toBeDefined()
-    
+
     const coEditingButton = trackingGroup?.controls.find(
       (control) => control.id === "co-editing-mode",
     )
@@ -40,10 +40,10 @@ describe("PF-GAP-8: Collaboration tab Co-editing Mode button", () => {
   it("Co-editing Mode button is a button with toggleCoEditingMode command", () => {
     const collaborationTab = wordRibbonSpec.tabs.find((tab) => tab.id === "collaboration")
     expect(collaborationTab).toBeDefined()
-    
+
     const trackingGroup = collaborationTab?.groups.find((group) => group.id === "tracking")
     expect(trackingGroup).toBeDefined()
-    
+
     const coEditingButton = trackingGroup?.controls.find(
       (control) => control.id === "co-editing-mode",
     )
@@ -54,10 +54,10 @@ describe("PF-GAP-8: Collaboration tab Co-editing Mode button", () => {
   it("Co-editing Mode button has Users icon", () => {
     const collaborationTab = wordRibbonSpec.tabs.find((tab) => tab.id === "collaboration")
     expect(collaborationTab).toBeDefined()
-    
+
     const trackingGroup = collaborationTab?.groups.find((group) => group.id === "tracking")
     expect(trackingGroup).toBeDefined()
-    
+
     const coEditingButton = trackingGroup?.controls.find(
       (control) => control.id === "co-editing-mode",
     )
@@ -67,14 +67,12 @@ describe("PF-GAP-8: Collaboration tab Co-editing Mode button", () => {
   it("Co-editing Mode button is at position 1 in tracking group (after Track Changes)", () => {
     const collaborationTab = wordRibbonSpec.tabs.find((tab) => tab.id === "collaboration")
     expect(collaborationTab).toBeDefined()
-    
+
     const trackingGroup = collaborationTab?.groups.find((group) => group.id === "tracking")
     expect(trackingGroup).toBeDefined()
-    
+
     const controls = trackingGroup?.controls || []
-    const coEditingIndex = controls.findIndex(
-      (control) => control.id === "co-editing-mode",
-    )
+    const coEditingIndex = controls.findIndex((control) => control.id === "co-editing-mode")
     expect(coEditingIndex).not.toBe(-1)
     expect(coEditingIndex).toBe(1)
   })

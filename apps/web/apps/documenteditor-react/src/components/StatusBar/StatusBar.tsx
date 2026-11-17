@@ -68,8 +68,15 @@ function ZoomControls(): JSX.Element {
 
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
   const { t } = useTranslation()
-  const { currentPage, totalPages, languageCode, wordCount, trackChanges, coEditingMode, spellingEnabled } =
-    documentStore
+  const {
+    currentPage,
+    totalPages,
+    languageCode,
+    wordCount,
+    trackChanges,
+    coEditingMode,
+    spellingEnabled,
+  } = documentStore
   const [activeTool, setActiveTool] = useState<"select" | "hand">("select")
 
   return (

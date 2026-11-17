@@ -11,14 +11,12 @@ import { wordRibbonSpec as baseWordRibbonSpec } from "@world-office/editor-commo
  */
 function deepClone<T>(obj: T): T {
   if (obj === null || typeof obj !== "object") return obj
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item)) as any
-  const cloned = {} as T
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      cloned[key] = deepClone((obj as any)[key])
-    }
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item)) as T
+  const cloned: Record<string, unknown> = {}
+  for (const key of Object.keys(obj as Record<string, unknown>)) {
+    cloned[key] = deepClone((obj as Record<string, unknown>)[key])
   }
-  return cloned
+  return cloned as T
 }
 
 /**
@@ -37,13 +35,13 @@ function modifyControl(
   modifier: (control: RibbonControlSpec) => RibbonControlSpec,
 ): RibbonSpec {
   const modifiedSpec = deepClone(spec)
-  
+
   for (const tab of modifiedSpec.tabs) {
     if (tab.id !== tabId) continue
-    
+
     for (const group of tab.groups) {
       if (group.id !== groupId) continue
-      
+
       for (let i = 0; i < group.controls.length; i++) {
         const control = group.controls[i]
         if (control.id === controlId) {
@@ -53,7 +51,7 @@ function modifyControl(
       }
     }
   }
-  
+
   return modifiedSpec
 }
 
@@ -73,13 +71,13 @@ function addControlToGroup(
   position?: number,
 ): RibbonSpec {
   const modifiedSpec = deepClone(spec)
-  
+
   for (const tab of modifiedSpec.tabs) {
     if (tab.id !== tabId) continue
-    
+
     for (const group of tab.groups) {
       if (group.id !== groupId) continue
-      
+
       if (position !== undefined) {
         group.controls.splice(position, 0, control)
       } else {
@@ -88,7 +86,7 @@ function addControlToGroup(
       return modifiedSpec
     }
   }
-  
+
   return modifiedSpec
 }
 
@@ -104,14 +102,14 @@ function addGroupToTab(
   group: { id: string; label: string; controls: RibbonControlSpec[] },
 ): RibbonSpec {
   const modifiedSpec = deepClone(spec)
-  
+
   for (const tab of modifiedSpec.tabs) {
     if (tab.id !== tabId) continue
-    
+
     tab.groups.push(group)
     return modifiedSpec
   }
-  
+
   return modifiedSpec
 }
 
@@ -120,16 +118,10 @@ let modifiedSpec: RibbonSpec = deepClone(baseWordRibbonSpec)
 
 // Fix #1: Home tab - Font size label
 // Change the font-size select label from empty string to "Font size"
-modifiedSpec = modifyControl(
-  modifiedSpec,
-  "home",
-  "font",
-  "font-size",
-  (control) => ({
-    ...control,
-    label: "Font size",
-  }),
-)
+modifiedSpec = modifyControl(modifiedSpec, "home", "font", "font-size", (control) => ({
+  ...control,
+  label: "Font size",
+}))
 
 // Fix #2: References tab - Add Link button (PF-GAP-5)
 // Add a Link button to the References tab, in a new "Links" group

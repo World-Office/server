@@ -32,9 +32,7 @@ describe("PF-GAP-10: References tab — Links group and Link button", () => {
     const linksGroup = getLinksGroup()
     expect(linksGroup).toBeDefined()
 
-    const linkControl = linksGroup?.controls.find(
-      (control) => control.id === "insert-link",
-    )
+    const linkControl = linksGroup?.controls.find((control) => control.id === "insert-link")
     expect(linkControl).toBeDefined()
     expect(linkControl?.label).toBe("Link")
     expect(linkControl?.type).toBe("button")
@@ -45,9 +43,7 @@ describe("PF-GAP-10: References tab — Links group and Link button", () => {
     const linksGroup = getLinksGroup()
     expect(linksGroup).toBeDefined()
 
-    const linkControl = linksGroup?.controls.find(
-      (control) => control.id === "insert-link",
-    )
+    const linkControl = linksGroup?.controls.find((control) => control.id === "insert-link")
     expect(linkControl).toBeDefined()
     expect(linkControl?.icon).toBe("Globe")
   })
@@ -56,9 +52,7 @@ describe("PF-GAP-10: References tab — Links group and Link button", () => {
     const linksGroup = getLinksGroup()
     expect(linksGroup).toBeDefined()
 
-    const linkControl = linksGroup?.controls.find(
-      (control) => control.id === "insert-link",
-    )
+    const linkControl = linksGroup?.controls.find((control) => control.id === "insert-link")
     expect(linkControl).toBeDefined()
     expect(linkControl?.shortcut).toBe("Ctrl+K")
   })
@@ -68,7 +62,7 @@ describe("PF-GAP-10: References tab — Links group and Link button", () => {
     expect(linksGroup).toBeDefined()
 
     const controls = linksGroup?.controls || []
-    const labels = controls.map(c => c.label)
+    const labels = controls.map((c) => c.label)
 
     expect(labels).toContain("Link")
   })

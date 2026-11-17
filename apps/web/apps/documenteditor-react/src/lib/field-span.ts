@@ -30,6 +30,10 @@ export const FieldSpan = Node.create({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    return ["span", mergeAttributes(HTMLAttributes), node.textContent || (node.attrs.field as string)]
+    return [
+      "span",
+      mergeAttributes(HTMLAttributes),
+      node.textContent || (node.attrs.field as string),
+    ]
   },
 })

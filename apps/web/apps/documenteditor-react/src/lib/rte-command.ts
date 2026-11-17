@@ -13,7 +13,6 @@
 import type { Editor } from "@tiptap/core"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
-import { stepFontSize } from "./word-commands"
 import { type CrossRefFormat, resolveRef } from "./cross-ref"
 import { updateIndex as updateDocIndex } from "./document-index"
 import { insertEndnoteCommand } from "./endnote-mark"
@@ -27,6 +26,7 @@ import {
   rejectChange,
   toggleTrackChanges,
 } from "./track-changes"
+import { stepFontSize } from "./word-commands"
 
 export type RichTextCommand =
   | "bold"

@@ -30,7 +30,7 @@ describe("PF-GAP-9: Insert tab — Comment, Header & Footer labels", () => {
   it("Header & Footer group contains Comment control with label 'Comment'", () => {
     const headerFooterGroup = getHeaderFooterGroup()
     expect(headerFooterGroup).toBeDefined()
-    
+
     const commentControl = headerFooterGroup?.controls.find(
       (control) => control.id === "add-comment",
     )
@@ -43,7 +43,7 @@ describe("PF-GAP-9: Insert tab — Comment, Header & Footer labels", () => {
   it("Header & Footer group contains Header & Footer control with label 'Header & Footer'", () => {
     const headerFooterGroup = getHeaderFooterGroup()
     expect(headerFooterGroup).toBeDefined()
-    
+
     const headerFooterControl = headerFooterGroup?.controls.find(
       (control) => control.id === "insert-header-footer",
     )
@@ -56,10 +56,10 @@ describe("PF-GAP-9: Insert tab — Comment, Header & Footer labels", () => {
   it("Header & Footer group contains all required labels", () => {
     const headerFooterGroup = getHeaderFooterGroup()
     expect(headerFooterGroup).toBeDefined()
-    
+
     const controls = headerFooterGroup?.controls || []
-    const labels = controls.map(c => c.label)
-    
+    const labels = controls.map((c) => c.label)
+
     expect(labels).toContain("Comment")
     expect(labels).toContain("Header & Footer")
   })

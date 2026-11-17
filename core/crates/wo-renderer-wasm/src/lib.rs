@@ -3352,7 +3352,9 @@ pub fn apply_formatting(
 
     // Check if there's an active selection
     let anchor = get_anchor(doc_handle);
-    let has_selection = anchor.map_or(false, |a| (a.para, a.char_idx) != (cursor.para, cursor.char_idx));
+    let has_selection = anchor.map_or(false, |a| {
+        (a.para, a.char_idx) != (cursor.para, cursor.char_idx)
+    });
 
     if let Some(anchor_pos) = anchor {
         if has_selection {
@@ -3360,7 +3362,9 @@ pub fn apply_formatting(
             let (start_para, start_char, end_para, end_char) = selection_bounds(anchor_pos, cursor);
 
             // Apply run-level formatting to all runs in the selection
-            format_runs_in_range(&mut body, start_para, start_char, end_para, end_char, &format);
+            format_runs_in_range(
+                &mut body, start_para, start_char, end_para, end_char, &format,
+            );
 
             // Apply paragraph-level formatting to all paragraphs in the selection
             // For paragraph formatting, we apply to all paragraphs that contain selected text

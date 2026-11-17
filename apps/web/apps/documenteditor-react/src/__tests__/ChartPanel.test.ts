@@ -54,14 +54,14 @@ describe("ChartPanel Advanced settings", () => {
 
   it("renders Advanced settings section with Width and Height inputs", () => {
     const container = mount(createElement(ChartPanel, { visible: true }))
-    
+
     // Check that Advanced settings section exists
     const sectionText = container.textContent ?? ""
     expect(sectionText).toContain("Advanced settings")
-    
+
     // Check for Width label
     expect(sectionText).toContain("Width")
-    
+
     // Check for Height label
     expect(sectionText).toContain("Height")
   })
@@ -69,7 +69,7 @@ describe("ChartPanel Advanced settings", () => {
   it("Width input has default value of 400", () => {
     const container = mount(createElement(ChartPanel, { visible: true }))
     const widthInput = getInputByLabel(container, "Width")
-    
+
     expect(widthInput).not.toBeNull()
     expect(widthInput?.value).toBe("400")
     expect(widthInput?.type).toBe("number")
@@ -80,7 +80,7 @@ describe("ChartPanel Advanced settings", () => {
   it("Height input has default value of 300", () => {
     const container = mount(createElement(ChartPanel, { visible: true }))
     const heightInput = getInputByLabel(container, "Height")
-    
+
     expect(heightInput).not.toBeNull()
     expect(heightInput?.value).toBe("300")
     expect(heightInput?.type).toBe("number")
@@ -92,7 +92,7 @@ describe("ChartPanel Advanced settings", () => {
     const container = mount(createElement(ChartPanel, { visible: true }))
     const widthInput = getInputByLabel(container, "Width")
     const dispatchSpy = vi.spyOn(window, "dispatchEvent")
-    
+
     expect(widthInput).not.toBeNull()
 
     const setNativeValue = Object.getOwnPropertyDescriptor(
@@ -103,7 +103,7 @@ describe("ChartPanel Advanced settings", () => {
       setNativeValue.call(widthInput!, "600")
       widthInput!.dispatchEvent(new Event("change", { bubbles: true }))
     })
-    
+
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "wo-command",
@@ -116,7 +116,7 @@ describe("ChartPanel Advanced settings", () => {
     const container = mount(createElement(ChartPanel, { visible: true }))
     const heightInput = getInputByLabel(container, "Height")
     const dispatchSpy = vi.spyOn(window, "dispatchEvent")
-    
+
     expect(heightInput).not.toBeNull()
 
     const setNativeValue = Object.getOwnPropertyDescriptor(
@@ -127,7 +127,7 @@ describe("ChartPanel Advanced settings", () => {
       setNativeValue.call(heightInput!, "500")
       heightInput!.dispatchEvent(new Event("change", { bubbles: true }))
     })
-    
+
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "wo-command",
@@ -138,7 +138,7 @@ describe("ChartPanel Advanced settings", () => {
 
   it("does not render when visible is false", () => {
     const container = mount(createElement(ChartPanel, { visible: false }))
-    
+
     expect(container.textContent).toBe("")
   })
 })

@@ -19,9 +19,9 @@
  *   WS receives EditOperation (CRDT) → hook converts to ModelOp → editorRef.applyOp() → re-render
  */
 
+import type { EditOperation } from "@world-office/collaboration-client"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
-import type { EditOperation } from "@world-office/collaboration-client"
 import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 
 // ── Types matching the Rust coauthoring protocol ─────────────────────
@@ -346,7 +346,12 @@ export function useCanvasCollaboration(
                 op: "delete" as const,
                 range: {
                   start: { kind: "text", para: 0, run: 0, char: operation.position },
-                  end: { kind: "text", para: 0, run: 0, char: operation.position + operation.length },
+                  end: {
+                    kind: "text",
+                    para: 0,
+                    run: 0,
+                    char: operation.position + operation.length,
+                  },
                 },
               }
               editorRef.current.applyOp(op)

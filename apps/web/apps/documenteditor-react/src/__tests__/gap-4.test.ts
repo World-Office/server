@@ -15,7 +15,7 @@ describe("PF-GAP-4: Insert tab — Comment, Header labels", () => {
   it("renders Header label in Insert tab", () => {
     const headerFooterGroup = getHeaderFooterGroup()
     expect(headerFooterGroup).toBeDefined()
-    
+
     const headerControl = headerFooterGroup?.controls.find(
       (control) => control.id === "edit-header",
     )
@@ -26,7 +26,7 @@ describe("PF-GAP-4: Insert tab — Comment, Header labels", () => {
   it("renders Comment label in Insert tab", () => {
     const headerFooterGroup = getHeaderFooterGroup()
     expect(headerFooterGroup).toBeDefined()
-    
+
     const commentControl = headerFooterGroup?.controls.find(
       (control) => control.id === "add-comment",
     )
@@ -63,5 +63,3 @@ describe("PF-GAP-4: Insert tab — Comment, Header labels", () => {
     expect(insertTab?.groups.some((g) => g.id === "header-footer")).toBe(true)
   })
 })
-
-

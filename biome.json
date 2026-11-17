@@ -1,7 +1,12 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "files": {
-    "ignore": ["dist", "**/dist/**", "node_modules", "**/node_modules/**"]
+    "ignore": [
+      "dist",
+      "**/dist/**",
+      "node_modules",
+      "**/node_modules/**"
+    ]
   },
   "organizeImports": {
     "enabled": true
@@ -21,7 +26,9 @@
   },
   "overrides": [
     {
-      "include": ["**/ShortcutsOverlay.tsx"],
+      "include": [
+        "**/ShortcutsOverlay.tsx"
+      ],
       "linter": {
         "rules": {
           "a11y": {
@@ -29,6 +36,20 @@
           }
         }
       }
+    },
+    {
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      },
+      "include": [
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ]
     }
   ],
   "javascript": {

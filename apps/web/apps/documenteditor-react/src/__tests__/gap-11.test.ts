@@ -9,12 +9,9 @@ import { describe, expect, it } from "vitest"
 import { wordRibbonSpec } from "../lib/word-ribbon-spec"
 
 const viewTab = () => wordRibbonSpec.tabs.find((tab) => tab.id === "view")
-const showGroup = () =>
-  viewTab()?.groups.find((g) => g.id === "show" || g.label === "Show")
+const showGroup = () => viewTab()?.groups.find((g) => g.id === "show" || g.label === "Show")
 const allLabels = () =>
-  (viewTab()?.groups ?? []).flatMap((g) =>
-    g.controls.map((c) => c.label ?? ""),
-  )
+  (viewTab()?.groups ?? []).flatMap((g) => g.controls.map((c) => c.label ?? ""))
 
 describe("View tab parity (OO golden)", () => {
   it("has a View tab with a Show group", () => {
