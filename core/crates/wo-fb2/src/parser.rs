@@ -856,19 +856,22 @@ mod tests {
             .as_ref()
             .unwrap()
             .genres
-            .contains(&"science_fiction".to_string()));
+            .iter()
+            .any(|x| x == "science_fiction"));
         assert!(doc
             .title_info
             .as_ref()
             .unwrap()
             .genres
-            .contains(&"adventure".to_string()));
+            .iter()
+            .any(|x| x == "adventure"));
         assert!(doc
             .title_info
             .as_ref()
             .unwrap()
             .genres
-            .contains(&"humor".to_string()));
+            .iter()
+            .any(|x| x == "humor"));
     }
 
     #[test]

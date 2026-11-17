@@ -129,7 +129,7 @@ mod tests {
             "word/numbering.xml",
         ] {
             assert!(
-                part_names(&saved).contains(&p.to_string()),
+                part_names(&saved).iter().any(|n| n == p),
                 "part {p} must survive the save"
             );
         }
@@ -160,7 +160,7 @@ mod tests {
             .unwrap()
             .insert(handle, doc);
         let saved = serialize_document(handle).expect("serialize");
-        assert!(part_names(&saved).contains(&"word/document.xml".to_string()));
+        assert!(part_names(&saved).iter().any(|n| n == "word/document.xml"));
         release_document(handle).ok();
     }
 }
