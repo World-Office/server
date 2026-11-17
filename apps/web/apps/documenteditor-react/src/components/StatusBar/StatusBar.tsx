@@ -10,6 +10,7 @@ import {
   Minimize2,
   MousePointerClick,
   SpellCheck,
+  Users,
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
@@ -67,7 +68,7 @@ function ZoomControls(): JSX.Element {
 
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
   const { t } = useTranslation()
-  const { currentPage, totalPages, languageCode, wordCount, trackChanges, spellingEnabled } =
+  const { currentPage, totalPages, languageCode, wordCount, trackChanges, coEditingMode, spellingEnabled } =
     documentStore
   const [activeTool, setActiveTool] = useState<"select" | "hand">("select")
 
@@ -166,6 +167,18 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
           onClick={() => documentStore.setTrackChanges(!trackChanges)}
         >
           <FilePenLine size={14} />
+        </button>
+      </div>
+
+      {/* Co-editing mode */}
+      <div className="de-statusbar-tools">
+        <button
+          type="button"
+          className={`de-statusbar-btn${coEditingMode ? " active" : ""}`}
+          title={t("Co-editing Mode")}
+          onClick={() => documentStore.setCoEditingMode(!coEditingMode)}
+        >
+          <Users size={14} />
         </button>
       </div>
 

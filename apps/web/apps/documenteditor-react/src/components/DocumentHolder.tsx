@@ -41,7 +41,7 @@ const WasmEditorCanvas = observer(
     fileName: string
     editorRef: React.RefObject<CanvasEditorHandle | null>
   }) => {
-    const collaborationEnabled = isCollaborationConfigured()
+    const collaborationEnabled = isCollaborationConfigured() && documentStore.coEditingMode
 
     // Generate a stable document ID from the filename
     const docId = fileName.split(".")[0] ?? `doc-${Date.now()}`
@@ -51,6 +51,8 @@ const WasmEditorCanvas = observer(
       sendModelOp,
       sendCursorUpdate,
       remoteCursors,
+      connect,
+      disconnect,
     } = useCanvasCollaboration({
       editorRef,
       documentId: collaborationEnabled ? docId : undefined,
@@ -59,6 +61,15 @@ const WasmEditorCanvas = observer(
         console.debug("[WasmEditorCanvas] Local ModelOp broadcast:", op.revision)
       },
     })
+
+    // Connect/disconnect collaboration when coEditingMode or collaboration config changes
+    useEffect(() => {
+      if (isCollaborationConfigured() && documentStore.coEditingMode) {
+        void connect()
+      } else {
+        disconnect()
+      }
+    }, [connect, disconnect])
 
     useEffect(() => {
       // Register the WASM editor with the command router — the full 78-command
