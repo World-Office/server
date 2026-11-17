@@ -180,10 +180,24 @@ modifiedSpec = addControlToGroup(
   0, // Insert at the beginning of the zoom group
 )
 
-// Fix #5: View tab - Add Multiple Pages checkbox to Show group
-// Add a Multiple Pages checkbox to the View tab's Show group (PF-GAP-11)
-// This achieves parity with ONLYOFFICE's View > Show group which includes
-// Headings, Multiple Pages, and Dark Document checkboxes
+// Fix #5: View tab - Add Headings, Multiple Pages, and Dark Document checkboxes to Show group
+// Add checkboxes to the View tab's Show group to achieve parity with ONLYOFFICE's View > Show group (PF-GAP-6)
+// ONLYOFFICE's View > Show group includes: Headings, Multiple Pages, and Dark Document checkboxes
+modifiedSpec = addControlToGroup(
+  modifiedSpec,
+  "view",
+  "show",
+  {
+    id: "headings",
+    type: "checkbox",
+    label: "Headings",
+    checked: (ctx) => ctx.navigationVisible ?? false,
+    onChange: () => {},
+    command: "toggleNavigation",
+  },
+  4, // Insert after spellcheck, ruler, gridlines, navigation (position 4)
+)
+
 modifiedSpec = addControlToGroup(
   modifiedSpec,
   "view",
@@ -196,7 +210,22 @@ modifiedSpec = addControlToGroup(
     onChange: () => {},
     command: "toggleMultiplePages",
   },
-  4, // Insert after Headings (position 4: after spellcheck, ruler, gridlines, navigation)
+  5, // Insert after Headings (position 5)
+)
+
+modifiedSpec = addControlToGroup(
+  modifiedSpec,
+  "view",
+  "show",
+  {
+    id: "dark-document",
+    type: "checkbox",
+    label: "Dark Document",
+    checked: (ctx) => ctx.darkDocument ?? false,
+    onChange: () => {},
+    command: "toggleDarkDocument",
+  },
+  6, // Insert after Multiple Pages (position 6)
 )
 
 // Fix #6: Insert tab - Add Header & Footer group (PF-3)
