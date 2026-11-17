@@ -604,6 +604,15 @@ describe("References tab", () => {
     const html = editor.getHTML()
     expect(html).toMatch(/footnote/i)
   })
+
+  it("link renders <a href> (Fix #2)", () => {
+    selectFirstTextNode(editor)
+    dispatchRichTextCommand("link", "https://x.test")
+    const html = editor.getHTML()
+    expect(html).toContain("<a ")
+    expect(html).toContain('href="https://x.test"')
+    expect(html).toContain(">foo</a>")
+  })
 })
 
 // ----------------------------------------------------------------------
