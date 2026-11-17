@@ -964,6 +964,44 @@ describe("word-commands", () => {
       dispatchSpy.mockRestore()
     })
 
+    it("should dispatch chart-width view-state from the Width input", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      handler({ command: "chartWidth" })
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-width",
+          detail: { width: 400 },
+        }),
+      )
+      handler({ command: "chartWidth", value: "600" })
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-width",
+          detail: { width: 600 },
+        }),
+      )
+      dispatchSpy.mockRestore()
+    })
+
+    it("should dispatch chart-height view-state from the Height input", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      handler({ command: "chartHeight" })
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-height",
+          detail: { height: 300 },
+        }),
+      )
+      handler({ command: "chartHeight", value: "500" })
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-height",
+          detail: { height: 500 },
+        }),
+      )
+      dispatchSpy.mockRestore()
+    })
+
     it("should dispatch a chart-update refresh event for Update data", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
       handler({ command: "updateChartData" })
