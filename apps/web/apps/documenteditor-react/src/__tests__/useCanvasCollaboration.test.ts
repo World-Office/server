@@ -17,7 +17,7 @@
  *  - a server close schedules exactly one 2s automatic reconnect
  *  - sendModelOp broadcasts a document_op envelope (bumped revision) and
  *    reports it via onLocalModelOp; sendCursorUpdate sends cursor_update
- *  - inbound messages: initial_state / participant_update / document_op
+ *  - inbound messages: initial_state / participant_update / document_op / edit
  *    applied via editorRef.applyOp (own ops skipped) / cursor_update remote
  *    cursor map (own events skipped); malformed and unknown messages never
  *    throw
@@ -952,6 +952,113 @@ describe("useCanvasCollaboration", () => {
         act(() => {
           socket.receive(JSON.stringify({ type: "document_op", envelope: null }))
           socket.receive(JSON.stringify({ type: "document_op" }))
+        })
+      }).not.toThrow()
+      expect(applyOp).not.toHaveBeenCalled()
+      expect(harness.captures.state).toBe("connected")
+    })
+
+    it("edit (EditOperation) is converted to ModelOp and applied via editorRef.applyOp; own ops are skipped", async () => {
+      const applyOp = vi.fn(() => true)
+      const { harness, socket } = await mountConnected({
+        documentId: "doc-1",
+        userId: "u-42",
+      })
+      harness.editorRef.current = {
+        applyOp,
+        applyFormatting: vi.fn(),
+        applyStructureOp: vi.fn(),
+        getDocHandle: vi.fn(() => 1),
+      }
+
+      // Test insert operation
+      act(() => {
+        socket.receive(
+          JSON.stringify({
+            type: "edit",
+            operation: {
+              type: "insert",
+              session_id: "sess-1",
+              user_id: "u-7",
+              revision: 5,
+              timestamp: "2026-01-01T00:00:00.000Z",
+              position: 10,
+              length: 0,
+              content: "hello",
+            },
+          }),
+        )
+      })
+      expect(applyOp).toHaveBeenCalledTimes(1)
+      expect(applyOp).toHaveBeenCalledWith({
+        op: "insert",
+        at: { kind: "text", para: 0, run: 0, char: 10 },
+        content: "hello",
+      })
+
+      // Test delete operation
+      act(() => {
+        socket.receive(
+          JSON.stringify({
+            type: "edit",
+            operation: {
+              type: "delete",
+              session_id: "sess-1",
+              user_id: "u-7",
+              revision: 6,
+              timestamp: "2026-01-01T00:00:00.001Z",
+              position: 5,
+              length: 3,
+              content: null,
+            },
+          }),
+        )
+      })
+      expect(applyOp).toHaveBeenCalledTimes(2)
+      expect(applyOp).toHaveBeenNthCalledWith(2, {
+        op: "delete",
+        range: {
+          start: { kind: "text", para: 0, run: 0, char: 5 },
+          end: { kind: "text", para: 0, run: 0, char: 8 },
+        },
+      })
+
+      // Test own op is skipped
+      act(() => {
+        socket.receive(
+          JSON.stringify({
+            type: "edit",
+            operation: {
+              type: "insert",
+              session_id: "sess-1",
+              user_id: "u-42", // Same as our userId
+              revision: 7,
+              timestamp: "2026-01-01T00:00:00.002Z",
+              position: 20,
+              length: 0,
+              content: "my own edit",
+            },
+          }),
+        )
+      })
+      expect(applyOp).toHaveBeenCalledTimes(2) // Still 2, not 3
+    })
+
+    it("edit message with missing or invalid operation is ignored", async () => {
+      const applyOp = vi.fn(() => true)
+      const { harness, socket } = await mountConnected({ documentId: "doc-1" })
+      harness.editorRef.current = {
+        applyOp,
+        applyFormatting: vi.fn(),
+        applyStructureOp: vi.fn(),
+        getDocHandle: vi.fn(() => 1),
+      }
+
+      expect(() => {
+        act(() => {
+          socket.receive(JSON.stringify({ type: "edit" }))
+          socket.receive(JSON.stringify({ type: "edit", operation: null }))
+          socket.receive(JSON.stringify({ type: "edit", operation: {} }))
         })
       }).not.toThrow()
       expect(applyOp).not.toHaveBeenCalled()

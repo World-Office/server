@@ -9,16 +9,19 @@
  *   3. WebSocket: connect to /ws/{session_id}?user_id=X&username=Y
  *
  * Operations are sent as WsMessage::DocumentOp (type: "document_op")
- * containing a ModelOpEnvelope payload. This matches the Rust protocol
- * defined in services/coauthoring-service/src/main.rs.
+ * containing a ModelOpEnvelope payload. The hook also handles incoming
+ * WsMessage::Edit (type: "edit") containing EditOperation (CRDT) and
+ * converts them to ModelOp format for the CanvasEditor.
  *
  * Architecture:
  *   CanvasEditor (local edit) → onModelOp → hook sends DocumentOp via WS
  *   WS receives DocumentOp → hook calls editorRef.applyOp() → re-render
+ *   WS receives EditOperation (CRDT) → hook converts to ModelOp → editorRef.applyOp() → re-render
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
+import type { EditOperation } from "@world-office/collaboration-client"
 import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 
 // ── Types matching the Rust coauthoring protocol ─────────────────────
@@ -319,7 +322,40 @@ export function useCanvasCollaboration(
           }
 
           case "edit": {
-            // CRDT EditOperation — ignore for CanvasEditor (handled by DocumentCollaborationProvider)
+            // CRDT EditOperation from collaboration service
+            const operation = msg.operation as EditOperation | undefined
+            if (!operation || !editorRef.current) break
+
+            // Skip our own operations (echoed back by server)
+            if (operation.user_id === userIdRef.current) break
+
+            // Convert EditOperation to ModelOp format for CanvasEditor
+            // For now, assume all operations are in paragraph 0, run 0
+            // This is a simplified conversion - a full implementation would
+            // need to query the document structure to map flat positions to
+            // structured positions (para, run, char).
+            if (operation.type === "insert") {
+              const op = {
+                op: "insert" as const,
+                at: { kind: "text", para: 0, run: 0, char: operation.position },
+                content: operation.content,
+              }
+              editorRef.current.applyOp(op)
+            } else if (operation.type === "delete") {
+              const op = {
+                op: "delete" as const,
+                range: {
+                  start: { kind: "text", para: 0, run: 0, char: operation.position },
+                  end: { kind: "text", para: 0, run: 0, char: operation.position + operation.length },
+                },
+              }
+              editorRef.current.applyOp(op)
+            }
+
+            // Track revision
+            if (operation.revision > revisionRef.current) {
+              revisionRef.current = operation.revision
+            }
             break
           }
 
