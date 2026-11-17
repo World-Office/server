@@ -751,10 +751,10 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       documentStore.toggleNavigation()
       return true
     case "toggleMultiplePages":
-      documentStore.setMultiplePages(!documentStore.multiplePages)
+      documentStore.toggleMultiplePages()
       return true
     case "toggleDarkDocument":
-      documentStore.setDarkDocument(!documentStore.darkDocument)
+      documentStore.toggleDarkDocument()
       return true
     case "toggleTrackChanges":
       return toggleTrackChanges(editor, currentUser.username, currentUser.id)

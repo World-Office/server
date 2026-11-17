@@ -322,8 +322,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.setFitToWidth(true)
         return
       case "multiplePages":
-        // Open the plugins panel (all plugin buttons open the same panel)
-        documentStore.toggleRightPanel("plugins")
+        documentStore.toggleMultiplePages()
         return
       case "differentFirstPage":
         documentStore.setDifferentFirstPage(!documentStore.differentFirstPage)
@@ -404,7 +403,11 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         if (value) documentStore.setTheme(value)
         return
       case "toggleDarkDocument":
-        documentStore.setDarkDocument(value !== "false")
+        if (value !== undefined) {
+          documentStore.setDarkDocument(value !== "false")
+        } else {
+          documentStore.toggleDarkDocument()
+        }
         return
       case "macros":
         documentStore.toggleRightPanel("plugins")
@@ -428,7 +431,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.setLanguage(value || "en-US")
         return
       case "toggleMultiplePages":
-        documentStore.setMultiplePages(!documentStore.multiplePages)
+        documentStore.toggleMultiplePages()
         return
       default:
         break
