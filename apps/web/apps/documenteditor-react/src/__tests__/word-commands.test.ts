@@ -853,6 +853,26 @@ describe("word-commands", () => {
       })
       vi.restoreAllMocks()
     })
+
+    it("should open the table panel for insertTable", () => {
+      handler({ command: "insertTable" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("table")
+    })
+
+    it("should open the comments panel for comment commands", () => {
+      const cmds = ["addComment", "toggleComment", "deleteComment", "resolveComment"]
+      for (const cmd of cmds) {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("comments")
+      }
+    })
+
+    it("should enter header/footer mode for header footer commands", () => {
+      handler({ command: "editHeader" })
+      expect(documentStore.headerFooterMode).toBe("header")
+      handler({ command: "editFooter" })
+      expect(documentStore.headerFooterMode).toBe("footer")
+    })
   })
 
   it("should handle view-tab zoom/theme/dark-document commands", () => {
