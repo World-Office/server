@@ -42,7 +42,7 @@ while [ "$iter" -lt "$MAX_ITERS" ]; do
 
   # 3) re-capture the deep census against the FRESH build (else coverage reads stale data)
   echo "[loop] capturing fresh census"
-  ( cd "$HARNESS/census" && URL_BASE="http://127.0.0.1:$PORT/word/" /usr/bin/node census-react-deep.cjs ) \
+  ( cd "$HARNESS/census" && CENSUS_REACT_URL="http://127.0.0.1:$PORT/word/" /usr/bin/node census-react-deep.cjs ) \
     || echo "[loop] census capture FAILED — coverage will use the previous snapshot"
 
   # 4) master gate
