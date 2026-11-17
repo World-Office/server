@@ -199,4 +199,55 @@ modifiedSpec = addControlToGroup(
   4, // Insert after Headings (position 4: after spellcheck, ruler, gridlines, navigation)
 )
 
+// Fix #6: Insert tab - Add Header & Footer group (PF-3)
+// Add Header & Footer group to the Insert tab with Header, Footer, Page Number, Date & Time, Field, and Comment
+modifiedSpec = addGroupToTab(modifiedSpec, "insert", {
+  id: "header-footer",
+  label: "Header & Footer",
+  controls: [
+    {
+      id: "edit-header",
+      type: "button",
+      icon: "AlignJustify",
+      label: "Header",
+      command: "editHeader",
+    },
+    {
+      id: "edit-footer",
+      type: "button",
+      icon: "AlignJustify",
+      label: "Footer",
+      command: "editFooter",
+    },
+    {
+      id: "insert-page-number",
+      type: "button",
+      icon: "Hash",
+      label: "Page Number",
+      command: "insertPageNumber",
+    },
+    {
+      id: "insert-date-time",
+      type: "button",
+      icon: "CalendarDays",
+      label: "Date & Time",
+      command: "insertDateTime",
+    },
+    {
+      id: "insert-field",
+      type: "button",
+      icon: "Braces",
+      label: "Field",
+      command: "insertField",
+    },
+    {
+      id: "add-comment",
+      type: "button",
+      icon: "TextQuote",
+      label: "Comment",
+      command: "addComment",
+    },
+  ],
+})
+
 export const wordRibbonSpec = modifiedSpec
