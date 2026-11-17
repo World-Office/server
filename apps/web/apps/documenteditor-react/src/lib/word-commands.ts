@@ -717,6 +717,20 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
           }),
         )
         return
+      case "chartWidth":
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-width", {
+            detail: { width: value ? Number.parseFloat(value) : 400 },
+          }),
+        )
+        return
+      case "chartHeight":
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-height", {
+            detail: { height: value ? Number.parseFloat(value) : 300 },
+          }),
+        )
+        return
       case "updateChartData":
         window.dispatchEvent(
           new CustomEvent("world-office:chart-update", { detail: { at: Date.now() } }),

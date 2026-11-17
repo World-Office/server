@@ -129,6 +129,53 @@ export function ChartPanel({ visible }: ChartPanelProps): JSX.Element | null {
             Edit Data
           </button>
         </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={sectionLabel}>Advanced settings</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: 11, color: "#888", marginBottom: 2 }}>
+                Width
+                <input
+                  type="number"
+                  defaultValue={400}
+                  min={1}
+                  max={2000}
+                  onChange={(e) => cmd("chartWidth", e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "4px 8px",
+                    border: "1px solid #ccc",
+                    borderRadius: 3,
+                    fontSize: 12,
+                    boxSizing: "border-box",
+                    marginTop: 2,
+                  }}
+                />
+              </label>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: 11, color: "#888", marginBottom: 2 }}>
+                Height
+                <input
+                  type="number"
+                  defaultValue={300}
+                  min={1}
+                  max={2000}
+                  onChange={(e) => cmd("chartHeight", e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "4px 8px",
+                    border: "1px solid #ccc",
+                    borderRadius: 3,
+                    fontSize: 12,
+                    boxSizing: "border-box",
+                    marginTop: 2,
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
