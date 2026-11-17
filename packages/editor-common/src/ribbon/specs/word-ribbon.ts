@@ -332,7 +332,7 @@ export const wordRibbonSpec: RibbonSpec = {
             {
               id: "font-size",
               type: "select",
-              label: "",
+              label: "Font size",
               options: [
                 { value: "", label: "Size" },
                 { value: "8pt", label: "8" },

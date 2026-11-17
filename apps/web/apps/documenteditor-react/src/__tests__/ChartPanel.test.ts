@@ -94,9 +94,13 @@ describe("ChartPanel Advanced settings", () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent")
     
     expect(widthInput).not.toBeNull()
-    
+
+    const setNativeValue = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!
     act(() => {
-      widthInput!.value = "600"
+      setNativeValue.call(widthInput!, "600")
       widthInput!.dispatchEvent(new Event("change", { bubbles: true }))
     })
     
@@ -114,9 +118,13 @@ describe("ChartPanel Advanced settings", () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent")
     
     expect(heightInput).not.toBeNull()
-    
+
+    const setNativeValue = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!
     act(() => {
-      heightInput!.value = "500"
+      setNativeValue.call(heightInput!, "500")
       heightInput!.dispatchEvent(new Event("change", { bubbles: true }))
     })
     
