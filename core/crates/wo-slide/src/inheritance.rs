@@ -289,11 +289,11 @@ mod tests {
 
         // Should inherit placeholder types
         assert!(
-            resolved.placeholder_types.contains(&"title".to_string()),
+            resolved.placeholder_types.iter().any(|s| s == "title"),
             "Should inherit title placeholder type"
         );
         assert!(
-            resolved.placeholder_types.contains(&"subtitle".to_string()),
+            resolved.placeholder_types.iter().any(|s| s == "subtitle"),
             "Should inherit subtitle placeholder type"
         );
 

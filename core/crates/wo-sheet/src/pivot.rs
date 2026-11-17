@@ -886,9 +886,9 @@ mod tests {
         // Row headers should have 3 depts
         assert_eq!(result.row_headers.len(), 3, "3 departments");
         let dept_names: Vec<String> = result.row_headers.iter().map(|r| r[0].clone()).collect();
-        assert!(dept_names.contains(&"Engineering".to_string()));
-        assert!(dept_names.contains(&"Sales".to_string()));
-        assert!(dept_names.contains(&"HR".to_string()));
+        assert!(dept_names.iter().any(|s| s == "Engineering"));
+        assert!(dept_names.iter().any(|s| s == "Sales"));
+        assert!(dept_names.iter().any(|s| s == "HR"));
 
         // Column headers should have Gender values as one of their levels
         // Find the Engineering row

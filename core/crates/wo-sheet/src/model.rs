@@ -154,7 +154,7 @@ impl SheetProtection {
     pub fn is_exempt_for(&self, user: Option<&str>, groups: &[&str]) -> bool {
         // Check user exemption
         if let Some(u) = user
-            && self.exempt_users.contains(&u.to_string())
+            && self.exempt_users.iter().any(|s| s == u)
         {
             return true;
         }
