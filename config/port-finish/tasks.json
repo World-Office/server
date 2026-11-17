@@ -221,23 +221,6 @@
       "note": "Auto-derived 2026-11-16T23:55:05Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'View': [\"Headings\", \"Multiple Pages\", \"Dark\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
     },
     {
-      "id": "PF-GAP-7",
-      "repo": "server",
-      "deps": [],
-      "priority": 5,
-      "title": "Parity fill: Chart design — Advanced settings, Width, Height",
-      "scope": [
-        "apps/web/apps/documenteditor-react/src/",
-        "apps/web/apps/documenteditor-react/node_modules"
-      ],
-      "touch": [
-        "apps/web/apps/documenteditor-react/src/__tests__/gap-7.test.ts",
-        "apps/web/apps/documenteditor-react/node_modules"
-      ],
-      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 300 npx vitest run 2>&1 | tee /tmp/vitest-$$.log | tail -3; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-out.log",
-      "note": "Auto-derived 2026-11-17T00:59:16Z by derive-gaps.py from coverage-check. OO golden labels missing on tab 'Chart design': [\"Advanced settings\", \"Width\", \"Height\"]. Implement each control minimal-viable and honest (no dead buttons; disabled-with-reason if engine-blocked). Test file asserts the exact labels render + handlers registered. VERIFIED FACTS (supervisor): react app at apps/web/apps/documenteditor-react; vitest; worktree has no node_modules (gate symlinks the main checkout). Ribbon buttons must expose the label via aria-label||title||textContent (exact trimmed label). E2E + coverage proof runs in the supervisor's master gate after merge. i18n: follow the catalog-key pattern of 1cc342147. WORKTREE DISCIPLINE: edit only inside YOUR worktree (state/worktrees/...); the main checkout is the merge target — never edit it (node_modules symlink is dependencies only)."
-    },
-    {
       "id": "PF-GAP-8",
       "repo": "server",
       "deps": [],
