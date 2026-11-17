@@ -340,7 +340,7 @@ jobs:
           done
           exit 1
 
-      - run: pnpm build --filter='!@world-office/tauri-poc'
+      - run: pnpm exec turbo run build --filter='!@world-office/tauri-poc'
         timeout-minutes: 15
 
   test-ts:
