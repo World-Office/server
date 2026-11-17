@@ -13,6 +13,7 @@
 import type { Editor } from "@tiptap/core"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
+import { stepFontSize } from "./word-commands"
 import { type CrossRefFormat, resolveRef } from "./cross-ref"
 import { updateIndex as updateDocIndex } from "./document-index"
 import { insertEndnoteCommand } from "./endnote-mark"
@@ -924,6 +925,19 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
         .focus()
         .insertContent(`<span data-wo-field="${name}">${name}</span>`)
         .run()
+    }
+    case "increaseFontSize":
+    case "decreaseFontSize": {
+      // Home tab A^/Av buttons — step along the OO font ladder. The value is
+      // the current size; the step lands via the same wasm path word-commands
+      // uses (commandToFormat → applyFormatting). Here in the RTE bridge we
+      // mirror it for direct dispatch callers.
+      const dir = command === "increaseFontSize" ? 1 : -1
+      const next = stepFontSize(value, dir)
+      return editor.commands.command(({ tr }) => {
+        tr.setMeta("wo-format", { fontSize: next * 2 })
+        return true
+      })
     }
   }
 }

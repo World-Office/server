@@ -86,4 +86,4 @@ export const DocumentCollaborationProvider = observer(function DocumentCollabora
   }, [collab.connect, collab.disconnect, documentStore.coEditingMode])
 
   return null
-}
+})
