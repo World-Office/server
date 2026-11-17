@@ -164,4 +164,20 @@ modifiedSpec = addControlToGroup(
   1, // Insert after Track Changes (position 1)
 )
 
+// Fix #4: View tab - Add Multiple Pages button
+// Add a Multiple Pages button to the View tab's zoom group (PF-GAP-6)
+modifiedSpec = addControlToGroup(
+  modifiedSpec,
+  "view",
+  "zoom",
+  {
+    id: "multiple-pages",
+    type: "button",
+    icon: "Layout",
+    label: "Multiple pages",
+    command: "toggleMultiplePages",
+  },
+  0, // Insert at the beginning of the zoom group
+)
+
 export const wordRibbonSpec = modifiedSpec
