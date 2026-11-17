@@ -1,5 +1,6 @@
 import type { EditOperation, ParticipantUpdate } from "@world-office/collaboration-client"
 import { useCollaboration } from "@world-office/collaboration-react"
+import { observer } from "mobx-react-lite"
 import { useEffect } from "react"
 import {
   collabSendCommentRef,
@@ -7,7 +8,7 @@ import {
   collaborationStore,
   currentUser,
 } from "../lib/collaboration"
-import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
+import { COAUTHORING_API_URL, COAUTHORING_WS_URL, isCollaborationConfigured } from "../lib/collaboration-config"
 import { getActiveRichTextEditor } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 
@@ -30,7 +31,7 @@ function getOrCreateUser(): { id: string; name: string } {
   return user
 }
 
-export function DocumentCollaborationProvider(): null {
+export const DocumentCollaborationProvider = observer(function DocumentCollaborationProvider(): null {
   const user = getOrCreateUser()
 
   const collab = useCollaboration({
@@ -76,8 +77,13 @@ export function DocumentCollaborationProvider(): null {
   }, [collab.sendParticipantUpdate, collab.sendCommentEvent])
 
   useEffect(() => {
-    collab.connect()
-  }, [collab.connect])
+    // Only connect if collaboration is configured AND co-editing mode is enabled
+    if (isCollaborationConfigured() && documentStore.coEditingMode) {
+      collab.connect()
+    } else {
+      collab.disconnect()
+    }
+  }, [collab.connect, collab.disconnect, documentStore.coEditingMode])
 
   return null
 }
