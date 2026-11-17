@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * PF-GAP-6 — Parity fill: View — Headings, Multiple Pages, Dark
- * covers ONLYOFFICE golden labels: ["Headings", "Multiple Pages", "Dark Document"]
- * Tests that the View tab's Show group contains checkboxes for Headings, Multiple Pages, and Dark Document
+ * covers ONLYOFFICE golden labels: ["Headings", "Multiple Pages", "Dark"]
+ * Tests that the View tab's Show group contains checkboxes for Headings, Multiple Pages, and Dark
  */
 import { describe, expect, it } from "vitest"
 import { wordRibbonSpec } from "../lib/word-ribbon-spec"
@@ -49,26 +49,26 @@ describe("PF-GAP-6: View tab Show group checkboxes", () => {
       (control) => control.id === "multiple-pages-checkbox" && control.type === "checkbox",
     )
     expect(multiplePagesCheckbox).toBeDefined()
-    expect(multiplePagesCheckbox?.label).toBe("Multiple pages")
+    expect(multiplePagesCheckbox?.label).toBe("Multiple Pages")
     expect(multiplePagesCheckbox?.command).toBe("toggleMultiplePages")
   })
 
-  it("Show group contains a Dark Document checkbox", () => {
+  it("Show group contains a Dark checkbox", () => {
     const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
     expect(viewTab).toBeDefined()
     
     const showGroup = viewTab?.groups.find((group) => group.id === "show")
     expect(showGroup).toBeDefined()
     
-    const darkDocumentCheckbox = showGroup?.controls.find(
+    const darkCheckbox = showGroup?.controls.find(
       (control) => control.id === "dark-document" && control.type === "checkbox",
     )
-    expect(darkDocumentCheckbox).toBeDefined()
-    expect(darkDocumentCheckbox?.label).toBe("Dark Document")
-    expect(darkDocumentCheckbox?.command).toBe("toggleDarkDocument")
+    expect(darkCheckbox).toBeDefined()
+    expect(darkCheckbox?.label).toBe("Dark")
+    expect(darkCheckbox?.command).toBe("toggleDarkDocument")
   })
 
-  it("checkboxes are in the correct order: Headings, Multiple Pages, Dark Document", () => {
+  it("checkboxes are in the correct order: Headings, Multiple Pages, Dark", () => {
     const viewTab = wordRibbonSpec.tabs.find((tab) => tab.id === "view")
     expect(viewTab).toBeDefined()
     
@@ -84,19 +84,19 @@ describe("PF-GAP-6: View tab Show group checkboxes", () => {
     const multiplePagesIndex = controls.findIndex(
       (control) => control.id === "multiple-pages-checkbox" && control.type === "checkbox",
     )
-    const darkDocumentIndex = controls.findIndex(
+    const darkIndex = controls.findIndex(
       (control) => control.id === "dark-document" && control.type === "checkbox",
     )
     
     // All checkboxes should be found
     expect(headingsIndex).not.toBe(-1)
     expect(multiplePagesIndex).not.toBe(-1)
-    expect(darkDocumentIndex).not.toBe(-1)
+    expect(darkIndex).not.toBe(-1)
     
     // Headings should come before Multiple Pages
     expect(headingsIndex).toBeLessThan(multiplePagesIndex)
     
-    // Multiple Pages should come before Dark Document
-    expect(multiplePagesIndex).toBeLessThan(darkDocumentIndex)
+    // Multiple Pages should come before Dark
+    expect(multiplePagesIndex).toBeLessThan(darkIndex)
   })
 })

@@ -174,15 +174,15 @@ modifiedSpec = addControlToGroup(
     id: "multiple-pages",
     type: "button",
     icon: "Layout",
-    label: "Multiple pages",
+    label: "Multiple Pages",
     command: "toggleMultiplePages",
   },
   0, // Insert at the beginning of the zoom group
 )
 
-// Fix #5: View tab - Add Headings, Multiple Pages, and Dark Document checkboxes to Show group
-// Add checkboxes to the View tab's Show group to achieve parity with ONLYOFFICE's View > Show group (PF-GAP-6)
-// ONLYOFFICE's View > Show group includes: Headings, Multiple Pages, and Dark Document checkboxes
+// Fix #5: View tab - Add Headings, Multiple Pages, and Dark checkboxes to Show group
+// Add checkboxes to the View tab's Show group to achieve parity with ONLYOFFICE's View > Show group (PF-GAP-6, PF-GAP-11)
+// ONLYOFFICE's View > Show group includes: Headings, Multiple Pages, and Dark checkboxes
 modifiedSpec = addControlToGroup(
   modifiedSpec,
   "view",
@@ -205,7 +205,7 @@ modifiedSpec = addControlToGroup(
   {
     id: "multiple-pages-checkbox",
     type: "checkbox",
-    label: "Multiple pages",
+    label: "Multiple Pages",
     checked: (ctx) => ctx.multiplePages ?? false,
     onChange: () => {},
     command: "toggleMultiplePages",
@@ -220,7 +220,7 @@ modifiedSpec = addControlToGroup(
   {
     id: "dark-document",
     type: "checkbox",
-    label: "Dark Document",
+    label: "Dark",
     checked: (ctx) => ctx.darkDocument ?? false,
     onChange: () => {},
     command: "toggleDarkDocument",
