@@ -230,10 +230,18 @@ modifiedSpec = addControlToGroup(
 
 // Fix #6: Insert tab - Add Header & Footer group (PF-3)
 // Add Header & Footer group to the Insert tab with Header, Footer, Page Number, Date & Time, Field, and Comment
+// PF-GAP-9: Add Header & Footer control
 modifiedSpec = addGroupToTab(modifiedSpec, "insert", {
   id: "header-footer",
   label: "Header & Footer",
   controls: [
+    {
+      id: "insert-header-footer",
+      type: "button",
+      icon: "AlignJustify",
+      label: "Header & Footer",
+      command: "insertHeaderFooter",
+    },
     {
       id: "edit-header",
       type: "button",
