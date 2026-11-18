@@ -73,6 +73,7 @@ export type RichTextCommand =
   | "outdent"
   // Table commands
   | "insertTable"
+  | "insertCells"
   | "addRowBefore"
   | "addRowAfter"
   | "deleteRow"
@@ -274,6 +275,7 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "indent",
   "outdent",
   "insertTable",
+  "insertCells",
   "addRowBefore",
   "addRowAfter",
   "deleteRow",
@@ -498,6 +500,58 @@ export function distributeTableRows(editor: Editor): boolean {
   return true
 }
 
+/**
+ * Shift directions offered by the OO "Cells Add" (Insert Cells) dialog:
+ * the new blank cell takes the selected cell's place and the existing
+ * cells move `right` (same row) or `down` (same column).
+ */
+export type InsertCellsDirection = "right" | "down"
+
+/**
+ * Default shift direction when a dispatch carries no value — the option
+ * the OO dialog preselects ("Shift cells right").
+ */
+export const DEFAULT_INSERT_CELLS_DIRECTION: InsertCellsDirection = "right"
+
+const INSERT_CELLS_ALIASES: Record<string, InsertCellsDirection> = {
+  right: "right",
+  shiftright: "right",
+  "shift-right": "right",
+  horizontal: "right",
+  column: "right",
+  down: "down",
+  shiftdown: "down",
+  "shift-down": "down",
+  vertical: "down",
+  row: "down",
+}
+
+/**
+ * Normalize a shift-direction value coming from a `wo-command` dispatch.
+ * Unknown or missing values fall back to the dialog default.
+ */
+export function normalizeInsertCellsDirection(value?: string | null): InsertCellsDirection {
+  if (!value) return DEFAULT_INSERT_CELLS_DIRECTION
+  return (
+    INSERT_CELLS_ALIASES[value] ??
+    INSERT_CELLS_ALIASES[value.toLowerCase()] ??
+    DEFAULT_INSERT_CELLS_DIRECTION
+  )
+}
+
+/**
+ * PGP-3 — OO "Cells Add": insert cell(s) at the selection and shift the
+ * existing cells in the chosen direction. ProseMirror tables are a
+ * rectangular grid, so the shift materializes as a column / row inserted
+ * *at* the selected cell: with `right` the selected cell (and everything
+ * after it in its row) moves one column right, with `down` the row moves
+ * one row down. Returns the TipTap command result (false outside a table).
+ */
+export function insertTableCells(editor: Editor, direction: InsertCellsDirection): boolean {
+  const chain = editor.chain().focus()
+  return direction === "right" ? chain.addColumnBefore().run() : chain.addRowBefore().run()
+}
+
 export type RichTextCommandSurface = Editor
 
 let activeEditor: RichTextCommandSurface | null = null
@@ -711,6 +765,10 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       }
       return true
     }
+    case "insertCells":
+      // OO "Cells Add" dialog — insert cell(s) at the selection with a
+      // shift direction (right / down).
+      return insertTableCells(editor, normalizeInsertCellsDirection(value))
     case "addRowBefore":
       chain.addRowBefore().run()
       return true
