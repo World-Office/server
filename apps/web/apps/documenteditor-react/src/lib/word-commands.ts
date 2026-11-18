@@ -248,6 +248,14 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       editorRef.current?.applyStructureOp("indent")
       return
     }
+    // List Settings / List Types pickers — numbering format (decimal /
+    // alpha / roman) and per-level indent. The WASM engine has no op for
+    // these, so route them to the TipTap rich-text bridge which owns the
+    // orderedList `type` attr and sink/liftListItem nesting.
+    if (command === "listNumberingStyle" || command === "listIndent") {
+      onRichTextCommand(command as RichTextCommand, value)
+      return
+    }
     if (command === "drawSelect") {
       editorRef.current?.applyStructureOp("select-tool")
       return
