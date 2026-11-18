@@ -429,6 +429,13 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
+    // OO table ctx-menu "Distribute Rows / Columns" — the WASM engine has no
+    // distribute op, the TipTap bridge owns the equal-width/height model
+    // change (rte-command.ts distributeTable{Rows,Columns}).
+    if (command === "distributeRows" || command === "distributeColumns") {
+      onRichTextCommand(command as RichTextCommand, value)
+      return
+    }
     if (command === "drawSelect") {
       editorRef.current?.applyStructureOp("select-tool")
       return
@@ -771,6 +778,19 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "insertTable":
         documentStore.toggleRightPanel("table")
+        return
+      // OO table ctx-menu rows that open a settings surface.
+      case "tableProperties":
+        // "Table Properties" (OO ctx row) → the Table settings right rail.
+        documentStore.toggleRightPanel("table")
+        return
+      case "paragraphSettings":
+        // "Paragraph Settings" (OO ctx row) → StylesPanel (paragraph rail).
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "printSelection":
+        // OO prints the current selection natively; no editor command.
+        window.print()
         return
       // Insert-tab media/objects: Shape, SmartArt and Text Box land on the
       // existing shapes panel (the graphic-object surface; the WASM engine
