@@ -16,8 +16,8 @@ import { createRoot } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { StatusBar } from "../components/StatusBar/StatusBar"
-import { DocumentStore, documentStore } from "../stores/DocumentStore"
 import { createWordCommandHandler } from "../lib/word-commands"
+import { DocumentStore, documentStore } from "../stores/DocumentStore"
 
 // useTranslation without an i18n provider throws — pass-through t().
 vi.mock("react-i18next", () => ({

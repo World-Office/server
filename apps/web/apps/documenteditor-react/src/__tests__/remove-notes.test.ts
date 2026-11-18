@@ -1,3 +1,5 @@
+import { Editor } from "@tiptap/core"
+import StarterKit from "@tiptap/starter-kit"
 // @vitest-environment jsdom
 /**
  * PGP-2 — Notes Remove: remove all footnotes/endnotes.
@@ -21,8 +23,6 @@
 import type { ReactNode } from "react"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { Editor } from "@tiptap/core"
-import StarterKit from "@tiptap/starter-kit"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { CrossReferencePanel } from "../components/CrossReferencePanel"
@@ -401,9 +401,9 @@ describe("CrossReferencePanel notes-remove buttons", () => {
   }
 
   function button(container: HTMLElement, label: string): HTMLButtonElement {
-    const found = [...container.querySelectorAll("button")].find(
-      (b) => b.textContent === label,
-    ) as HTMLButtonElement | undefined
+    const found = [...container.querySelectorAll("button")].find((b) => b.textContent === label) as
+      | HTMLButtonElement
+      | undefined
     expect(found, `button ${label}`).toBeDefined()
     return found!
   }

@@ -40,7 +40,7 @@ import { documentStore } from "../stores/DocumentStore"
 
 /* ------------------------------- helpers --------------------------------- */
 
-let editors: Editor[] = []
+const editors: Editor[] = []
 
 function buildEditor(content: string): Editor {
   const editor = new Editor({
@@ -208,10 +208,14 @@ describe("updateFormControl", () => {
     )
     const pos = nodePos(editor, "dropdownControl")
 
-    const ok = updateFormControl(editor, { pos, nodeTypeName: "dropdownControl" }, {
-      options: "X, Y",
-      title: "Plan picker",
-    })
+    const ok = updateFormControl(
+      editor,
+      { pos, nodeTypeName: "dropdownControl" },
+      {
+        options: "X, Y",
+        title: "Plan picker",
+      },
+    )
 
     expect(ok).toBe(true)
     expect(attrsAt(editor, pos).options).toBe("X, Y")
@@ -227,7 +231,11 @@ describe("updateFormControl", () => {
       updateFormControl(editor, { pos, nodeTypeName: "plainTextControl" }, { title: "x" }),
     ).toBe(false)
     expect(
-      updateFormControl(editor, { pos: editor.state.doc.content.size + 40, nodeTypeName: "dropdownControl" }, { title: "x" }),
+      updateFormControl(
+        editor,
+        { pos: editor.state.doc.content.size + 40, nodeTypeName: "dropdownControl" },
+        { title: "x" },
+      ),
     ).toBe(false)
     expect(attrsAt(editor, pos).title).toBe("")
   })
@@ -309,7 +317,10 @@ describe("FormPanel — edit a placed control", () => {
     const container = mount(createElement(FormPanel, { visible: true, editor }))
 
     act(() => editor.commands.setNodeSelection(pos))
-    setValue(mustQuery<HTMLInputElement>(container, 'input[aria-label="Control title"]'), "Plan picker")
+    setValue(
+      mustQuery<HTMLInputElement>(container, 'input[aria-label="Control title"]'),
+      "Plan picker",
+    )
     click(saveButton(container))
 
     expect(attrsAt(editor, pos).title).toBe("Plan picker")
@@ -362,7 +373,10 @@ describe("FormPanel — edit a placed control", () => {
     expect(value.value).toBe("2026-01-31")
 
     setValue(value, "2026-02-28")
-    setValue(mustQuery<HTMLInputElement>(container, 'input[aria-label="Date format"]'), "DD/MM/YYYY")
+    setValue(
+      mustQuery<HTMLInputElement>(container, 'input[aria-label="Date format"]'),
+      "DD/MM/YYYY",
+    )
     click(saveButton(container))
 
     expect(attrsAt(editor, pos).value).toBe("2026-02-28")
@@ -444,11 +458,7 @@ describe("click routing — option-less dropdown opens the editor, not a prompt"
     const select = document.body.querySelector("select")
     expect(select).not.toBeNull()
     // blank option + one per option (the atom control carries no text)
-    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual([
-      "Select...",
-      "A",
-      "B",
-    ])
+    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual(["Select...", "A", "B"])
     expect(getSelectedFormControl(editor)?.kind).toBe("dropdown")
   })
 })

@@ -35,7 +35,7 @@ import { documentStore } from "../stores/DocumentStore"
 
 /* ------------------------------- helpers --------------------------------- */
 
-let editors: Editor[] = []
+const editors: Editor[] = []
 
 function buildEditor(content: string): Editor {
   const editor = new Editor({
@@ -78,9 +78,7 @@ function fillSummary(container: HTMLElement): string {
 }
 
 function fillEntriesIn(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>('[data-testid="form-fill-entry"]'),
-  )
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="form-fill-entry"]'))
 }
 
 /* --------------------------------- tests --------------------------------- */
@@ -268,9 +266,14 @@ describe("FormPanel — Filling status section", () => {
       return true
     })
     act(() => {
-      editor.chain().focus().setNodeSelection(pos).updateAttributes("checkboxControl", {
-        checked: true,
-      }).run()
+      editor
+        .chain()
+        .focus()
+        .setNodeSelection(pos)
+        .updateAttributes("checkboxControl", {
+          checked: true,
+        })
+        .run()
     })
     expect(fillSummary(container)).toBe("1 of 2 filled")
 

@@ -12,7 +12,6 @@ import { createRoot } from "react-dom/client"
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 import { StylesPanel } from "../components/StylesPanel"
-import { documentStore } from "../stores/DocumentStore"
 import {
   applyUserStyle,
   captureSelectionFormatting,
@@ -25,6 +24,7 @@ import {
   saveUserStyle,
   subscribeUserStyles,
 } from "../lib/word-commands"
+import { documentStore } from "../stores/DocumentStore"
 
 const wasmMocks = vi.hoisted(() => ({
   getWasmApi: vi.fn((): unknown => null),
@@ -270,9 +270,9 @@ describe("style title — StylesPanel naming surface", () => {
   }
 
   function button(container: HTMLElement, label: string): HTMLButtonElement {
-    const found = [...container.querySelectorAll("button")].find(
-      (b) => b.textContent === label,
-    ) as HTMLButtonElement | undefined
+    const found = [...container.querySelectorAll("button")].find((b) => b.textContent === label) as
+      | HTMLButtonElement
+      | undefined
     expect(found, `button ${label}`).toBeDefined()
     return found!
   }

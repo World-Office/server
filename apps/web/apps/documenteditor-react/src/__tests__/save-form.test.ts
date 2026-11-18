@@ -129,7 +129,11 @@ async function flush(): Promise<void> {
 describe("buildFormDocx — DOCX package with content controls", () => {
   it("emits a valid DOCX zip (content types, rels, document.xml + EOCD)", async () => {
     const bytes = await blobBytes(buildFormDocx(FORM_HTML))
-    expect(zipEntryNames(bytes)).toEqual(["[Content_Types].xml", "_rels/.rels", "word/document.xml"])
+    expect(zipEntryNames(bytes)).toEqual([
+      "[Content_Types].xml",
+      "_rels/.rels",
+      "word/document.xml",
+    ])
     // End-of-central-directory record is the last 22 bytes.
     const eocd = new DataView(bytes.buffer, bytes.byteOffset + bytes.length - 22, 22)
     expect(eocd.getUint32(0, true)).toBe(0x06054b50)
@@ -203,10 +207,7 @@ describe("buildFormDocx — DOCX package with content controls", () => {
 
   it("plain document without controls exports clean text (no sdt)", async () => {
     const xml = new TextDecoder().decode(
-      extractZipEntry(
-        await blobBytes(buildFormDocx("<p>No forms here</p>")),
-        "word/document.xml",
-      ),
+      extractZipEntry(await blobBytes(buildFormDocx("<p>No forms here</p>")), "word/document.xml"),
     )
     expect(xml).not.toContain("<w:sdt>")
     expect(xml).toContain("No forms here")

@@ -171,7 +171,12 @@ export type RichTextCommand =
  * element, which is also the CSS `list-style-type` shorthand ("1", "a",
  * "A", "i", "I").
  */
-export type ListNumberingFormatId = "decimal" | "lowerAlpha" | "upperAlpha" | "lowerRoman" | "upperRoman"
+export type ListNumberingFormatId =
+  | "decimal"
+  | "lowerAlpha"
+  | "upperAlpha"
+  | "lowerRoman"
+  | "upperRoman"
 
 export interface ListNumberingFormat {
   id: ListNumberingFormatId
@@ -418,6 +423,7 @@ function ancestorOfSelection(
 /** Uniform column width (px) for `distributeColumns` — the mean known width. */
 function distributedColumnWidth(table: PMNode): number {
   const widths: number[] = []
+  // biome-ignore lint/complexity/noForEach: PM Node.forEach, not array iteration
   table.firstChild?.forEach((cell) => {
     const span = Number(cell.attrs.colspan ?? 1)
     const colwidth = Array.isArray(cell.attrs.colwidth) ? cell.attrs.colwidth : null
@@ -438,6 +444,7 @@ function distributedColumnWidth(table: PMNode): number {
  */
 function distributedRowHeight(editor: Editor, tablePos: number, table: PMNode): number {
   let target = MIN_DISTRIBUTED_ROW_HEIGHT
+  // biome-ignore lint/complexity/noForEach: PM Node.forEach, not array iteration
   table.forEach((row) => {
     const h = row.attrs.rowHeight
     if (typeof h === "number" && h > target) target = h

@@ -20,16 +20,16 @@ import type { Editor } from "@tiptap/core"
 import { type JSX, useEffect, useState } from "react"
 
 import {
-  type SelectedFormControl,
   FORM_CONTROL_LABELS,
+  type SelectedFormControl,
   dropdownOptionsToLines,
   getSelectedFormControl,
   linesToDropdownOptions,
   updateFormControl,
 } from "../lib/content-controls"
 import {
-  type FormFillStatus,
   EMPTY_FORM_FILL_STATUS,
+  type FormFillStatus,
   formatFormFillSummary,
   getFormFillStatus,
 } from "../lib/form-status"
@@ -348,9 +348,7 @@ export function FormPanel({ visible, editor: editorProp }: FormPanelProps): JSX.
 
             {editingControl.kind === "dropdown" && (
               <>
-                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
-                  Dropdown options
-                </div>
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>Dropdown options</div>
                 <textarea
                   aria-label="Dropdown options"
                   value={draft.options}
@@ -505,11 +503,7 @@ export function FormPanel({ visible, editor: editorProp }: FormPanelProps): JSX.
         {selectedType === "date-picker" && (
           <div className="de-prop-section" style={{ marginBottom: 16 }}>
             <div style={SECTION_HEADER_STYLE}>Default Date</div>
-            <input
-              type="date"
-              aria-label="New control default date"
-              style={INPUT_STYLE}
-            />
+            <input type="date" aria-label="New control default date" style={INPUT_STYLE} />
           </div>
         )}
 

@@ -20,9 +20,9 @@ import type { Editor } from "@tiptap/core"
 import type { Node as PMNode } from "@tiptap/pm/model"
 
 import {
-  type FormControlKind,
   FORM_CONTROL_LABELS,
   FORM_CONTROL_NODE_TYPES,
+  type FormControlKind,
 } from "./content-controls"
 
 /** Fill report for a single placed control. */

@@ -1,3 +1,7 @@
+import { Editor } from "@tiptap/core"
+import TaskItem from "@tiptap/extension-task-item"
+import TaskList from "@tiptap/extension-task-list"
+import StarterKit from "@tiptap/starter-kit"
 // @vitest-environment jsdom
 /**
  * List Settings + List Types — numbering-format picker and per-level
@@ -11,10 +15,6 @@
 import type { ReactNode } from "react"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { Editor } from "@tiptap/core"
-import TaskItem from "@tiptap/extension-task-item"
-import TaskList from "@tiptap/extension-task-list"
-import StarterKit from "@tiptap/starter-kit"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { StylesPanel } from "../components/StylesPanel"
@@ -72,7 +72,11 @@ function textPos(editor: Editor, itemIndex: number): number {
 }
 
 /** Depth-first `type` values of every orderedList in the JSON doc. */
-function orderedListTypes(node: { type?: string; attrs?: { type?: string | null }; content?: unknown[] }): Array<string | null> {
+function orderedListTypes(node: {
+  type?: string
+  attrs?: { type?: string | null }
+  content?: unknown[]
+}): Array<string | null> {
   const found: Array<string | null> = []
   const walk = (n: typeof node): void => {
     if (n.type === "orderedList") found.push(n.attrs?.type ?? null)

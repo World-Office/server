@@ -22,11 +22,11 @@ import {
   type InsertCellsDirection,
   RICH_TEXT_COMMANDS,
   type RichTextCommand,
+  TableRowHeight,
   dispatchRichTextCommand,
   insertTableCells,
   normalizeInsertCellsDirection,
   setActiveRichTextEditor,
-  TableRowHeight,
 } from "../lib/rte-command"
 
 const wasmMocks = vi.hoisted(() => ({
@@ -38,8 +38,8 @@ vi.mock("../lib/wasm-renderer", () => ({ getWasmApi: wasmMocks.getWasmApi }))
 /** Plain 2×2 table (no header row): A B / C D. */
 const TABLE_2X2 =
   "<table><tbody>" +
-  '<tr><td><p>AAA</p></td><td><p>BBB</p></td></tr>' +
-  '<tr><td><p>CCC</p></td><td><p>DDD</p></td></tr>' +
+  "<tr><td><p>AAA</p></td><td><p>BBB</p></td></tr>" +
+  "<tr><td><p>CCC</p></td><td><p>DDD</p></td></tr>" +
   "</tbody></table>"
 
 const mounted: Array<ReturnType<typeof createRoot>> = []
@@ -204,8 +204,21 @@ describe("insertCells — OO dialog shift directions", () => {
   })
 
   it.each<[InsertCellsDirection, string[][]]>([
-    ["right", [["", "AAA", "BBB"], ["", "CCC", "DDD"]]],
-    ["down", [["", ""], ["AAA", "BBB"], ["CCC", "DDD"]]],
+    [
+      "right",
+      [
+        ["", "AAA", "BBB"],
+        ["", "CCC", "DDD"],
+      ],
+    ],
+    [
+      "down",
+      [
+        ["", ""],
+        ["AAA", "BBB"],
+        ["CCC", "DDD"],
+      ],
+    ],
   ])("insertTableCells(%s) applies the same shift directly", (direction, rows) => {
     const editor = buildEditor(TABLE_2X2)
     editors.push(editor)

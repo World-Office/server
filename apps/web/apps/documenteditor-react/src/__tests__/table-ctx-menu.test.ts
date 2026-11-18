@@ -22,11 +22,11 @@ import {
   isTableTarget,
 } from "../components/TableContextMenu"
 import {
+  TableRowHeight,
   dispatchRichTextCommand,
   distributeTableColumns,
   distributeTableRows,
   setActiveRichTextEditor,
-  TableRowHeight,
 } from "../lib/rte-command"
 import { createWordCommandHandler } from "../lib/word-commands"
 import { documentStore } from "../stores/DocumentStore"
@@ -98,7 +98,7 @@ function mount(node: ReactNode): HTMLDivElement {
 function editorHost(): HTMLDivElement {
   const host = document.createElement("div")
   host.innerHTML =
-    "<p>plain paragraph</p><table><tbody><tr><td id=\"in-table\">cell text</td></tr></tbody></table>"
+    '<p>plain paragraph</p><table><tbody><tr><td id="in-table">cell text</td></tr></tbody></table>'
   document.body.appendChild(host)
   appended.push(host)
   return host
@@ -134,7 +134,7 @@ function rowIds(container: HTMLElement): string[] {
 const TABLE_HTML =
   '<table><tbody><tr><th colwidth="100"><p>Head A</p></th>' +
   '<th colwidth="200"><p>Head B</p></th></tr>' +
-  '<tr><td><p>one</p></td><td><p>two</p></td></tr></tbody></table>'
+  "<tr><td><p>one</p></td><td><p>two</p></td></tr></tbody></table>"
 
 function buildEditor(html: string): Editor {
   return new Editor({
@@ -242,11 +242,14 @@ describe("table ctx menu — trigger", () => {
     const host = editorHost()
     const menuHost = mount(createElement(TableContextMenu))
     act(() => {
-      host
-        .querySelector("p")
-        ?.dispatchEvent(
-          new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 5, clientY: 5 }),
-        )
+      host.querySelector("p")?.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 5,
+          clientY: 5,
+        }),
+      )
     })
     expect(menuHost.querySelector('[role="menu"]')).toBeNull()
   })
@@ -342,7 +345,7 @@ describe("table ctx menu — browser-side rows (Cut/Copy/Paste/Print/Select)", (
   })
 
   afterEach(() => {
-    if (previousExec === undefined) delete (document as { execCommand?: unknown }).execCommand
+    if (previousExec === undefined) Reflect.deleteProperty(document as object, "execCommand")
     else document.execCommand = previousExec
   })
 
@@ -419,7 +422,7 @@ describe("distribute rows / columns — model change", () => {
   it("distribute keeps the taller row height when the model already has one", () => {
     const editor = buildEditor(
       '<table><tbody><tr data-row-height="80"><td><p>tall</p></td></tr>' +
-        '<tr><td><p>short</p></td></tr></tbody></table>',
+        "<tr><td><p>short</p></td></tr></tbody></table>",
     )
     editors.push(editor)
     setActiveRichTextEditor(editor)
@@ -456,7 +459,10 @@ describe("distribute rows / columns — model change", () => {
 
 describe("table ctx menu — word-commands routing", () => {
   function handler(onRichTextCommand = vi.fn()) {
-    return { handler: createWordCommandHandler({ editorRef: { current: null }, onRichTextCommand }), onRichTextCommand }
+    return {
+      handler: createWordCommandHandler({ editorRef: { current: null }, onRichTextCommand }),
+      onRichTextCommand,
+    }
   }
 
   it("routes Distribute Rows / Columns to the rich-text bridge", () => {

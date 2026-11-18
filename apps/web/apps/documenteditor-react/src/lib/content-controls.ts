@@ -74,10 +74,7 @@ export function linesToDropdownOptions(lines: string): string {
     .join(", ")
 }
 
-function controlFromNode(
-  node: PMNode | null | undefined,
-  pos: number,
-): SelectedFormControl | null {
+function controlFromNode(node: PMNode | null | undefined, pos: number): SelectedFormControl | null {
   const name = (node as { type?: { name?: string } } | null | undefined)?.type?.name
   if (!node || !name) return null
   const kind = FORM_CONTROL_NODE_TYPES[name]
@@ -103,10 +100,7 @@ function safeNodeAt(editor: Editor, pos: number): PMNode | null {
  * Prefer the live node attrs at the control position; fall back to the
  * snapshot taken when the control was located.
  */
-function controlAttrs(
-  editor: Editor,
-  control: SelectedFormControl,
-): Record<string, unknown> {
+function controlAttrs(editor: Editor, control: SelectedFormControl): Record<string, unknown> {
   return (safeNodeAt(editor, control.pos)?.attrs as Record<string, unknown>) ?? control.attrs
 }
 

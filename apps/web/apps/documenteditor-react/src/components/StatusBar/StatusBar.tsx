@@ -254,9 +254,9 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         className="de-statusbar-status-slot"
         style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden" }}
       >
-        <span className="de-statusbar-label de-statusbar-status" role="status">
+        <output className="de-statusbar-label de-statusbar-status">
           {statusMessage ? t(statusMessage) : ""}
-        </span>
+        </output>
       </div>
 
       {/* Zoom controls */}

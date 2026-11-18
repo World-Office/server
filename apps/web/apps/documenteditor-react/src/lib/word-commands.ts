@@ -246,8 +246,9 @@ export function saveUserStyle(
       return existing
     }
   }
+  userStyleSeq += 1
   const entry: UserStyle = {
-    id: `user-style-${(userStyleSeq += 1)}`,
+    id: `user-style-${userStyleSeq}`,
     name: normalized ?? nextDefaultStyleName(),
     formatting,
     createdAt: Date.now(),

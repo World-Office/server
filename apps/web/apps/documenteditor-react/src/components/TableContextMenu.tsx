@@ -286,13 +286,16 @@ export function TableContextMenu({ editorElement = null }: TableContextMenuProps
       {TABLE_CONTEXT_ROWS.map((row) => (
         <div key={row.id} role={row.children ? "group" : "presentation"}>
           {row.divider && (
-            <div role="separator" style={{ height: 1, background: "#e6e6e6", margin: "4px 0" }} />
+            <div aria-hidden="true" style={{ height: 1, background: "#e6e6e6", margin: "4px 0" }} />
           )}
           {row.children ? (
             <>
               {/* Submenu rows (Delete, Text Alignment) carry the OO row id on
                   the group; each sub-row is its own menu item. */}
-              <div data-row-id={row.id} style={{ ...itemStyle, cursor: "default", color: "#666", fontWeight: 600 }}>
+              <div
+                data-row-id={row.id}
+                style={{ ...itemStyle, cursor: "default", color: "#666", fontWeight: 600 }}
+              >
                 {row.label}
               </div>
               {row.children.map((child) => renderRow(child, true))}

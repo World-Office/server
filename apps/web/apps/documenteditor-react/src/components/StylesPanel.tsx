@@ -13,11 +13,11 @@ import {
   type RichTextCommand,
 } from "../lib/rte-command"
 import {
+  type UserStyle,
   applyUserStyle,
   getUserStyles,
   renameUserStyle,
   subscribeUserStyles,
-  type UserStyle,
 } from "../lib/word-commands"
 
 export interface StyleDefinition {
@@ -326,7 +326,6 @@ export function StylesPanel({ visible, onCommand }: StylesPanelProps) {
                 <input
                   aria-label={`Rename ${style.name}`}
                   value={renameDraft}
-                  autoFocus
                   onChange={(e) => setRenameDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleCommitRename()
@@ -478,7 +477,13 @@ interface ListTypeAction {
 /** List Types gallery entries (OO list-kind picks). */
 const LIST_TYPE_ACTIONS: ListTypeAction[] = [
   { id: "bullet", label: "Bulleted", title: "Bulleted list", command: "bulletList" },
-  { id: "decimal", label: "Numbered", title: "Numbered list (1. 2. 3.)", command: "listNumberingStyle", value: "decimal" },
+  {
+    id: "decimal",
+    label: "Numbered",
+    title: "Numbered list (1. 2. 3.)",
+    command: "listNumberingStyle",
+    value: "decimal",
+  },
   { id: "task", label: "Task", title: "Task list", command: "taskList" },
 ]
 

@@ -302,21 +302,14 @@ function controlSdt(el: Element, fmt: RunFormat, ctx: { id: number }): string {
     }
     case "checkbox": {
       const checked = el.getAttribute("data-checked") === "true"
-      const typeProp =
-        "<w14:checkbox>" +
-        `<w14:checked w14:val="${checked ? 1 : 0}"/>` +
-        '<w14:checkedState w14:val="2612" w14:font="MS Gothic"/>' +
-        '<w14:uncheckedState w14:val="2610" w14:font="MS Gothic"/>' +
-        "</w14:checkbox>"
+      const typeProp = `<w14:checkbox><w14:checked w14:val="${checked ? 1 : 0}"/><w14:checkedState w14:val="2612" w14:font="MS Gothic"/><w14:uncheckedState w14:val="2610" w14:font="MS Gothic"/></w14:checkbox>`
       return sdtWrap("wo-checkbox", id, typeProp, run(checked ? "☒" : "☐", fmt))
     }
     case "date-picker": {
       const dateValue = el.getAttribute("data-value") || value
       const iso = /^\d{4}-\d{2}-\d{2}/.test(dateValue) ? dateValue : ""
       const full = iso ? ` w:fullDate="${escapeXml(`${iso}T00:00:00Z`)}"` : ""
-      const typeProp =
-        `<w:date${full}><w:dateFormat w:val="yyyy-MM-dd"/>` +
-        '<w:calendar w:val="gregorian"/></w:date>'
+      const typeProp = `<w:date${full}><w:dateFormat w:val="yyyy-MM-dd"/><w:calendar w:val="gregorian"/></w:date>`
       return sdtWrap("wo-date", id, typeProp, run(dateValue || value || " ", fmt))
     }
     default: {
@@ -457,16 +450,7 @@ export function buildFormDocx(html: string): Blob {
   const parsed = new DOMParser().parseFromString(html, "text/html")
   const ctx = { id: 0 }
   const body = blocksXml(parsed.body.childNodes, ctx)
-  const documentXml =
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
-    'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ' +
-    'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
-    'mc:Ignorable="w14"><w:body>' +
-    body +
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
-    '<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417"/></w:sectPr>' +
-    "</w:body></w:document>"
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="w14"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417"/></w:sectPr></w:body></w:document>`
   const enc = new TextEncoder()
   const bytes = buildZip([
     { name: "[Content_Types].xml", data: enc.encode(CONTENT_TYPES_XML) },
