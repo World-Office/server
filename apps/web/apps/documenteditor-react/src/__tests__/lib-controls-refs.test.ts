@@ -390,11 +390,13 @@ describe("registerContentControlHandlers", () => {
     expect(select).not.toBeNull()
     // blank option + one per option
     expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual(["Select...", "A", "B"])
-    // choosing an option writes the value into the document
+    // choosing an option persists it on the control node's value attr
+    // (PGP-9: the filling status reads it back)
     if (!select) throw new Error("select not rendered")
     select.value = "B"
     select.dispatchEvent(new Event("change"))
-    expect(chain.insertContentAt).toHaveBeenCalledWith(3, "B")
+    expect(chain.setNodeSelection).toHaveBeenCalledWith(3)
+    expect(chain.updateAttributes).toHaveBeenCalledWith("dropdownControl", { value: "B" })
     // popup removed from the DOM afterwards
     expect(document.body.contains(select)).toBe(false)
   })

@@ -218,13 +218,14 @@ export function editFormControl(editor: Editor, pos?: number): SelectedFormContr
 /**
  * Dropdown click: show a quick-pick popup for a configured list; for a
  * control without options yet, open the Form panel editor instead of
- * blocking on a window.prompt (PGP-4 edit path).
+ * blocking on a window.prompt (PGP-4 edit path). Picking an option writes
+ * it to the node's `value` attr (PGP-9: the fill status reads it).
  */
 function promptDropdown(editor: Editor, control: SelectedFormControl) {
   const attrs = controlAttrs(editor, control)
   const options = splitDropdownOptions(String(attrs.options ?? ""))
   const pos = control.pos
-  const current = safeNodeAt(editor, pos)?.textContent ?? ""
+  const current = String(attrs.value ?? "")
 
   if (options.length === 0) {
     editFormControl(editor, pos)
@@ -256,7 +257,14 @@ function promptDropdown(editor: Editor, control: SelectedFormControl) {
   select.addEventListener("change", () => {
     const val = select.value
     if (val) {
-      editor.chain().focus().setNodeSelection(pos).insertContentAt(pos, val).run()
+      // Persist the picked option on the control node itself (the node is
+      // an atom, so its text content cannot hold it).
+      editor
+        .chain()
+        .focus()
+        .setNodeSelection(pos)
+        .updateAttributes("dropdownControl", { value: val })
+        .run()
     }
     document.body.removeChild(select)
   })
@@ -379,6 +387,14 @@ export const DropdownControl = Node.create({
           "data-options": String(attrs.options ?? ""),
         }),
       },
+      value: {
+        default: "",
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-value") ?? "",
+        renderHTML: (attrs: Record<string, unknown>) => {
+          const value = String(attrs.value ?? "")
+          return value ? { "data-value": value } : {}
+        },
+      },
       ...titleAttribute(),
     }
   },
@@ -388,7 +404,7 @@ export const DropdownControl = Node.create({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    const value = node.textContent || "Select..."
+    const value = String(node.attrs.value ?? "") || "Select..."
     return [
       "span",
       mergeAttributes(HTMLAttributes, {
