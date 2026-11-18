@@ -107,6 +107,40 @@ export function TablePanel({ visible }: TablePanelProps): JSX.Element | null {
           </div>
         </div>
 
+        {/* Insert Cells — OO "Cells Add" dialog parity: the new cell takes
+            the selected cell's place and shifts the existing cells. */}
+        <div className="de-prop-section" style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 12,
+              color: "#666",
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
+            Insert Cells
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => handleCommand("insertCells", "right")}
+              title="Insert cells and shift cells right"
+              style={btnStyle}
+            >
+              Insert Cells Right
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCommand("insertCells", "down")}
+              title="Insert cells and shift cells down"
+              style={btnStyle}
+            >
+              Insert Cells Down
+            </button>
+          </div>
+        </div>
+
         {/* Cell Borders */}
         <div className="de-prop-section" style={{ marginBottom: 16 }}>
           <div
