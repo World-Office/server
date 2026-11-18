@@ -132,6 +132,17 @@ export class DocumentStore {
   /* Spelling */
   spellingEnabled = true
 
+  /* Action status (statusbar text slot) */
+  /**
+   * Transient action-status text for the statusbar slot
+   * (span.de-statusbar-status) — the outcome of the last command: save
+   * success, export done, spellcheck toggled. Empty by default;
+   * setStatusMessage() auto-clears it after the timeout so the slot never
+   * shows a stale message.
+   */
+  statusMessage = ""
+  private statusMessageTimer: ReturnType<typeof setTimeout> | null = null
+
   /* Auto-correction */
   autoCorrectEnabled = true
 
@@ -434,6 +445,33 @@ export class DocumentStore {
 
   setSpellingEnabled(enabled: boolean): void {
     this.spellingEnabled = enabled
+    this.setStatusMessage(enabled ? "Spell check on" : "Spell check off")
+  }
+
+  /**
+   * Set the transient statusbar action-status message (statusbar/Action
+   * status port row). An empty message clears immediately; any other
+   * message auto-clears after `timeoutMs` (default 4s) — the next command
+   * simply overwrites it. Reused by future commands as the single
+   * statusbar feedback channel.
+   */
+  setStatusMessage(message: string, timeoutMs = 4000): void {
+    this.statusMessage = message
+    if (this.statusMessageTimer) {
+      clearTimeout(this.statusMessageTimer)
+      this.statusMessageTimer = null
+    }
+    if (message !== "") {
+      this.statusMessageTimer = setTimeout(() => {
+        this.statusMessageTimer = null
+        this.statusMessage = ""
+      }, timeoutMs)
+    }
+  }
+
+  /** Clear the action-status message immediately (no timeout). */
+  clearStatusMessage(): void {
+    this.setStatusMessage("")
   }
 
   markModified(): void {
@@ -493,6 +531,7 @@ export class DocumentStore {
   markSaved(): void {
     this.isDirty = false
     this.lastSavedAt = new Date()
+    this.setStatusMessage("Saved")
   }
 
   /* ── WOPI ── */
@@ -594,6 +633,7 @@ export class DocumentStore {
       this.isDirty = false
       this.lastLoadedContent = blob
       this.lastSaveError = null
+      this.setStatusMessage("Saved")
     } catch (err) {
       // Failure surfaces to the user: notifyError("SAVE_FAILED", msg) plus the
       // lastSaveError observable; the notification offers "Download copy"
@@ -649,6 +689,7 @@ export class DocumentStore {
       a.download = this.fileName || "document.docx"
       a.click()
       URL.revokeObjectURL(url)
+      this.setStatusMessage("Exported")
     })
   }
 
