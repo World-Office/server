@@ -10,6 +10,10 @@
  * control title/tag, placeholder, checkbox state, date value/format) and
  * a Save button that writes them back via chain.updateAttributes. No
  * window.prompt anywhere on this path.
+ *
+ * PGP-9 — filling status: a "Filling status" section reports how many of
+ * the placed controls are filled (totals + per-control list), recomputed
+ * on every editor transaction while the panel is open.
  */
 
 import type { Editor } from "@tiptap/core"
@@ -23,6 +27,12 @@ import {
   linesToDropdownOptions,
   updateFormControl,
 } from "../lib/content-controls"
+import {
+  type FormFillStatus,
+  EMPTY_FORM_FILL_STATUS,
+  formatFormFillSummary,
+  getFormFillStatus,
+} from "../lib/form-status"
 import { getActiveRichTextEditor } from "../lib/rte-command"
 
 interface FormPanelProps {
@@ -133,20 +143,25 @@ export function FormPanel({ visible, editor: editorProp }: FormPanelProps): JSX.
   const editor = editorProp ?? getActiveRichTextEditor()
   const [editingControl, setEditingControl] = useState<SelectedFormControl | null>(null)
   const [draft, setDraft] = useState<ControlDraft>(EMPTY_DRAFT)
+  // PGP-9 — fill status of every placed control (kept in sync below).
+  const [fillStatus, setFillStatus] = useState<FormFillStatus>(EMPTY_FORM_FILL_STATUS)
 
-  // Track the form control under the editor selection while the panel is open.
+  // Track the form control under the editor selection while the panel is open,
+  // plus the document-wide fill status (recomputed per editor transaction; the
+  // scan is O(#controls), so no timer debounce is needed for real-time updates).
   useEffect(() => {
     if (!visible) return
-    const syncSelection = () => {
+    const syncFromEditor = () => {
       setEditingControl(editor ? getSelectedFormControl(editor) : null)
+      setFillStatus(editor ? getFormFillStatus(editor) : EMPTY_FORM_FILL_STATUS)
     }
-    syncSelection()
+    syncFromEditor()
     if (!editor) return
-    editor.on("selectionUpdate", syncSelection)
-    editor.on("transaction", syncSelection)
+    editor.on("selectionUpdate", syncFromEditor)
+    editor.on("transaction", syncFromEditor)
     return () => {
-      editor.off("selectionUpdate", syncSelection)
-      editor.off("transaction", syncSelection)
+      editor.off("selectionUpdate", syncFromEditor)
+      editor.off("transaction", syncFromEditor)
     }
   }, [editor, visible])
 
@@ -244,6 +259,66 @@ export function FormPanel({ visible, editor: editorProp }: FormPanelProps): JSX.
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+        {/* PGP-9 — document-wide fill status: totals + per-control list */}
+        <div
+          className="de-prop-section"
+          data-testid="form-fill-status"
+          style={{ marginBottom: 16 }}
+        >
+          <div style={SECTION_HEADER_STYLE}>Filling status</div>
+          <div
+            data-testid="form-fill-summary"
+            style={{ fontSize: 12, color: "#333", marginBottom: 6 }}
+          >
+            {formatFormFillSummary(fillStatus)}
+          </div>
+          {fillStatus.entries.length > 0 && (
+            <ul
+              data-testid="form-fill-list"
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              }}
+            >
+              {fillStatus.entries.map((entry, index) => (
+                <li
+                  key={`${entry.pos}-${index}`}
+                  data-testid="form-fill-entry"
+                  className={entry.filled ? "de-form-fill-filled" : "de-form-fill-empty"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 12,
+                    color: "#444",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 14,
+                      textAlign: "center",
+                      color: entry.filled ? "#1e8e3e" : "#999",
+                    }}
+                  >
+                    {entry.filled ? "✓" : "○"}
+                  </span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {entry.label}
+                  </span>
+                  <span style={{ color: entry.filled ? "#1e8e3e" : "#b0600a" }}>
+                    {entry.filled ? "Filled" : "Empty"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {/* PGP-4 — contextual editor for the selected placed control */}
         {editingControl && (
           <div
