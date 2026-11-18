@@ -11,6 +11,9 @@
  */
 
 import type { Editor } from "@tiptap/core"
+import { TableRow } from "@tiptap/extension-table-row"
+import type { Node as PMNode } from "@tiptap/pm/model"
+import type { EditorState } from "@tiptap/pm/state"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
 import { type CrossRefFormat, resolveRef } from "./cross-ref"
@@ -78,6 +81,8 @@ export type RichTextCommand =
   | "deleteColumn"
   | "mergeCells"
   | "splitCell"
+  | "distributeRows"
+  | "distributeColumns"
   | "toggleHeaderRow"
   | "toggleHeaderColumn"
   | "toggleHeaderCell"
@@ -277,6 +282,8 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "deleteColumn",
   "mergeCells",
   "splitCell",
+  "distributeRows",
+  "distributeColumns",
   "toggleHeaderRow",
   "toggleHeaderColumn",
   "toggleHeaderCell",
@@ -344,6 +351,152 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "increaseFontSize",
   "decreaseFontSize",
 ] as const
+
+/**
+ * PGP-1 — table "Distribute Rows".
+ *
+ * TipTap's `tableRow` carries no height attribute, so equal row heights have
+ * nowhere to live in the document model. This extends `tableRow` with a
+ * `rowHeight` attr (rendered as `<tr data-row-height="24" style="height:24px">`,
+ * which browsers treat as the row's minimum height) so `distributeRows` can
+ * persist a uniform height per row.
+ */
+export const TableRowHeight = TableRow.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      rowHeight: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          const raw = element.getAttribute("data-row-height") ?? element.style.height ?? ""
+          const px = Number.parseInt(raw.replace(/[^0-9]/g, ""), 10)
+          return Number.isFinite(px) && px > 0 ? px : null
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const height = attributes.rowHeight
+          if (typeof height !== "number" || !Number.isFinite(height) || height <= 0) return {}
+          return { "data-row-height": String(height), style: `height: ${height}px` }
+        },
+      },
+    }
+  },
+})
+
+/** Fallback column width (px) when a table has no `colwidth` at all yet. */
+const DEFAULT_DISTRIBUTED_COLUMN_WIDTH = 100
+/** Minimum uniform row height (px) used when the DOM reports no height. */
+const MIN_DISTRIBUTED_ROW_HEIGHT = 24
+
+/** The closest ancestor (or self) of the selection with the given node name. */
+function ancestorOfSelection(
+  state: EditorState,
+  typeName: string,
+): { pos: number; node: PMNode } | null {
+  const from = state.selection.$from
+  for (let depth = from.depth; depth > 0; depth -= 1) {
+    const node = from.node(depth)
+    if (node.type.name === typeName) {
+      return { pos: from.before(depth), node }
+    }
+  }
+  return null
+}
+
+/** Uniform column width (px) for `distributeColumns` — the mean known width. */
+function distributedColumnWidth(table: PMNode): number {
+  const widths: number[] = []
+  table.firstChild?.forEach((cell) => {
+    const span = Number(cell.attrs.colspan ?? 1)
+    const colwidth = Array.isArray(cell.attrs.colwidth) ? cell.attrs.colwidth : null
+    for (let i = 0; i < span; i += 1) {
+      const w = colwidth ? colwidth[i] : null
+      if (typeof w === "number" && Number.isFinite(w)) widths.push(w)
+    }
+  })
+  if (widths.length === 0) return DEFAULT_DISTRIBUTED_COLUMN_WIDTH
+  return Math.round(widths.reduce((a, b) => a + b, 0) / widths.length)
+}
+
+/**
+ * Uniform row height (px) for `distributeRows` — the tallest row wins so no
+ * row ever shrinks below its content (Word's "Distribute Rows" equalizes).
+ * Falls back to MIN_DISTRIBUTED_ROW_HEIGHT when the DOM reports no layout
+ * (headless tests, unmounted editor).
+ */
+function distributedRowHeight(editor: Editor, tablePos: number, table: PMNode): number {
+  let target = MIN_DISTRIBUTED_ROW_HEIGHT
+  table.forEach((row) => {
+    const h = row.attrs.rowHeight
+    if (typeof h === "number" && h > target) target = h
+  })
+  try {
+    const dom = editor.view.nodeDOM(tablePos)
+    // nodeDOM may hand back the table element or an ancestor of it; either
+    // way measure the rows of the first table in scope.
+    const scope =
+      dom instanceof HTMLTableElement
+        ? dom
+        : dom instanceof HTMLElement
+          ? dom.querySelector("table")
+          : null
+    if (scope !== null) {
+      for (const row of Array.from(scope.querySelectorAll("tr"))) {
+        const h = Math.round(row.getBoundingClientRect().height)
+        if (h > target) target = h
+      }
+    }
+  } catch {
+    // No DOM for this node (never rendered) — keep the model/fallback value.
+  }
+  return target
+}
+
+/**
+ * OO "Distribute Columns" — make every column of the table holding the
+ * selection the same width by writing the mean width onto each cell's
+ * `colwidth` attr (the same attr the column-resize handle writes).
+ * Returns false when the selection is not inside a table.
+ */
+export function distributeTableColumns(editor: Editor): boolean {
+  const table = ancestorOfSelection(editor.state, "table")
+  if (table === null) return false
+  const width = distributedColumnWidth(table.node)
+  const tr = editor.state.tr
+  table.node.forEach((row, rowOffset) => {
+    row.forEach((cell, cellOffset) => {
+      const span = Number(cell.attrs.colspan ?? 1)
+      tr.setNodeMarkup(table.pos + 1 + rowOffset + 1 + cellOffset, undefined, {
+        ...cell.attrs,
+        colwidth: Array.from({ length: span }, () => width),
+      })
+    })
+  })
+  if (!tr.docChanged) return true
+  editor.view.dispatch(tr)
+  return true
+}
+
+/**
+ * OO "Distribute Rows" — give every row of the table holding the selection
+ * the same `rowHeight` (see TableRowHeight). Returns false when the
+ * selection is not inside a table.
+ *
+ * ponytail: the height is a model attr rendered as a CSS height hint; rows
+ * still grow with their content (a real fixed-height layout needs the
+ * engine to own row geometry).
+ */
+export function distributeTableRows(editor: Editor): boolean {
+  const table = ancestorOfSelection(editor.state, "table")
+  if (table === null) return false
+  const height = distributedRowHeight(editor, table.pos, table.node)
+  const tr = editor.state.tr
+  table.node.forEach((row, rowOffset) => {
+    tr.setNodeMarkup(table.pos + 1 + rowOffset, undefined, { ...row.attrs, rowHeight: height })
+  })
+  if (!tr.docChanged) return true
+  editor.view.dispatch(tr)
+  return true
+}
 
 export type RichTextCommandSurface = Editor
 
@@ -582,6 +735,12 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "splitCell":
       chain.splitCell().run()
       return true
+    case "distributeRows":
+      // OO table ctx-menu "Distribute Rows" — equal row heights.
+      return distributeTableRows(editor)
+    case "distributeColumns":
+      // OO table ctx-menu "Distribute Columns" — equal column widths.
+      return distributeTableColumns(editor)
     case "toggleHeaderRow":
       chain.toggleHeaderRow().run()
       return true

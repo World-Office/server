@@ -10,7 +10,6 @@ import Superscript from "@tiptap/extension-superscript"
 import { Table } from "@tiptap/extension-table"
 import { TableCell } from "@tiptap/extension-table-cell"
 import { TableHeader } from "@tiptap/extension-table-header"
-import { TableRow } from "@tiptap/extension-table-row"
 import TaskItem from "@tiptap/extension-task-item"
 import TaskList from "@tiptap/extension-task-list"
 import TextAlign from "@tiptap/extension-text-align"
@@ -44,7 +43,7 @@ import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { MergeField } from "../lib/mail-merge"
 import { PageCount, PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
-import { setActiveRichTextEditor } from "../lib/rte-command"
+import { setActiveRichTextEditor, TableRowHeight } from "../lib/rte-command"
 import { SectionBreak } from "../lib/section-break"
 import { SpellcheckExtension } from "../lib/spellcheck-extension"
 import { TextDirectionExtension } from "../lib/text-direction-extension"
@@ -88,7 +87,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         TaskList,
         TaskItem.configure({ nested: true }),
         Table,
-        TableRow,
+        TableRowHeight,
         TableCell,
         TableHeader,
         TextAlign.configure({ types: ["heading", "paragraph"] }),

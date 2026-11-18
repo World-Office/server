@@ -33,6 +33,9 @@ const SpellcheckContextMenu = lazy(() =>
     default: m.SpellcheckContextMenu,
   })),
 )
+const TableContextMenu = lazy(() =>
+  import("./components/TableContextMenu").then((m) => ({ default: m.TableContextMenu })),
+)
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
@@ -305,6 +308,10 @@ export const App = observer(function App() {
             editorElement={null}
             addToDictionary={spellcheck.addToDictionary}
           />
+        </Suspense>
+        {/* PGP-1 — OO table context menu (Merge/Split/Distribute/alignment). */}
+        <Suspense fallback={null}>
+          <TableContextMenu />
         </Suspense>
       </SpellcheckContext.Provider>
     </ThemeProvider>
