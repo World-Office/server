@@ -598,9 +598,7 @@ function renderNaturalSize(
   htmlAttr: string,
 ): Record<string, string> {
   const px = attributes[attr]
-  return typeof px === "number" && Number.isFinite(px) && px > 0
-    ? { [htmlAttr]: String(px) }
-    : {}
+  return typeof px === "number" && Number.isFinite(px) && px > 0 ? { [htmlAttr]: String(px) } : {}
 }
 
 /** The image node a ctx-menu image command acts on (see findSelectedImage). */
@@ -639,7 +637,7 @@ export function rotateSelectedImage(editor: Editor, degrees: number): boolean {
   const image = findSelectedImage(editor)
   if (image === null) return false
   const current = Number(image.node.attrs.rotation ?? 0)
-  const next = (Math.round(current + degrees) % 360 + 360) % 360
+  const next = ((Math.round(current + degrees) % 360) + 360) % 360
   return editor
     .chain()
     .focus()
@@ -677,12 +675,7 @@ export function resetImageToActualSize(editor: Editor): boolean {
 export function replaceSelectedImage(editor: Editor, src: string): boolean {
   const image = findSelectedImage(editor)
   if (image === null || !src) return false
-  return editor
-    .chain()
-    .focus()
-    .setNodeSelection(image.pos)
-    .updateAttributes("image", { src })
-    .run()
+  return editor.chain().focus().setNodeSelection(image.pos).updateAttributes("image", { src }).run()
 }
 
 /**
@@ -860,7 +853,7 @@ export function rotateSelectedShape(editor: Editor, degrees: number): boolean {
   const shape = findSelectedShape(editor)
   if (shape === null) return false
   const current = Number(shape.node.attrs.rotation ?? 0)
-  const next = (Math.round(current + degrees) % 360 + 360) % 360
+  const next = ((Math.round(current + degrees) % 360) + 360) % 360
   return editor
     .chain()
     .focus()
@@ -1296,12 +1289,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       const image = findSelectedImage(editor)
       if (image === null) return false
       const apply = (src: string): void => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(image.pos)
-          .updateAttributes("image", { src })
-          .run()
+        editor.chain().focus().setNodeSelection(image.pos).updateAttributes("image", { src }).run()
       }
       if (value) {
         apply(value)

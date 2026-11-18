@@ -501,11 +501,11 @@ describe("rotate / actual size / replace — model change", () => {
     selectImage(editor)
 
     const picked: HTMLInputElement[] = []
-    const click = vi
-      .spyOn(HTMLInputElement.prototype, "click")
-      .mockImplementation(function (this: HTMLInputElement) {
-        picked.push(this)
-      })
+    const click = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(function (
+      this: HTMLInputElement,
+    ) {
+      picked.push(this)
+    })
 
     expect(dispatchRichTextCommand("replaceImage")).toBe(true)
     click.mockRestore()
@@ -523,11 +523,11 @@ describe("rotate / actual size / replace — model change", () => {
     selectImage(editor)
 
     const downloads: Array<{ href: string; download: string }> = []
-    const click = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(function (this: HTMLAnchorElement) {
-        downloads.push({ href: this.href, download: this.download })
-      })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloads.push({ href: this.href, download: this.download })
+    })
 
     expect(dispatchRichTextCommand("saveAsImage")).toBe(true)
     click.mockRestore()
