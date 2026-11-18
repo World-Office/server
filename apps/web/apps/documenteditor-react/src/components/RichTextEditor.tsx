@@ -43,7 +43,11 @@ import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { MergeField } from "../lib/mail-merge"
 import { PageCount, PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
-import { TableRowHeight, setActiveRichTextEditor } from "../lib/rte-command"
+import {
+  ParagraphPaginationExtension,
+  TableRowHeight,
+  setActiveRichTextEditor,
+} from "../lib/rte-command"
 import { SectionBreak } from "../lib/section-break"
 import { SpellcheckExtension } from "../lib/spellcheck-extension"
 import { TextDirectionExtension } from "../lib/text-direction-extension"
@@ -105,6 +109,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           types: ["paragraph", "heading"],
           defaultSpacing: "1.15",
         }),
+        ParagraphPaginationExtension,
         TextDirectionExtension.configure({
           types: ["paragraph", "heading", "blockquote", "listItem"],
         }),

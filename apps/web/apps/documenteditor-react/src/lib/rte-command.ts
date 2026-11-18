@@ -10,7 +10,7 @@
  * a no-op. Callers do not need to guard for this.
  */
 
-import type { Editor } from "@tiptap/core"
+import { type Editor, Extension } from "@tiptap/core"
 import { TableRow } from "@tiptap/extension-table-row"
 import type { Node as PMNode } from "@tiptap/pm/model"
 import type { EditorState } from "@tiptap/pm/state"
@@ -94,6 +94,8 @@ export type RichTextCommand =
   | "toggleHeaderCell"
   | "deleteTable"
   | "pageBreak"
+  | "pageBreakBefore"
+  | "keepLines"
   | "horizontalRule"
   // Line spacing / paragraph
   | "lineSpacing"
@@ -304,6 +306,8 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "toggleHeaderCell",
   "deleteTable",
   "pageBreak",
+  "pageBreakBefore",
+  "keepLines",
   "horizontalRule",
   "lineSpacing",
   "paragraphSpacingBefore",
@@ -369,6 +373,124 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "increaseFontSize",
   "decreaseFontSize",
 ] as const
+
+export interface ParagraphPaginationOptions {
+  types: string[]
+}
+
+/**
+ * PGP-A1 — OO text ctx-menu paragraph pagination rows.
+ *
+ * "Page break before" and "Keep lines together" are paragraph *properties*
+ * in OO/Word (Paragraph settings ▸ Line breaks), not inserted content — the
+ * ctx rows tick them on/off for the selected paragraphs. TipTap's
+ * paragraph/heading carry no such attributes, so this global-attribute
+ * extension adds `pageBreakBefore` / `keepLines`, rendered as the matching
+ * CSS fragmentation hints (`break-before: page` / `break-inside: avoid`)
+ * plus data attributes so the HTML round-trips through save/load.
+ */
+export const ParagraphPaginationExtension = Extension.create<ParagraphPaginationOptions>({
+  name: "paragraphPagination",
+
+  addOptions() {
+    return {
+      types: ["paragraph", "heading"],
+    }
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          keepLines: {
+            default: false,
+            parseHTML: (element: HTMLElement) =>
+              element.getAttribute("data-keep-lines") === "true" ||
+              element.style.breakInside === "avoid",
+            renderHTML: (attributes: Record<string, unknown>) =>
+              attributes.keepLines === true
+                ? { "data-keep-lines": "true", style: "break-inside: avoid" }
+                : {},
+          },
+          pageBreakBefore: {
+            default: false,
+            parseHTML: (element: HTMLElement) =>
+              element.getAttribute("data-page-break-before") === "true" ||
+              element.style.breakBefore === "page",
+            renderHTML: (attributes: Record<string, unknown>) =>
+              attributes.pageBreakBefore === true
+                ? { "data-page-break-before": "true", style: "break-before: page" }
+                : {},
+          },
+        },
+      },
+    ]
+  },
+})
+
+/** Paragraph pagination attributes owned by ParagraphPaginationExtension. */
+export type ParagraphPaginationAttr = "keepLines" | "pageBreakBefore"
+
+const PAGINATION_TOGGLE_ON = new Set(["true", "on", "1", "yes"])
+const PAGINATION_TOGGLE_OFF = new Set(["false", "off", "0", "no"])
+
+/**
+ * Normalize an explicit on/off value from a `wo-command` dispatch
+ * ("true"/"on"/"1" → true, "false"/"off"/"0" → false). Returns null when
+ * the value is absent or unrecognized — callers then toggle instead.
+ */
+export function normalizePaginationToggle(value?: string | null): boolean | null {
+  if (!value) return null
+  const normalized = value.toLowerCase()
+  if (PAGINATION_TOGGLE_ON.has(normalized)) return true
+  if (PAGINATION_TOGGLE_OFF.has(normalized)) return false
+  return null
+}
+
+/**
+ * OO ctx rows "Page break before" / "Keep lines together" — set (or toggle)
+ * a pagination attribute on every paragraph/heading covered by the
+ * selection, exactly like OO applies the checkable rows to the selected
+ * paragraphs. Returns false when the selection has no paragraph context
+ * (e.g. inside a code block).
+ */
+export function setParagraphPagination(
+  editor: Editor,
+  attr: ParagraphPaginationAttr,
+  forced?: boolean | null,
+): boolean {
+  const { state } = editor
+  const { from, to } = state.selection
+  const targets: Array<{ pos: number; node: PMNode }> = []
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    const name = node.type.name
+    if (name === "paragraph" || name === "heading") targets.push({ pos, node })
+  })
+  if (targets.length === 0) {
+    // Node/collapsed selection without a covered textblock — fall back to
+    // the anchor's closest paragraph/heading ancestor.
+    const $from = state.selection.$from
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const node = $from.node(depth)
+      const name = node.type.name
+      if (name === "paragraph" || name === "heading") {
+        targets.push({ pos: $from.before(depth), node })
+        break
+      }
+    }
+  }
+  if (targets.length === 0) return false
+  // OO's checkable rows toggle: switch on while any covered paragraph is off.
+  const turnOn = forced ?? targets.some(({ node }) => node.attrs[attr] !== true)
+  const tr = state.tr
+  for (const { pos, node } of targets) {
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, [attr]: turnOn })
+  }
+  if (!tr.docChanged) return true
+  editor.view.dispatch(tr)
+  return true
+}
 
 /**
  * PGP-1 — table "Distribute Rows".
@@ -833,6 +955,12 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       // Use a horizontal rule as a page break marker
       chain.setHorizontalRule().run()
       return true
+    case "pageBreakBefore":
+      // OO text ctx-menu "Page break before" — paragraph pagination attr.
+      return setParagraphPagination(editor, "pageBreakBefore", normalizePaginationToggle(value))
+    case "keepLines":
+      // OO text ctx-menu "Keep lines together" — paragraph pagination attr.
+      return setParagraphPagination(editor, "keepLines", normalizePaginationToggle(value))
     case "horizontalRule":
       chain.setHorizontalRule().run()
       return true

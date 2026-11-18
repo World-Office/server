@@ -36,6 +36,9 @@ const SpellcheckContextMenu = lazy(() =>
 const TableContextMenu = lazy(() =>
   import("./components/TableContextMenu").then((m) => ({ default: m.TableContextMenu })),
 )
+const TextContextMenu = lazy(() =>
+  import("./components/TextContextMenu").then((m) => ({ default: m.TextContextMenu })),
+)
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
@@ -312,6 +315,10 @@ export const App = observer(function App() {
         {/* PGP-1 — OO table context menu (Merge/Split/Distribute/alignment). */}
         <Suspense fallback={null}>
           <TableContextMenu />
+        </Suspense>
+        {/* PGP-A1 — OO text context menu (page-break-before / keep-lines). */}
+        <Suspense fallback={null}>
+          <TextContextMenu />
         </Suspense>
       </SpellcheckContext.Provider>
     </ThemeProvider>
