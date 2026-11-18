@@ -1,5 +1,6 @@
 import { Button, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
 import { observer } from "mobx-react-lite"
+import { useTranslation } from "react-i18next"
 import { documentStore } from "../../stores/DocumentStore"
 
 const useStyles = makeStyles({
@@ -25,6 +26,7 @@ const useStyles = makeStyles({
 const ObservedFileTab = observer(function ObservedFileTab() {
   const isActive = documentStore.isFileMenuOpen
   const styles = useStyles()
+  const { t } = useTranslation()
 
   function handleClick() {
     if (isActive) {
@@ -40,9 +42,9 @@ const ObservedFileTab = observer(function ObservedFileTab() {
       className={mergeClasses(styles.tab, isActive && styles.active)}
       data-tab="file"
       onClick={handleClick}
-      aria-label="File"
+      aria-label={t("File")}
     >
-      File
+      {t("File")}
     </Button>
   )
 })

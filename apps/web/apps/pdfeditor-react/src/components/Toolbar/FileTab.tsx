@@ -1,8 +1,10 @@
 import { File } from "lucide-react"
 import { observer } from "mobx-react-lite"
+import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../stores/PdfStore"
 
 const ObservedFileTab = observer(function ObservedFileTab() {
+  const { t } = useTranslation()
   const isActive = pdfStore.isFileMenuOpen
 
   function handleClick() {
@@ -19,7 +21,7 @@ const ObservedFileTab = observer(function ObservedFileTab() {
       className={`pdf-toolbar-tab${isActive ? " active" : ""}`}
       data-tab="file"
       onClick={handleClick}
-      aria-label="File"
+      aria-label={t("File")}
     >
       <File size={16} />
       File
