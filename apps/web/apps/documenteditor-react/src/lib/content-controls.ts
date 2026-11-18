@@ -4,34 +4,235 @@
  *
  * Each control node stores its state in ProseMirror attributes and
  * responds to click events to toggle or update that state.
+ *
+ * PGP-4 — post-insert editing: placed controls can be edited through the
+ * FormPanel (dropdown option list, control title/tag, placeholder, …).
+ * The helpers below locate the control at the selection (or a click),
+ * snapshot its attrs and write updates back via chain.updateAttributes.
+ * The edit path never blocks on window.prompt.
  */
 
 import { type Editor, Node } from "@tiptap/core"
+import type { Node as PMNode } from "@tiptap/pm/model"
 import { mergeAttributes } from "@tiptap/react"
+import { documentStore } from "../stores/DocumentStore"
 
-/**
- * Helper: prompt user to pick from a list of options and update the node.
- */
-function promptDropdown(editor: Editor, pos: number) {
-  const optionsStr = (editor.state.doc.nodeAt(pos)?.attrs.options as string) ?? ""
-  const current = editor.state.doc.nodeAt(pos)?.textContent ?? ""
-  const options = optionsStr
+/** Panel-level control kinds (mirrors the data-content-control values). */
+export type FormControlKind = "plain-text" | "dropdown" | "checkbox" | "date-picker"
+
+/** TipTap node type name → panel-level control kind. */
+export const FORM_CONTROL_NODE_TYPES: Record<string, FormControlKind> = {
+  plainTextControl: "plain-text",
+  dropdownControl: "dropdown",
+  checkboxControl: "checkbox",
+  datePickerControl: "date-picker",
+}
+
+/** Human labels for each control kind (used by the FormPanel edit section). */
+export const FORM_CONTROL_LABELS: Record<FormControlKind, string> = {
+  "plain-text": "Plain Text",
+  dropdown: "Dropdown",
+  checkbox: "Checkbox",
+  "date-picker": "Date Picker",
+}
+
+/** A form-control node located in the document, with an attr snapshot. */
+export interface SelectedFormControl {
+  /** Document position directly before the control node. */
+  pos: number
+  /** TipTap node type name, e.g. "dropdownControl". */
+  nodeTypeName: string
+  /** Panel-level kind, e.g. "dropdown". */
+  kind: FormControlKind
+  /** Snapshot of the node attributes (copied). */
+  attrs: Record<string, unknown>
+}
+
+/* -------------------------------------------------------------------------
+ * PGP-4 helpers: option-list conversion + control lookup/update.
+ * ---------------------------------------------------------------------- */
+
+/** Split the stored comma-separated options attribute into clean items. */
+export function splitDropdownOptions(options: string): string[] {
+  return options
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
+}
+
+/** Comma-separated options attr → one-option-per-line textarea text. */
+export function dropdownOptionsToLines(options: string): string {
+  return splitDropdownOptions(options).join("\n")
+}
+
+/** Textarea lines → comma-separated options attr (blanks dropped, kept order). */
+export function linesToDropdownOptions(lines: string): string {
+  return lines
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(", ")
+}
+
+function controlFromNode(
+  node: PMNode | null | undefined,
+  pos: number,
+): SelectedFormControl | null {
+  const name = (node as { type?: { name?: string } } | null | undefined)?.type?.name
+  if (!node || !name) return null
+  const kind = FORM_CONTROL_NODE_TYPES[name]
+  if (!kind) return null
+  return {
+    pos,
+    nodeTypeName: name,
+    kind,
+    attrs: { ...(node.attrs as Record<string, unknown>) },
+  }
+}
+
+/** nodeAt that tolerates bogus positions (returns null instead of throwing). */
+function safeNodeAt(editor: Editor, pos: number): PMNode | null {
+  try {
+    return editor.state.doc.nodeAt(pos)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Prefer the live node attrs at the control position; fall back to the
+ * snapshot taken when the control was located.
+ */
+function controlAttrs(
+  editor: Editor,
+  control: SelectedFormControl,
+): Record<string, unknown> {
+  return (safeNodeAt(editor, control.pos)?.attrs as Record<string, unknown>) ?? control.attrs
+}
+
+/**
+ * Locate the form control at (or immediately around) a document position —
+ * used by the click handler: the node directly at the position, the inline
+ * node just before/after it (clicks on atom spans resolve one past their
+ * start), or any ancestor control (cursor inside a plain-text control).
+ */
+export function findFormControlAt(editor: Editor, pos: number): SelectedFormControl | null {
+  const doc = editor.state.doc
+
+  const direct = controlFromNode(safeNodeAt(editor, pos), pos)
+  if (direct) return direct
+
+  let resolved: ReturnType<typeof doc.resolve>
+  try {
+    resolved = doc.resolve(pos)
+  } catch {
+    return null
+  }
+
+  const before = resolved.nodeBefore
+  if (before) {
+    const found = controlFromNode(before, pos - before.nodeSize)
+    if (found) return found
+  }
+  const after = resolved.nodeAfter
+  if (after) {
+    const found = controlFromNode(after, pos)
+    if (found) return found
+  }
+  // Ancestors (innermost first); depth 0 is the doc itself, skip it.
+  for (let depth = resolved.depth; depth >= 1; depth--) {
+    const found = controlFromNode(resolved.node(depth), resolved.before(depth))
+    if (found) return found
+  }
+  // Legacy/mock surfaces only expose `parent`.
+  return controlFromNode((resolved as unknown as { parent?: PMNode }).parent, pos)
+}
+
+/**
+ * The form control the editor selection currently sits on: either a
+ * NodeSelection on a control, or a cursor inside one (plain-text). Returns
+ * null when the selection is not on a control.
+ */
+export function getSelectedFormControl(editor: Editor): SelectedFormControl | null {
+  const { selection } = editor.state
+  const selectedNode = (selection as unknown as { node?: PMNode }).node
+  if (selectedNode) {
+    const found = controlFromNode(selectedNode, selection.from)
+    if (found) return found
+  }
+  // Cursor-based selection: only a control *containing* the cursor counts
+  // (merely sitting next to one does not open the editor).
+  const { $from } = selection
+  for (let depth = $from.depth; depth >= 1; depth--) {
+    const found = controlFromNode($from.node(depth), $from.before(depth))
+    if (found) return found
+  }
+  return null
+}
+
+/**
+ * Write new attributes to the control node at `target.pos`. Returns false
+ * (and changes nothing) when the node no longer matches, e.g. it was
+ * deleted or replaced while the panel was open.
+ */
+export function updateFormControl(
+  editor: Editor,
+  target: { pos: number; nodeTypeName: string },
+  attrs: Record<string, unknown>,
+): boolean {
+  const node = safeNodeAt(editor, target.pos)
+  if (!node || node.type.name !== target.nodeTypeName) return false
+  const updated = editor
+    .chain()
+    .focus()
+    .setNodeSelection(target.pos)
+    .updateAttributes(target.nodeTypeName, attrs)
+    .run()
+  // updateAttributes replaces the node, which drops the NodeSelection —
+  // re-select so panel/state keep pointing at the (still placed) control.
+  editor.commands.setNodeSelection(target.pos)
+  return updated
+}
+
+/**
+ * PGP-4 — open the Form panel editor for a placed control: selects the node
+ * (so FormPanel picks it up) and reveals the Form Controls panel. Pass a
+ * `pos` to target a clicked control, or omit it to edit the selection.
+ * Returns the control, or null when there is nothing to edit.
+ */
+export function editFormControl(editor: Editor, pos?: number): SelectedFormControl | null {
+  const control =
+    pos === undefined ? getSelectedFormControl(editor) : findFormControlAt(editor, pos)
+  if (!control) return null
+  editor.chain().focus().setNodeSelection(control.pos).run()
+  // Reveal the Form Controls panel (without toggling an open one closed).
+  if (documentStore.activeRightPanel !== "form") documentStore.rightMenuVisible = true
+  documentStore.setActiveRightPanel("form")
+  return control
+}
+
+/* -------------------------------------------------------------------------
+ * Click interactions (dropdown popup, checkbox toggle, date prompt).
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Dropdown click: show a quick-pick popup for a configured list; for a
+ * control without options yet, open the Form panel editor instead of
+ * blocking on a window.prompt (PGP-4 edit path).
+ */
+function promptDropdown(editor: Editor, control: SelectedFormControl) {
+  const attrs = controlAttrs(editor, control)
+  const options = splitDropdownOptions(String(attrs.options ?? ""))
+  const pos = control.pos
+  const current = safeNodeAt(editor, pos)?.textContent ?? ""
 
   if (options.length === 0) {
-    const input = window.prompt("Enter options (comma-separated):", "Option 1, Option 2, Option 3")
-    if (input) {
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(pos)
-        .updateAttributes("dropdownControl", { options: input })
-        .run()
-    }
+    editFormControl(editor, pos)
     return
   }
+
+  // Keep the control selected so the Form panel reflects what was clicked.
+  editor.chain().focus().setNodeSelection(pos).run()
 
   // Create a quick select-like popup
   const select = document.createElement("select")
@@ -81,20 +282,18 @@ function promptDropdown(editor: Editor, pos: number) {
   select.focus()
 }
 
-function toggleCheckbox(editor: Editor, pos: number) {
-  const node = editor.state.doc.nodeAt(pos)
-  if (!node) return
-  const current = node.attrs.checked as boolean
+function toggleCheckbox(editor: Editor, control: SelectedFormControl) {
+  const checked = controlAttrs(editor, control).checked === true
   editor
     .chain()
     .focus()
-    .setNodeSelection(pos)
-    .updateAttributes("checkboxControl", { checked: !current })
+    .setNodeSelection(control.pos)
+    .updateAttributes("checkboxControl", { checked: !checked })
     .run()
 }
 
-function promptDate(editor: Editor, pos: number) {
-  const current = (editor.state.doc.nodeAt(pos)?.attrs.value as string) ?? ""
+function promptDate(editor: Editor, control: SelectedFormControl) {
+  const current = String(controlAttrs(editor, control).value ?? "")
   const dateStr = window.prompt(
     "Enter date (YYYY-MM-DD):",
     current || new Date().toISOString().slice(0, 10),
@@ -103,9 +302,21 @@ function promptDate(editor: Editor, pos: number) {
     editor
       .chain()
       .focus()
-      .setNodeSelection(pos)
+      .setNodeSelection(control.pos)
       .updateAttributes("datePickerControl", { value: dateStr })
       .run()
+  }
+}
+
+/** Shared `title` (control tag) attribute — editable in the Form panel. */
+function titleAttribute() {
+  return {
+    title: {
+      default: "",
+      parseHTML: (el: HTMLElement) => el.getAttribute("data-title") ?? "",
+      renderHTML: (attrs: Record<string, unknown>) =>
+        attrs.title ? { "data-title": String(attrs.title) } : {},
+    },
   }
 }
 
@@ -120,7 +331,16 @@ export const PlainTextControl = Node.create({
   draggable: true,
 
   addAttributes() {
-    return { placeholder: { default: "Enter text" } }
+    return {
+      placeholder: {
+        default: "Enter text",
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-placeholder") ?? "Enter text",
+        renderHTML: (attrs: Record<string, unknown>) => ({
+          "data-placeholder": String(attrs.placeholder ?? ""),
+        }),
+      },
+      ...titleAttribute(),
+    }
   },
 
   parseHTML() {
@@ -154,9 +374,12 @@ export const DropdownControl = Node.create({
     return {
       options: {
         default: "",
-        parseHTML: (el) => (el as HTMLElement).getAttribute("data-options") ?? "",
-        renderHTML: (attrs) => ({ "data-options": attrs.options as string }),
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-options") ?? "",
+        renderHTML: (attrs: Record<string, unknown>) => ({
+          "data-options": String(attrs.options ?? ""),
+        }),
       },
+      ...titleAttribute(),
     }
   },
 
@@ -192,9 +415,12 @@ export const CheckboxControl = Node.create({
     return {
       checked: {
         default: false,
-        parseHTML: (el) => (el as HTMLElement).getAttribute("data-checked") === "true",
-        renderHTML: (attrs) => ({ "data-checked": attrs.checked ? "true" : "false" }),
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-checked") === "true",
+        renderHTML: (attrs: Record<string, unknown>) => ({
+          "data-checked": attrs.checked ? "true" : "false",
+        }),
       },
+      ...titleAttribute(),
     }
   },
 
@@ -244,10 +470,13 @@ export const DatePickerControl = Node.create({
     return {
       value: {
         default: "",
-        parseHTML: (el) => (el as HTMLElement).getAttribute("data-value") ?? "",
-        renderHTML: (attrs) => ({ "data-value": attrs.value as string }),
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-value") ?? "",
+        renderHTML: (attrs: Record<string, unknown>) => ({
+          "data-value": String(attrs.value ?? ""),
+        }),
       },
       format: { default: "YYYY-MM-DD" },
+      ...titleAttribute(),
     }
   },
 
@@ -287,20 +516,25 @@ export function registerContentControlHandlers(editor: Editor): void {
     const domPos = view.posAtDOM(target, 0)
     if (domPos === undefined || domPos === null) return
 
-    // For atom nodes, the click target IS the node
-    const doc = view.state.doc
-    const resolvedPos = doc.resolve(domPos)
-    const node = resolvedPos.parent
+    const control = findFormControlAt(editor, domPos)
+    if (!control) return
 
-    if (node.type.name === "dropdownControl") {
-      event.preventDefault()
-      promptDropdown(editor, domPos)
-    } else if (node.type.name === "checkboxControl") {
-      event.preventDefault()
-      toggleCheckbox(editor, domPos)
-    } else if (node.type.name === "datePickerControl") {
-      event.preventDefault()
-      promptDate(editor, domPos)
+    switch (control.kind) {
+      case "dropdown":
+        event.preventDefault()
+        promptDropdown(editor, control)
+        break
+      case "checkbox":
+        event.preventDefault()
+        toggleCheckbox(editor, control)
+        break
+      case "date-picker":
+        event.preventDefault()
+        promptDate(editor, control)
+        break
+      // Plain-text controls are editable inline content — let the caret land.
+      case "plain-text":
+        break
     }
   })
 }
