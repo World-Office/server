@@ -6,12 +6,19 @@
  * a sequence of TipTap commands.
  */
 
-import type { CSSProperties } from "react"
+import { type CSSProperties, useEffect, useState } from "react"
 import {
   LIST_NUMBERING_FORMATS,
   type ListNumberingFormatId,
   type RichTextCommand,
 } from "../lib/rte-command"
+import {
+  applyUserStyle,
+  getUserStyles,
+  renameUserStyle,
+  subscribeUserStyles,
+  type UserStyle,
+} from "../lib/word-commands"
 
 export interface StyleDefinition {
   id: string
@@ -135,11 +142,65 @@ interface StylesPanelProps {
   onCommand: (command: RichTextCommand, value?: string) => void
 }
 
+/**
+ * Preview CSS derived from a captured formatting snapshot (WASM
+ * applyFormatting keys — fontSize is half-points, like the engine).
+ */
+function snapshotPreviewCss(formatting: Record<string, unknown>): CSSProperties {
+  const css: CSSProperties = {}
+  if (formatting.bold) css.fontWeight = "700"
+  if (formatting.italic) css.fontStyle = "italic"
+  if (formatting.underline) css.textDecoration = "underline"
+  if (typeof formatting.fontName === "string") css.fontFamily = formatting.fontName
+  if (typeof formatting.fontSize === "number") css.fontSize = `${formatting.fontSize / 2}pt`
+  if (typeof formatting.textColor === "string") css.color = formatting.textColor
+  return css
+}
+
 export function StylesPanel({ visible, onCommand }: StylesPanelProps) {
+  // User-named styles (OO dialogs/Style Title — "formatting as style").
+  // The registry lives in word-commands.ts; this mirror re-renders on every
+  // registry change. Hooks run before the visibility early-return on
+  // purpose (React requires them unconditionally).
+  const [savedStyles, setSavedStyles] = useState<readonly UserStyle[]>(() => [...getUserStyles()])
+  const [nameDraft, setNameDraft] = useState("")
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState("")
+
+  useEffect(() => subscribeUserStyles(() => setSavedStyles([...getUserStyles()])), [])
+
   if (!visible) return null
 
   function handleApply(style: StyleDefinition) {
     style.apply(onCommand)
+  }
+
+  /**
+   * OO "Formatting as style": capture the current selection's formatting
+   * under the typed name (blank → next default "Style N"). Routed through
+   * the word-command bridge — the same path the OO ctx-menu row takes.
+   */
+  function handleSaveStyle() {
+    window.dispatchEvent(
+      new CustomEvent("wo-command", {
+        detail: { command: "formattingAsStyle", value: nameDraft.trim() || undefined },
+      }),
+    )
+    setNameDraft("")
+  }
+
+  function handleBeginRename(style: UserStyle) {
+    setRenamingId(style.id)
+    setRenameDraft(style.name)
+  }
+
+  function handleCommitRename() {
+    if (renamingId !== null) renameUserStyle(renamingId, renameDraft)
+    setRenamingId(null)
+  }
+
+  function handleCancelRename() {
+    setRenamingId(null)
   }
 
   return (
@@ -210,6 +271,122 @@ export function StylesPanel({ visible, onCommand }: StylesPanelProps) {
             {style.label}
           </button>
         ))}
+      </div>
+      {/* User-named styles — OO dialogs/Style Title ("formatting as
+          style"): capture the current selection's formatting under a name
+          entered inline here (no window.prompt); entries are renamable in
+          place. In-memory registry — persistence is a follow-up. */}
+      <div
+        style={{
+          borderTop: "1px solid #e0e0e0",
+          padding: "10px 16px 12px",
+          background: "#fafafa",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 6, color: "#444" }}>
+          Saved styles
+        </div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+          <input
+            aria-label="Style name"
+            placeholder="Style name"
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSaveStyle()
+            }}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: "4px 8px",
+              border: "1px solid #d0d0d0",
+              borderRadius: 4,
+              fontSize: 12,
+              fontFamily: "inherit",
+              color: "#333",
+            }}
+          />
+          <button
+            type="button"
+            title="Capture the current selection formatting as a named style"
+            onClick={handleSaveStyle}
+            style={listButtonStyle}
+          >
+            Save as style
+          </button>
+        </div>
+        {savedStyles.length === 0 ? (
+          <div style={{ fontSize: 11, color: "#888" }}>
+            No saved styles yet — format text, then save it under a name.
+          </div>
+        ) : (
+          savedStyles.map((style) =>
+            renamingId === style.id ? (
+              <div key={style.id} style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                <input
+                  aria-label={`Rename ${style.name}`}
+                  value={renameDraft}
+                  autoFocus
+                  onChange={(e) => setRenameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCommitRename()
+                    if (e.key === "Escape") handleCancelRename()
+                  }}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: "4px 8px",
+                    border: "1px solid #2ecc71",
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontFamily: "inherit",
+                    color: "#333",
+                  }}
+                />
+                <button
+                  type="button"
+                  title="Save the new style name"
+                  onClick={handleCommitRename}
+                  style={listButtonStyle}
+                >
+                  OK
+                </button>
+                <button
+                  type="button"
+                  title="Cancel renaming"
+                  onClick={handleCancelRename}
+                  style={listButtonStyle}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div key={style.id} style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                <button
+                  type="button"
+                  title={`Apply the "${style.name}" style to the selection`}
+                  onClick={() => applyUserStyle(style.id)}
+                  style={{
+                    ...listButtonStyle,
+                    flex: 1,
+                    textAlign: "left",
+                    ...snapshotPreviewCss(style.formatting),
+                  }}
+                >
+                  {style.name}
+                </button>
+                <button
+                  type="button"
+                  title={`Rename "${style.name}"`}
+                  onClick={() => handleBeginRename(style)}
+                  style={listButtonStyle}
+                >
+                  Rename
+                </button>
+              </div>
+            ),
+          )
+        )}
       </div>
       {/* List Styles picker — OO "List Settings" (numbering format +
           per-level indent) and "List Types" (gallery pick), mapped onto
