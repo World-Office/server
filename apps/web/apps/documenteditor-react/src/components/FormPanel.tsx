@@ -3,12 +3,32 @@
  *
  * Provides controls for content control types (plain text, checkbox,
  * dropdown, date picker). Dispatches wo-command events to the editor.
+ *
+ * PGP-4 — post-insert editing: when a placed form control is selected in
+ * the document, the panel shows a contextual "Edit Form Control" section
+ * pre-filled with the node's current attributes (dropdown option list,
+ * control title/tag, placeholder, checkbox state, date value/format) and
+ * a Save button that writes them back via chain.updateAttributes. No
+ * window.prompt anywhere on this path.
  */
 
-import { type JSX, useState } from "react"
+import type { Editor } from "@tiptap/core"
+import { type JSX, useEffect, useState } from "react"
+
+import {
+  type SelectedFormControl,
+  FORM_CONTROL_LABELS,
+  dropdownOptionsToLines,
+  getSelectedFormControl,
+  linesToDropdownOptions,
+  updateFormControl,
+} from "../lib/content-controls"
+import { getActiveRichTextEditor } from "../lib/rte-command"
 
 interface FormPanelProps {
   visible: boolean
+  /** Editor to edit placed controls in; defaults to the active rich-text editor. */
+  editor?: Editor | null
 }
 
 type ControlType = "plain-text" | "checkbox" | "dropdown" | "date-picker"
@@ -41,14 +61,122 @@ const CONTROL_TYPES: Array<{ id: ControlType; label: string; icon: string; descr
     },
   ]
 
-export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
+/** Draft values for the contextual control editor. */
+interface ControlDraft {
+  title: string
+  options: string
+  placeholder: string
+  value: string
+  format: string
+  checked: boolean
+}
+
+const EMPTY_DRAFT: ControlDraft = {
+  title: "",
+  options: "",
+  placeholder: "",
+  value: "",
+  format: "YYYY-MM-DD",
+  checked: false,
+}
+
+const SECTION_HEADER_STYLE = {
+  fontWeight: 600,
+  fontSize: 12,
+  color: "#666",
+  textTransform: "uppercase",
+  marginBottom: 8,
+} as const
+
+const INPUT_STYLE = {
+  width: "100%",
+  padding: "4px 8px",
+  border: "1px solid #ccc",
+  borderRadius: 3,
+  fontSize: 12,
+  boxSizing: "border-box",
+} as const
+
+const TEXTAREA_STYLE = {
+  ...INPUT_STYLE,
+  resize: "vertical",
+  fontFamily: "monospace",
+} as const
+
+const CHECK_LABEL_STYLE = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 12,
+  color: "#555",
+  cursor: "pointer",
+} as const
+
+function draftFromControl(control: SelectedFormControl): ControlDraft {
+  return {
+    title: String(control.attrs.title ?? ""),
+    options: dropdownOptionsToLines(String(control.attrs.options ?? "")),
+    placeholder: String(control.attrs.placeholder ?? ""),
+    value: String(control.attrs.value ?? ""),
+    format: String(control.attrs.format ?? "") || "YYYY-MM-DD",
+    checked: control.attrs.checked === true,
+  }
+}
+
+export function FormPanel({ visible, editor: editorProp }: FormPanelProps): JSX.Element | null {
   const [selectedType, setSelectedType] = useState<ControlType>("plain-text")
   const [placeholder, setPlaceholder] = useState("")
   const [dropdownOptions, setDropdownOptions] = useState("Option 1\nOption 2\nOption 3")
   const [isRequired, setIsRequired] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
 
+  const editor = editorProp ?? getActiveRichTextEditor()
+  const [editingControl, setEditingControl] = useState<SelectedFormControl | null>(null)
+  const [draft, setDraft] = useState<ControlDraft>(EMPTY_DRAFT)
+
+  // Track the form control under the editor selection while the panel is open.
+  useEffect(() => {
+    if (!visible) return
+    const syncSelection = () => {
+      setEditingControl(editor ? getSelectedFormControl(editor) : null)
+    }
+    syncSelection()
+    if (!editor) return
+    editor.on("selectionUpdate", syncSelection)
+    editor.on("transaction", syncSelection)
+    return () => {
+      editor.off("selectionUpdate", syncSelection)
+      editor.off("transaction", syncSelection)
+    }
+  }, [editor, visible])
+
+  // (Re)load the draft from the selected control's current attributes. The
+  // control object is recreated on every editor transaction, so the draft
+  // also refreshes right after a save or an external attribute change.
+  useEffect(() => {
+    if (editingControl) setDraft(draftFromControl(editingControl))
+  }, [editingControl])
+
   if (!visible) return null
+
+  /** Persist the draft back onto the placed control node. */
+  function handleSaveControl() {
+    if (!editor || !editingControl) return
+    const attrs: Record<string, unknown> = { title: draft.title.trim() }
+    if (editingControl.kind === "dropdown") {
+      attrs.options = linesToDropdownOptions(draft.options)
+    } else if (editingControl.kind === "plain-text") {
+      attrs.placeholder = draft.placeholder
+    } else if (editingControl.kind === "checkbox") {
+      attrs.checked = draft.checked
+    } else if (editingControl.kind === "date-picker") {
+      attrs.value = draft.value.trim()
+      attrs.format = draft.format.trim() || "YYYY-MM-DD"
+    }
+    if (updateFormControl(editor, editingControl, attrs)) {
+      setEditingControl(getSelectedFormControl(editor)) // re-sync the draft
+    }
+  }
 
   function handleInsert() {
     switch (selectedType) {
@@ -116,19 +244,128 @@ export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
-        {/* Control Type Selection */}
-        <div className="de-prop-section" style={{ marginBottom: 16 }}>
+        {/* PGP-4 — contextual editor for the selected placed control */}
+        {editingControl && (
           <div
+            className="de-prop-section"
+            data-testid="form-control-settings"
             style={{
-              fontWeight: 600,
-              fontSize: 12,
-              color: "#666",
-              textTransform: "uppercase",
-              marginBottom: 8,
+              marginBottom: 16,
+              padding: 10,
+              border: "1px solid #c5d3ea",
+              borderRadius: 4,
+              background: "#f4f8ff",
             }}
           >
-            Control Type
+            <div style={{ ...SECTION_HEADER_STYLE, color: "#2b579a" }}>
+              Edit Form Control — {FORM_CONTROL_LABELS[editingControl.kind]}
+            </div>
+
+            <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>Title / Tag</div>
+            <input
+              type="text"
+              aria-label="Control title"
+              value={draft.title}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              placeholder="Control title (tag)"
+              style={{ ...INPUT_STYLE, marginBottom: 10 }}
+            />
+
+            {editingControl.kind === "dropdown" && (
+              <>
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>
+                  Dropdown options
+                </div>
+                <textarea
+                  aria-label="Dropdown options"
+                  value={draft.options}
+                  onChange={(e) => setDraft({ ...draft, options: e.target.value })}
+                  placeholder="One option per line"
+                  rows={5}
+                  style={{ ...TEXTAREA_STYLE, marginBottom: 10 }}
+                />
+              </>
+            )}
+
+            {editingControl.kind === "plain-text" && (
+              <>
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>Placeholder</div>
+                <input
+                  type="text"
+                  aria-label="Placeholder"
+                  value={draft.placeholder}
+                  onChange={(e) => setDraft({ ...draft, placeholder: e.target.value })}
+                  placeholder="Enter placeholder text…"
+                  style={{ ...INPUT_STYLE, marginBottom: 10 }}
+                />
+              </>
+            )}
+
+            {editingControl.kind === "checkbox" && (
+              <label style={{ ...CHECK_LABEL_STYLE, marginBottom: 10 }}>
+                <input
+                  type="checkbox"
+                  aria-label="Checked"
+                  checked={draft.checked}
+                  onChange={(e) => setDraft({ ...draft, checked: e.target.checked })}
+                />
+                Checked
+              </label>
+            )}
+
+            {editingControl.kind === "date-picker" && (
+              <>
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>Date value</div>
+                <input
+                  type="text"
+                  aria-label="Date value"
+                  value={draft.value}
+                  onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+                  placeholder="YYYY-MM-DD"
+                  style={{ ...INPUT_STYLE, marginBottom: 10 }}
+                />
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>Date format</div>
+                <input
+                  type="text"
+                  aria-label="Date format"
+                  value={draft.format}
+                  onChange={(e) => setDraft({ ...draft, format: e.target.value })}
+                  placeholder="YYYY-MM-DD"
+                  style={{ ...INPUT_STYLE, marginBottom: 10 }}
+                />
+              </>
+            )}
+
+            <button
+              type="button"
+              aria-label="Save control settings"
+              onClick={handleSaveControl}
+              style={{
+                width: "100%",
+                padding: "6px 12px",
+                border: "none",
+                borderRadius: 4,
+                background: "#2b579a",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              Save changes
+            </button>
           </div>
+        )}
+
+        {!editingControl && (
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>
+            Tip: select a control in the document to edit its options here.
+          </div>
+        )}
+
+        {/* Control Type Selection */}
+        <div className="de-prop-section" style={{ marginBottom: 16 }}>
+          <div style={SECTION_HEADER_STYLE}>Control Type</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {CONTROL_TYPES.map((ct) => (
               <button
@@ -162,30 +399,14 @@ export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
         {/* Placeholder (for text controls) */}
         {selectedType === "plain-text" && (
           <div className="de-prop-section" style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: 12,
-                color: "#666",
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              Placeholder
-            </div>
+            <div style={SECTION_HEADER_STYLE}>Placeholder</div>
             <input
               type="text"
+              aria-label="New control placeholder"
               value={placeholder}
               onChange={(e) => setPlaceholder(e.target.value)}
-              placeholder="Enter placeholder text\u2026"
-              style={{
-                width: "100%",
-                padding: "4px 8px",
-                border: "1px solid #ccc",
-                borderRadius: 3,
-                fontSize: 12,
-                boxSizing: "border-box",
-              }}
+              placeholder="Enter placeholder text…"
+              style={INPUT_STYLE}
             />
           </div>
         )}
@@ -193,32 +414,14 @@ export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
         {/* Dropdown Options */}
         {selectedType === "dropdown" && (
           <div className="de-prop-section" style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: 12,
-                color: "#666",
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              Options
-            </div>
+            <div style={SECTION_HEADER_STYLE}>Options</div>
             <textarea
+              aria-label="New dropdown options"
               value={dropdownOptions}
               onChange={(e) => setDropdownOptions(e.target.value)}
               placeholder="One option per line"
               rows={5}
-              style={{
-                width: "100%",
-                padding: "4px 8px",
-                border: "1px solid #ccc",
-                borderRadius: 3,
-                fontSize: 12,
-                boxSizing: "border-box",
-                resize: "vertical",
-                fontFamily: "monospace",
-              }}
+              style={TEXTAREA_STYLE}
             />
           </div>
         )}
@@ -226,55 +429,19 @@ export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
         {/* Date Picker Default */}
         {selectedType === "date-picker" && (
           <div className="de-prop-section" style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: 12,
-                color: "#666",
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              Default Date
-            </div>
+            <div style={SECTION_HEADER_STYLE}>Default Date</div>
             <input
               type="date"
-              style={{
-                width: "100%",
-                padding: "4px 8px",
-                border: "1px solid #ccc",
-                borderRadius: 3,
-                fontSize: 12,
-                boxSizing: "border-box",
-              }}
+              aria-label="New control default date"
+              style={INPUT_STYLE}
             />
           </div>
         )}
 
         {/* Options */}
         <div className="de-prop-section" style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: 12,
-              color: "#666",
-              textTransform: "uppercase",
-              marginBottom: 8,
-            }}
-          >
-            Options
-          </div>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              color: "#555",
-              cursor: "pointer",
-              marginBottom: 6,
-            }}
-          >
+          <div style={SECTION_HEADER_STYLE}>Options</div>
+          <label style={{ ...CHECK_LABEL_STYLE, marginBottom: 6 }}>
             <input
               type="checkbox"
               checked={isRequired}
@@ -282,16 +449,7 @@ export function FormPanel({ visible }: FormPanelProps): JSX.Element | null {
             />
             Required
           </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              color: "#555",
-              cursor: "pointer",
-            }}
-          >
+          <label style={CHECK_LABEL_STYLE}>
             <input
               type="checkbox"
               checked={isLocked}

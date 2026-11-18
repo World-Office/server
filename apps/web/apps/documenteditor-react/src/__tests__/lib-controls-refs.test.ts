@@ -41,6 +41,7 @@ import {
 import { FontSize } from "../lib/font-size-extension"
 import { FootnoteItem, FootnoteReference, FootnoteSection } from "../lib/footnote-mark"
 import { SectionBreak } from "../lib/section-break"
+import { documentStore } from "../stores/DocumentStore"
 
 let editor: Editor | null = null
 
@@ -398,7 +399,7 @@ describe("registerContentControlHandlers", () => {
     expect(document.body.contains(select)).toBe(false)
   })
 
-  it("prompts for options when the dropdown has none yet", () => {
+  it("routes an option-less dropdown to the Form panel editor (no prompt)", () => {
     const { chain, view, handler } = mockEditorSurface()
     view.state.doc.resolve.mockReturnValue({
       parent: { type: { name: "dropdownControl" } },
@@ -406,10 +407,13 @@ describe("registerContentControlHandlers", () => {
     view.state.doc.nodeAt.mockReturnValue({ attrs: { options: "" }, textContent: "" })
     const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("X, Y")
     handler(clickEvent("dropdown"))
-    expect(promptSpy).toHaveBeenCalled()
-    expect(chain.updateAttributes).toHaveBeenCalledWith("dropdownControl", {
-      options: "X, Y",
-    })
+    // PGP-4: the placed control is selected for the FormPanel editor instead
+    // of blocking on a window.prompt.
+    expect(promptSpy).not.toHaveBeenCalled()
+    expect(chain.setNodeSelection).toHaveBeenCalledWith(3)
+    expect(chain.run).toHaveBeenCalled()
+    expect(documentStore.activeRightPanel).toBe("form")
+    documentStore.activeRightPanel = null
   })
 
   it("prompts for a date and stores it when a datePickerControl is clicked", () => {
