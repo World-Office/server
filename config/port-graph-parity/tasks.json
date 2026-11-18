@@ -1,84 +1,116 @@
 {
-  "campaign": "port-graph-parity",
-  "goal": "Close the OO→WO 1:1 context-menu port gap exposed by graph v3.2 (was rubber-stamped 75/75; honest = table 17 done, spellcheck 2, text/image/shape 0). Build react right-click context menus for TEXT, IMAGE, and SHAPE targets mirroring TableContextMenu.tsx (PGP-1), dispatching through the existing wo-command CustomEvent → useWoCommandListener → dispatchRichTextCommand chain. Every contract row from census/ctx-contracts.json must be RENDERED with matching OO labels; rows whose command already routes (image/shape/paragraphSettings/open right-rail, addComment, link, aiAssistant, wrapping, alignObjects, bringForward, sendBackward, mergeShapes, insertCaption, insertShape, photoEditor, formattingAsStyle/copyStyle) dispatch wo-command or toggleRightPanel; browser-native rows (Cut/Copy/Paste/PrintSelection) use execCommand/print; genuinely new primitives (keepLines, rotateImage, actualSize, replaceImage, saveAsImage, editPoints→shape panel) get a real implementation in word-commands.ts/rte-command.ts. no_change_is_not_success: every task must ship a rendered menu + a vitest test asserting it.",
-  "acceptance": "each task ships a context menu rendered on the right target with OO contract labels + a vitest test (menu renders, wo-command dispatched for a command row, execCommand called for a browser row); per-app tsc + lint + vitest all green; existing 814 tests still pass; no unrelated regressions.",
-  "max_parallel": 2,
-  "policy": { "no_change_is_not_success": true },
-  "tasks": [
-    {
-      "id": "PGP-A1",
-      "repo": "server",
-      "deps": [],
-      "priority": 1,
-      "title": "Text context menu with OO text-contract rows (ctx-contracts text: Cut/Copy/Paste/PrintSelection/PageBreakBefore/KeepLines/ParagraphSettings/AddComment/Link/FormattingAsStyle/AI)",
-      "scope": [
-        "apps/web/apps/documenteditor-react/src/components",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/__tests__/"
-      ],
-      "touch": [
-        "apps/web/apps/documenteditor-react/src/components/TextContextMenu.tsx",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/__tests__/text-ctx-menu.test.ts"
-      ],
-      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/text-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q text-ctx-menu; echo gate-done",
-      "timeout": 7200,
-      "note": "Mirror TableContextMenu.tsx exactly (structure: target detection → menu state → render list → click dispatch; browser rows via runTableBrowserAction-style execCommand + window.print; command rows via window.dispatchEvent(new CustomEvent('wo-command',{detail:{command,value}}))). isTextTarget = not an image/table/shape and not a spellcheck-error (spellcheck keeps its own menu) — reuse the existing isTableTarget exclusion list. Existing commands that fulfill rows verbatim: PageBreakBefore→'pageBreak' (or add pageBreakBefore alias), ParagraphSettings→case 'paragraphSettings' toggleRightPanel('paragraph') exists at word-commands.ts:799, AddComment→'addComment'/'toggleComment' (word-commands.ts:778), Link→'link', FormattingAsStyle→'formattingAsStyle'/'copyStyle', AI→'aiAssistant'. KeepLines has NO command — add 'keepLines' in word-commands.ts routing to rich-text paragraph keepLines/keep-with-next attribute via dispatchRichTextCommand's rte path (check how lineSpacing/paragraphSpacingBefore set paragraph attrs; rte-command.ts has paragraphSpacing* primitives — reuse that mechanism so keepLines sets the paragraph 'keepWithNext'/'keepLines' attribute). Menu must not open over the spellcheck/table menus. Add TextContextMenu to App.tsx (same mount pattern as TableContextMenu). Vitest: render editor, dispatch contextmenu on a paragraph, assert menu lists all 11 OO rows, click a command row dispatches wo-command with the mapped command, click Copy calls execCommand('copy'). Protect with node_modules symlink (done in accept).",
-      "require": "word-commands.ts has pageBreak, addComment, toggleComment, link, aiAssistant, copyStyle, formattingAsStyle, paragraphSettings; rte-command.ts has paragraphSpacingBefore/After + lineSpacing paragraph-attr pattern to copy for keepLines."
-    },
-    {
-      "id": "PGP-A2",
-      "repo": "server",
-      "deps": ["PGP-A1"],
-      "priority": 2,
-      "title": "Image context menu with OO image-contract rows (ctx-contracts image: Cut/Copy/Paste/PrintSelection/Arrange/Align/CombineShapes/TextWrap/Rotate/InsertCaption/SaveAsImage/Link/Crop/ActualSize/ReplaceImage/ImageSettings/AI)",
-      "scope": [
-        "apps/web/apps/documenteditor-react/src/components",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/__tests__/"
-      ],
-      "touch": [
-        "apps/web/apps/documenteditor-react/src/components/ImageContextMenu.tsx",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/__tests__/image-ctx-menu.test.ts"
-      ],
-      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/image-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q image-ctx-menu; echo gate-done",
-      "timeout": 7200,
-      "note": "Mirror TableContextMenu.tsx structure. isImageTarget = closest('img, [data-wo-image]') and NOT table/spellcheck. Existing commands that fulfill rows verbatim: Arrange→'arrange' (implement as bringForward/sendBackward/alignObjects group — those three already route in word-commands.ts), Align→'alignObjects', TextWrap→'wrapping' (word-commands.ts has it) or 'textWrap' alias to wrapping, InsertCaption→'insertCaption'/'insertCaptionFigure', Link→'link', ImageSettings→case 'image' toggleRightPanel('image') exists (word-commands.ts:785), Crop→'photoEditor'/'crop' (photoEditor routes; add 'crop' alias opening the same image-crop surface), ActualSize→add 'actualSize' (reset width/height attrs to natural size — natural size lives in the img node attrs; use chain.updateAttributes on image/attr 'naturalWidth'/'naturalHeight' if present else keep attrs unchanged), ReplaceImage→add 'replaceImage' (file input picker → chain.setImage({src}) or updateAttributes image 'src'; word-commands.ts:763 shows setImage usage), Rotate→add 'rotateImage' (updateAttributes image 'rotation' attr), SaveAsImage→add 'saveAsImage' (download the current image src via canvas.toDataURL if same-origin else <a download href=src> fallback — keep it 15 lines), CombineShapes→'mergeShapes' exists for shapes; for images that row can open the arrange panel (divergence acceptable but must be a dispatched command, not a no-op). AI→'aiAssistant'. Menu must not open over table/spellcheck/shape menus — target detection order: spellcheck → table → image → shape → text. Mount in App.tsx behind the table menu. Vitest: render, dispatch contextmenu on an <img>, assert all 17 rows, click ImageSettings dispatches wo-command image, click ActualSize updates attributes, browser row Copy calls execCommand.",
-      "require": "word-commands.ts has bringing forward: bringForward, sendBackward, alignObjects, mergeShapes, wrapping, insertCaption, photoEditor, toggleRightPanel('image') at case 'image'; setImage usage at word-commands.ts:763."
-    },
-    {
-      "id": "PGP-A3",
-      "repo": "server",
-      "deps": ["PGP-A2"],
-      "priority": 3,
-      "title": "Shape context menu with OO shape-contract rows (ctx-contracts shape: Cut/Copy/Paste/PrintSelection/Arrange/Align/CombineShapes/TextWrap/Rotate/InsertCaption/SaveAsImage/Link/EditPoints/ShapeSettings/AI)",
-      "scope": [
-        "apps/web/apps/documenteditor-react/src/components",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/__tests__/"
-      ],
-      "touch": [
-        "apps/web/apps/documenteditor-react/src/components/ShapeContextMenu.tsx",
-        "apps/web/apps/documenteditor-react/src/App.tsx",
-        "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
-        "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
-        "apps/web/apps/documenteditor-react/src/__tests__/shape-ctx-menu.test.ts"
-      ],
-      "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/shape-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q shape-ctx-menu; echo gate-done",
-      "timeout": 7200,
-      "note": "Mirror TableContextMenu.tsx structure. isShapeTarget = closest('[data-wo-shape], svg[data-shape], .wo-shape') and NOT table/image/spellcheck — check what markup the shape surface renders (ShapePanel/insertShape node; look at how shapes are represented in the doc — canvas shapes may render as div.wo-shape or a ProseMirror node; pick the real selector from RichTextEditor.tsx or a shape test). Existing commands: Arrange→'arrange' (bringForward/sendBackward/alignObjects group), Align→'alignObjects', CombineShapes→'mergeShapes', TextWrap→'wrapping', Rotate→'rotateImage' (add shape-compatible 'rotateShape' alias that sets rotation attr), InsertCaption→'insertCaption', SaveAsImage→'saveAsImage' (reuse PGP-A2), Link→'link', ShapeSettings→case 'shape' toggleRightPanel('shape') exists (word-commands.ts:814 area — the graphic-object surface comment), EditPoints→add 'editPoints' opening the shape panel's edit-points section (if ShapePanel has no edit-points UI, route it to toggleRightPanel('shape') and note the divergence in a code comment — the row must still dispatch a real command), AI→'aiAssistant'. Menu must not open over table/image/spellcheck menus. Mount in App.tsx. Vitest: render, dispatch contextmenu on the shape target, assert all 15 rows, click ShapeSettings dispatches wo-command shape, browser row Paste calls execCommand.",
-      "require": "word-commands.ts routes insertShape and toggleRightPanel('shape'); mergeShapes, alignObjects, bringForward, sendBackward exist."
-    }
-  ]
+ "campaign": "port-graph-parity",
+ "goal": "Close the OO\u2192WO 1:1 context-menu port gap exposed by graph v3.2 (was rubber-stamped 75/75; honest = table 17 done, spellcheck 2, text/image/shape 0). Build react right-click context menus for TEXT, IMAGE, and SHAPE targets mirroring TableContextMenu.tsx (PGP-1), dispatching through the existing wo-command CustomEvent \u2192 useWoCommandListener \u2192 dispatchRichTextCommand chain. Every contract row from census/ctx-contracts.json must be RENDERED with matching OO labels; rows whose command already routes (image/shape/paragraphSettings/open right-rail, addComment, link, aiAssistant, wrapping, alignObjects, bringForward, sendBackward, mergeShapes, insertCaption, insertShape, photoEditor, formattingAsStyle/copyStyle) dispatch wo-command or toggleRightPanel; browser-native rows (Cut/Copy/Paste/PrintSelection) use execCommand/print; genuinely new primitives (keepLines, rotateImage, actualSize, replaceImage, saveAsImage, editPoints\u2192shape panel) get a real implementation in word-commands.ts/rte-command.ts. no_change_is_not_success: every task must ship a rendered menu + a vitest test asserting it.",
+ "acceptance": "each task ships a context menu rendered on the right target with OO contract labels + a vitest test (menu renders, wo-command dispatched for a command row, execCommand called for a browser row); per-app tsc + lint + vitest all green; existing 814 tests still pass; no unrelated regressions.",
+ "max_parallel": 2,
+ "policy": {
+  "no_change_is_not_success": true
+ },
+ "tasks": [
+  {
+   "id": "PGP-A1",
+   "repo": "server",
+   "deps": [],
+   "priority": 1,
+   "title": "Text context menu with OO text-contract rows (ctx-contracts text: Cut/Copy/Paste/PrintSelection/PageBreakBefore/KeepLines/ParagraphSettings/AddComment/Link/FormattingAsStyle/AI)",
+   "scope": [
+    "apps/web/apps/documenteditor-react/src/components",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/__tests__/"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-react/src/components/TextContextMenu.tsx",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/__tests__/text-ctx-menu.test.ts"
+   ],
+   "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/text-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q text-ctx-menu; echo gate-done",
+   "timeout": 7200,
+   "note": "Mirror TableContextMenu.tsx exactly (structure: target detection \u2192 menu state \u2192 render list \u2192 click dispatch; browser rows via runTableBrowserAction-style execCommand + window.print; command rows via window.dispatchEvent(new CustomEvent('wo-command',{detail:{command,value}}))). isTextTarget = not an image/table/shape and not a spellcheck-error (spellcheck keeps its own menu) \u2014 reuse the existing isTableTarget exclusion list. Existing commands that fulfill rows verbatim: PageBreakBefore\u2192'pageBreak' (or add pageBreakBefore alias), ParagraphSettings\u2192case 'paragraphSettings' toggleRightPanel('paragraph') exists at word-commands.ts:799, AddComment\u2192'addComment'/'toggleComment' (word-commands.ts:778), Link\u2192'link', FormattingAsStyle\u2192'formattingAsStyle'/'copyStyle', AI\u2192'aiAssistant'. KeepLines has NO command \u2014 add 'keepLines' in word-commands.ts routing to rich-text paragraph keepLines/keep-with-next attribute via dispatchRichTextCommand's rte path (check how lineSpacing/paragraphSpacingBefore set paragraph attrs; rte-command.ts has paragraphSpacing* primitives \u2014 reuse that mechanism so keepLines sets the paragraph 'keepWithNext'/'keepLines' attribute). Menu must not open over the spellcheck/table menus. Add TextContextMenu to App.tsx (same mount pattern as TableContextMenu). Vitest: render editor, dispatch contextmenu on a paragraph, assert menu lists all 11 OO rows, click a command row dispatches wo-command with the mapped command, click Copy calls execCommand('copy'). Protect with node_modules symlink (done in accept).",
+   "require": "word-commands.ts has pageBreak, addComment, toggleComment, link, aiAssistant, copyStyle, formattingAsStyle, paragraphSettings; rte-command.ts has paragraphSpacingBefore/After + lineSpacing paragraph-attr pattern to copy for keepLines."
+  },
+  {
+   "id": "PGP-A2",
+   "repo": "server",
+   "deps": [
+    "PGP-A1"
+   ],
+   "priority": 2,
+   "title": "Image context menu with OO image-contract rows (ctx-contracts image: Cut/Copy/Paste/PrintSelection/Arrange/Align/CombineShapes/TextWrap/Rotate/InsertCaption/SaveAsImage/Link/Crop/ActualSize/ReplaceImage/ImageSettings/AI)",
+   "scope": [
+    "apps/web/apps/documenteditor-react/src/components",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/__tests__/"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-react/src/components/ImageContextMenu.tsx",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/__tests__/image-ctx-menu.test.ts"
+   ],
+   "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/image-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q image-ctx-menu; echo gate-done",
+   "timeout": 7200,
+   "note": "Mirror TableContextMenu.tsx structure. isImageTarget = closest('img, [data-wo-image]') and NOT table/spellcheck. Existing commands that fulfill rows verbatim: Arrange\u2192'arrange' (implement as bringForward/sendBackward/alignObjects group \u2014 those three already route in word-commands.ts), Align\u2192'alignObjects', TextWrap\u2192'wrapping' (word-commands.ts has it) or 'textWrap' alias to wrapping, InsertCaption\u2192'insertCaption'/'insertCaptionFigure', Link\u2192'link', ImageSettings\u2192case 'image' toggleRightPanel('image') exists (word-commands.ts:785), Crop\u2192'photoEditor'/'crop' (photoEditor routes; add 'crop' alias opening the same image-crop surface), ActualSize\u2192add 'actualSize' (reset width/height attrs to natural size \u2014 natural size lives in the img node attrs; use chain.updateAttributes on image/attr 'naturalWidth'/'naturalHeight' if present else keep attrs unchanged), ReplaceImage\u2192add 'replaceImage' (file input picker \u2192 chain.setImage({src}) or updateAttributes image 'src'; word-commands.ts:763 shows setImage usage), Rotate\u2192add 'rotateImage' (updateAttributes image 'rotation' attr), SaveAsImage\u2192add 'saveAsImage' (download the current image src via canvas.toDataURL if same-origin else <a download href=src> fallback \u2014 keep it 15 lines), CombineShapes\u2192'mergeShapes' exists for shapes; for images that row can open the arrange panel (divergence acceptable but must be a dispatched command, not a no-op). AI\u2192'aiAssistant'. Menu must not open over table/spellcheck/shape menus \u2014 target detection order: spellcheck \u2192 table \u2192 image \u2192 shape \u2192 text. Mount in App.tsx behind the table menu. Vitest: render, dispatch contextmenu on an <img>, assert all 17 rows, click ImageSettings dispatches wo-command image, click ActualSize updates attributes, browser row Copy calls execCommand.",
+   "require": "word-commands.ts has bringing forward: bringForward, sendBackward, alignObjects, mergeShapes, wrapping, insertCaption, photoEditor, toggleRightPanel('image') at case 'image'; setImage usage at word-commands.ts:763."
+  },
+  {
+   "id": "PGP-A3",
+   "repo": "server",
+   "deps": [
+    "PGP-A2"
+   ],
+   "priority": 3,
+   "title": "Shape context menu with OO shape-contract rows (ctx-contracts shape: Cut/Copy/Paste/PrintSelection/Arrange/Align/CombineShapes/TextWrap/Rotate/InsertCaption/SaveAsImage/Link/EditPoints/ShapeSettings/AI)",
+   "scope": [
+    "apps/web/apps/documenteditor-react/src/components",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/__tests__/"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-react/src/components/ShapeContextMenu.tsx",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/__tests__/shape-ctx-menu.test.ts"
+   ],
+   "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/shape-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q shape-ctx-menu; echo gate-done",
+   "timeout": 7200,
+   "note": "Mirror TableContextMenu.tsx structure. isShapeTarget = closest('[data-wo-shape], svg[data-shape], .wo-shape') and NOT table/image/spellcheck \u2014 check what markup the shape surface renders (ShapePanel/insertShape node; look at how shapes are represented in the doc \u2014 canvas shapes may render as div.wo-shape or a ProseMirror node; pick the real selector from RichTextEditor.tsx or a shape test). Existing commands: Arrange\u2192'arrange' (bringForward/sendBackward/alignObjects group), Align\u2192'alignObjects', CombineShapes\u2192'mergeShapes', TextWrap\u2192'wrapping', Rotate\u2192'rotateImage' (add shape-compatible 'rotateShape' alias that sets rotation attr), InsertCaption\u2192'insertCaption', SaveAsImage\u2192'saveAsImage' (reuse PGP-A2), Link\u2192'link', ShapeSettings\u2192case 'shape' toggleRightPanel('shape') exists (word-commands.ts:814 area \u2014 the graphic-object surface comment), EditPoints\u2192add 'editPoints' opening the shape panel's edit-points section (if ShapePanel has no edit-points UI, route it to toggleRightPanel('shape') and note the divergence in a code comment \u2014 the row must still dispatch a real command), AI\u2192'aiAssistant'. Menu must not open over table/image/spellcheck menus. Mount in App.tsx. Vitest: render, dispatch contextmenu on the shape target, assert all 15 rows, click ShapeSettings dispatches wo-command shape, browser row Paste calls execCommand.",
+   "require": "word-commands.ts routes insertShape and toggleRightPanel('shape'); mergeShapes, alignObjects, bringForward, sendBackward exist."
+  },
+  {
+   "id": "PGP-A4",
+   "repo": "server",
+   "deps": [
+    "PGP-A3"
+   ],
+   "priority": 4,
+   "title": "Complete the spellcheck context menu per OO misspelled-contract (ctx-contracts misspelled 15 rows: Ignore/IgnoreAll/AddToDictionary/SelectLanguage + Cut/Copy/Paste/PrintSelection + PageBreakBefore/KeepLines/ParagraphSettings/AddComment/Link/FormattingAsStyle/AI)",
+   "scope": [
+    "apps/web/apps/documenteditor-react/src/components",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/App.tsx",
+    "apps/web/apps/documenteditor-react/src/__tests__/"
+   ],
+   "touch": [
+    "apps/web/apps/documenteditor-react/src/components/SpellcheckContextMenu.tsx",
+    "apps/web/apps/documenteditor-react/src/lib/rte-command.ts",
+    "apps/web/apps/documenteditor-react/src/lib/word-commands.ts",
+    "apps/web/apps/documenteditor-react/src/__tests__/spellcheck-ctx-menu.test.ts"
+   ],
+   "accept": "cd apps/web/apps/documenteditor-react && ln -sfn /home/weiss/.wo-deps/documenteditor-react-node_modules node_modules && timeout 400 npx tsc --noEmit && pnpm run lint && timeout 500 npx vitest run src/__tests__/spellcheck-ctx-menu.test.ts 2>&1 | tee /tmp/vitest-$$.log | tail -2; ! grep -qE 'Test Files +[1-9][0-9]* failed|Tests +[1-9][0-9]* failed' /tmp/vitest-$$.log && (cd src && git diff --stat) | grep -q spellcheck-ctx; echo gate-done",
+   "timeout": 7200,
+   "note": "Existing SpellcheckContextMenu.tsx renders only suggestions + 'Add to dictionary' + 'Ignore'. OO's misspelled-word menu (ctx-contracts.json misspelled, 15 rows) additionally shows IgnoreAll, SelectLanguage, and the normal-text rows (Cut/Copy/Paste/PrintSelection/PageBreakBefore/KeepLines/ParagraphSettings/AddComment/Link/FormattingAsStyle/AI). Extend the menu so right-clicking a .spellcheck-error word renders: suggestions block, Ignore, IgnoreAll (add word to the ignoredRef set \u2014 copy the existing Ignore handler pattern), Add to dictionary, SelectLanguage (dispatch wo-command 'setDocumentLanguage' \u2014 verify the exact routing or add it: the doc language command exists as btn-doc-lang; if no wo-command, add a 'setDocumentLanguage' case in word-commands.ts routing to the same doc language setting), divider, then the browser rows (Cut/Copy/Paste/PrintSelection \u2014 reuse the runTableBrowserAction-style execCommand/print helpers from TableContextMenu.tsx, export and import them or duplicate the 6-line switch), then the text rows (PageBreakBefore\u2192'pageBreakBefore', KeepLines\u2192'keepLines', ParagraphSettings\u2192'paragraphSettings' toggleRightPanel, AddComment\u2192'addComment', Link\u2192'link', FormattingAsStyle\u2192'formattingAsStyle', AI\u2192'aiAssistant' \u2014 all implemented by PGP-A1). Keep the menu from overlapping the table/text/image/shape menus (spellcheck-error check must stay the first branch). Keep 'No suggestions' fallback. Vitest: right-click a misspelled span, assert all 15 contract rows exist, click IgnoreAll ignores, SelectLanguage dispatches, Copy calls execCommand, AddComment dispatches wo-command addComment. Existing spellcheck.test.mjs (wysiwyg) and 935 react tests must still pass.",
+   "require": "TableContextMenu.tsx runTableBrowserAction covers cut/copy/paste/print; PGP-A1 implemented pageBreakBefore/keepLines/paragraphSettings/addComment/link/formattingAsStyle/aiAssistant commands."
+  }
+ ]
 }
