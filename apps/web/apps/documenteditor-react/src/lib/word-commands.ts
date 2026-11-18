@@ -437,6 +437,13 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
+    // OO text ctx-menu "Page break before" / "Keep lines together" — the
+    // WASM engine has no pagination op, the TipTap bridge owns the paragraph
+    // pagination attributes (rte-command.ts setParagraphPagination).
+    if (command === "pageBreakBefore" || command === "keepLines") {
+      onRichTextCommand(command as RichTextCommand, value)
+      return
+    }
     // OO References ▸ "Notes Remove" — delete every footnote / endnote
     // (reference marks + note content). The WASM engine has no note model,
     // the TipTap bridge owns the removal (rte-command.ts).
