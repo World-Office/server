@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Columns2,
   FilePenLine,
   Hand,
   Maximize2,
@@ -21,12 +22,24 @@ import { useTranslation } from "react-i18next"
 import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 
-function ZoomControls(): JSX.Element {
+const ZoomControls = observer(function ZoomControls(): JSX.Element {
   const { t } = useTranslation()
 
   return (
     <>
       <div className="de-statusbar-separator" />
+      {/* Multiple pages zoom mode — same documentStore.multiplePages field
+          (and same toggleMultiplePages action) as the View tab toggle, so
+          both surfaces stay in sync on ONE state. */}
+      <button
+        type="button"
+        className={`de-statusbar-btn de-statusbar-multipage${documentStore.multiplePages ? " active" : ""}`}
+        title={t("Multiple Pages")}
+        aria-pressed={documentStore.multiplePages}
+        onClick={() => documentStore.toggleMultiplePages()}
+      >
+        <Columns2 size={14} />
+      </button>
       <button
         type="button"
         className={`de-statusbar-btn${documentStore.fitToPage ? " active" : ""}`}
@@ -64,7 +77,7 @@ function ZoomControls(): JSX.Element {
       </button>
     </>
   )
-}
+})
 
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
   const { t } = useTranslation()
@@ -76,6 +89,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
     trackChanges,
     coEditingMode,
     spellingEnabled,
+    statusMessage,
   } = documentStore
   const [activeTool, setActiveTool] = useState<"select" | "hand">("select")
 
@@ -231,6 +245,18 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
             {t("Saved")} {documentStore.lastSavedAt.toLocaleTimeString()}
           </span>
         ) : null}
+      </div>
+
+      {/* Action status — transient command feedback (OO statusbar
+          action-status slot); empty by default, filled via
+          documentStore.setStatusMessage (save/export/spellcheck events). */}
+      <div
+        className="de-statusbar-status-slot"
+        style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden" }}
+      >
+        <span className="de-statusbar-label de-statusbar-status" role="status">
+          {statusMessage ? t(statusMessage) : ""}
+        </span>
       </div>
 
       {/* Zoom controls */}
