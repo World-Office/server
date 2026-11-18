@@ -7,6 +7,7 @@ import { visioStore } from "../../stores/VisioStore"
 // FileTab reads visioStore.isFileMenuOpen to paint its own active state — the
 // observer keeps the tab in sync with the File-menu panel it toggles.
 const FileTabInner = observer(function FileTab(): JSX.Element {
+  const { t } = useTranslation()
   const isActive = visioStore.isFileMenuOpen
 
   function handleClick(): void {
