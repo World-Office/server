@@ -15,6 +15,13 @@ interface CrossReferencePanelProps {
   onInsertCrossReference: (targetId: string, format: CrossRefFormat, display: string) => void
 }
 
+/** OO References ▸ "Notes Remove" rows exposed by this panel. */
+const REMOVE_NOTE_COMMANDS = [
+  { command: "removeAllFootnotes", label: "Remove All Footnotes" },
+  { command: "removeAllEndnotes", label: "Remove All Endnotes" },
+  { command: "removeAllNotes", label: "Remove All Notes" },
+] as const
+
 export function CrossReferencePanel({ visible, onInsertCrossReference }: CrossReferencePanelProps) {
   const [targets, setTargets] = useState<CrossRefTarget[]>([])
   const [selectedTarget, setSelectedTarget] = useState<string>("")
@@ -49,6 +56,13 @@ export function CrossReferencePanel({ visible, onInsertCrossReference }: CrossRe
     }
 
     onInsertCrossReference(selectedTarget, format, display)
+  }
+
+  /** OO "Notes Remove" — delete every footnote/endnote, then refresh the list. */
+  function handleRemoveNotes(command: string) {
+    window.dispatchEvent(new CustomEvent("wo-command", { detail: { command } }))
+    const editor = getActiveRichTextEditor()
+    if (editor) setTargets(collectTargets(editor))
   }
 
   return (
@@ -251,6 +265,32 @@ export function CrossReferencePanel({ visible, onInsertCrossReference }: CrossRe
         >
           Insert Cross-Reference
         </button>
+
+        {/* Notes Remove (OO References ▸ Notes Remove) */}
+        <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e0e0e0" }}>
+          <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 12, color: "#555" }}>Notes</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {REMOVE_NOTE_COMMANDS.map((row) => (
+              <button
+                key={row.command}
+                type="button"
+                onClick={() => handleRemoveNotes(row.command)}
+                style={{
+                  width: "100%",
+                  padding: "6px 12px",
+                  border: "1px solid #ccc",
+                  borderRadius: 3,
+                  background: "#fff",
+                  color: "#333",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                {row.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

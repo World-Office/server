@@ -436,6 +436,17 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
+    // OO References ▸ "Notes Remove" — delete every footnote / endnote
+    // (reference marks + note content). The WASM engine has no note model,
+    // the TipTap bridge owns the removal (rte-command.ts).
+    if (
+      command === "removeAllFootnotes" ||
+      command === "removeAllEndnotes" ||
+      command === "removeAllNotes"
+    ) {
+      onRichTextCommand(command as RichTextCommand, value)
+      return
+    }
     if (command === "drawSelect") {
       editorRef.current?.applyStructureOp("select-tool")
       return
