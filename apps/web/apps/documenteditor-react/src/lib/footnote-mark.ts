@@ -413,3 +413,11 @@ export function updateFootnoteDisplayNumbers(editor: Editor): void {
 
 /** @deprecated Use FootnoteReference instead */
 export const FootnoteMark = FootnoteReference
+
+// ── Notes Remove (PGP-2) ──
+//
+// The implementation lives in remove-notes.ts (it shares its mark/section
+// traversal with the endnote removal); re-exported here so the whole
+// footnote API is reachable from footnote-mark.ts.
+
+export { removeAllFootnotesCommand, removeAllNotesCommand } from "./remove-notes"

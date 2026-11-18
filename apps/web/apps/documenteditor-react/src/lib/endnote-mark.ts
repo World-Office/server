@@ -35,3 +35,11 @@ export function insertEndnoteCommand(editor: Editor) {
     })
     .run()
 }
+
+// ── Notes Remove (PGP-2) ──
+//
+// The implementation lives in remove-notes.ts (it shares its mark/section
+// traversal with the footnote removal); re-exported here so the whole
+// endnote API is reachable from endnote-mark.ts.
+
+export { removeAllEndnotesCommand, removeAllNotesCommand } from "./remove-notes"

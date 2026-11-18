@@ -20,6 +20,11 @@ import { type CrossRefFormat, resolveRef } from "./cross-ref"
 import { updateIndex as updateDocIndex } from "./document-index"
 import { insertEndnoteCommand } from "./endnote-mark"
 import { insertFootnoteCommand, updateFootnoteDisplayNumbers } from "./footnote-mark"
+import {
+  removeAllEndnotesCommand,
+  removeAllFootnotesCommand,
+  removeAllNotesCommand,
+} from "./remove-notes"
 import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
 import {
   acceptAllChanges,
@@ -118,6 +123,9 @@ export type RichTextCommand =
   | "updateToc"
   | "insertFootnote"
   | "insertEndnote"
+  | "removeAllFootnotes"
+  | "removeAllEndnotes"
+  | "removeAllNotes"
   | "setTextDirection"
   | "toggleSpellCheck"
   | "toggleRuler"
@@ -317,6 +325,9 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "updateToc",
   "insertFootnote",
   "insertEndnote",
+  "removeAllFootnotes",
+  "removeAllEndnotes",
+  "removeAllNotes",
   "setTextDirection",
   "toggleSpellCheck",
   "toggleRuler",
@@ -1038,6 +1049,17 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     case "insertEndnote":
       insertEndnoteCommand(editor)
+      return true
+    case "removeAllFootnotes":
+      removeAllFootnotesCommand(editor)
+      updateFootnoteDisplayNumbers(editor)
+      return true
+    case "removeAllEndnotes":
+      removeAllEndnotesCommand(editor)
+      return true
+    case "removeAllNotes":
+      removeAllNotesCommand(editor)
+      updateFootnoteDisplayNumbers(editor)
       return true
     case "setTextDirection": {
       if (value === "ltr" || value === "rtl") {
