@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { saveFile } from "../../../bridge/file-operations"
-import { convertFromHtml, downloadBlob } from "../../../lib/conversion"
+import { buildFormDocx, convertFromHtml, downloadBlob } from "../../../lib/conversion"
 import { documentStore } from "../../../stores/DocumentStore"
 
 interface FormatOption {
@@ -8,10 +8,22 @@ interface FormatOption {
   label: string
   extension: string
   description: string
+  /** Real file extension when the format id is a virtual alias ("form"). */
+  fileType?: string
+  /** Accessible label for screen readers / tests. */
+  ariaLabel?: string
 }
 
 const EXPORT_FORMATS: FormatOption[] = [
   { id: "docx", label: "DOCX", extension: ".docx", description: "Word Document" },
+  {
+    id: "form",
+    label: "Form",
+    extension: ".docx",
+    fileType: "docx",
+    description: "Fillable Form (DOCX with content controls)",
+    ariaLabel: "Save as Form",
+  },
   { id: "odt", label: "ODT", extension: ".odt", description: "OpenDocument Text" },
   { id: "rtf", label: "RTF", extension: ".rtf", description: "Rich Text Format" },
   { id: "txt", label: "TXT", extension: ".txt", description: "Plain Text" },
@@ -36,6 +48,16 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
     if (format.id === "docx") {
       return await documentStore.buildDocumentBlob()
     }
+    if (format.id === "form") {
+      // Save Form (.docxf-equivalent): the canvas OOXML writer flattens
+      // form controls to plain text, so the HTML snapshot — which carries
+      // the data-content-control spans — is the only source that can be
+      // mapped to Word content controls (see buildFormDocx).
+      if (!documentStore.richTextHtml) {
+        throw new Error("No document content to export")
+      }
+      return buildFormDocx(documentStore.richTextHtml)
+    }
     if (!documentStore.richTextHtml) {
       throw new Error("No document content to export")
     }
@@ -52,7 +74,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
       const defaultName = documentStore.fileName
         ? documentStore.fileName.replace(/\.[^.]+$/, format.extension)
         : `Untitled${format.extension}`
-      const isBinary = ["docx", "odt", "epub", "fb2"].includes(format.id)
+      const isBinary = ["docx", "form", "odt", "epub", "fb2"].includes(format.id)
       setConverting(format.id)
       setError(null)
       try {
@@ -66,7 +88,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
         }
         const result = await saveFile(content, {
           defaultPath: defaultName,
-          filters: [{ name: format.description, extensions: [format.id] }],
+          filters: [{ name: format.description, extensions: [format.fileType ?? format.id] }],
           binary: isBinary,
         })
         if (result) {
@@ -135,6 +157,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
             key={format.id}
             type="button"
             className="de-file-menu-format-btn"
+            aria-label={format.ariaLabel ?? format.description}
             disabled={converting === format.id}
             onClick={() => handleExport(format)}
           >
