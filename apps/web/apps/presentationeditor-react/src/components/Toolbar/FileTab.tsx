@@ -1,32 +1,32 @@
-import { File } from "lucide-react"
-import { observer } from "mobx-react-lite"
-import { useTranslation } from "react-i18next"
-import { presentationStore } from "../../stores/PresentationStore"
+import { File } from "lucide-react";
+import { observer } from "mobx-react-lite";
+import { useTranslation } from "react-i18next";
+import { presentationStore } from "../../stores/PresentationStore";
 
 const ObservedFileTab = observer(function ObservedFileTab() {
-  const { t } = useTranslation()
-  const isActive = presentationStore.isFileMenuOpen
+	const { t } = useTranslation();
+	const isActive = presentationStore.isFileMenuOpen;
 
-  function handleClick() {
-    if (isActive) {
-      presentationStore.setFileMenuOpen(false)
-    } else {
-      presentationStore.setActiveTab("file")
-    }
-  }
+	function handleClick() {
+		if (isActive) {
+			presentationStore.setFileMenuOpen(false);
+		} else {
+			presentationStore.setActiveTab("file");
+		}
+	}
 
-  return (
-    <button
-      type="button"
-      className={`prese-toolbar-tab${isActive ? " active" : ""}`}
-      data-tab="file"
-      onClick={handleClick}
-      aria-label={t("File")}
-    >
-      <File size={16} />
-      File
-    </button>
-  )
-})
+	return (
+		<button
+			type="button"
+			className={`prese-toolbar-tab${isActive ? " active" : ""}`}
+			data-tab="file"
+			onClick={handleClick}
+			aria-label={t("File")}
+		>
+			<File size={16} />
+			File
+		</button>
+	);
+});
 
-export { ObservedFileTab as FileTab }
+export { ObservedFileTab as FileTab };
