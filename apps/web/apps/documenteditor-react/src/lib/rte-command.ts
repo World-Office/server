@@ -11,9 +11,10 @@
  */
 
 import { type Editor, Extension } from "@tiptap/core"
+import Image from "@tiptap/extension-image"
 import { TableRow } from "@tiptap/extension-table-row"
 import type { Node as PMNode } from "@tiptap/pm/model"
-import type { EditorState } from "@tiptap/pm/state"
+import { type EditorState, NodeSelection } from "@tiptap/pm/state"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
 import { type CrossRefFormat, resolveRef } from "./cross-ref"
@@ -74,6 +75,13 @@ export type RichTextCommand =
   | "codeBlock"
   | "link"
   | "image"
+  // Image ctx-menu commands (OO ctx-contracts image rows)
+  | "textWrap"
+  | "rotateImage"
+  | "saveAsImage"
+  | "crop"
+  | "actualSize"
+  | "replaceImage"
   | "indent"
   | "outdent"
   // Table commands
@@ -357,6 +365,12 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "insertContinuousSectionBreak",
   "insertCaptionFigure",
   "insertCaptionTable",
+  "textWrap",
+  "rotateImage",
+  "saveAsImage",
+  "crop",
+  "actualSize",
+  "replaceImage",
   "insertCrossReference",
   "resolveCrossReferences",
   "insertPlainTextControl",
@@ -521,6 +535,197 @@ export const TableRowHeight = TableRow.extend({
     }
   },
 })
+
+/**
+ * PGP-A2 — image geometry attributes.
+ *
+ * TipTap's stock image node carries only src/alt/title/width/height. The
+ * OO image context menu needs to persist a rotation ("Rotate" row) and to
+ * restore the size an image was inserted at ("Actual Size" row), so the
+ * image node gains:
+ *
+ *   rotation                       — degrees, rendered as a CSS transform
+ *   naturalWidth / naturalHeight   — the insert-time (intrinsic) size
+ *
+ * Both round-trip through the rendered HTML (`data-rotation`,
+ * `data-natural-width/height`), so the saved document keeps them.
+ */
+export const ImageGeometry = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      rotation: {
+        default: 0,
+        parseHTML: (element: HTMLElement) => {
+          const degrees = Number.parseFloat(element.getAttribute("data-rotation") ?? "0")
+          return Number.isFinite(degrees) ? degrees : 0
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const degrees = Number(attributes.rotation ?? 0)
+          if (!Number.isFinite(degrees) || degrees === 0) return {}
+          return { "data-rotation": String(degrees), style: `transform: rotate(${degrees}deg)` }
+        },
+      },
+      naturalWidth: {
+        default: null,
+        parseHTML: (element: HTMLElement) => parseNaturalSize(element, "data-natural-width"),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          renderNaturalSize(attributes, "naturalWidth", "data-natural-width"),
+      },
+      naturalHeight: {
+        default: null,
+        parseHTML: (element: HTMLElement) => parseNaturalSize(element, "data-natural-height"),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          renderNaturalSize(attributes, "naturalHeight", "data-natural-height"),
+      },
+    }
+  },
+})
+
+/** Parse a data-natural-* pixel value (null when absent / not a number). */
+function parseNaturalSize(element: HTMLElement, attr: string): number | null {
+  const px = Number.parseFloat(element.getAttribute(attr) ?? "")
+  return Number.isFinite(px) && px > 0 ? px : null
+}
+
+/** Render a data-natural-* attr only when the size was actually captured. */
+function renderNaturalSize(
+  attributes: Record<string, unknown>,
+  attr: string,
+  htmlAttr: string,
+): Record<string, string> {
+  const px = attributes[attr]
+  return typeof px === "number" && Number.isFinite(px) && px > 0
+    ? { [htmlAttr]: String(px) }
+    : {}
+}
+
+/** The image node a ctx-menu image command acts on (see findSelectedImage). */
+interface SelectedImage {
+  pos: number
+  node: PMNode
+}
+
+/**
+ * The image the next image command should act on: a NodeSelection on the
+ * image (clicking / right-clicking an image selects the node), else the
+ * first image inside the selection range. Returns null with no image in
+ * play (the command then reports failure instead of touching the doc).
+ */
+export function findSelectedImage(editor: Editor): SelectedImage | null {
+  const { state } = editor
+  const selection = state.selection
+  if (selection instanceof NodeSelection && selection.node.type.name === "image") {
+    return { pos: selection.from, node: selection.node }
+  }
+  const hits: SelectedImage[] = []
+  state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+    if (node.type.name === "image") hits.push({ pos, node })
+    return hits.length === 0
+  })
+  return hits[0] ?? null
+}
+
+/**
+ * OO image ctx row "Rotate" — rotate the selected image by `degrees`
+ * (OO's Rotate submenu steps in 90° turns; the ctx row defaults to +90°).
+ * The angle is persisted on the image node's `rotation` attr and rendered
+ * as a CSS transform. Returns false when no image is selected.
+ */
+export function rotateSelectedImage(editor: Editor, degrees: number): boolean {
+  const image = findSelectedImage(editor)
+  if (image === null) return false
+  const current = Number(image.node.attrs.rotation ?? 0)
+  const next = (Math.round(current + degrees) % 360 + 360) % 360
+  return editor
+    .chain()
+    .focus()
+    .setNodeSelection(image.pos)
+    .updateAttributes("image", { rotation: next })
+    .run()
+}
+
+/**
+ * OO image ctx row "Actual Size" — drop the resized width/height so the
+ * image renders at its intrinsic size again. A captured naturalWidth /
+ * naturalHeight attr (the insert-time size) wins when present; without one
+ * the explicit size is cleared, which is exactly the browser's natural
+ * rendering. Returns false when no image is selected.
+ */
+export function resetImageToActualSize(editor: Editor): boolean {
+  const image = findSelectedImage(editor)
+  if (image === null) return false
+  const attrs = image.node.attrs as Record<string, unknown>
+  const naturalWidth = typeof attrs.naturalWidth === "number" ? attrs.naturalWidth : null
+  const naturalHeight = typeof attrs.naturalHeight === "number" ? attrs.naturalHeight : null
+  return editor
+    .chain()
+    .focus()
+    .setNodeSelection(image.pos)
+    .updateAttributes("image", { width: naturalWidth, height: naturalHeight })
+    .run()
+}
+
+/**
+ * OO image ctx row "Replace Image" — swap the selected image's `src` for
+ * `src`, keeping every other attribute (size, caption, rotation) intact.
+ * Returns false when no image is selected.
+ */
+export function replaceSelectedImage(editor: Editor, src: string): boolean {
+  const image = findSelectedImage(editor)
+  if (image === null || !src) return false
+  return editor
+    .chain()
+    .focus()
+    .setNodeSelection(image.pos)
+    .updateAttributes("image", { src })
+    .run()
+}
+
+/**
+ * OO image ctx row "Save as Image" — download the image at `src`. Local /
+ * data / blob URLs download straight through an `<a download>`; the same
+ * anchor is the cross-origin fallback (the browser resolves the fetch).
+ */
+export function saveImageAsFile(src: string): void {
+  if (!src) return
+  const link = document.createElement("a")
+  const name = src.split("/").pop()?.split(/[?#]/)[0]
+  link.download = name?.includes(".") ? name : "image.png"
+  link.href = src
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
+/**
+ * OO image ctx row "Replace Image" (no explicit src) — open the browser's
+ * image picker and hand the picked file (as a data URL) to `onPicked`.
+ */
+function pickImageSrc(onPicked: (src: string) => void): void {
+  const input = document.createElement("input")
+  input.type = "file"
+  input.accept = "image/*"
+  input.style.display = "none"
+  input.onchange = () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") onPicked(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+  document.body.appendChild(input)
+  input.click()
+  input.remove()
+}
+
+/** Normalize a rotateImage value: explicit degrees, else OO's 90° turn. */
+function normalizeRotationValue(value?: string): number {
+  const degrees = Number.parseFloat(value ?? "")
+  return Number.isFinite(degrees) && degrees !== 0 ? degrees : 90
+}
 
 /** Fallback column width (px) when a table has no `colwidth` at all yet. */
 const DEFAULT_DISTRIBUTED_COLUMN_WIDTH = 100
@@ -883,6 +1088,46 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       const src = value || window.prompt("Enter image URL:")
       if (src) {
         chain.setImage({ src }).run()
+      }
+      return true
+    }
+    // Image ctx-menu rows (OO ctx-contracts image) — the TipTap bridge owns
+    // the image node model changes; the panel-opening rows land on the same
+    // surfaces word-commands.ts routes them to.
+    case "textWrap":
+      // OO "Text wrap" opens the wrap-style surface (Layout ▸ wrap styles).
+      documentStore.toggleRightPanel("paragraph")
+      return true
+    case "rotateImage":
+      return rotateSelectedImage(editor, normalizeRotationValue(value))
+    case "saveAsImage": {
+      const image = findSelectedImage(editor)
+      if (image === null) return false
+      saveImageAsFile(String(image.node.attrs.src ?? value ?? ""))
+      return true
+    }
+    case "crop":
+      // OO crops inside the image editor plugin (same surface "photoEditor"
+      // opens — the plugins rail hosts it).
+      documentStore.toggleRightPanel("plugins")
+      return true
+    case "actualSize":
+      return resetImageToActualSize(editor)
+    case "replaceImage": {
+      const image = findSelectedImage(editor)
+      if (image === null) return false
+      const apply = (src: string): void => {
+        editor
+          .chain()
+          .focus()
+          .setNodeSelection(image.pos)
+          .updateAttributes("image", { src })
+          .run()
+      }
+      if (value) {
+        apply(value)
+      } else {
+        pickImageSrc(apply)
       }
       return true
     }

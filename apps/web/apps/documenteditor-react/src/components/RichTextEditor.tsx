@@ -2,7 +2,6 @@ import Color from "@tiptap/extension-color"
 import Focus from "@tiptap/extension-focus"
 import FontFamily from "@tiptap/extension-font-family"
 import Highlight from "@tiptap/extension-highlight"
-import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
 import Subscript from "@tiptap/extension-subscript"
@@ -44,6 +43,7 @@ import { MergeField } from "../lib/mail-merge"
 import { PageCount, PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
 import {
+  ImageGeometry,
   ParagraphPaginationExtension,
   TableRowHeight,
   setActiveRichTextEditor,
@@ -95,7 +95,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         TableCell,
         TableHeader,
         TextAlign.configure({ types: ["heading", "paragraph"] }),
-        Image,
+        ImageGeometry,
         Typography,
         Focus.configure({ className: "has-focus" }),
         Placeholder.configure({ placeholder: "Start typing\u2026" }),
