@@ -39,6 +39,9 @@ const TableContextMenu = lazy(() =>
 const TextContextMenu = lazy(() =>
   import("./components/TextContextMenu").then((m) => ({ default: m.TextContextMenu })),
 )
+const ImageContextMenu = lazy(() =>
+  import("./components/ImageContextMenu").then((m) => ({ default: m.ImageContextMenu })),
+)
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
@@ -315,6 +318,10 @@ export const App = observer(function App() {
         {/* PGP-1 — OO table context menu (Merge/Split/Distribute/alignment). */}
         <Suspense fallback={null}>
           <TableContextMenu />
+        </Suspense>
+        {/* PGP-A2 — OO image context menu (Rotate/ActualSize/Replace/…). */}
+        <Suspense fallback={null}>
+          <ImageContextMenu />
         </Suspense>
         {/* PGP-A1 — OO text context menu (page-break-before / keep-lines). */}
         <Suspense fallback={null}>

@@ -444,6 +444,20 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
+    // OO image ctx-menu rows that change the image node model (PGP-A2) —
+    // the WASM engine has no image op, the TipTap bridge owns rotation /
+    // actual size / replace / save-as-image and the figure caption insert
+    // (rte-command.ts).
+    if (
+      command === "rotateImage" ||
+      command === "actualSize" ||
+      command === "replaceImage" ||
+      command === "saveAsImage" ||
+      command === "insertCaptionFigure"
+    ) {
+      onRichTextCommand(command as RichTextCommand, value)
+      return
+    }
     // OO References ▸ "Notes Remove" — delete every footnote / endnote
     // (reference marks + note content). The WASM engine has no note model,
     // the TipTap bridge owns the removal (rte-command.ts).
@@ -848,6 +862,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "hyphenation":
       case "wrapping":
+      case "textWrap":
         documentStore.toggleRightPanel("paragraph")
         return
       case "watermark":
@@ -870,6 +885,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "pluginManager":
       case "backgroundPlugins":
       case "photoEditor":
+      case "crop":
       case "youtube":
       case "ocr":
       case "translator":
