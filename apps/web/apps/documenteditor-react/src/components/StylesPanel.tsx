@@ -6,7 +6,12 @@
  * a sequence of TipTap commands.
  */
 
-import type { RichTextCommand } from "../lib/rte-command"
+import type { CSSProperties } from "react"
+import {
+  LIST_NUMBERING_FORMATS,
+  type ListNumberingFormatId,
+  type RichTextCommand,
+} from "../lib/rte-command"
 
 export interface StyleDefinition {
   id: string
@@ -206,8 +211,107 @@ export function StylesPanel({ visible, onCommand }: StylesPanelProps) {
           </button>
         ))}
       </div>
+      {/* List Styles picker — OO "List Settings" (numbering format +
+          per-level indent) and "List Types" (gallery pick), mapped onto
+          listNumberingStyle / listIndent rich-text commands. */}
+      <div
+        style={{
+          borderTop: "1px solid #e0e0e0",
+          padding: "10px 16px 12px",
+          background: "#fafafa",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 6, color: "#444" }}>
+          List Styles
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+          {LIST_TYPE_ACTIONS.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              title={action.title}
+              onClick={() => onCommand(action.command, action.value)}
+              style={listButtonStyle}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontWeight: 600, fontSize: 12, margin: "6px 0", color: "#444" }}>
+          Numbering format
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+          {NUMBERING_FORMAT_ORDER.map((id) => {
+            const format = LIST_NUMBERING_FORMATS[id]
+            return (
+              <button
+                key={id}
+                type="button"
+                title={format.label}
+                onClick={() => onCommand("listNumberingStyle", id)}
+                style={listButtonStyle}
+              >
+                {format.example}
+              </button>
+            )
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            type="button"
+            title="Nest the current list item one level deeper"
+            onClick={() => onCommand("listIndent", "down")}
+            style={{ ...listButtonStyle, flex: 1 }}
+          >
+            Increase Indent
+          </button>
+          <button
+            type="button"
+            title="Move the current list item one level out"
+            onClick={() => onCommand("listIndent", "up")}
+            style={{ ...listButtonStyle, flex: 1 }}
+          >
+            Decrease Indent
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
+
+const listButtonStyle: CSSProperties = {
+  padding: "4px 8px",
+  border: "1px solid #d0d0d0",
+  borderRadius: 4,
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: 12,
+  fontFamily: "inherit",
+  color: "#333",
+}
+
+interface ListTypeAction {
+  id: string
+  label: string
+  title: string
+  command: RichTextCommand
+  value?: string
+}
+
+/** List Types gallery entries (OO list-kind picks). */
+const LIST_TYPE_ACTIONS: ListTypeAction[] = [
+  { id: "bullet", label: "Bulleted", title: "Bulleted list", command: "bulletList" },
+  { id: "decimal", label: "Numbered", title: "Numbered list (1. 2. 3.)", command: "listNumberingStyle", value: "decimal" },
+  { id: "task", label: "Task", title: "Task list", command: "taskList" },
+]
+
+/** Numbering-format picker order (OO List Settings formats). */
+const NUMBERING_FORMAT_ORDER: ListNumberingFormatId[] = [
+  "decimal",
+  "lowerAlpha",
+  "upperAlpha",
+  "lowerRoman",
+  "upperRoman",
+]
 
 export { STYLES }

@@ -55,6 +55,9 @@ export type RichTextCommand =
   | "bulletList"
   | "orderedList"
   | "taskList"
+  // List Settings / List Types pickers
+  | "listNumberingStyle"
+  | "listIndent"
   | "alignLeft"
   | "alignCenter"
   | "alignRight"
@@ -144,6 +147,62 @@ export type RichTextCommand =
   | "insertField"
   | "increaseFontSize"
   | "decreaseFontSize"
+
+/**
+ * Numbering formats for the List Settings / List Types picker
+ * (OO "List Settings" numbering-format rows + "List Types" gallery).
+ *
+ * `marker` is the value stored on the orderedList node `type` attribute —
+ * TipTap's OrderedList renders it straight onto the `<ol type="…">`
+ * element, which is also the CSS `list-style-type` shorthand ("1", "a",
+ * "A", "i", "I").
+ */
+export type ListNumberingFormatId = "decimal" | "lowerAlpha" | "upperAlpha" | "lowerRoman" | "upperRoman"
+
+export interface ListNumberingFormat {
+  id: ListNumberingFormatId
+  label: string
+  /** Value for the orderedList `type` attr / `<ol type>` marker. */
+  marker: string
+  /** Human-facing example shown in the picker, e.g. "a. b. c.". */
+  example: string
+}
+
+export const LIST_NUMBERING_FORMATS: Record<ListNumberingFormatId, ListNumberingFormat> = {
+  decimal: { id: "decimal", label: "Numbered", marker: "1", example: "1. 2. 3." },
+  lowerAlpha: { id: "lowerAlpha", label: "Lowercase Alphabet", marker: "a", example: "a. b. c." },
+  upperAlpha: { id: "upperAlpha", label: "Uppercase Alphabet", marker: "A", example: "A. B. C." },
+  lowerRoman: { id: "lowerRoman", label: "Lowercase Roman", marker: "i", example: "i. ii. iii." },
+  upperRoman: { id: "upperRoman", label: "Uppercase Roman", marker: "I", example: "I. II. III." },
+}
+
+/**
+ * Normalize a numbering-format value coming from a `wo-command` dispatch.
+ * Accepts the camelCase ids used by the UI (`lowerAlpha`), the CSS
+ * `list-style-type` spellings (`lower-alpha`) and the raw `<ol type>`
+ * markers (`a`, `I`, …). Returns null for unknown values.
+ */
+export function normalizeListNumberingFormat(value?: string | null): ListNumberingFormatId | null {
+  if (!value) return null
+  const aliases: Record<string, ListNumberingFormatId> = {
+    decimal: "decimal",
+    "1": "decimal",
+    "decimal-leading-zero": "decimal",
+    loweralpha: "lowerAlpha",
+    "lower-alpha": "lowerAlpha",
+    a: "lowerAlpha",
+    upperalpha: "upperAlpha",
+    "upper-alpha": "upperAlpha",
+    A: "upperAlpha",
+    lowerroman: "lowerRoman",
+    "lower-roman": "lowerRoman",
+    i: "lowerRoman",
+    upperroman: "upperRoman",
+    "upper-roman": "upperRoman",
+    I: "upperRoman",
+  }
+  return aliases[value] ?? aliases[value.toLowerCase()] ?? null
+}
 
 export interface PageLayoutSettings {
   orientation?: "portrait" | "landscape"
@@ -408,6 +467,40 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "taskList":
       chain.toggleTaskList().run()
       return true
+    case "listNumberingStyle": {
+      // OO List Settings (numbering format) + List Types (gallery pick).
+      // Sets the `type` attr on the orderedList the selection lives in;
+      // when the selection is in a different list kind (or no list at all)
+      // it first converts/starts a numbered list, mirroring the OO picker.
+      const formatId = normalizeListNumberingFormat(value)
+      if (!formatId) return false
+      const { state } = editor
+      const { from, to } = state.selection
+      let inOrdered = false
+      state.doc.nodesBetween(from, to, (node) => {
+        if (node.type.name === "orderedList") inOrdered = true
+      })
+      if (!inOrdered) {
+        // bulletList / taskList / plain paragraph → numbered list
+        editor.chain().focus().toggleOrderedList().run()
+      }
+      return editor
+        .chain()
+        .focus()
+        .updateAttributes("orderedList", { type: LIST_NUMBERING_FORMATS[formatId].marker })
+        .run()
+    }
+    case "listIndent": {
+      // OO List Settings per-level indent: "down" deepens the level
+      // (nest under the previous item), "up" lifts it back out.
+      if (value === "down") {
+        return editor.chain().focus().sinkListItem("listItem").run()
+      }
+      if (value === "up") {
+        return editor.chain().focus().liftListItem("listItem").run()
+      }
+      return false
+    }
     case "alignLeft":
       chain.setTextAlign("left").run()
       return true
