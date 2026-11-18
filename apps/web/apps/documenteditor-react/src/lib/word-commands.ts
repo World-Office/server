@@ -157,10 +157,183 @@ export function commandToFormat(command: string, value?: string): Record<string,
 }
 
 /**
+ * Extract the run formatting of the current selection as the raw WASM JSON
+ * string — the capture behind `copyStyle` (Ctrl+Alt+C) and
+ * "Formatting as style". Returns null when no WASM document is mounted.
+ */
+function extractSelectionFormatting(
+  editorRef: React.RefObject<CanvasEditorHandle | null>,
+): string | null {
+  const docHandle = editorRef.current?.getDocHandle?.() ?? null
+  const api = docHandle !== null ? getWasmApi() : null
+  if (api === null || docHandle === null) return null
+  try {
+    return api.get_run_formatting(docHandle)
+  } catch {
+    // WASM not ready — behave like "nothing captured"
+    return null
+  }
+}
+
+/**
+ * PGP-6 — Style Title: user-named styles ("formatting as style").
+ *
+ * OO's context-menu row "Formatting as style" opens the Style Title dialog:
+ * the current selection's formatting is captured and saved under a
+ * user-chosen name, and named styles can be renamed in place. This is the
+ * react equivalent — a module-level registry of { name, formatting } pairs
+ * holding the same run-formatting snapshot `copyStyle` captures, rendered by
+ * StylesPanel (the "paragraph" right rail) with inline naming / renaming
+ * (no window.prompt).
+ *
+ * ponytail: the registry is in-memory and survives only the session;
+ * persisting user styles with the document is a follow-up.
+ */
+export interface UserStyle {
+  id: string
+  name: string
+  /** WASM applyFormatting snapshot (get_run_formatting) captured at save time. */
+  formatting: Record<string, unknown>
+  createdAt: number
+}
+
+const userStyles: UserStyle[] = []
+let userStyleSeq = 0
+const userStyleListeners = new Set<() => void>()
+
+function emitUserStylesChange(): void {
+  for (const listener of userStyleListeners) listener()
+}
+
+/** Trim + collapse inner whitespace; whitespace-only names are rejected. */
+export function normalizeStyleName(name: string | undefined): string | null {
+  if (typeof name !== "string") return null
+  const normalized = name.trim().replace(/\s+/g, " ")
+  return normalized.length > 0 ? normalized : null
+}
+
+/** Next free OO-style default name ("Style 1", "Style 2", …). */
+function nextDefaultStyleName(): string {
+  const taken = new Set(userStyles.map((style) => style.name.toLowerCase()))
+  let n = userStyles.length + 1
+  while (taken.has(`style ${n}`)) n += 1
+  return `Style ${n}`
+}
+
+/** Current user-named styles (oldest first). */
+export function getUserStyles(): readonly UserStyle[] {
+  return userStyles
+}
+
+/**
+ * Register a captured formatting snapshot under a name. A blank name gets
+ * the next free default ("Style N"); re-saving an existing name redefines
+ * that style in place (OO style-update semantics).
+ */
+export function saveUserStyle(
+  name: string | undefined,
+  formatting: Record<string, unknown>,
+): UserStyle {
+  const normalized = normalizeStyleName(name)
+  if (normalized !== null) {
+    const existing = userStyles.find(
+      (style) => style.name.toLowerCase() === normalized.toLowerCase(),
+    )
+    if (existing) {
+      existing.formatting = formatting
+      existing.createdAt = Date.now()
+      emitUserStylesChange()
+      return existing
+    }
+  }
+  const entry: UserStyle = {
+    id: `user-style-${(userStyleSeq += 1)}`,
+    name: normalized ?? nextDefaultStyleName(),
+    formatting,
+    createdAt: Date.now(),
+  }
+  userStyles.push(entry)
+  emitUserStylesChange()
+  return entry
+}
+
+/** Rename a saved style (the OO Style Title rename flow). */
+export function renameUserStyle(id: string, name: string): boolean {
+  const normalized = normalizeStyleName(name)
+  if (normalized === null) return false
+  const entry = userStyles.find((style) => style.id === id)
+  if (!entry) return false
+  if (entry.name === normalized) return true
+  entry.name = normalized
+  emitUserStylesChange()
+  return true
+}
+
+/** Look up a saved style by id, exact name, then case-insensitive name. */
+export function findUserStyle(idOrName: string): UserStyle | null {
+  return (
+    userStyles.find((style) => style.id === idOrName) ??
+    userStyles.find((style) => style.name === idOrName) ??
+    userStyles.find((style) => style.name.toLowerCase() === idOrName.toLowerCase()) ??
+    null
+  )
+}
+
+/** Re-render hook for surfaces listing the registry (StylesPanel). */
+export function subscribeUserStyles(listener: () => void): () => void {
+  userStyleListeners.add(listener)
+  return () => {
+    userStyleListeners.delete(listener)
+  }
+}
+
+/** Drop every user style (session reset). */
+export function resetUserStyles(): void {
+  userStyles.length = 0
+  emitUserStylesChange()
+}
+
+/**
+ * Latest editor ref registered by createWordCommandHandler — lets the
+ * registry helpers below reach the WASM engine from panel code.
+ */
+let activeEditorRef: React.RefObject<CanvasEditorHandle | null> | null = null
+
+/**
+ * Capture the current selection's run formatting as a parsed snapshot
+ * (registry input). Returns null when no WASM document is mounted.
+ */
+export function captureSelectionFormatting(): Record<string, unknown> | null {
+  if (activeEditorRef === null) return null
+  const raw = extractSelectionFormatting(activeEditorRef)
+  if (raw === null) return null
+  try {
+    return raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Apply a saved style to the current selection — the FormattingAsStyle
+ * apply path: the stored snapshot replays through the copyStyle apply
+ * path (WASM applyFormatting).
+ */
+export function applyUserStyle(idOrName: string): boolean {
+  const entry = findUserStyle(idOrName)
+  if (entry === null || activeEditorRef === null) return false
+  activeEditorRef.current?.applyFormatting(entry.formatting)
+  return true
+}
+
+/**
  * Create the full word-command handler.
  */
 export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHandler {
   const { editorRef, onRichTextCommand, onFind } = deps
+  // Registry helpers (captureSelectionFormatting / applyUserStyle) reuse
+  // the handler's editor ref so StylesPanel can drive the same paths.
+  activeEditorRef = editorRef
 
   return (cmd: WoCommand): void => {
     const command = cmd.command
@@ -799,15 +972,29 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         // OO "Copy style" (Ctrl+Alt+C): capture the formatting of the run
         // at the current cursor into app state so a surface with a matching
         // apply-path can re-use it (format painter pattern).
-        const docHandle = editorRef.current?.getDocHandle?.() ?? null
-        const api = docHandle !== null ? getWasmApi() : null
-        if (api !== null && docHandle !== null) {
-          try {
-            documentStore.formatPainterFormat = api.get_run_formatting(docHandle)
-          } catch {
-            // WASM not ready — leave the previously copied format untouched
+        const raw = extractSelectionFormatting(editorRef)
+        if (raw !== null) {
+          documentStore.formatPainterFormat = raw
+        }
+        return
+      }
+      case "formattingAsStyle": {
+        // OO ctx-menu "Formatting as style" + dialogs/Style Title: capture
+        // the current selection's formatting and register it under `value`
+        // (or the next default "Style N"). StylesPanel's inline input does
+        // the naming; revealing it here mirrors the Style Title dialog.
+        const formatting = captureSelectionFormatting()
+        if (formatting !== null) {
+          saveUserStyle(value, formatting)
+          if (documentStore.activeRightPanel !== "paragraph") {
+            documentStore.toggleRightPanel("paragraph")
           }
         }
+        return
+      }
+      case "applyStyle": {
+        // Apply a user-named style (id or name) to the current selection.
+        if (typeof value === "string" && value) applyUserStyle(value)
         return
       }
       // Home paragraph-formatting / view controls that have no dedicated
