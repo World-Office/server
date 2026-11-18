@@ -45,6 +45,7 @@ import { ParagraphBorders } from "../lib/paragraph-borders"
 import {
   ImageGeometry,
   ParagraphPaginationExtension,
+  ShapeNode,
   TableRowHeight,
   setActiveRichTextEditor,
 } from "../lib/rte-command"
@@ -96,6 +97,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         TableHeader,
         TextAlign.configure({ types: ["heading", "paragraph"] }),
         ImageGeometry,
+        ShapeNode,
         Typography,
         Focus.configure({ className: "has-focus" }),
         Placeholder.configure({ placeholder: "Start typing\u2026" }),

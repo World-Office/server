@@ -444,15 +444,16 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
-    // OO image ctx-menu rows that change the image node model (PGP-A2) —
-    // the WASM engine has no image op, the TipTap bridge owns rotation /
-    // actual size / replace / save-as-image and the figure caption insert
-    // (rte-command.ts).
+    // OO image/shape ctx-menu rows that change the node model (PGP-A2/A3) —
+    // the WASM engine has no image/shape op, the TipTap bridge owns
+    // rotation / actual size / replace / save-as-image and the figure
+    // caption insert (rte-command.ts).
     if (
       command === "rotateImage" ||
       command === "actualSize" ||
       command === "replaceImage" ||
       command === "saveAsImage" ||
+      command === "rotateShape" ||
       command === "insertCaptionFigure"
     ) {
       onRichTextCommand(command as RichTextCommand, value)
@@ -805,6 +806,17 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "image":
         documentStore.toggleRightPanel("image")
+        return
+      case "shape":
+        // "Shape Settings" (OO shape ctx row) → the Shape settings rail
+        // (the graphic-object surface insertShape lands on too).
+        documentStore.toggleRightPanel("shape")
+        return
+      case "editPoints":
+        // OO "Edit Points" opens the shape vertex editor; this build has
+        // no vertex UI yet, so the row opens the Shape settings rail — the
+        // divergence is noted in ShapeContextMenu.tsx (still a real panel).
+        documentStore.toggleRightPanel("shape")
         return
       case "link":
         documentStore.toggleRightPanel("crossreference")

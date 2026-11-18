@@ -42,6 +42,9 @@ const TextContextMenu = lazy(() =>
 const ImageContextMenu = lazy(() =>
   import("./components/ImageContextMenu").then((m) => ({ default: m.ImageContextMenu })),
 )
+const ShapeContextMenu = lazy(() =>
+  import("./components/ShapeContextMenu").then((m) => ({ default: m.ShapeContextMenu })),
+)
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
@@ -322,6 +325,10 @@ export const App = observer(function App() {
         {/* PGP-A2 — OO image context menu (Rotate/ActualSize/Replace/…). */}
         <Suspense fallback={null}>
           <ImageContextMenu />
+        </Suspense>
+        {/* PGP-A3 — OO shape context menu (Rotate/EditPoints/…). */}
+        <Suspense fallback={null}>
+          <ShapeContextMenu />
         </Suspense>
         {/* PGP-A1 — OO text context menu (page-break-before / keep-lines). */}
         <Suspense fallback={null}>

@@ -10,7 +10,7 @@
  * a no-op. Callers do not need to guard for this.
  */
 
-import { type Editor, Extension } from "@tiptap/core"
+import { type Editor, Extension, Node } from "@tiptap/core"
 import Image from "@tiptap/extension-image"
 import { TableRow } from "@tiptap/extension-table-row"
 import type { Node as PMNode } from "@tiptap/pm/model"
@@ -82,6 +82,8 @@ export type RichTextCommand =
   | "crop"
   | "actualSize"
   | "replaceImage"
+  // Shape ctx-menu commands (OO ctx-contracts shape rows)
+  | "rotateShape"
   | "indent"
   | "outdent"
   // Table commands
@@ -371,6 +373,7 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "crop",
   "actualSize",
   "replaceImage",
+  "rotateShape",
   "insertCrossReference",
   "resolveCrossReferences",
   "insertPlainTextControl",
@@ -725,6 +728,173 @@ function pickImageSrc(onPicked: (src: string) => void): void {
 function normalizeRotationValue(value?: string): number {
   const degrees = Number.parseFloat(value ?? "")
   return Number.isFinite(degrees) && degrees !== 0 ? degrees : 90
+}
+
+/**
+ * PGP-A3 — the shape node model.
+ *
+ * Shapes live as block atoms (`<div class="wo-shape" data-wo-shape …>`) so
+ * the document keeps one real object per shape, the shape ctx menu has a
+ * target to open on, and the model ops below (rotate / save-as-image) act
+ * on document state instead of chrome. Attributes round-trip through the
+ * rendered HTML (data-shape-type / data-fill / data-rotation / inline
+ * style), so saved documents keep them.
+ */
+export const ShapeNode = Node.create({
+  name: "shape",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      shapeType: {
+        default: "rect",
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-shape-type") ?? "rect",
+        renderHTML: () => ({}),
+      },
+      fill: {
+        default: "#4472C4",
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-fill") ?? "#4472C4",
+        renderHTML: () => ({}),
+      },
+      rotation: {
+        default: 0,
+        parseHTML: (element: HTMLElement) => {
+          const degrees = Number.parseFloat(element.getAttribute("data-rotation") ?? "0")
+          return Number.isFinite(degrees) ? degrees : 0
+        },
+        renderHTML: () => ({}),
+      },
+      width: {
+        default: SHAPE_DEFAULT_WIDTH,
+        parseHTML: (element: HTMLElement) => parseShapeDimension(element, "width"),
+        renderHTML: () => ({}),
+      },
+      height: {
+        default: SHAPE_DEFAULT_HEIGHT,
+        parseHTML: (element: HTMLElement) => parseShapeDimension(element, "height"),
+        renderHTML: () => ({}),
+      },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-wo-shape]" }, { tag: "div.wo-shape[data-shape-type]" }]
+  },
+
+  renderHTML({ node }) {
+    const attrs = node.attrs as Record<string, unknown>
+    const width = Number(attrs.width ?? SHAPE_DEFAULT_WIDTH)
+    const height = Number(attrs.height ?? SHAPE_DEFAULT_HEIGHT)
+    const rotation = Number(attrs.rotation ?? 0)
+    const rotated = Number.isFinite(rotation) && rotation !== 0
+    const style = [
+      `width: ${width}px`,
+      `height: ${height}px`,
+      `background-color: ${String(attrs.fill ?? "#4472C4")}`,
+      rotated ? `transform: rotate(${rotation}deg)` : "",
+    ]
+      .filter(Boolean)
+      .join("; ")
+    return [
+      "div",
+      {
+        class: "wo-shape",
+        "data-wo-shape": "true",
+        "data-shape-type": String(attrs.shapeType ?? "rect"),
+        "data-fill": String(attrs.fill ?? "#4472C4"),
+        ...(rotated ? { "data-rotation": String(rotation) } : {}),
+        style,
+      },
+    ]
+  },
+})
+
+/** Default shape footprint (px) — OO's inserted rectangle preset. */
+const SHAPE_DEFAULT_WIDTH = 120
+const SHAPE_DEFAULT_HEIGHT = 80
+
+/** Parse a shape width/height from data-width/height, else inline style. */
+function parseShapeDimension(element: HTMLElement, dimension: "width" | "height"): number {
+  const fallback = dimension === "width" ? SHAPE_DEFAULT_WIDTH : SHAPE_DEFAULT_HEIGHT
+  const px = Number.parseFloat(element.getAttribute(`data-${dimension}`) ?? "")
+  if (Number.isFinite(px) && px > 0) return px
+  const styled = Number.parseFloat(element.style[dimension] ?? "")
+  return Number.isFinite(styled) && styled > 0 ? styled : fallback
+}
+
+/** The shape node a ctx-menu shape command acts on (see findSelectedShape). */
+interface SelectedShape {
+  pos: number
+  node: PMNode
+}
+
+/**
+ * The shape the next shape command should act on: a NodeSelection on the
+ * shape (clicking / right-clicking a shape selects the node), else the
+ * first shape inside the selection range. Returns null with no shape in
+ * play (the command then reports failure instead of touching the doc).
+ */
+export function findSelectedShape(editor: Editor): SelectedShape | null {
+  const { state } = editor
+  const selection = state.selection
+  if (selection instanceof NodeSelection && selection.node.type.name === "shape") {
+    return { pos: selection.from, node: selection.node }
+  }
+  const hits: SelectedShape[] = []
+  state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+    if (node.type.name === "shape") hits.push({ pos, node })
+    return hits.length === 0
+  })
+  return hits[0] ?? null
+}
+
+/**
+ * OO shape ctx row "Rotate" — rotate the selected shape by `degrees`
+ * (OO's Rotate submenu steps in 90° turns; the ctx row defaults to +90°).
+ * The angle is persisted on the shape node's `rotation` attr and rendered
+ * as a CSS transform. Returns false when no shape is selected.
+ */
+export function rotateSelectedShape(editor: Editor, degrees: number): boolean {
+  const shape = findSelectedShape(editor)
+  if (shape === null) return false
+  const current = Number(shape.node.attrs.rotation ?? 0)
+  const next = (Math.round(current + degrees) % 360 + 360) % 360
+  return editor
+    .chain()
+    .focus()
+    .setNodeSelection(shape.pos)
+    .updateAttributes("shape", { rotation: next })
+    .run()
+}
+
+/**
+ * OO shape ctx row "Save as Image" — serialize the shape to an SVG image
+ * and download it through the same `<a download>` path as images (PGP-A2).
+ */
+export function saveShapeAsFile(node: PMNode): void {
+  const attrs = node.attrs as Record<string, unknown>
+  const width = Number(attrs.width ?? SHAPE_DEFAULT_WIDTH)
+  const height = Number(attrs.height ?? SHAPE_DEFAULT_HEIGHT)
+  const fill = String(attrs.fill ?? "#4472C4")
+  const rotation = Number(attrs.rotation ?? 0)
+  const shapeType = String(attrs.shapeType ?? "rect")
+  const body =
+    shapeType === "ellipse" || shapeType === "circle"
+      ? `<ellipse cx="${width / 2}" cy="${height / 2}" rx="${width / 2}" ry="${height / 2}" fill="${fill}" />`
+      : `<rect width="${width}" height="${height}" fill="${fill}" />`
+  const rotateStyle =
+    Number.isFinite(rotation) && rotation !== 0
+      ? ` transform="rotate(${rotation} ${width / 2} ${height / 2})"`
+      : ""
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"${rotateStyle}>${body}</svg>`
+  const link = document.createElement("a")
+  link.download = `shape-${shapeType}.svg`
+  link.href = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
 }
 
 /** Fallback column width (px) when a table has no `colwidth` at all yet. */
@@ -1100,10 +1270,19 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     case "rotateImage":
       return rotateSelectedImage(editor, normalizeRotationValue(value))
+    case "rotateShape":
+      return rotateSelectedShape(editor, normalizeRotationValue(value))
     case "saveAsImage": {
       const image = findSelectedImage(editor)
-      if (image === null) return false
-      saveImageAsFile(String(image.node.attrs.src ?? value ?? ""))
+      if (image !== null) {
+        saveImageAsFile(String(image.node.attrs.src ?? value ?? ""))
+        return true
+      }
+      // No image in play → a shape selection saves the shape as an SVG
+      // image (OO's shape ctx row, PGP-A3).
+      const shape = findSelectedShape(editor)
+      if (shape === null) return false
+      saveShapeAsFile(shape.node)
       return true
     }
     case "crop":
