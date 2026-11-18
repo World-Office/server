@@ -550,11 +550,33 @@ jobs:
         timeout-minutes: 5
 
       # the four react editor dists (fig census probes /sheet/ /slide/ /pdf/ /diagram/)
+      # + the word dist (fig/boot.cjs maps word -> documenteditor-react/dist since the
+      # wysiwyg retirement; without it the UI root lacks word/ and the fail-fast
+      # guard never starts the docserver — "testserver did not come up on :18113")
+      - name: Install wasm-pack (throttle-proof)
+        timeout-minutes: 15
+        run: |
+          if command -v wasm-pack >/dev/null 2>&1; then echo "wasm-pack present"; exit 0; fi
+          for i in 1 2 3; do
+            if curl -L -f -s --retry 3 --retry-delay 5 https://github.com/rustwasm/wasm-pack/releases/latest/download/wasm-pack-v0.14.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/wp.tgz \
+               && tar -xzf /tmp/wp.tgz -C /tmp \
+               && sudo mv /tmp/wasm-pack-v0.14.0-x86_64-unknown-linux-musl/wasm-pack /usr/local/bin/; then
+              wasm-pack --version; exit 0
+            fi
+            echo "rustwasm download failed (attempt $i/3) — falling back to cargo install"
+            cargo install wasm-pack --locked && exit 0
+          done
+          exit 1
+
       - name: Build react editor dists
         run: |
           pnpm install --frozen-lockfile
+          pnpm exec turbo run build --filter='@world-office/documenteditor'
           pnpm --filter "@world-office/spreadsheeteditor" --filter "@world-office/presentationeditor" --filter "@world-office/pdfeditor" --filter "@world-office/visioeditor" exec vite build
-        timeout-minutes: 20
+        timeout-minutes: 25
+        env:
+          TURBO_CONCURRENCY: "2"
+          NODE_OPTIONS: --max-old-space-size=3072
 
       # poppler-utils: pdfinfo/pdftotext for the golden conversion oracle
       - name: Install poppler-utils
