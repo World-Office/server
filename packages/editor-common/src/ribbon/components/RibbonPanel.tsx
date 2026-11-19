@@ -1,4 +1,4 @@
-import { makeStyles, tokens } from "@fluentui/react-components"
+import { makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
 import type { RibbonCommandDispatch, RibbonContext, RibbonTabSpec } from "../types"
 import { RibbonGroup } from "./RibbonGroup"
 
@@ -27,7 +27,11 @@ export function RibbonPanel({ tab, context, dispatch }: RibbonPanelProps) {
   if (visibleGroups.length === 0) return null
 
   return (
-    <section className={styles.panel} data-tab={tab.id} role="tabpanel">
+    <section
+      className={mergeClasses(styles.panel, "ribbon-page", "active")}
+      data-tab={tab.id}
+      role="tabpanel"
+    >
       {visibleGroups.map((group, idx) => (
         <RibbonGroup
           key={group.id}

@@ -89,6 +89,8 @@ export interface RibbonControlBase {
   visible?: (ctx: RibbonContext) => boolean
   /** Runtime enabled state (default: enabled) */
   enabled?: (ctx: RibbonContext) => boolean
+  /** Loud data-stub ref (shipped with placeholder behavior until implemented) */
+  dataStub?: string
 }
 
 export interface RibbonButtonSpec extends RibbonControlBase {

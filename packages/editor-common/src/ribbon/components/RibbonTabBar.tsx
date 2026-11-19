@@ -1,4 +1,4 @@
-import { Tab, TabList, makeStyles, tokens } from "@fluentui/react-components"
+import { Tab, TabList, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
 import { useTranslation } from "react-i18next"
 import type { RibbonTabSpec } from "../types"
 
@@ -60,7 +60,13 @@ export function RibbonTabBar({
         size="small"
       >
         {tabs.map((tab) => (
-          <Tab key={tab.id} value={tab.id} data-tab-value={tab.id} className={styles.tab}>
+          <Tab
+            key={tab.id}
+            value={tab.id}
+            data-tab-value={tab.id}
+            data-tab={tab.id}
+            className={mergeClasses(styles.tab, "ribbon-tab")}
+          >
             {t(tab.label)}
           </Tab>
         ))}

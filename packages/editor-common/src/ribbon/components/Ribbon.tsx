@@ -46,7 +46,7 @@ export function Ribbon({ spec, context, dispatch, beforeTabs, tabBarExtra }: Rib
 
   return (
     <FluentProvider theme={webLightTheme}>
-      <div className={styles.root}>
+      <div id="toolbar" className={styles.root}>
         <RibbonTabBar
           tabs={visibleTabs}
           activeTabId={activeTab?.id ?? ""}

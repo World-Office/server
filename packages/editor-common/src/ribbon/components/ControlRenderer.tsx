@@ -149,6 +149,9 @@ function ButtonControl({
 
   const button = (
     <Button
+      id={`btn-${spec.id}`}
+      data-cmd={spec.command}
+      data-stub={spec.dataStub}
       appearance={isToggled ? "secondary" : "subtle"}
       size="small"
       icon={IconComp ? <span className="de-ribbon-btn-icon">{IconComp}</span> : undefined}
@@ -190,6 +193,7 @@ function SelectControl({
 
   return (
     <Select
+      id={`sel-${spec.id}`}
       className={styles.select}
       value={currentValue}
       disabled={!enabled}
@@ -227,6 +231,7 @@ function DropdownControl({
     <Menu positioning="below-start">
       <MenuTrigger disableButtonEnhancement>
         <Button
+          id={`btn-${spec.id}`}
           size="small"
           appearance="subtle"
           className={styles.btn}
@@ -286,6 +291,9 @@ function SplitButtonControl({
     <Menu positioning="below-end">
       <MenuTrigger disableButtonEnhancement>
         <Button
+          id={`btn-${spec.id}`}
+          data-cmd={spec.command}
+          data-stub={spec.dataStub}
           size="small"
           appearance="subtle"
           className={styles.btn}
@@ -350,6 +358,8 @@ function CheckboxControl({
 
   return (
     <Checkbox
+      id={`chk-${spec.id}`}
+      data-cmd={spec.command}
       className={styles.checkbox}
       checked={isChecked}
       disabled={!enabled}
@@ -433,6 +443,7 @@ function ColorPickerControl({
     <Menu positioning="below-start">
       <MenuTrigger disableButtonEnhancement>
         <Button
+          id={`btn-${spec.id}`}
           size="small"
           appearance="subtle"
           className={styles.btn}

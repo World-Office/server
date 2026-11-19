@@ -8,6 +8,22 @@ import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 import type { FileMenuAction } from "../../types/document"
 
+// Stable machine-readable ids the parity census/l-MAP resolve against
+// (the wysiwyg editor shipped these; the react port dropped them). The
+// harness ledger contracts WO real targets like fileinfo/fileprotect via
+// these ids, and the captured labels are localised, so ids are the only
+// stable identity.
+const ACTION_ID: Record<string, string> = {
+  "create-new": "new",
+  "open-recent": "open",
+  saveas: "btn-export",
+  info: "fileinfo",
+  protect: "fileprotect",
+  opts: "filesettings",
+  help: "filehelp",
+  suggest: "filesuggest",
+}
+
 interface FileMenuItemsProps {
   onMenuClick: (action: string, hasPanel: boolean) => void
   onBack: () => void
@@ -303,6 +319,7 @@ const ObservedFileMenuItems = observer(function FileMenuItems({
           {group.items.map((item) => (
             <Button
               key={item.action}
+              id={ACTION_ID[item.action]}
               appearance="subtle"
               className={mergeClasses(
                 styles.item,
