@@ -1633,7 +1633,8 @@ async function subFeatureAudit(page, ov, dialogSel) {
         if (menuOpen) await page.keyboard.press('Escape');
         const needsClick = await page.evaluate((sel) => {
           const pg = document.querySelector(`.ribbon-page[data-tab="${sel}"]`);
-          return pg && getComputedStyle(pg).display === 'none';
+          // react ribbon renders pages lazily: missing page also needs the tab click
+          return !pg || getComputedStyle(pg).display === 'none';
         }, woTab);
         if (needsClick) { await page.click(`.ribbon-tab[data-tab="${woTab}"]`); await sleep(150); }
       }
@@ -1719,6 +1720,15 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:close-document', window.__woCollect);
           window.addEventListener('wo:paste-special', window.__woCollect);
           window.addEventListener('wo:file-tab', window.__woCollect);
+          // WO-native event bus (layout/columns/search/chart): react editor
+          // dispatches world-office:* instead of wo:* for these
+          window.addEventListener('world-office:page-layout', window.__woCollect);
+          window.addEventListener('world-office:columns', window.__woCollect);
+          window.addEventListener('world-office:search-state', window.__woCollect);
+          window.addEventListener('world-office:chart-element', window.__woCollect);
+          window.addEventListener('world-office:chart-type', window.__woCollect);
+          window.addEventListener('world-office:chart-update', window.__woCollect);
+          window.addEventListener('world-office:doc-language', window.__woCollect);
         });
       }
 

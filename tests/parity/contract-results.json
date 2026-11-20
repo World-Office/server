@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-20T15:27:06.616Z",
+ "ranAt": "2026-11-20T18:35:28.387Z",
  "total": 668,
- "pass": 72,
+ "pass": 82,
  "knownGap": 0,
- "retarget": 596,
+ "retarget": 586,
  "fail": 0,
  "results": [
   {
@@ -701,40 +701,40 @@
    "feature": "page.margins",
    "tab": "tab:layout",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"world-office:page-layout\"} +2 subFeatures",
+   "observed": "events: world-office:page-layout"
   },
   {
    "token": "orientation",
    "feature": "page.orientation",
    "tab": "tab:layout",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"world-office:page-layout\"}",
+   "observed": "events: world-office:page-layout"
   },
   {
    "token": "size",
    "feature": "page.size",
    "tab": "tab:layout",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"world-office:page-layout\"} +4 subFeatures",
+   "observed": "events: world-office:page-layout"
   },
   {
    "token": "columns",
    "feature": "page.columns",
    "tab": "tab:layout",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"world-office:columns\"} +4 subFeatures",
+   "observed": "events: world-office:columns"
   },
   {
    "token": "breaks",
@@ -761,10 +761,10 @@
    "feature": "page.hyphenation",
    "tab": "tab:layout",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"} +2 subFeatures",
+   "observed": "found"
   },
   {
    "token": "wrapping",
@@ -831,10 +831,10 @@
    "feature": "page.watermark",
    "tab": "tab:layout",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-properties-panel\"} +4 subFeatures",
+   "observed": "found"
   },
   {
    "token": "btn-multipage",
@@ -1991,30 +1991,30 @@
    "feature": "page.none",
    "tab": "menu:hyphenation",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"} +2 subFeatures",
+   "observed": "found"
   },
   {
    "token": "togglehyphenation",
    "feature": "page.automatic",
    "tab": "menu:hyphenation",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"} +2 subFeatures",
+   "observed": "found"
   },
   {
    "token": "togglehyphenation",
    "feature": "page.hyphenation-options",
    "tab": "menu:hyphenation",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"} +2 subFeatures",
+   "observed": "found"
   },
   {
    "token": "axes",
@@ -2131,10 +2131,10 @@
    "feature": "page.dlg-margins",
    "tab": "dialog:Margins",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"op-emitted\",\"event\":\"world-office:page-layout\"} +2 subFeatures",
+   "observed": "events: world-office:page-layout"
   },
   {
    "token": "btn-multipage",

@@ -2006,7 +2006,7 @@
 "match": "Margins",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2022,7 +2022,17 @@
 "selector": "#ps-size"
 }
 ],
-"note": "margins dialog"
+"note": "margins dialog",
+"contract": {
+"selector": "#btn-page-margins",
+"assertion": {
+"kind": "op-emitted",
+"event": "world-office:page-layout"
+},
+"note": "Layout margins via btn-page-margins dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -2036,14 +2046,24 @@
 "match": "Orientation",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "op",
 "assertion": {
 "kind": "dom-mutation",
 "selector": ".page-setup[data-page-w=\"16838\"][data-page-h=\"11906\"][data-orient=\"landscape\"]"
 },
 "subFeatures": null,
-"note": "ledger row: page.orientation — Orientation ▾ Landscape swaps the portrait 11906x16838 twips via applyPageOrientationPreset -> writePageSetupMarker (editor.js:6367), which creates the div.page-setup marker with the swapped w/h plus data-orient"
+"note": "ledger row: page.orientation — Orientation ▾ Landscape swaps the portrait 11906x16838 twips via applyPageOrientationPreset -> writePageSetupMarker (editor.js:6367), which creates the div.page-setup marker with the swapped w/h plus data-orient",
+"contract": {
+"selector": "#btn-page-orientation",
+"assertion": {
+"kind": "op-emitted",
+"event": "world-office:page-layout"
+},
+"note": "Layout orientation via btn-page-orientation dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -2057,7 +2077,7 @@
 "match": "Size",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2081,7 +2101,17 @@
 "selector": "#btn-ps-cancel"
 }
 ],
-"note": "ledger row: page.size — the Size dropdown's 'Custom page size' entry (data-cmd=openPageSetup) routes to the same visible #btn-page-setup page-setup dialog"
+"note": "ledger row: page.size — the Size dropdown's 'Custom page size' entry (data-cmd=openPageSetup) routes to the same visible #btn-page-setup page-setup dialog",
+"contract": {
+"selector": "#btn-page-size",
+"assertion": {
+"kind": "op-emitted",
+"event": "world-office:page-layout"
+},
+"note": "Layout size via btn-page-size dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -2095,7 +2125,7 @@
 "match": "Columns",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2119,7 +2149,17 @@
 "selector": "#btn-columns-cancel"
 }
 ],
-"note": "ledger row: page.columns — [data-cmd=columns] does not exist; the Columns dropdown items are hidden until the menu opens, so contracted via the visible WO 'Columns' ribbon button (layout row 2) that opens #columns-dialog"
+"note": "ledger row: page.columns — [data-cmd=columns] does not exist; the Columns dropdown items are hidden until the menu opens, so contracted via the visible WO 'Columns' ribbon button (layout row 2) that opens #columns-dialog",
+"contract": {
+"selector": "#btn-columns",
+"assertion": {
+"kind": "op-emitted",
+"event": "world-office:columns"
+},
+"note": "Layout columns via btn-columns dispatches world-office:columns",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -2154,7 +2194,7 @@
 "match": "toggleLineNumbers",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2184,7 +2224,7 @@
 "match": "toggleHyphenation",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2200,7 +2240,17 @@
 "selector": "#btn-hyphenation-ok"
 }
 ],
-"note": "ledger row: page.hyphenation-options"
+"note": "ledger row: page.hyphenation-options",
+"contract": {
+"selector": "#btn-hyphenation",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Layout togglehyphenation via btn-hyphenation dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -2340,7 +2390,7 @@
 "match": "toggleWatermark",
 "where": "tab:layout"
 },
-"woTab": null,
+"woTab": "layout",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -2364,7 +2414,17 @@
 "selector": "#btn-watermark-ok"
 }
 ],
-"note": "ledger row: page.watermark"
+"note": "ledger row: page.watermark",
+"contract": {
+"selector": "#btn-watermark",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-properties-panel"
+},
+"note": "Layout togglewatermark via btn-watermark dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "tab:layout",
@@ -5505,7 +5565,17 @@
 "selector": "#btn-hyphenation-ok"
 }
 ],
-"note": "ledger row: page.hyphenation-options"
+"note": "ledger row: page.hyphenation-options",
+"contract": {
+"selector": "#btn-hyphenation",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Layout togglehyphenation via btn-hyphenation dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "menu:hyphenation",
@@ -5535,7 +5605,17 @@
 "selector": "#btn-hyphenation-ok"
 }
 ],
-"note": "ledger row: page.hyphenation-options"
+"note": "ledger row: page.hyphenation-options",
+"contract": {
+"selector": "#btn-hyphenation",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Layout togglehyphenation via btn-hyphenation dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "menu:hyphenation",
@@ -5565,7 +5645,17 @@
 "selector": "#btn-hyphenation-ok"
 }
 ],
-"note": "ledger row: page.hyphenation-options"
+"note": "ledger row: page.hyphenation-options",
+"contract": {
+"selector": "#btn-hyphenation",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Layout togglehyphenation via btn-hyphenation dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "menu:chart\nelements",
@@ -5850,7 +5940,17 @@
 "selector": "#ps-size"
 }
 ],
-"note": "margins dialog"
+"note": "margins dialog",
+"contract": {
+"selector": "#btn-page-margins",
+"assertion": {
+"kind": "op-emitted",
+"event": "world-office:page-layout"
+},
+"note": "Layout margins via btn-page-margins dispatches world-office:page-layout",
+"xfail": false,
+"pre": ""
+}
 },
 {
 "tab": "dialog:Page size",
