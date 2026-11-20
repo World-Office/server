@@ -13,7 +13,8 @@
    "op": 175,
    "format": 76
   },
-  "unclassified": 0
+  "unclassified": 0,
+  "manifestContractPromotions": 9
  },
  "entries": [
   {
@@ -6284,7 +6285,17 @@
      "selector": "#doc-lang option"
     }
    ],
-   "note": "PROMOTED 2026-11-07 (L2M-05): #sb-lang now carries a click listener that discloses the document-language picker through the caret's showPicker()/focus() path (editor.js ~8807). dialog-visible on #doc-lang is the same disclosure vocabulary the promoted ctx.select-language contract uses — the select is the picker surface the click surfaces | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless"
+   "note": "PROMOTED 2026-11-07 (L2M-05): #sb-lang now carries a click listener that discloses the document-language picker through the caret's showPicker()/focus() path (editor.js ~8807). dialog-visible on #doc-lang is the same disclosure vocabulary the promoted ctx.select-language contract uses — the select is the picker surface the click surfaces | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless",
+   "contract": {
+    "ui": "react",
+    "selector": "#sb-lang",
+    "post": "#doc-lang",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": "#doc-lang"
+    },
+    "note": "PROMOTED 2026-11-20 (GL2-1): default document language en-US is the picker's initial draft (documentStore.languageCode defaults to en-US, picker re-seeds draft on open); opening via #sb-lang shows #doc-lang with en-US selected."
+   }
   },
   {
    "tab": "statusbar",
@@ -6310,7 +6321,16 @@
      "selector": "#doc-lang option"
     }
    ],
-   "note": "PROMOTED 2026-11-07 (L2M-05): ledger row statusbar.btn-doc-lang (token sb-lang, same physical control as statusbar.english-united-states) — the new #sb-lang click listener surfaces the language UI via showPicker() with the headless-safe focus fallback, observed the same way as the english-united-states row | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless"
+   "note": "PROMOTED 2026-11-07 (L2M-05): ledger row statusbar.btn-doc-lang (token sb-lang, same physical control as statusbar.english-united-states) — the new #sb-lang click listener surfaces the language UI via showPicker() with the headless-safe focus fallback, observed the same way as the english-united-states row | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless",
+   "contract": {
+    "ui": "react",
+    "selector": "#sb-lang",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": "#doc-lang"
+    },
+    "note": "PROMOTED 2026-11-20 (GL2-1): statusbar language control #sb-lang opens the DocLanguagePicker (role=dialog, select#doc-lang) bound to documentStore.languageCode — the OO Language dialog surface."
+   }
   },
   {
    "tab": "statusbar",
@@ -6586,10 +6606,25 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-style",
+    "selector": ".de-print-preview-container",
+    "closest": ".de-file-menu-content-box",
+    "prop": "display",
+    "equals": "block"
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+KeyP",
+    "assertion": {
+     "kind": "dom-style",
+     "selector": ".de-print-preview-container",
+     "closest": ".de-file-menu-content-box",
+     "prop": "display",
+     "equals": "block"
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: browser window.print() — no DOM observable headless (WO prints directly, no print preview UI) — OO-only until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): Ctrl+P opens the print preview surface — the canvas editor's PrintPreviewPanel (File > Print with preview, .de-print-preview-container). The panel's content box is the element that toggles display:none (FileMenu renders every panel and flips the active one), so the contract reads the computed display of the closest .de-file-menu-content-box. Chord: CanvasEditor handleKeyDown routes Ctrl+P through the wo-command router ('print' -> File menu open + printpreview panel, word-commands.ts). The browser print sheet itself is not reachable headless; the preview panel is the editor-side surface OO's PrintPreviewAndPrint lands on."
   },
   {
    "tab": "shortcut",
@@ -7443,10 +7478,26 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-attr",
+    "selector": "#editor",
+    "attrs": {
+     "data-wo-paste-option": "keep-source-format"
+    }
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+KeyV",
+    "seedClipboard": "GL2-PASTE-MARKER keep source format",
+    "assertion": {
+     "kind": "dom-attr",
+     "selector": "#editor",
+     "attrs": {
+      "data-wo-paste-option": "keep-source-format"
+     }
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): WO's binding for OO SpecialOptionsKeepSourceFormat is the DEFAULT rich paste (ledger wo.match: 'Ctrl+V default rich paste' — OO's Ctrl+K collides with WO hyperlink). Ctrl+V pastes the clipboard keeping the source structure (paragraph breaks) via the WASM engine insert_text; the applied option is published as data-wo-paste-option on the editor root ONLY after a real engine mutation, reported in the statusbar ('Pasted — Keep source formatting') and emitted as wo:paste-special."
   },
   {
    "tab": "shortcut",
@@ -7483,10 +7534,27 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-attr",
+    "selector": "#editor",
+    "attrs": {
+     "data-wo-paste-option": "overwrite-cells"
+    }
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+Alt+KeyV",
+    "seedClipboard": "GL2-PASTE-MARKER overwrite cells",
+    "post": "[data-wo-paste-options] [data-wo-paste-option=\"overwrite-cells\"]",
+    "assertion": {
+     "kind": "dom-attr",
+     "selector": "#editor",
+     "attrs": {
+      "data-wo-paste-option": "overwrite-cells"
+     }
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): OO binds Ctrl+O, which the web editor cannot take (browser open-file); WO exposes the OO paste-special option set on the paste surface instead: Ctrl+Alt+V opens the SpecialOptions list (.wo-paste-options) and the 'Overwrite cells' row pastes by REPLACING the current selection first (delete_selection -> insert_text), the table-paste 'overwrite the destination' behaviour. Option applied => data-wo-paste-option + statusbar + wo:paste-special. Engine note: the canvas paste is a text insert; cell-range overwrite semantics are engine work beyond this row."
   },
   {
    "tab": "shortcut",
@@ -7503,10 +7571,27 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-attr",
+    "selector": "#editor",
+    "attrs": {
+     "data-wo-paste-option": "nest-table"
+    }
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+Alt+KeyV",
+    "seedClipboard": "GL2-PASTE-MARKER nest table",
+    "post": "[data-wo-paste-options] [data-wo-paste-option=\"nest-table\"]",
+    "assertion": {
+     "kind": "dom-attr",
+     "selector": "#editor",
+     "attrs": {
+      "data-wo-paste-option": "nest-table"
+     }
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: paste-special variants — no WO handler — OO-only until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): OO binds Ctrl+N, which the web editor cannot take (browser new-window); WO exposes the OO paste-special option set on the paste surface instead: Ctrl+Alt+V opens the SpecialOptions list and the 'Nest table' row pastes the clipboard as its OWN BLOCK below the cursor (leading paragraph break -> insert_text) instead of splicing into the caret run. Option applied => data-wo-paste-option + statusbar + wo:paste-special. Engine note: real nested-table paste is engine work beyond this row."
   },
   {
    "tab": "shortcut",
@@ -9588,10 +9673,27 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-attr",
+    "selector": "#editor",
+    "attrs": {
+     "data-wo-file-tab": "demo.docx",
+     "data-wo-file-tab-move": "next"
+    }
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+PageDown",
+    "assertion": {
+     "kind": "dom-attr",
+     "selector": "#editor",
+     "attrs": {
+      "data-wo-file-tab": "demo.docx",
+      "data-wo-file-tab-move": "next"
+     }
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Ctrl+PageDown file-tab keys (OO-only) until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): Ctrl+PageDown (WO binding; OO's Ctrl+Tab is also bound) cycles the open-document tab strip: CanvasEditor.cycleFileTab wraps the session's open documents, publishes the active tab on the editor root (data-wo-file-tab + data-wo-file-tab-move) and emits wo:file-tab. The web editor opens one document per browser tab, so the strip holds this session's documents — cycling reports 'Document 1 of 1: demo.docx' honestly until more documents are opened in-session."
   },
   {
    "tab": "shortcut",
@@ -9608,10 +9710,27 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "unspecified"
+    "kind": "dom-attr",
+    "selector": "#editor",
+    "attrs": {
+     "data-wo-file-tab": "demo.docx",
+     "data-wo-file-tab-move": "previous"
+    }
+   },
+   "contract": {
+    "ui": "react",
+    "key": "Control+PageUp",
+    "assertion": {
+     "kind": "dom-attr",
+     "selector": "#editor",
+     "attrs": {
+      "data-wo-file-tab": "demo.docx",
+      "data-wo-file-tab-move": "previous"
+     }
+    }
    },
    "subFeatures": null,
-   "note": "KNOWN-GAP: no WO handler — Ctrl+PageUp file-tab keys (OO-only) until ported"
+   "note": "PROMOTED 2026-11-20 (GL2-2): Ctrl+PageUp (WO binding; OO's Ctrl+Shift+Tab is also bound) cycles the open-document tab strip backwards — same cycleFileTab path as nextfiletab, direction -1 (data-wo-file-tab-move=previous)."
   },
   {
    "tab": "shortcut",
@@ -11429,7 +11548,17 @@
      "selector": "#doc-lang option"
     }
    ],
-   "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522) | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless"
+   "note": "ledger ctx.select-language promoted: ctx-menu-misspelled pre fixtures a wo-misspelled span and right-clicks it, satisfying data-showif=\"misspelled\" so the SelectLanguage row renders and the hit-test passes; the handler showPicker()s (falls back to focus()) the #doc-lang select, which the dialog-visible assertion observes (editor.js:10263/1522) | xfail 2026-11-11: #doc-lang is sb-hidden-native by design (L2M-05); sb-lang opens the native showPicker, not observable headless",
+   "contract": {
+    "ui": "react",
+    "pre": "ctx-menu-misspelled-react",
+    "selector": ".spellcheck-context-menu [data-row-id=\"SelectLanguage\"]",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": "#doc-lang"
+    },
+    "note": "PROMOTED 2026-11-20 (GL2-1): the spellcheck ctx-menu 'Select Language' row routes command setDocumentLanguage -> world-office:doc-language event -> DocLanguagePicker (select#doc-lang) opens."
+   }
   },
   {
    "tab": "ctx-menu",
