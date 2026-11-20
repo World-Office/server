@@ -932,6 +932,11 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
             if (shift) { e.preventDefault(); dispatchWoCommand(shift); return }
           }
           if (keyStr === " " && !e.shiftKey) { e.preventDefault(); dispatchWoCommand("clearFormatting"); return }
+          const bracket = { "]": "increaseFontSize", "}": "increaseFontSize",
+                            "[": "decreaseFontSize", "{": "decreaseFontSize",
+                            ".": "subscript", ">": "subscript",
+                            ",": "superscript", "<": "superscript" }[keyStr]
+          if (bracket) { e.preventDefault(); dispatchWoCommand(bracket); return }
         }
       }
 

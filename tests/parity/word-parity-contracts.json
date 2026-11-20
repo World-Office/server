@@ -8151,7 +8151,14 @@
 "equals": "sub"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.subscript (Ctrl+.) — emitCommand(\"subscript\"); <sub> wrap -> vertical-align sub (same as the proven subscript click contract)"
+"note": "ledger row: shortcut.subscript (Ctrl+.) — emitCommand(\"subscript\"); <sub> wrap -> vertical-align sub (same as the proven subscript click contract)",
+"contract": {
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -8173,7 +8180,14 @@
 "equals": "super"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.superscript (Ctrl+,) — emitCommand(\"superscript\"); <sup> wrap -> vertical-align super"
+"note": "ledger row: shortcut.superscript (Ctrl+,) — emitCommand(\"superscript\"); <sup> wrap -> vertical-align super",
+"contract": {
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -8256,7 +8270,14 @@
 "equals": "48px"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.increasefontsize (Ctrl+]) — emitCommand(\"fontSizeInc\") steps the CSS absolute size; probed: default 32px h1 word wrapped in <span style=\"font-size: xxx-large\"> -> computed 48px"
+"note": "ledger row: shortcut.increasefontsize (Ctrl+]) — emitCommand(\"fontSizeInc\") steps the CSS absolute size; probed: default 32px h1 word wrapped in <span style=\"font-size: xxx-large\"> -> computed 48px",
+"contract": {
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -8278,7 +8299,14 @@
 "equals": "24px"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.decreasefontsize (Ctrl+[) — emitCommand(\"fontSizeDec\"); probed: default 32px h1 word wrapped in <span style=\"font-size: x-large\"> -> computed 24px"
+"note": "ledger row: shortcut.decreasefontsize (Ctrl+[) — emitCommand(\"fontSizeDec\"); probed: default 32px h1 word wrapped in <span style=\"font-size: x-large\"> -> computed 24px",
+"contract": {
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -8846,11 +8874,11 @@
 "note": "ledger row: shortcut.insertendnotenow — Ctrl+Alt+D emits insertEndnote: sup.endnote-citation + span.endnote 'Endnote text' (editor.js:11031, 1228-1244)",
 "contract": {
 "assertion": {
-"kind": "rev-bump"
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
 },
-"note": "OO footnote/endnote insert opens the crossreference panel (no doc mutation on chartless census doc) — panel-open known-gap, not rev-bump",
-"xfail": true,
-"pre": "canvas-type"
+"note": "OO footnote/endnote insert opens the crossreference panel",
+"xfail": false
 }
 },
 {
@@ -9925,11 +9953,11 @@
 "note": "PROMOTED 2026-11-07 (L2M-05): Ctrl+Alt+F is now bound in the dedicated alt block to emitCommand('insertFootnote') (editor.js ~11094), the same runCommand target as toolbar #btn-footnote/ctx Insert; the chord inserts sup.footnote-citation + span.footnote 'Footnote text' (editor.js ~1228). The file/navigation panel that previously owned the chord moved to Ctrl+Alt+O (shortcut.openfilepanel re-keyed in shortcut-real.json)",
 "contract": {
 "assertion": {
-"kind": "rev-bump"
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
 },
-"note": "OO footnote/endnote insert opens the crossreference panel (no doc mutation on chartless census doc) — panel-open known-gap, not rev-bump",
-"xfail": true,
-"pre": "canvas-type"
+"note": "OO footnote/endnote insert opens the crossreference panel",
+"xfail": false
 }
 },
 {

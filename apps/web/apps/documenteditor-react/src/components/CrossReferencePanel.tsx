@@ -67,6 +67,7 @@ export function CrossReferencePanel({ visible, onInsertCrossReference }: CrossRe
 
   return (
     <div
+      id="cross-reference-panel"
       style={{
         position: "absolute",
         right: 48,
