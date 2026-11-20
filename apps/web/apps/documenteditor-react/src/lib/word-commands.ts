@@ -14,7 +14,7 @@
  */
 
 import { type WoCommand, togglePluginEnabled } from "@world-office/editor-common"
-import type { CanvasEditorHandle } from "../components/CanvasEditor"
+import type { CanvasEditorHandle, WoPasteOption } from "../components/CanvasEditor"
 import { documentStore } from "../stores/DocumentStore"
 import type { RichTextCommand } from "./rte-command"
 import { getWasmApi } from "./wasm-renderer"
@@ -501,11 +501,12 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
           handle.clipboardCut()
           return
         }
-        void navigator.clipboard
-          .readText()
-          .then((text) => handle.clipboardPaste(text))
-          .catch(() => {})
-        return
+        if (command === "paste") {
+          // Default paste = OO SpecialOptionsKeepSourceFormat (source
+          // structure kept). The option list itself is `pasteOptions`.
+          handle.pasteWithOption("keep-source-format")
+          return
+        }
       }
       // Text-mode fallback
       if (command === "copy") {
@@ -534,6 +535,27 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         }
         return
       }
+    }
+
+    // 3b. OO paste-special option set + open-document tab cycling.
+    //     The chords live in CanvasEditor (the key surface); both route
+    //     through here so a ribbon/control trigger shares the same path.
+    if (command === "pasteOptions") {
+      editorRef.current?.openPasteOptions()
+      return
+    }
+    if (command === "pasteSpecial") {
+      const option = value as WoPasteOption | undefined
+      if (option) editorRef.current?.pasteWithOption(option)
+      else editorRef.current?.openPasteOptions()
+      return
+    }
+    if (command === "nextFileTab" || command === "previousFileTab") {
+      const activated = editorRef.current?.cycleFileTab(command === "nextFileTab" ? 1 : -1)
+      if (!activated) {
+        documentStore.setStatusMessage("No open document to switch to", 10000)
+      }
+      return
     }
 
     // 4. Edit history → TipTap bridge (for Monaco editor)

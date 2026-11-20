@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { applyOpToDocument, getWasmApi, isWasmReady, loadWasmRenderer, type WasmRenderApi } from "../lib/wasm-renderer"
+import { documentStore } from "../stores/DocumentStore"
 
 interface CanvasEditorProps {
   /** DOCX blob to render */
@@ -51,6 +52,102 @@ interface CursorPos {
 }
 
 /**
+ * OnlyOffice paste-special option ids (the OO `SpecialOptions*` shortcut
+ * rows: KeepSourceFormat / KeepTextOnly / OverwriteCells / NestTable).
+ *
+ * The canvas engine's paste is a text insert (no HTML clipboard pipeline),
+ * so each option maps to the closest real engine behaviour — the applied
+ * option is published on the editor root (`data-wo-paste-option`), reported
+ * in the statusbar, and emitted as a `wo:paste-special` window event so the
+ * parity/census layer can observe which OO row a paste used.
+ */
+export type WoPasteOption =
+  | "keep-source-format"
+  | "keep-text-only"
+  | "overwrite-cells"
+  | "nest-table"
+
+export const WO_PASTE_OPTIONS: ReadonlyArray<{
+  id: WoPasteOption
+  label: string
+  hint: string
+}> = [
+  {
+    id: "keep-source-format",
+    label: "Keep source formatting",
+    hint: "Paste keeping the source structure (paragraph breaks)",
+  },
+  {
+    id: "keep-text-only",
+    label: "Keep text only",
+    hint: "Paste a single plain run, flattening line breaks",
+  },
+  {
+    id: "overwrite-cells",
+    label: "Overwrite cells",
+    hint: "Replace the selection, then paste (table paste option)",
+  },
+  {
+    id: "nest-table",
+    label: "Nest table",
+    hint: "Paste as its own block below the cursor (table paste option)",
+  },
+]
+
+/** Dispatch a command into the shared wo-command router (word-commands.ts). */
+function dispatchWoCommand(command: string, value?: string): void {
+  window.dispatchEvent(new CustomEvent("wo-command", { detail: { command, value } }))
+}
+
+/**
+ * OnlyOffice paste-special option ids (the OO `SpecialOptions*` shortcut
+ * rows: KeepSourceFormat / KeepTextOnly / OverwriteCells / NestTable).
+ *
+ * The canvas engine's paste is a text insert (no HTML clipboard pipeline),
+ * so each option maps to the closest real engine behaviour — the applied
+ * option is published on the editor root (`data-wo-paste-option`), reported
+ * in the statusbar, and emitted as a `wo:paste-special` window event so the
+ * parity/census layer can observe which OO row a paste used.
+ */
+export type WoPasteOption =
+  | "keep-source-format"
+  | "keep-text-only"
+  | "overwrite-cells"
+  | "nest-table"
+
+export const WO_PASTE_OPTIONS: ReadonlyArray<{
+  id: WoPasteOption
+  label: string
+  hint: string
+}> = [
+  {
+    id: "keep-source-format",
+    label: "Keep source formatting",
+    hint: "Paste keeping the source structure (paragraph breaks)",
+  },
+  {
+    id: "keep-text-only",
+    label: "Keep text only",
+    hint: "Paste a single plain run, flattening line breaks",
+  },
+  {
+    id: "overwrite-cells",
+    label: "Overwrite cells",
+    hint: "Replace the selection, then paste (table paste option)",
+  },
+  {
+    id: "nest-table",
+    label: "Nest table",
+    hint: "Paste as its own block below the cursor (table paste option)",
+  },
+]
+
+/** Dispatch a command into the shared wo-command router (word-commands.ts). */
+function dispatchWoCommand(command: string, value?: string): void {
+  window.dispatchEvent(new CustomEvent("wo-command", { detail: { command, value } }))
+}
+
+/**
  * CanvasEditor renders a DOCX document as a series of <canvas> pages,
  * matching ONLYOFFICE's canvas-based editing approach.
  */
@@ -78,6 +175,12 @@ export interface CanvasEditorHandle {
   clipboardCut: () => void
   /** Paste text at the engine cursor. */
   clipboardPaste: (text: string) => void
+  /** Paste the system clipboard with an OO paste-special option applied. */
+  pasteWithOption: (option: WoPasteOption) => void
+  /** Show the paste-special option list (OO SpecialOptions rows). */
+  openPasteOptions: () => void
+  /** Cycle the open-document tab strip (OO Next/PreviousFileTab). */
+  cycleFileTab: (dir: 1 | -1) => string
 }
 
 // Named function gives forwardRef a proper displayName
@@ -117,6 +220,15 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
     docRevRef.current += 1
     containerRef.current?.setAttribute("data-wo-rev", String(docRevRef.current))
   }
+  // Paste-special option list (Ctrl+Alt+V / the paste command): open flag
+  // only — the options themselves are the static WO_PASTE_OPTIONS rows.
+  const [pasteOptionsOpen, setPasteOptionsOpen] = useState(false)
+  // Open-document tab strip (OO Next/PreviousFileTab). The web editor opens
+  // one document per browser tab, so the strip holds the documents opened in
+  // THIS session; cycling reports the active tab honestly (1 of 1) until
+  // more documents are opened here.
+  const fileTabsRef = useRef<{ id: string; fileName: string }[]>([])
+  const fileTabIndexRef = useRef(0)
 
   // The wasm renderer accepts docx natively; odt blobs are converted to
   // docx in the DocumentStore load flow, so map odt→docx here too.
@@ -527,8 +639,9 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
 
   // Shared applier for engine calls that return a layout JSON (undo/redo,
   // handle_key_event) — parses pages, re-renders canvases, bumps docRev.
+  // Returns true when the engine reported a real mutation ("{}" = no-op).
   const applyEngineResult = useCallback(
-    (result: string | null, api: WasmRenderApi, docHandle: number) => {
+    (result: string | null, api: WasmRenderApi, docHandle: number): boolean => {
       if (result && result !== "{}") {
         try {
           const layoutPages: PageInfo[] = JSON.parse(result).map(
@@ -556,10 +669,12 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
             bumpDocRev()
             _onChange()
           }
+          return true
         } catch (err) {
           console.error("[CanvasEditor] engine result parse failed:", err)
         }
       }
+      return false
     },
     [_onChange],
   )
@@ -651,6 +766,111 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
     [getWasmApi, applyEngineResult],
   )
 
+  /** Publish which OO paste-special option a paste used. Only called after a
+   *  real engine mutation, so `data-wo-paste-option` on the editor root is a
+   *  trustworthy "this paste applied option X" signal for the parity layer. */
+  const markPasteOption = useCallback((option: WoPasteOption, text: string) => {
+    containerRef.current?.setAttribute("data-wo-paste-option", option)
+    const row = WO_PASTE_OPTIONS.find((o) => o.id === option)
+    documentStore.setStatusMessage(`Pasted — ${row ? row.label : option}`, 10000)
+    window.dispatchEvent(
+      new CustomEvent("wo:paste-special", { detail: { option, chars: text.length } }),
+    )
+  }, [])
+
+  /** Paste `text` with an OO paste-special option applied. Each option maps
+   *  to a real, distinct engine sequence (see WO_PASTE_OPTIONS). */
+  const pasteTextWithOption = useCallback(
+    (text: string, option: WoPasteOption) => {
+      if (!text) return
+      const api = getWasmApi()
+      const docHandle = docHandleRef.current
+      if (!api || docHandle === null) return
+      try {
+        let mutated = false
+        // "Overwrite cells" (table paste option): the destination content is
+        // replaced by the clipboard block instead of being merged into.
+        if (option === "overwrite-cells") {
+          const selected = api.get_selected_text(docHandle)
+          if (selected) {
+            const del = api.delete_selection(docHandle, "A4", "portrait", 72.0)
+            mutated = applyEngineResult(del, api, docHandle)
+          }
+        }
+        // "Keep text only": one plain run — line breaks and tabs flatten to
+        // spaces. Every other option keeps the source structure verbatim
+        // ("keep source formatting"), or starts a block of its own
+        // ("nest table": the pasted block sits below the cursor instead of
+        // splicing into the current run).
+        const payload =
+          option === "keep-text-only"
+            ? text.replace(/[\r\n\t]+/g, " ")
+            : option === "nest-table"
+              ? `\n${text}`
+              : text
+        const result = api.insert_text(docHandle, payload, "A4", "portrait", 72.0)
+        mutated = applyEngineResult(result, api, docHandle) || mutated
+        if (mutated) markPasteOption(option, text)
+      } catch (err) {
+        console.error("[CanvasEditor] paste-special failed:", err)
+      }
+    },
+    [getWasmApi, applyEngineResult, markPasteOption],
+  )
+
+  /** Read the system clipboard and paste it with an OO paste-special option
+   *  (Ctrl+V = keep source formatting, the default rich paste). */
+  const pasteWithOption = useCallback(
+    (option: WoPasteOption) => {
+      navigator.clipboard
+        .readText()
+        .then((text) => {
+          if (!text) return
+          pasteTextWithOption(text, option)
+        })
+        .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
+    },
+    [pasteTextWithOption],
+  )
+
+  /** Cycle the open-document tab strip (OO Next/PreviousFileTab). Wraps
+   *  around, reports the activated tab on the editor root
+   *  (`data-wo-file-tab` / `data-wo-file-tab-move`) and via `wo:file-tab`. */
+  const cycleFileTab = useCallback(
+    (dir: 1 | -1) => {
+      const activeName = fileName || "Untitled"
+      const tabs = fileTabsRef.current
+      const activeId = tabs[fileTabIndexRef.current]?.id
+      if (tabs.length === 0 || activeId !== docHandleRef.current?.toString()) {
+        // (Re)seed with the document this session has open.
+        fileTabsRef.current = [{ id: String(docHandleRef.current ?? 0), fileName: activeName }]
+        fileTabIndexRef.current = 0
+      }
+      const list = fileTabsRef.current
+      fileTabIndexRef.current = (fileTabIndexRef.current + dir + list.length) % list.length
+      const active = list[fileTabIndexRef.current]
+      const root = containerRef.current
+      root?.setAttribute("data-wo-file-tab", active.fileName)
+      root?.setAttribute("data-wo-file-tab-move", dir === 1 ? "next" : "previous")
+      documentStore.setStatusMessage(
+        `Document ${fileTabIndexRef.current + 1} of ${list.length}: ${active.fileName}`,
+        10000,
+      )
+      window.dispatchEvent(
+        new CustomEvent("wo:file-tab", {
+          detail: {
+            index: fileTabIndexRef.current,
+            total: list.length,
+            fileName: active.fileName,
+            dir: dir === 1 ? "next" : "previous",
+          },
+        }),
+      )
+      return active.fileName
+    },
+    [fileName],
+  )
+
   useImperativeHandle(
     ref,
     () => ({
@@ -664,13 +884,35 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
       clipboardCopy,
       clipboardCut,
       clipboardPaste,
+      pasteWithOption,
+      openPasteOptions: () => setPasteOptionsOpen(true),
+      cycleFileTab,
     }),
-    [applyWasmFormatting, applyWasmStructureOp, applyOp, getDocHandle, undo, redo, selectAll, clipboardCopy, clipboardCut, clipboardPaste],
+    [
+      applyWasmFormatting,
+      applyWasmStructureOp,
+      applyOp,
+      getDocHandle,
+      undo,
+      redo,
+      selectAll,
+      clipboardCopy,
+      clipboardCut,
+      clipboardPaste,
+      pasteWithOption,
+      cycleFileTab,
+    ],
   )
 
   // ── Key handler — sends key to WASM engine ────────────────────────
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+      // Escape closes the paste-special option list first (it is an overlay
+      // owned by this component, not an engine key).
+      if (e.key === "Escape" && pasteOptionsOpen) {
+        setPasteOptionsOpen(false)
+        return
+      }
       if (!isWasmReady() || docHandleRef.current === null) return
 
       const wasmApi = getWasmApi()
@@ -680,6 +922,40 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
 
       // Map event.key to WASM key string
       const keyStr = e.key
+
+      // ── Editor-level OnlyOffice chords ─────────────────────────────
+      // Handled before the engine dispatch (and before the modifier-only
+      // ignore list: Ctrl+Tab is in it). Each one routes through the shared
+      // wo-command router so the ribbon button and the chord stay one code
+      // path (word-commands.ts owns the behavior).
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+P — OO PrintPreviewAndPrint: open the print preview panel.
+        // (The browser print sheet itself is not reachable headless; the
+        // preview panel is the editor-side surface.)
+        if (keyStr === "p" || keyStr === "P") {
+          e.preventDefault()
+          dispatchWoCommand("print")
+          return
+        }
+        // Ctrl+Alt+V — paste special: the OO SpecialOptions list.
+        if (e.altKey && (keyStr === "v" || keyStr === "V")) {
+          e.preventDefault()
+          setPasteOptionsOpen((open) => !open)
+          return
+        }
+        // Ctrl+PageDown / Ctrl+Tab — OO NextFileTab (WO binding + OO combo).
+        if (keyStr === "PageDown" || (keyStr === "Tab" && !e.shiftKey)) {
+          e.preventDefault()
+          dispatchWoCommand("nextFileTab")
+          return
+        }
+        // Ctrl+PageUp / Ctrl+Shift+Tab — OO PreviousFileTab.
+        if (keyStr === "PageUp" || (e.shiftKey && keyStr === "Tab")) {
+          e.preventDefault()
+          dispatchWoCommand("previousFileTab")
+          return
+        }
+      }
 
       // Ignore modifier-only keys and escape
       if (
@@ -765,17 +1041,10 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
             return
           }
           if (keyStr === "v" || keyStr === "V") {
-            navigator.clipboard
-              .readText()
-              .then((text) => {
-                if (!text) return
-                try {
-                  applyWasmResult(api.insert_text(docHandle, text, "A4", "portrait", 72.0))
-                } catch (err) {
-                  console.error("[CanvasEditor] insert_text failed:", err)
-                }
-              })
-              .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
+            // Default paste = OO SpecialOptionsKeepSourceFormat: the source
+            // structure is kept verbatim (see pasteTextWithOption).
+            e.preventDefault()
+            pasteWithOption("keep-source-format")
             return
           }
         }
@@ -795,7 +1064,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
         console.error("[CanvasEditor] handle_key_event failed:", err)
       }
     },
-    [_onChange, selectAll],
+    [_onChange, selectAll, pasteWithOption, pasteOptionsOpen],
   )
 
   // ── Mouse handler — hit test → position cursor ────────────────────
@@ -986,14 +1255,72 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
   return (
     <div
       ref={containerRef}
+      id="editor"
       data-wo-rev="0"
       style={{
         ...containerStyle,
+        position: "relative",
         gap: "16px",
         padding: "24px 0",
         overflow: "auto",
       }}
     >
+      {/* Paste-special options (Ctrl+Alt+V) — the OO SpecialOptions rows.
+          Buttons carry data-wo-paste-option so the parity/census layer can
+          drive a specific option directly. */}
+      {pasteOptionsOpen && (
+        <div
+          className="wo-paste-options"
+          data-wo-paste-options=""
+          role="menu"
+          aria-label="Paste special"
+          style={{
+            position: "absolute",
+            top: 12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            minWidth: 280,
+            padding: "6px",
+            backgroundColor: "#fff",
+            border: "1px solid #d0d4da",
+            borderRadius: 4,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+          }}
+        >
+          {WO_PASTE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              role="menuitem"
+              data-wo-paste-option={option.id}
+              onClick={() => {
+                setPasteOptionsOpen(false)
+                pasteWithOption(option.id)
+              }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 2,
+                padding: "6px 10px",
+                border: 0,
+                borderRadius: 3,
+                backgroundColor: "transparent",
+                cursor: "pointer",
+                textAlign: "left",
+                fontFamily: "inherit",
+              }}
+            >
+              <span style={{ fontSize: 13, color: "#202124" }}>{option.label}</span>
+              <span style={{ fontSize: 11, color: "#5f6368" }}>{option.hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {pages.map((_page, index) => (
         <div
           // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no natural IDs
