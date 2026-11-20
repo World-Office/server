@@ -1259,7 +1259,7 @@
 "match": "btn-multipage",
 "where": "statusbar"
 },
-"woTab": null,
+"woTab": "insert",
 "effektClass": "structure",
 "assertion": {
 "kind": "dom-mutation",
@@ -1267,7 +1267,17 @@
 "contains": "page-break"
 },
 "subFeatures": null,
-"note": "blank page inserts page-break marker + trailing paragraph"
+"note": "blank page inserts page-break marker + trailing paragraph",
+"contract": {
+"selector": "#btn-blank-page",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"woTab": "insert",
+"note": "Insert tab structural insert rev-bump react-port",
+"xfail": false
+}
 },
 {
 "tab": "tab:ins",
@@ -1714,7 +1724,7 @@
 "match": "toggleDropcap",
 "where": "tab:insert"
 },
-"woTab": null,
+"woTab": "insert",
 "effektClass": "dialog",
 "assertion": {
 "kind": "dialog-visible",
@@ -1738,7 +1748,18 @@
 "selector": "#btn-dropcap-ok"
 }
 ],
-"note": "ledger row: insert.drop-cap"
+"note": "ledger row: insert.drop-cap",
+"contract": {
+"selector": "#btn-insert-drop-cap",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"pre": "",
+"woTab": "insert",
+"note": "Insert tab Drop Cap opens the StylesPanel",
+"xfail": false
+}
 },
 {
 "tab": "tab:ins",
@@ -2521,7 +2542,18 @@
 "selector": "#editor",
 "contains": "toc"
 },
-"subFeatures": null
+"subFeatures": null,
+"contract": {
+"selector": "#btn-update-toc",
+"assertion": {
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
+},
+"pre": "canvas-type",
+"woTab": "references",
+"note": "References tab updatetoc-dialog opens the cross-reference panel",
+"xfail": false
+}
 },
 {
 "tab": "tab:links",
@@ -2606,7 +2638,18 @@
 "selector": "#editor sup.footnote-citation"
 },
 "subFeatures": null,
-"note": "ledger row: references.footnote — btn-footnote data-cmd=insertFootnote (index.html:719) → editor.js:1228-1243 inserts sup.footnote-citation[1] + span.footnote \"Footnote text\" via insertHTML (the same click also opens notes-dialog via the editor.js:8859 wiring; the mutation is the structure contract)"
+"note": "ledger row: references.footnote — btn-footnote data-cmd=insertFootnote (index.html:719) → editor.js:1228-1243 inserts sup.footnote-citation[1] + span.footnote \"Footnote text\" via insertHTML (the same click also opens notes-dialog via the editor.js:8859 wiring; the mutation is the structure contract)",
+"contract": {
+"selector": "#btn-insert-footnote",
+"assertion": {
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
+},
+"pre": "canvas-type",
+"woTab": "references",
+"note": "References tab insertfootnote opens the cross-reference panel",
+"xfail": false
+}
 },
 {
 "tab": "tab:links",
@@ -2699,7 +2742,19 @@
 "selector": "#editor p[style*=\"center\"] em"
 },
 "subFeatures": null,
-"note": "ledger row: references.caption — feature-keyed (references.dlg-insert-caption shares token insertcaption); since L2M-07 the trigger opens #caption-dialog, post clicks OK whose confirmCaptionDialog drops the centered caption paragraph at the caret (empty input -> 'Figure: Caption'; figure/figcaption around a table); census evidence 'mutated #editor DOM: DIV:+P'"
+"note": "ledger row: references.caption — feature-keyed (references.dlg-insert-caption shares token insertcaption); since L2M-07 the trigger opens #caption-dialog, post clicks OK whose confirmCaptionDialog drops the centered caption paragraph at the caret (empty input -> 'Figure: Caption'; figure/figcaption around a table); census evidence 'mutated #editor DOM: DIV:+P'",
+"contract": {
+"selector": "#btn-insert-caption",
+"assertion": {
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
+},
+"pre": "canvas-type",
+"woTab": "references",
+"note": "References tab insertcaption opens the cross-reference panel",
+"xfail": false,
+"post": ""
+}
 },
 {
 "tab": "tab:links",
@@ -2758,7 +2813,18 @@
 "selector": "#editor",
 "contains": "tableoffigures"
 },
-"subFeatures": null
+"subFeatures": null,
+"contract": {
+"selector": "#btn-insert-table-of-figures",
+"assertion": {
+"kind": "dom-mutation",
+"selector": "#cross-reference-panel"
+},
+"pre": "canvas-type",
+"woTab": "references",
+"note": "References tab tableoffigures-dialog opens the cross-reference panel",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -4407,14 +4473,24 @@
 "match": "btn-multipage",
 "where": "statusbar"
 },
-"woTab": null,
+"woTab": "insert",
 "effektClass": "structure",
 "assertion": {
 "kind": "dom-mutation",
 "selector": "#editor div.page-break"
 },
 "subFeatures": null,
-"note": "ledger row: insert.insert-page-break — Breaks menu item emits insertPageBreak which execCommands <div class=page-break> + trailing <p> into #editor (editor.js:1177-1194)"
+"note": "ledger row: insert.insert-page-break — Breaks menu item emits insertPageBreak which execCommands <div class=page-break> + trailing <p> into #editor (editor.js:1177-1194)",
+"contract": {
+"selector": "#btn-page-break",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"woTab": "insert",
+"note": "Insert tab structural insert rev-bump react-port",
+"xfail": false
+}
 },
 {
 "tab": "menu:breaks",
@@ -15653,7 +15729,18 @@
 "dialog": "#dropcap-dialog"
 },
 "subFeatures": null,
-"note": "ledger row: insert.drop-cap — data-cmd=toggleDropcap (index.html:457) → openDropcapDialog opens #dropcap-dialog (editor.js:1566, 9365); #btn-dropcap-ok wired by the ROUND2 loop: closeOverlayDialog + confirmDropcapDialog (editor.js:9369-9376). [override-only: no ledger row matched this key]"
+"note": "ledger row: insert.drop-cap — data-cmd=toggleDropcap (index.html:457) → openDropcapDialog opens #dropcap-dialog (editor.js:1566, 9365); #btn-dropcap-ok wired by the ROUND2 loop: closeOverlayDialog + confirmDropcapDialog (editor.js:9369-9376). [override-only: no ledger row matched this key]",
+"contract": {
+"selector": "#btn-insert-drop-cap",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"pre": "",
+"woTab": "insert",
+"note": "Insert tab Drop Cap opens the StylesPanel",
+"xfail": false
+}
 },
 {
 "tab": "insert",
