@@ -890,6 +890,19 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
           dispatchWoCommand("print")
           return
         }
+        // Ctrl+F / Ctrl+H — OO OpenFindDialog / OpenFindAndReplacePanel.
+        // (!altKey: Ctrl+Alt+F is the OO InsertFootnote chord, handled below
+        // in the alt block — find must not swallow it)
+        if (!e.altKey && (keyStr === "f" || keyStr === "F")) {
+          e.preventDefault()
+          dispatchWoCommand("find")
+          return
+        }
+        if (!e.altKey && (keyStr === "h" || keyStr === "H")) {
+          e.preventDefault()
+          dispatchWoCommand("replace")
+          return
+        }
         // Ctrl+Alt+V — paste special: the OO SpecialOptions list.
         if (e.altKey && (keyStr === "v" || keyStr === "V")) {
           e.preventDefault()

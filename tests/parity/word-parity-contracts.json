@@ -6618,7 +6618,16 @@
 "selector": "#find-query"
 }
 ],
-"note": "pilot2: key trigger vocabulary — Ctrl+F opens the find dialog"
+"note": "pilot2: key trigger vocabulary — Ctrl+F opens the find dialog",
+"contract": {
+"key": "Control+f",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-findreplace-panel"
+},
+"note": "Ctrl+F/H opens the FindReplacePanel (OO OpenFindDialog/OpenFindAndReplacePanel)",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -6648,7 +6657,16 @@
 "selector": "#find-replace"
 }
 ],
-"note": "ledger feature shortcut.openfindandreplacemenu (token ctrl+h) — document-scoped handler (editor.js:10825) calls openFindDialog(true): same #find-dialog as Ctrl+F, with the replace field (#find-replace, index.html:3019) in the panel"
+"note": "ledger feature shortcut.openfindandreplacemenu (token ctrl+h) — document-scoped handler (editor.js:10825) calls openFindDialog(true): same #find-dialog as Ctrl+F, with the replace field (#find-replace, index.html:3019) in the panel",
+"contract": {
+"key": "Control+h",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-findreplace-panel"
+},
+"note": "Ctrl+F/H opens the FindReplacePanel (OO OpenFindDialog/OpenFindAndReplacePanel)",
+"xfail": false
+}
 },
 {
 "tab": "shortcut",
@@ -16291,7 +16309,15 @@
 "equals": "700"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.bold (Ctrl+B) — emitCommand(\"bold\"), same execCommand path as the proven toolbar click contract 'bold'; <b> wrap -> font-weight 700 [override-only: no ledger row matched this key]"
+"note": "ledger row: shortcut.bold (Ctrl+B) — emitCommand(\"bold\"), same execCommand path as the proven toolbar click contract 'bold'; <b> wrap -> font-weight 700 [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+b",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16310,7 +16336,15 @@
 "equals": "italic"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.italic (Ctrl+I) — emitCommand(\"italic\"); <i> wrap -> font-style italic [override-only: no ledger row matched this key]"
+"note": "ledger row: shortcut.italic (Ctrl+I) — emitCommand(\"italic\"); <i> wrap -> font-style italic [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+i",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16329,7 +16363,15 @@
 "equals": "underline"
 },
 "subFeatures": null,
-"note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader) [override-only: no ledger row matched this key]"
+"note": "ledger row: shortcut.underline (Ctrl+U) — emitCommand(\"underline\"); <u> wrap (reached by the runner's closest b,i,u,span,p reader) [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+u",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16554,7 +16596,15 @@
 "contains": "<s>"
 },
 "subFeatures": null,
-"note": "ctrl+shift+x strikeThrough (editor.js) [override-only: no ledger row matched this key]"
+"note": "ctrl+shift+x strikeThrough (editor.js) [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Shift+x",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16573,7 +16623,15 @@
 "contains": "<ul>"
 },
 "subFeatures": null,
-"note": "bulleted list [override-only: no ledger row matched this key]"
+"note": "bulleted list [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Shift+l",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16629,7 +16687,16 @@
 "contains": "Will"
 },
 "subFeatures": null,
-"note": "copy placeCaret selection (first 4 chars) to clipboard [override-only: no ledger row matched this key]"
+"note": "copy placeCaret selection (first 4 chars) to clipboard [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+c",
+"assertion": {
+"kind": "clipboard",
+"contains": "Hello canvas"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16647,7 +16714,15 @@
 "contains": "Will"
 },
 "subFeatures": null,
-"note": "cut placeCaret selection to clipboard [override-only: no ledger row matched this key]"
+"note": "cut placeCaret selection to clipboard [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+x",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16666,7 +16741,15 @@
 "contains": "seeded"
 },
 "subFeatures": null,
-"note": "paste from system clipboard [override-only: no ledger row matched this key]"
+"note": "paste from system clipboard [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+v",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16704,7 +16787,15 @@
 "note": "Ctrl+Alt+1 wraps the selection block in H1 via emitCommand('formatBlock','H1') (editor.js ~11078); the list fixture starts with zero headings, so the first #editor h1 appearing is the chord's effect"
 },
 "subFeatures": null,
-"note": " [override-only: no ledger row matched this key]"
+"note": " [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Alt+Digit1",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16723,7 +16814,15 @@
 "note": "Ctrl+Alt+2 wraps the block in H2 (editor.js ~11078)"
 },
 "subFeatures": null,
-"note": " [override-only: no ledger row matched this key]"
+"note": " [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Alt+Digit2",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16742,7 +16841,15 @@
 "note": "Ctrl+Alt+3 wraps the block in H3 (editor.js ~11078)"
 },
 "subFeatures": null,
-"note": " [override-only: no ledger row matched this key]"
+"note": " [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Alt+Digit3",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "",
@@ -16761,7 +16868,15 @@
 "contains": "PASTE-MARKER"
 },
 "subFeatures": null,
-"note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted [override-only: no ledger row matched this key]"
+"note": "PROMOTED 2026-11-07: Ctrl+Shift+V is bound in editor.js (L2M-04, OO PasteTextWithoutFormat) — the trusted CDP key chord runs pasteTextOnly(), the same plain-text path as the Ctrl+T chord, and inserts the seeded clipboard text unformatted [override-only: no ledger row matched this key]",
+"contract": {
+"key": "Control+Shift+v",
+"assertion": {
+"kind": "rev-bump"
+},
+"pre": "canvas-type",
+"xfail": false
+}
 },
 {
 "tab": "layout",
