@@ -76,6 +76,12 @@ export const Viewport = observer(function Viewport({
     margins: "normal",
   })
   const [columns, setColumns] = useState(1)
+  // Apply the interface theme on <html> so CSS can key off [data-theme];
+  // before this the theme select updated store state with zero DOM effect.
+  const themeId = documentStore.themeId
+  useEffect(() => {
+    if (themeId) document.documentElement.dataset.theme = themeId
+  }, [themeId])
 
   useEffect(() => {
     const handleLayout = (e: Event) => {

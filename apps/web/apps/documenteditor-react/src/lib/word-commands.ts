@@ -487,8 +487,27 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     // 3. Clipboard commands → native browser APIs for canvas mode,
     //    or TipTap bridge for rich-text mode
     if (command === "copy" || command === "cut" || command === "paste") {
-      // For canvas mode, use native clipboard API
-      // document.execCommand is legacy and may not work in all contexts
+      // Canvas mode: drive the WASM engine (the DOM selection is empty on the
+      // canvas editor; applyFormatting({insertText}) was a no-op that only
+      // looked like a mutation).
+      const handle = editorRef.current
+      const docHandle = handle?.getDocHandle?.() ?? null
+      if (handle && docHandle !== null) {
+        if (command === "copy") {
+          handle.clipboardCopy()
+          return
+        }
+        if (command === "cut") {
+          handle.clipboardCut()
+          return
+        }
+        void navigator.clipboard
+          .readText()
+          .then((text) => handle.clipboardPaste(text))
+          .catch(() => {})
+        return
+      }
+      // Text-mode fallback
       if (command === "copy") {
         const selectedText = window.getSelection()?.toString()
         if (selectedText) {
@@ -519,6 +538,15 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
 
     // 4. Edit history → TipTap bridge (for Monaco editor)
     if (command === "undo" || command === "redo" || command === "selectAll") {
+      // Canvas mode: drive the WASM engine directly (TipTap fallback is a
+      // no-op here — the ribbon undo button was dead on the canvas editor).
+      const handle = editorRef.current
+      if (handle) {
+        if (command === "undo") handle.undo()
+        else if (command === "redo") handle.redo()
+        else handle.selectAll()
+        return
+      }
       onRichTextCommand(command as RichTextCommand, value)
       return
     }

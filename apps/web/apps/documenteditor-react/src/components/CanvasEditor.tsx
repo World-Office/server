@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
-import { applyOpToDocument, getWasmApi, isWasmReady, loadWasmRenderer } from "../lib/wasm-renderer"
+import { applyOpToDocument, getWasmApi, isWasmReady, loadWasmRenderer, type WasmRenderApi } from "../lib/wasm-renderer"
 
 interface CanvasEditorProps {
   /** DOCX blob to render */
@@ -66,6 +66,18 @@ export interface CanvasEditorHandle {
   applyOp: (op: unknown) => boolean
   /** Get the current WASM document handle. */
   getDocHandle: () => number | null
+  /** Undo the last committed mutation via the WASM engine history. */
+  undo: () => void
+  /** Redo the last undone mutation via the WASM engine history. */
+  redo: () => void
+  /** Select the whole document (engine anchor + extend-to-end). */
+  selectAll: () => void
+  /** Copy the engine selection to the system clipboard. */
+  clipboardCopy: () => void
+  /** Cut: copy the engine selection, then delete it. */
+  clipboardCut: () => void
+  /** Paste text at the engine cursor. */
+  clipboardPaste: (text: string) => void
 }
 
 // Named function gives forwardRef a proper displayName
@@ -96,6 +108,15 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
   const cursorVisibleRef = useRef(true)
   // true between mousedown and mouseup on the canvas: mousemove extends selection
   const draggingRef = useRef(false)
+  // Monotonic document-revision counter published as data-wo-rev on the
+  // container. The functional census (harness fx-wo.cjs) samples it instead
+  // of the retired editor's innerHTML: the canvas engine owns the PIXELS, so
+  // the only DOM-observable doc-mutation signal is this counter.
+  const docRevRef = useRef(0)
+  const bumpDocRev = () => {
+    docRevRef.current += 1
+    containerRef.current?.setAttribute("data-wo-rev", String(docRevRef.current))
+  }
 
   // The wasm renderer accepts docx natively; odt blobs are converted to
   // docx in the DocumentStore load flow, so map odt→docx here too.
@@ -364,6 +385,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
           }
         }
         setPages(layoutPages)
+        bumpDocRev()
       }
     } catch (err) {
       console.error("[CanvasEditor] apply_formatting failed:", err)
@@ -401,6 +423,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
           }
         }
         setPages(layoutPages)
+        bumpDocRev()
       }
     } catch (err) {
       console.error("[CanvasEditor] apply_structure_op failed:", err)
@@ -483,6 +506,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
             onModelOp(op, docHandleRef.current)
           }
           if (_onChange) {
+            bumpDocRev()
             _onChange()
           }
           return true
@@ -501,6 +525,132 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
     return docHandleRef.current
   }, [])
 
+  // Shared applier for engine calls that return a layout JSON (undo/redo,
+  // handle_key_event) — parses pages, re-renders canvases, bumps docRev.
+  const applyEngineResult = useCallback(
+    (result: string | null, api: WasmRenderApi, docHandle: number) => {
+      if (result && result !== "{}") {
+        try {
+          const layoutPages: PageInfo[] = JSON.parse(result).map(
+            (p: { width: number; height: number; marginPx: number }, i: number) => ({
+              width: p.width,
+              height: p.height,
+              marginPx: p.marginPx,
+              index: i,
+            }),
+          )
+          for (let i = 0; i < layoutPages.length; i++) {
+            if (canvasHandlesRef.current[i] === undefined) {
+              const h = api.create_canvas(layoutPages[i].width, layoutPages[i].height)
+              canvasHandlesRef.current[i] = h
+            }
+            try {
+              const h = canvasHandlesRef.current[i]
+              api.render_laid_out_page(docHandle, i, h)
+            } catch (err) {
+              console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
+            }
+          }
+          setPages(layoutPages)
+          if (_onChange) {
+            bumpDocRev()
+            _onChange()
+          }
+        } catch (err) {
+          console.error("[CanvasEditor] engine result parse failed:", err)
+        }
+      }
+    },
+    [_onChange],
+  )
+
+  /** Undo the last mutation via the engine history. */
+  const undo = useCallback(() => {
+    const api = getWasmApi()
+    const docHandle = docHandleRef.current
+    if (!api || docHandle === null) return
+    try {
+      applyEngineResult(api.undo(docHandle, "A4", "portrait", 72.0), api, docHandle)
+    } catch (err) {
+      console.error("[CanvasEditor] undo failed:", err)
+    }
+  }, [getWasmApi, applyEngineResult])
+
+  /** Redo the last undone mutation via the engine history. */
+  const redo = useCallback(() => {
+    const api = getWasmApi()
+    const docHandle = docHandleRef.current
+    if (!api || docHandle === null) return
+    try {
+      applyEngineResult(api.redo(docHandle, "A4", "portrait", 72.0), api, docHandle)
+    } catch (err) {
+      console.error("[CanvasEditor] redo failed:", err)
+    }
+  }, [getWasmApi, applyEngineResult])
+
+  /** Select the whole document: anchor at doc start, extend cursor to end.
+   *  The engine has no select_all; Shift+ArrowDown moves converge at the
+   *  final paragraph (cheap — nav moves return "{}", no re-render). */
+  const selectAll = useCallback(() => {
+    const api = getWasmApi()
+    const docHandle = docHandleRef.current
+    if (!api || docHandle === null) return
+    try {
+      api.set_selection_anchor(docHandle, 0, 0)
+      for (let i = 0; i < 30; i++) {
+        api.handle_key_event(docHandle, "ArrowDown", false, true, "A4", "portrait", 72.0)
+      }
+    } catch (err) {
+      console.error("[CanvasEditor] selectAll failed:", err)
+    }
+  }, [getWasmApi])
+
+  /** Copy the engine selection (NOT the DOM selection — canvas keeps the
+   *  selection inside the WASM engine). */
+  const clipboardCopy = useCallback(() => {
+    const api = getWasmApi()
+    const docHandle = docHandleRef.current
+    if (!api || docHandle === null) return
+    try {
+      const text = api.get_selected_text(docHandle)
+      if (text) navigator.clipboard.writeText(text).catch(() => {})
+    } catch (err) {
+      console.error("[CanvasEditor] copy failed:", err)
+    }
+  }, [getWasmApi])
+
+  /** Cut: copy the engine selection, then delete it via delete_selection. */
+  const clipboardCut = useCallback(() => {
+    const api = getWasmApi()
+    const docHandle = docHandleRef.current
+    if (!api || docHandle === null) return
+    try {
+      const text = api.get_selected_text(docHandle)
+      if (!text) return
+      navigator.clipboard.writeText(text).catch(() => {})
+      applyEngineResult(api.delete_selection(docHandle, "A4", "portrait", 72.0), api, docHandle)
+    } catch (err) {
+      console.error("[CanvasEditor] cut failed:", err)
+    }
+  }, [getWasmApi, applyEngineResult])
+
+  /** Paste text at the engine cursor (real insert, unlike the old
+   *  applyFormatting({insertText}) no-op that only looked like a mutation). */
+  const clipboardPaste = useCallback(
+    (text: string) => {
+      if (!text) return
+      const api = getWasmApi()
+      const docHandle = docHandleRef.current
+      if (!api || docHandle === null) return
+      try {
+        applyEngineResult(api.insert_text(docHandle, text, "A4", "portrait", 72.0), api, docHandle)
+      } catch (err) {
+        console.error("[CanvasEditor] paste failed:", err)
+      }
+    },
+    [getWasmApi, applyEngineResult],
+  )
+
   useImperativeHandle(
     ref,
     () => ({
@@ -508,8 +658,14 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
       applyStructureOp: applyWasmStructureOp,
       applyOp,
       getDocHandle,
+      undo,
+      redo,
+      selectAll,
+      clipboardCopy,
+      clipboardCut,
+      clipboardPaste,
     }),
-    [applyWasmFormatting, applyWasmStructureOp, applyOp, getDocHandle],
+    [applyWasmFormatting, applyWasmStructureOp, applyOp, getDocHandle, undo, redo, selectAll, clipboardCopy, clipboardCut, clipboardPaste],
   )
 
   // ── Key handler — sends key to WASM engine ────────────────────────
@@ -571,6 +727,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
           // persist canvas-typed edits via WOPI PutFile. Without this, edits
           // live only in memory and are silently lost on reload.
           if (_onChange) {
+            bumpDocRev()
             _onChange()
           }
         }
@@ -581,8 +738,13 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
         // engine cannot reach — handle those in JS. Every other key (including
         // Ctrl+S/B/Z/Y) dispatches to the engine's handle_key_event, which
         // interprets the modifier (save, bold, undo) instead of inserting the
-        // bare letter.
+        // bare letter. Ctrl+A is select-all in JS (the engine would insert
+        // the bare letter 'a').
         if (e.ctrlKey || e.metaKey) {
+          if (keyStr === "a" || keyStr === "A") {
+            selectAll()
+            return
+          }
           if (keyStr === "c" || keyStr === "C") {
             try {
               const text = api.get_selected_text(docHandle)
@@ -633,7 +795,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
         console.error("[CanvasEditor] handle_key_event failed:", err)
       }
     },
-    [_onChange],
+    [_onChange, selectAll],
   )
 
   // ── Mouse handler — hit test → position cursor ────────────────────
@@ -824,6 +986,7 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
   return (
     <div
       ref={containerRef}
+      data-wo-rev="0"
       style={{
         ...containerStyle,
         gap: "16px",

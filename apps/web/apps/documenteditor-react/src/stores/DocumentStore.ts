@@ -814,3 +814,11 @@ function setStorageItem(key: string, value: string): void {
 }
 
 export const documentStore = new DocumentStore()
+
+// Test/census hook: fx-wo.cjs normalizes UI state (zoom, header/footer mode,
+// panels) between rows so each control starts from a known baseline.
+if (typeof window !== "undefined") {
+  ;(window as unknown as { __woStores?: { document: DocumentStore } }).__woStores = {
+    document: documentStore,
+  }
+}

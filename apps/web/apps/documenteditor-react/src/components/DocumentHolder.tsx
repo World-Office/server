@@ -79,6 +79,12 @@ const WasmEditorCanvas = observer(
         onRichTextCommand: () => {
           /* monaco/text-mode fallback is wired in App.tsx via useWoCommandListener */
         },
+        // Find/replace: open the shared FindReplacePanel (canvas mode had no
+        // onFind wiring — the ribbon find button was dead).
+        onFind: (replace) => {
+          void replace
+          documentStore.setShowFindPanel(true)
+        },
       })
       const unregister = registerEditorRouter("doc", handler)
 
