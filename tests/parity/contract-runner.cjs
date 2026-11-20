@@ -1766,7 +1766,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
         if (!preMenu) placeCaret(page);
-        if (ov.setValue !== undefined) {
+        if (typeof ov.setValue === 'string') {
           // synthetic-change trigger: <input type=color> handlers listen for
           // 'change' (editor.js ~10782); a real pick is undrivable headless
           // and a real click opens the native picker — set the value and
@@ -1790,7 +1790,8 @@ async function subFeatureAudit(page, ov, dialogSel) {
             })
           : Promise.resolve();
         return snapFirst
-          .then(() => page.evaluate((sel) => document.querySelector(sel).click(), selector))
+          .then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('no trigger element: ' + sel);
+            el.click() }, selector))
           .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
       };
       await trigger();

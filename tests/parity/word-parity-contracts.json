@@ -574,7 +574,19 @@
 "contains": "WILL"
 },
 "subFeatures": null,
-"note": "ledger row: formatting.change-case — 'Change case' is a dropdown (data-i18n-keyed selector per the page-menus precedent): trigger click opens the list without collapsing the selection, post clicks UPPERCASE; changeCase rewrites the selected first word via execCommand insertText — the fixture's first text node is 'Willkommen bei World Office' and placeCaret selects chars 0..4 = 'Will' -> 'WILL'"
+"note": "ledger row: formatting.change-case — 'Change case' is a dropdown (data-i18n-keyed selector per the page-menus precedent): trigger click opens the list without collapsing the selection, post clicks UPPERCASE; changeCase rewrites the selected first word via execCommand insertText — the fixture's first text node is 'Willkommen bei World Office' and placeCaret selects chars 0..4 = 'Will' -> 'WILL'",
+"contract": {
+"selector": "#btn-change-case",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Home tab btn-change-case opens .de-styles-panel"
+}
 },
 {
 "tab": "tab:home",
@@ -818,7 +830,18 @@
 "absent": true
 },
 "subFeatures": null,
-"note": "PROMOTED 2026-11-07 (L2L follow-up): formatted-selection pre seeds a strong run; removeFormat unwraps it -> #editor strong absent."
+"note": "PROMOTED 2026-11-07 (L2L follow-up): formatted-selection pre seeds a strong run; removeFormat unwraps it -> #editor strong absent.",
+"contract": {
+"selector": "#btn-clear-formatting",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "rev-bump"
+},
+"note": "Home tab btn-clear-formatting applies format -> rev bump"
+}
 },
 {
 "tab": "tab:home",
@@ -868,7 +891,18 @@
 "selector": "#editor ol"
 },
 "subFeatures": null,
-"note": "ledger row: formatting.numbering — wo.match 'Numbering style options' is the caret dropdown next to the numbered-list button: trigger click opens the list, post clicks the 1. 2. 3. item; applyListStyle creates the list first when the selection is not inside one (editor.js listStyle branch), planting the document's first <ol>"
+"note": "ledger row: formatting.numbering — wo.match 'Numbering style options' is the caret dropdown next to the numbered-list button: trigger click opens the list, post clicks the 1. 2. 3. item; applyListStyle creates the list first when the selection is not inside one (editor.js listStyle branch), planting the document's first <ol>",
+"contract": {
+"selector": "#btn-ordered-list",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "rev-bump"
+},
+"note": "Home tab btn-ordered-list applies format -> rev bump"
+}
 },
 {
 "tab": "tab:home",
@@ -889,7 +923,18 @@
 "selector": "#editor li li"
 },
 "subFeatures": null,
-"note": "ledger row: formatting.multilevel-list — ribbon button nests the caret li under its previous sibling (direct DOM op, not a dialog); bullets-numbering-dialog lives on the list ctx menu"
+"note": "ledger row: formatting.multilevel-list — ribbon button nests the caret li under its previous sibling (direct DOM op, not a dialog); bullets-numbering-dialog lives on the list ctx menu",
+"contract": {
+"selector": "#btn-multilevel-list",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "rev-bump"
+},
+"note": "Home tab btn-multilevel-list applies format -> rev bump"
+}
 },
 {
 "tab": "tab:home",
@@ -1149,7 +1194,19 @@
 "hasClass": "show-marks"
 },
 "subFeatures": null,
-"note": "ledger row: formatting.nonprinting-characters-ctrl-shift-8 — setFormatMarks toggles .show-marks on #editor (editor.js:6577)"
+"note": "ledger row: formatting.nonprinting-characters-ctrl-shift-8 — setFormatMarks toggles .show-marks on #editor (editor.js:6577)",
+"contract": {
+"selector": "#btn-nonprinting",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"note": "Home tab nonprinting toggle opens StylesPanel",
+"xfail": false
+}
 },
 {
 "tab": "tab:home",
@@ -1170,7 +1227,20 @@
 "selector": "#editor p[style*=\"background-color\"]"
 },
 "subFeatures": null,
-"note": "applyParagraphShading needs the caret inside a <p> (closest('p')) — formatted-selection pre + synthetic change on the color input; F-040 paragraph shading"
+"note": "applyParagraphShading needs the caret inside a <p> (closest('p')) — formatted-selection pre + synthetic change on the color input; F-040 paragraph shading",
+"contract": {
+"selector": "#btn-shading",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Home tab btn-shading opens .de-styles-panel",
+"setValue": null
+}
 },
 {
 "tab": "tab:home",
@@ -1192,7 +1262,19 @@
 "dialog": "#borders-dialog"
 },
 "subFeatures": null,
-"note": "pilot6: borders dialog cancel"
+"note": "pilot6: borders dialog cancel",
+"contract": {
+"selector": "#btn-borders",
+"pre": "canvas-type",
+"woTab": "home",
+"post": "",
+"xfail": false,
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-styles-panel"
+},
+"note": "Home tab btn-borders opens .de-styles-panel"
+}
 },
 {
 "tab": "tab:home",
@@ -2879,7 +2961,19 @@
 "selector": "#btn-comment-ok"
 }
 ],
-"note": "ledger row: review.add-comment — the collaboration-tab #btn-comment click listener IS openCommentDialog (editor.js:8730), same #comment-dialog surface as insertComment"
+"note": "ledger row: review.add-comment — the collaboration-tab #btn-comment click listener IS openCommentDialog (editor.js:8730), same #comment-dialog surface as insertComment",
+"contract": {
+"selector": "#btn-add-comment",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-comments-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-add-comment opens .de-comments-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -2901,7 +2995,19 @@
 "absent": true
 },
 "subFeatures": null,
-"note": "PROMOTED 2026-11-07: ledger row review.delete — ctx-menu-on-comment pre builds the span.comment fixture the old note called a vocabulary gap; the collaboration-tab [data-cmd=deleteComment] ribbon button then runs deleteComment (editor.js:1468) -> commentAtSelection() (anchor inside the fixture span) -> removeComment (editor.js:141) unwraps it, so #editor span.comment goes absent (dom-mutation)"
+"note": "PROMOTED 2026-11-07: ledger row review.delete — ctx-menu-on-comment pre builds the span.comment fixture the old note called a vocabulary gap; the collaboration-tab [data-cmd=deleteComment] ribbon button then runs deleteComment (editor.js:1468) -> commentAtSelection() (anchor inside the fixture span) -> removeComment (editor.js:141) unwraps it, so #editor span.comment goes absent (dom-mutation)",
+"contract": {
+"selector": "#btn-delete-comment",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-comments-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-delete-comment opens .de-comments-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -2922,7 +3028,19 @@
 "selector": "#editor span.comment[data-resolved=\"1\"]"
 },
 "subFeatures": null,
-"note": "PROMOTED 2026-11-07: ledger row review.resolve — ctx-menu-on-comment pre anchors the selection inside the fixture span.comment; [data-cmd=resolveComment] runs resolveComment (editor.js:1456) -> toggleResolved (editor.js:128) flips data-resolved=\"1\" (afterTrackEdit only marks history/collab state, the attribute survives), so #editor span.comment[data-resolved=1] becomes present (dom-mutation, default want=present)"
+"note": "PROMOTED 2026-11-07: ledger row review.resolve — ctx-menu-on-comment pre anchors the selection inside the fixture span.comment; [data-cmd=resolveComment] runs resolveComment (editor.js:1456) -> toggleResolved (editor.js:128) flips data-resolved=\"1\" (afterTrackEdit only marks history/collab state, the attribute survives), so #editor span.comment[data-resolved=1] becomes present (dom-mutation, default want=present)",
+"contract": {
+"selector": "#btn-resolve-comment",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-comments-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-resolve-comment opens .de-comments-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -2986,7 +3104,19 @@
 "selector": "#btn-displaymode-ok"
 }
 ],
-"note": "ledger row: review.display-mode"
+"note": "ledger row: review.display-mode",
+"contract": {
+"selector": "#btn-display-mode",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-display-mode opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3007,7 +3137,19 @@
 "selector": "#editor ins.track-insert.nav-flash"
 },
 "subFeatures": null,
-"note": "ledger row: review.previous — navigateTrackedChange(-1) (editor.js:4290) walks to the LAST change whose end is strictly before the caret; the tracked-behind pre collapses the caret after the fixture ins's trailing 'ccc', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable"
+"note": "ledger row: review.previous — navigateTrackedChange(-1) (editor.js:4290) walks to the LAST change whose end is strictly before the caret; the tracked-behind pre collapses the caret after the fixture ins's trailing 'ccc', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable",
+"contract": {
+"selector": "#btn-previous-change",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-previous-change opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3028,7 +3170,19 @@
 "selector": "#editor ins.track-insert.nav-flash"
 },
 "subFeatures": null,
-"note": "ledger row: review.next — navigateTrackedChange(1) walks to the FIRST change whose start is strictly after the caret; the tracked-ahead pre collapses the caret inside the fixture ins's leading 'aaa', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable"
+"note": "ledger row: review.next — navigateTrackedChange(1) walks to the FIRST change whose start is strictly after the caret; the tracked-ahead pre collapses the caret inside the fixture ins's leading 'aaa', so the op takes the success path: scrollIntoView + .nav-flash flash + selects the change contents — the flash class on the fixture ins is the observable",
+"contract": {
+"selector": "#btn-next-change",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-next-change opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3050,7 +3204,19 @@
 "absent": true
 },
 "subFeatures": null,
-"note": "ledger row: review.accept — acceptTrackedChange runs trackedChangeAtSelection(\"accept\") (editor.js:1454/3041) on the ins.track-insert at the caret; acceptChange unwraps the insertion into plain text (same path as the passing ctx.accept-change)"
+"note": "ledger row: review.accept — acceptTrackedChange runs trackedChangeAtSelection(\"accept\") (editor.js:1454/3041) on the ins.track-insert at the caret; acceptChange unwraps the insertion into plain text (same path as the passing ctx.accept-change)",
+"contract": {
+"selector": "#btn-accept-change",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-accept-change opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3072,7 +3238,19 @@
 "absent": true
 },
 "subFeatures": null,
-"note": "ledger row: review.reject — rejectTrackedChange runs trackedChangeAtSelection(\"reject\") (editor.js:1455); rejectChange removes the tracked insertion entirely (same path as the passing ctx.reject-change)"
+"note": "ledger row: review.reject — rejectTrackedChange runs trackedChangeAtSelection(\"reject\") (editor.js:1455); rejectChange removes the tracked insertion entirely (same path as the passing ctx.reject-change)",
+"contract": {
+"selector": "#btn-reject-change",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-reject-change opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3106,7 +3284,19 @@
 "selector": "#btn-compare-apply"
 }
 ],
-"note": "ledger row: review.compare"
+"note": "ledger row: review.compare",
+"contract": {
+"selector": "#btn-compare-documents",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-compare-documents opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3140,7 +3330,19 @@
 "selector": "#btn-combine-apply"
 }
 ],
-"note": "ledger row: review.combine"
+"note": "ledger row: review.combine",
+"contract": {
+"selector": "#btn-combine-documents",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-track-changes-panel"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab btn-combine-documents opens .de-track-changes-panel (OO Review parity)",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
@@ -3162,7 +3364,19 @@
 "attr": "aria-expanded",
 "equals": "true"
 },
-"subFeatures": null
+"subFeatures": null,
+"contract": {
+"selector": "#btn-chat-panel",
+"assertion": {
+"kind": "dom-mutation",
+"selector": ".de-left-panel-chat"
+},
+"pre": "canvas-type",
+"woTab": "collaboration",
+"post": "",
+"note": "Collaboration tab Chat opens the left chat panel",
+"xfail": false
+}
 },
 {
 "tab": "tab:review",
