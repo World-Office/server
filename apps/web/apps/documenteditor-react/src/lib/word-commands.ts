@@ -685,7 +685,16 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.toggleRightPanel("word-count")
         return
       case "setDocumentLanguage":
+        // Real document-language path (GL2-1): apply the language, then
+        // disclose the document-language picker — the OO "Language" dialog the
+        // statusbar renders (select#doc-lang, opened through the
+        // world-office:doc-language event). The ctx-menu "Select language" row
+        // and the ribbon Language button both dispatch this command, so every
+        // surface opens the same picker instead of the plugins panel.
         documentStore.setLanguage(value || "en-US")
+        window.dispatchEvent(
+          new CustomEvent("world-office:doc-language", { detail: { open: true } }),
+        )
         return
       case "toggleMultiplePages":
         documentStore.toggleMultiplePages()
@@ -940,11 +949,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "wordCount":
         // Word count - show word count dialog or open a panel
-        // For now, open the plugins panel as a placeholder
-        documentStore.toggleRightPanel("plugins")
-        return
-      case "setDocumentLanguage":
-        // Set document language - open language selection dialog
         // For now, open the plugins panel as a placeholder
         documentStore.toggleRightPanel("plugins")
         return

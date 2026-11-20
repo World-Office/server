@@ -100,6 +100,14 @@ export class DocumentStore {
 
   /* Language */
   languageCode = "en-US"
+  /**
+   * Document-language picker (OO "Language" dialog) open flag. One store
+   * field so every surface that discloses the picker — the statusbar language
+   * control (#sb-lang), the ctx-menu "Select language" row and the ribbon
+   * Language button, which all run the setDocumentLanguage command — opens
+   * the same picker over the same languageCode.
+   */
+  isDocLangPickerOpen = false
 
   /* Word count */
   wordCount = 0
@@ -345,6 +353,27 @@ export class DocumentStore {
 
   setLanguage(code: string): void {
     this.setLanguageCode(code)
+  }
+
+  /**
+   * Open the document-language picker. Called by the statusbar language
+   * control and by the world-office:doc-language event the
+   * setDocumentLanguage command dispatches (ctx-menu "Select language" row,
+   * ribbon Language button).
+   */
+  openDocLanguagePicker(): void {
+    this.isDocLangPickerOpen = true
+  }
+
+  /** Close the document-language picker (Escape, outside click, OK/Cancel). */
+  closeDocLanguagePicker(): void {
+    this.isDocLangPickerOpen = false
+  }
+
+  /** Apply a language picked in the picker and close it. */
+  applyDocLanguage(code: string): void {
+    this.setLanguageCode(code)
+    this.isDocLangPickerOpen = false
   }
 
   setWordCount(count: number): void {
