@@ -421,6 +421,15 @@ async function checkEffect(page, ov, assertion) {
         const was = window.__woFocus0;
         return { ok: !!was && was !== now, observed: `focus ${was} -> ${now}` };
       }), undefined, undefined);
+    case 'rev-bump':
+      // canvas-editor engine mutation contracts: before-state captured
+      // in the trigger via __woRev0; pass iff the [data-wo-rev] counter
+      // bumped (WASM engine applied the op, e.g. Ctrl+B bold in canvas mode)
+      return poll(page, () => page.evaluate(() => {
+        const rev = document.querySelector('[data-wo-rev]')?.getAttribute('data-wo-rev') || '';
+        const was = window.__woRev0;
+        return { ok: !!was && was !== rev, observed: `rev ${was} -> ${rev}` };
+      }), undefined, undefined);
     case 'clipboard': {
       // headless clipboard: _boot grants clipboard-read/write permissions;
       // row asserts the system-clipboard payload (ctx copy/copy-hyperlink)
@@ -541,6 +550,22 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // then presence + hit-test (elementFromPoint, not just DOM)
       const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
+      else if (ov.pre === 'canvas-type') {
+        // canvas editor: type real text and select it so a format chord has
+        // something to mutate (the WASM doc lives off-DOM; placeCaret alone
+        // leaves an empty selection that formats as a no-op)
+        const canvas = await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          const c = ed && ed.querySelector('canvas');
+          if (c) c.focus();
+          return !!c;
+        });
+        if (!canvas) throw new Error('canvas-type pre: no canvas surface');
+        await page.keyboard.type('Hello canvas paragraph text.');
+        await sleep(120);
+        await page.keyboard.press('Control+a');
+        await sleep(120);
+      }
       else if (ov.pre === 'list') {
         // 'list' — build a two-item ordered list with the caret in the second
         // item (contracts like multilevel-list nesting need real list state)
@@ -809,11 +834,13 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       else if (ov.pre === 'dirty-undo') {
         // redo needs an UNDONE change in the stack: type, then undo — the
-        // trigger key (Ctrl+Y/Ctrl+Shift+Z) should redo it back
+        // trigger key (Ctrl+Y/Ctrl+Shift+Z) should redo it back. Canvas
+        // editor: focus the <canvas> (the keydown handler lives there).
         await page.evaluate(() => {
           const ed = document.querySelector('#editor');
           if (!ed) throw new Error('#editor missing');
-          ed.focus();
+          const c = ed.querySelector('canvas');
+          if (c) c.focus(); else ed.focus();
         });
         await page.keyboard.type('zz ');
         await page.keyboard.press('Control+z'); // editor's own undo handler owns the stack
@@ -1715,12 +1742,13 @@ async function subFeatureAudit(page, ov, dialogSel) {
           // keyboard shortcut contract: dispatch a real key chord (handlers
           // listen on #editor — placeCaret focuses it and selects word 1)
           if (!preMenu) placeCaret(page);
-          // selection-moved: caret/selection contracts need the BEFORE state
-          if ((ov.assertion || {}).kind === 'selection-moved' || (ov.assertion || {}).kind === 'focus-moved') {
+          // selection-moved/focus-moved/rev-bump: need BEFORE state
+          if ((ov.assertion || {}).kind === 'selection-moved' || (ov.assertion || {}).kind === 'focus-moved' || (ov.assertion || {}).kind === 'rev-bump') {
             return page.evaluate(() => {
               const s = window.getSelection();
               window.__woSel0 = [s.anchorOffset, s.focusOffset, (s.anchorNode && s.anchorNode.data) || (s.anchorNode && s.anchorNode.nodeName) || '', s.isCollapsed, Math.round(window.scrollY)];
               window.__woFocus0 = (document.activeElement && (document.activeElement.id || document.activeElement.tagName)) || '';
+              window.__woRev0 = document.querySelector('[data-wo-rev]')?.getAttribute('data-wo-rev') || '';
             }).then(() => page.keyboard.press(key))
               .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
           }
@@ -1741,13 +1769,14 @@ async function subFeatureAudit(page, ov, dialogSel) {
           }, { sel: selector, val: ov.setValue })
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
-        // click contracts for selection-moved/focus-moved need the BEFORE
-        // snapshot (Select all, ctx Select…) — chained, trigger is sync
-        const snapFirst = ((ov.assertion||{}).kind==='selection-moved' || (ov.assertion||{}).kind==='focus-moved')
+        // click contracts for selection-moved/focus-moved/rev-bump need the BEFORE
+        // snapshot (Select all, ctx Select, Ctrl+B in canvas mode) - chained, trigger is sync
+        const snapFirst = ((ov.assertion||{}).kind==='selection-moved' || (ov.assertion||{}).kind==='focus-moved' || (ov.assertion||{}).kind==='rev-bump')
           ? page.evaluate(() => {
               const s=window.getSelection();
               window.__woSel0=[s.anchorOffset,s.focusOffset,(s.anchorNode&&s.anchorNode.data)||(s.anchorNode&&s.anchorNode.nodeName)||'',s.isCollapsed,Math.round(window.scrollY)];
               window.__woFocus0=(document.activeElement&&(document.activeElement.id||document.activeElement.tagName))||'';
+              window.__woRev0=document.querySelector('[data-wo-rev]')?.getAttribute('data-wo-rev')||'';
             })
           : Promise.resolve();
         return snapFirst

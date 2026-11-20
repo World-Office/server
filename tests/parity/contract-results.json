@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-20T06:22:46.354Z",
+ "ranAt": "2026-11-20T13:58:47.485Z",
  "total": 668,
- "pass": 9,
- "knownGap": 0,
- "retarget": 659,
+ "pass": 52,
+ "knownGap": 2,
+ "retarget": 614,
  "fail": 0,
  "results": [
   {
@@ -231,60 +231,60 @@
    "feature": "formatting.bold-ctrl-b",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "italic",
    "feature": "formatting.italic-ctrl-i",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "underline",
    "feature": "formatting.underline-ctrl-u",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "strikethrough",
    "feature": "formatting.strikethrough-ctrl-5",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "superscript",
    "feature": "formatting.superscript-ctrl",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "subscript",
    "feature": "formatting.subscript-ctrl",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "highlight-color",
@@ -321,10 +321,10 @@
    "feature": "formatting.bullets",
    "tab": "tab:home",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "formatting.numbering",
@@ -351,20 +351,20 @@
    "feature": "formatting.decrease-indent-ctrl-shift-m",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "indent",
    "feature": "formatting.increase-indent-ctrl-m",
    "tab": "tab:home",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "line-spacing",
@@ -391,40 +391,40 @@
    "feature": "formatting.align-left-ctrl-l",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "justifycenter",
    "feature": "formatting.align-center-ctrl-e",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "justifyright",
    "feature": "formatting.align-right-ctrl-r",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "justifyfull",
    "feature": "formatting.justified-ctrl-j",
    "tab": "tab:home",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "btn-home-formatmarks",
@@ -2701,20 +2701,20 @@
    "feature": "shortcut.insertlinebreak",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+shift+enter",
    "feature": "shortcut.insertcolumnbreak",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.equationaddplaceholder",
@@ -2791,20 +2791,20 @@
    "feature": "shortcut.editundo",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.editredo",
    "feature": "shortcut.editredo",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 4 -> 5"
   },
   {
    "token": "shortcut.copyformat",
@@ -3021,30 +3021,30 @@
    "feature": "shortcut.bold",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "ctrl+i",
    "feature": "shortcut.italic",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "ctrl+u",
    "feature": "shortcut.underline",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "ctrl+shift+k",
@@ -3081,20 +3081,20 @@
    "feature": "shortcut.applylistbullet",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.resetchar",
    "feature": "shortcut.resetchar",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+]",
@@ -3121,70 +3121,70 @@
    "feature": "shortcut.centerpara",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+j",
    "feature": "shortcut.justifypara",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+r",
    "feature": "shortcut.rightpara",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+l",
    "feature": "shortcut.leftpara",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+enter",
    "feature": "shortcut.insertpagebreak",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+m",
    "feature": "shortcut.indent",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+shift+m",
    "feature": "shortcut.unindent",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.insertpagenumber",
@@ -3343,8 +3343,7 @@
    "cls": "structure",
    "xfail": true,
    "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "shortcut.movetonextcell",
@@ -3591,70 +3590,70 @@
    "feature": "shortcut.deleteleftword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "alt+delete",
    "feature": "shortcut.deleterightword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.cut",
    "feature": "shortcut.cut",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.copy",
    "feature": "shortcut.copy",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"clipboard\",\"contains\":\"Hello canvas\"}",
+   "observed": ""
   },
   {
    "token": "shortcut.paste",
    "feature": "shortcut.paste",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+shift+v",
    "feature": "shortcut.pastetextwithoutformat",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.strikeout",
    "feature": "shortcut.strikeout",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.selectrightword",
@@ -3681,30 +3680,30 @@
    "feature": "shortcut.applyheading1",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+alt+2",
    "feature": "shortcut.applyheading2",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "ctrl+alt+3",
    "feature": "shortcut.applyheading3",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.littlemoveobjectleft",
@@ -3771,10 +3770,10 @@
    "feature": "shortcut.replaceunicodetosymbol",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.movetonextpage",
@@ -3803,8 +3802,7 @@
    "cls": "structure",
    "xfail": true,
    "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "shortcut.emdash",
@@ -3871,30 +3869,30 @@
    "feature": "formatting.heading-1",
    "tab": "style-gallery",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "applyheading2",
    "feature": "formatting.heading-2",
    "tab": "style-gallery",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "applyheading3",
    "feature": "formatting.heading-3",
    "tab": "style-gallery",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 0 -> 1"
   },
   {
    "token": "ctx.insert-caption",

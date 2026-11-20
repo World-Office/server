@@ -908,6 +908,31 @@ const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEdi
           dispatchWoCommand("previousFileTab")
           return
         }
+        // ── OO paragraph/format chords → shared wo-command router ──────
+        // These were not chord-bound: the WASM engine only understands a
+        // few modifiers (bold/italic/underline/undo), so Ctrl+E/L/R/J/M etc.
+        // silently no-op'd while their ribbon buttons worked. Route them
+        // through the same router as the buttons (word-commands.ts owns the
+        // behavior) — ribbon button and chord stay one code path.
+        if (e.altKey) {
+          const alt = { "1": "heading1", "2": "heading2", "3": "heading3",
+                        d: "insertEndnote", f: "insertFootnote" }[keyStr]
+          if (alt) { e.preventDefault(); dispatchWoCommand(alt); return }
+        } else {
+          const plain = { e: "alignCenter", E: "alignCenter",
+                          j: "alignJustify", J: "alignJustify",
+                          r: "alignRight", R: "alignRight",
+                          l: "alignLeft", L: "alignLeft",
+                          m: "indent", M: "indent" }[keyStr]
+          if (plain) { e.preventDefault(); dispatchWoCommand(plain); return }
+          if (e.shiftKey) {
+            const shift = { m: "outdent", M: "outdent",
+                            x: "strike", X: "strike",
+                            l: "bulletList", L: "bulletList" }[keyStr]
+            if (shift) { e.preventDefault(); dispatchWoCommand(shift); return }
+          }
+          if (keyStr === " " && !e.shiftKey) { e.preventDefault(); dispatchWoCommand("clearFormatting"); return }
+        }
       }
 
       // Ignore modifier-only keys and escape
