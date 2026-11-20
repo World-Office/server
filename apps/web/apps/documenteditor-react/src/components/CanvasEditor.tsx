@@ -99,53 +99,6 @@ function dispatchWoCommand(command: string, value?: string): void {
   window.dispatchEvent(new CustomEvent("wo-command", { detail: { command, value } }))
 }
 
-/**
- * OnlyOffice paste-special option ids (the OO `SpecialOptions*` shortcut
- * rows: KeepSourceFormat / KeepTextOnly / OverwriteCells / NestTable).
- *
- * The canvas engine's paste is a text insert (no HTML clipboard pipeline),
- * so each option maps to the closest real engine behaviour — the applied
- * option is published on the editor root (`data-wo-paste-option`), reported
- * in the statusbar, and emitted as a `wo:paste-special` window event so the
- * parity/census layer can observe which OO row a paste used.
- */
-export type WoPasteOption =
-  | "keep-source-format"
-  | "keep-text-only"
-  | "overwrite-cells"
-  | "nest-table"
-
-export const WO_PASTE_OPTIONS: ReadonlyArray<{
-  id: WoPasteOption
-  label: string
-  hint: string
-}> = [
-  {
-    id: "keep-source-format",
-    label: "Keep source formatting",
-    hint: "Paste keeping the source structure (paragraph breaks)",
-  },
-  {
-    id: "keep-text-only",
-    label: "Keep text only",
-    hint: "Paste a single plain run, flattening line breaks",
-  },
-  {
-    id: "overwrite-cells",
-    label: "Overwrite cells",
-    hint: "Replace the selection, then paste (table paste option)",
-  },
-  {
-    id: "nest-table",
-    label: "Nest table",
-    hint: "Paste as its own block below the cursor (table paste option)",
-  },
-]
-
-/** Dispatch a command into the shared wo-command router (word-commands.ts). */
-function dispatchWoCommand(command: string, value?: string): void {
-  window.dispatchEvent(new CustomEvent("wo-command", { detail: { command, value } }))
-}
 
 /**
  * CanvasEditor renders a DOCX document as a series of <canvas> pages,

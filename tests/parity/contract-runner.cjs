@@ -10,6 +10,47 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
+
+// GL2-2 (2026-11-20): the parity lane boots its own editor UI. _boot.cjs's
+// default still names the retired vanilla bundle
+// (apps/web/apps/documenteditor-wysiwyg — moved to
+// legacy/wysiwyg-python-editor on 2026-11-16) and now throws, so stage the
+// UI root here, in preference order:
+//   1. $EDITOR_UI_DIR (explicit, wins untouched)
+//   2. the React canvas editor build that /word/ ships today
+//      (apps/web/apps/documenteditor-react/dist — see make-editor-ui.sh)
+//   3. the retired vanilla bundle materialized from git history, so a fresh
+//      clone can still run the legacy DOM-contract lane
+function stageEditorUi() {
+  const root = fs.mkdtempSync(require('os').tmpdir() + '/wo-parity-ui-');
+  const link = (dir) => { fs.symlinkSync(dir, path.join(root, 'word')); return root; };
+  const react = path.resolve(__dirname, '../../apps/web/apps/documenteditor-react/dist');
+  if (fs.existsSync(path.join(react, 'index.html'))) {
+    console.log(`parity UI: react canvas editor (${react})`);
+    return link(react);
+  }
+  const rev = '8ff5874f4^'; // last main commit that carried the vanilla bundle
+  const prefix = 'apps/web/apps/documenteditor-wysiwyg/';
+  let files = [];
+  try {
+    files = execFileSync('git', ['-C', path.resolve(__dirname, '../..'), 'ls-tree', '-r', '--name-only', rev, prefix],
+      { encoding: 'utf8' }).split('\n').filter(Boolean);
+  } catch (err) { /* no git history (shallow clone) — fall through */ }
+  if (files.length) {
+    const out = path.join(root, 'word');
+    for (const f of files) {
+      const rel = f.slice(prefix.length);
+      const dest = path.join(out, rel);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, execFileSync('git', ['-C', path.resolve(__dirname, '../..'), 'show', `${rev}:${f}`]));
+    }
+    console.log(`parity UI: retired vanilla bundle from git history ${rev} (${files.length} files)`);
+    return root;
+  }
+  throw new Error('parity UI: no editor bundle — build apps/web/apps/documenteditor-react (pnpm build) or set EDITOR_UI_DIR');
+}
+if (!process.env.EDITOR_UI_DIR) process.env.EDITOR_UI_DIR = stageEditorUi();
 const { ensureServer, launchBrowser, openEditor } = require('./_boot.cjs');
 
 const args = process.argv.slice(2);
@@ -24,7 +65,23 @@ const manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
 const overrides = require('./overrides-loader.cjs').loadOverrides(__dirname).entries;
 
 const RUNNABLE = new Set(['format', 'structure', 'dialog', 'op', 'view']);
+// contractFor — the executable spec for one manifest row. Precedence:
+//   1. the manifest entry's own `contract` block (GL2-2: a promoted row
+//      carries its VERIFIED spec in word-parity-contracts.json, which also
+//      supersedes a stale drop-in xfail — without this, a row whose
+//      behaviour was ported would stay a "known-gap (not driven)" forever
+//      because the drop-in files are owned by other agents)
+//   2. the overrides drop-in / base (selector/pre/key/assertion/xfail)
+function contractFor(e) {
+  const base = overrides[e.token] || overrides[e.feature] || null;
+  const spec = e.contract;
+  if (!spec) return base;
+  const merged = { ...(base || {}), ...spec };
+  if (spec.xfail !== true) merged.xfail = false; // promoted => driven for real
+  return merged;
+}
 let entries = manifest.entries.filter(e => {
+  if (e.contract) return RUNNABLE.has(e.effektClass); // manifest-promoted row
   // same key precedence as generate-manifest: binding token, then feature id
   const ov = overrides[e.token] || overrides[e.feature];
   if (!ov) return false; // no override => no executable contract yet
@@ -83,15 +140,55 @@ function resolveFixtureFile(name) {
 
 function placeCaret(page) {
   return page.evaluate(() => {
-    const sel = window.getSelection(); const r = document.createRange();
-    const walker = document.createTreeWalker(document.querySelector('#editor'), NodeFilter.SHOW_TEXT);
+    const ed = document.querySelector('#editor');
+    if (!ed) throw new Error('#editor missing');
+    // Canvas editor (documenteditor-react): the document lives in the WASM
+    // engine, #editor holds <canvas> pages and no selectable text nodes —
+    // focus the canvas surface so a key chord reaches the editor's own key
+    // handler (that IS the caret context for a canvas editor).
+    const canvas = ed.querySelector('canvas');
+    const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
       const txt = node.textContent.trim();
-      if (txt.length >= 2) { r.setStart(node, 0); r.setEnd(node, Math.min(4, txt.length)); sel.removeAllRanges(); sel.addRange(r); return; }
+      if (txt.length >= 2) {
+        const sel = window.getSelection(); const r = document.createRange();
+        r.setStart(node, 0); r.setEnd(node, Math.min(4, txt.length));
+        sel.removeAllRanges(); sel.addRange(r);
+        if (canvas) canvas.focus();
+        return;
+      }
     }
+    if (canvas) { canvas.focus(); return; }
     throw new Error('no text node in #editor to place the caret');
   });
+}
+
+// chordFromProse — ledger shortcut rows describe the WO binding in PROSE
+// ("Ctrl+P opens native print dialog (WO window.print)", "Ctrl+V default
+// rich paste; Ctrl+K = hyperlink (OO collision)"), not as a control id.
+// Parse the first chord out of that prose into a Playwright key descriptor
+// so a shortcut contract without an explicit override `key` is still driven
+// by the real chord. Returns null when the prose names no chord (those rows
+// are honest "no WO binding" gaps).
+function chordFromProse(prose) {
+  if (typeof prose !== 'string') return null;
+  const MOD = { Ctrl: 'Control', Cmd: 'Meta', Control: 'Control', Meta: 'Meta', Alt: 'Alt', Shift: 'Shift' };
+  const KEY = /^(?:[A-Za-z]|[0-9]|F\d+|Arrow(?:Up|Down|Left|Right)|PageUp|PageDown|Tab|Enter|Escape|Space|Minus|Plus|Delete|Home|End)$/;
+  const tokens = prose.match(/\b(?:Ctrl|Cmd|Control|Meta|Alt|Shift)(?:\+(?:Ctrl|Cmd|Control|Meta|Alt|Shift))*\+[A-Za-z0-9]+\b/g) || [];
+  const token = tokens.find((t) => {
+    const p = t.split('+');
+    return KEY.test(p[p.length - 1]);
+  });
+  if (!token) return null;
+  const parts = token.split('+');
+  const key = parts.pop();
+  const mods = [...new Set(parts.map((m) => MOD[m]))];
+  const normKey = /^[a-z]$/.test(key) ? `Key${key.toUpperCase()}`
+    : /^[A-Z]$/.test(key) ? `Key${key}`
+    : /^[0-9]$/.test(key) ? `Digit${key}`
+    : key;
+  return [...mods, normKey].join('+');
 }
 
 async function poll(page, fn, ms = 3000, step = 150) {
@@ -268,6 +365,33 @@ async function checkEffect(page, ov, assertion) {
         return { ok, observed: ok ? `text matches ${JSON.stringify(a.contains || '(nonempty)')}${a.lacks ? ` and lacks ${JSON.stringify(a.lacks)}` : ''}${a.empty ? ' and is empty' : ''}` : `text mismatch (contains=${a.contains}, lacks=${a.lacks}, empty=${a.empty})` };
       }, assertion));
     }
+    case 'dom-style': {
+      // canvas-editor surfaces toggle state on an ANCESTOR box (the React
+      // FileMenu renders every panel and flips display:none on the panel's
+      // own content box), so `closest` walks up to the box that carries the
+      // visible state.
+      return poll(page, () => page.evaluate((a) => {
+        let el = document.querySelector(a.selector);
+        if (el && a.closest) el = el.closest(a.closest);
+        if (!el) return { ok: false, observed: `no ${a.selector}` };
+        const v = getComputedStyle(el)[a.prop];
+        return { ok: v === a.equals, observed: `${a.prop}=${v}`, expected: `${a.prop}=${a.equals}` };
+      }, assertion));
+    }
+    case 'dom-attr': {
+      // attribute state on the editor root — the canvas editor publishes the
+      // applied paste-special option (data-wo-paste-option) and the active
+      // document tab (data-wo-file-tab/-move) there, after a real engine
+      // mutation (see CanvasEditor.markPasteOption / cycleFileTab).
+      return poll(page, () => page.evaluate((a) => {
+        const el = document.querySelector(a.selector);
+        if (!el) return { ok: false, observed: `no ${a.selector}` };
+        const want = a.attrs || { [a.attr]: a.equals };
+        const got = {}; let ok = true;
+        for (const k of Object.keys(want)) { got[k] = el.getAttribute(k); if (got[k] !== want[k]) ok = false; }
+        return { ok, observed: ok ? `attrs ${JSON.stringify(got)}` : `attrs ${JSON.stringify(got)}`, expected: JSON.stringify(want) };
+      }, assertion));
+    }
     case 'op-emitted':
       return poll(page, (ev) => page.evaluate((name) => ({
         ok: (window.__woEvents || []).includes(name),
@@ -355,10 +479,39 @@ async function subFeatureAudit(page, ov, dialogSel) {
   const results = [];
   let fails = 0;
 
+  // Editor-capability probe (GL2-2). The pre-react overrides were written
+  // against the legacy parity DOM contract (#status, .dialog-overlay,
+  // #ctx-menu, the 100+ data-cmd controls). /word/ serves the React canvas
+  // editor since 2026-11-16, which does not implement that DOM: driving
+  // those rows there yields hundreds of "control not found" FAILs that say
+  // nothing about the editor. Such rows are instead recorded as RETARGET
+  // known-gaps (an explicit port backlog), and only rows carrying a
+  // react-port spec (manifest `contract`) are driven for real.
+  const caps = await page.evaluate(() => ({
+    status: !!document.querySelector('#status'),
+    dialogOverlay: !!document.querySelector('.dialog-overlay'),
+  }));
+  const legacyDom = caps.status && caps.dialogOverlay;
+  if (!legacyDom) {
+    console.log('parity lane: react canvas editor detected (no #status/.dialog-overlay) — legacy-DOM rows are recorded as retarget gaps');
+  }
+
   for (const e of entries) {
-    const ov = overrides[e.token] || overrides[e.feature] || {};
+    const ov = contractFor(e) || {};
     const woTab = ov.woTab || e.woTab;
     const res = { token: e.token, feature: e.feature, tab: e.tab, cls: e.effektClass, xfail: !!ov.xfail };
+    if (!legacyDom && !e.contract) {
+      res.ok = false; res.retarget = true; res.xfail = true;
+      res.observed = 'retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest "contract") before it can be verified again';
+      results.push(res); continue;
+    }
+    if (legacyDom && e.contract && e.contract.ui === 'react') {
+      // a react-port spec driven against the legacy bundle would only FAIL:
+      // its selectors/assertions name the canvas editor's surfaces
+      res.ok = false; res.xfail = true;
+      res.observed = 'react-editor contract: the served editor is the legacy vanilla bundle (contract.ui=react)';
+      results.push(res); continue;
+    }
     // xfail fast-path: known gaps are counted without driving the page —
     // at CI scale their hidden-control scroll waits dominate the runtime.
     // Set WO_RUN_XFAILS=1 to exercise them for real (vocabulary debugging).
@@ -1436,8 +1589,12 @@ async function subFeatureAudit(page, ov, dialogSel) {
         }, woTab);
         if (needsClick) { await page.click(`.ribbon-tab[data-tab="${woTab}"]`); await sleep(150); }
       }
-      const selector = ov.selector || `[data-cmd="${e.wo}"]`;
-      if (!ov.key) {
+      // data-cmd="[object Object]": e.wo is the {match,where} ledger join object whose wo.match is PROSE for shortcut rows — never interpolate it into a click selector; prose rows resolve to a KEY CHORD instead (chordFromProse).
+      const woToken = e.wo && typeof e.wo.match === 'string' && !e.wo.match.includes(' ') ? e.wo.match : null;
+      const key = ov.key || chordFromProse(e.wo && e.wo.match);
+      const selector = ov.selector || (woToken ? `[data-cmd="${woToken}"]` : null);
+      if (!key && !selector) throw new Error(`no trigger: neither a control selector nor a chord (wo.match=${JSON.stringify(e.wo && e.wo.match)})`);
+      if (!key) {
       const loc = page.locator(selector).first();
       if (await loc.count() === 0) throw new Error(`control not found: ${selector}`);
       // hidden/unstable controls (contextual ctx items) never scroll into
@@ -1512,6 +1669,8 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('wo:style-from-format', window.__woCollect);
           window.addEventListener('wo:print-selection', window.__woCollect);
           window.addEventListener('wo:close-document', window.__woCollect);
+          window.addEventListener('wo:paste-special', window.__woCollect);
+          window.addEventListener('wo:file-tab', window.__woCollect);
         });
       }
 
@@ -1531,7 +1690,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // would collapse it before the command handler runs). One retry for
       // cold-boot races (caret not settled, dialog open animation).
       const trigger = () => {
-        if (ov.key) {
+        if (key) {
           // keyboard shortcut contract: dispatch a real key chord (handlers
           // listen on #editor — placeCaret focuses it and selects word 1)
           if (!preMenu) placeCaret(page);
@@ -1541,10 +1700,10 @@ async function subFeatureAudit(page, ov, dialogSel) {
               const s = window.getSelection();
               window.__woSel0 = [s.anchorOffset, s.focusOffset, (s.anchorNode && s.anchorNode.data) || (s.anchorNode && s.anchorNode.nodeName) || '', s.isCollapsed, Math.round(window.scrollY)];
               window.__woFocus0 = (document.activeElement && (document.activeElement.id || document.activeElement.tagName)) || '';
-            }).then(() => page.keyboard.press(ov.key))
+            }).then(() => page.keyboard.press(key))
               .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
           }
-          return page.keyboard.press(ov.key)
+          return page.keyboard.press(key)
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
         if (!preMenu) placeCaret(page);
@@ -1637,11 +1796,13 @@ async function subFeatureAudit(page, ov, dialogSel) {
   await browser.close();
   if (server.owned && server.child) server.child.kill('SIGKILL');
 
+  const retargeted = results.filter(r => r.retarget);
   const summary = {
     ranAt: new Date().toISOString(),
     total: results.length,
     pass: results.filter(r => r.ok).length,
-    knownGap: results.filter(r => !r.ok && r.xfail).length,
+    knownGap: results.filter(r => !r.ok && r.xfail && !r.retarget).length,
+    retarget: retargeted.length,
     fail: fails,
     results,
   };
@@ -1653,6 +1814,10 @@ async function subFeatureAudit(page, ov, dialogSel) {
   if (drift.length) {
     console.log(`\nWARNING (non-blocking): ${drift.length} census entries still unclassified — parity backlog:`);
     console.log('  ' + drift.join(', '));
+  }
+  if (retargeted.length) {
+    console.log(`\nWARNING (retarget): ${retargeted.length} rows were NOT driven — the served editor is the React canvas editor and does not implement the legacy parity DOM contract (#status/.dialog-overlay/#ctx-menu/data-cmd vocabulary).`);
+    console.log('  Each needs a react-port spec (a `contract` block on its word-parity-contracts.json entry) before it can be verified again.');
   }
   fs.writeFileSync(RESULTS, JSON.stringify(summary, null, 1) + '\n');
   console.log(`\ncontract-results: ${summary.pass} pass, ${summary.knownGap} known-gap, ${fails} FAIL -> ${path.basename(RESULTS)}`);
