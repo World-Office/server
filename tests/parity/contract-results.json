@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-20T23:51:58.452Z",
+ "ranAt": "2026-11-21T10:22:12.929Z",
  "total": 668,
- "pass": 108,
+ "pass": 112,
  "knownGap": 0,
- "retarget": 560,
+ "retarget": 556,
  "fail": 0,
  "results": [
   {
@@ -4381,10 +4381,10 @@
    "feature": "ctx.link",
    "tab": "ctx-menu",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"#cross-reference-panel\"}",
+   "observed": "found"
   },
   {
    "token": "ctx.edit-link",
@@ -4551,20 +4551,20 @@
    "feature": "ctx.paragraph-advanced-settings",
    "tab": "ctx-menu",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"}",
+   "observed": "found"
   },
   {
    "token": "ctx.formatting-as-style",
    "feature": "ctx.formatting-as-style",
    "tab": "ctx-menu",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-styles-panel\"}",
+   "observed": "found"
   },
   {
    "token": "ctx.create-new-style",
@@ -4611,10 +4611,10 @@
    "feature": "ctx.add-comment",
    "tab": "ctx-menu",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-comments-panel\"}",
+   "observed": "found"
   },
   {
    "token": "ctx.follow-move",

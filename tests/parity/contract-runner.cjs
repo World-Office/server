@@ -548,7 +548,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'canvas-type') {
         // canvas editor: type real text and select it so a format chord has
@@ -609,6 +609,31 @@ async function subFeatureAudit(page, ov, dialogSel) {
         if (!r) throw new Error('ctx-menu-in-list pre: no selection rect');
         await page.mouse.click(r.x, r.y, { button: 'right' });
         await page.waitForSelector('#ctx-menu:not([hidden])', { timeout: 3000 });
+        await sleep(150);
+      }
+      else if (ov.pre === 'ctx-menu-react') {
+        // react canvas editor text context menu (TextContextMenu): the
+        // editor renders <canvas> pages inside #editor; isTextTarget matches
+        // #editor so a right-click on the page opens .wo-text-context-menu
+        // with [data-row-id] rows that dispatch wo-command. Type text so
+        // the caret/selection exists, then dispatch contextmenu on the
+        // canvas (Playwright right-click on a bare canvas is reliable here).
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          const c = ed.querySelector('canvas');
+          if (!c) throw new Error('ctx-menu-react pre: no canvas surface');
+          c.focus();
+        });
+        await page.keyboard.type('Hello canvas context menu text.');
+        await sleep(120);
+        // right-click the canvas center (Playwright's mouse.click at a fixed
+        // viewport point can land off the page — the canvas locator is safe)
+        const c = page.locator('#editor canvas').first();
+        const box = await c.boundingBox();
+        if (!box) throw new Error('ctx-menu-react pre: no canvas box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+        await page.waitForSelector('.wo-text-context-menu', { timeout: 3000 });
         await sleep(150);
       }
       else if (ov.pre === 'in-table-last') {

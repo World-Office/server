@@ -115,8 +115,12 @@ export function isTextTarget(target: EventTarget | null): boolean {
   if (isTableTarget(el)) return false
   // Let the image / shape menus own their targets (data-wo-image/-shape).
   if (el.closest("img, svg, [data-wo-image], [data-wo-shape], .wo-shape") !== null) return false
+  // The WASM canvas editor (CanvasEditor) renders document pages as bare
+  // <canvas> inside a root div with id="editor" — no rich-text /
+  // contenteditable wrapper. Include that root so right-click on a page
+  // opens the text menu (OO parity: right-click text -> text menu).
   const editorSurface =
-    ".rich-text-editor, .de-document-canvas, [contenteditable='true'], [data-wo-text]"
+    ".rich-text-editor, .de-document-canvas, [contenteditable='true'], [data-wo-text], #editor"
   return el.closest(editorSurface) !== null
 }
 

@@ -266,6 +266,31 @@ describe("text ctx menu — trigger", () => {
     expect(isTextTarget(null)).toBe(false)
   })
 
+  it("isTextTarget matches the WASM canvas editor surface (#editor)", () => {
+    // The canonical documenteditor-react editor (CanvasEditor) renders pages
+    // as bare <canvas> inside a root div with id="editor" — no
+    // rich-text-editor / contenteditable surface. The text ctx menu must
+    // open there too (OO parity: right-click text -> text menu).
+    const root = document.createElement("div")
+    root.id = "editor"
+    root.innerHTML =
+      '<canvas width="793" height="1123" tabindex="0"></canvas>' +
+      '<canvas width="793" height="1123"></canvas>'
+    document.body.appendChild(root)
+    appended.push(root)
+    const canvas = root.querySelector("canvas")
+    expect(canvas).not.toBeNull()
+    expect(isTextTarget(canvas)).toBe(true)
+    // right-click on the canvas opens the menu
+    const menuHost = mount(createElement(TextContextMenu))
+    act(() => {
+      canvas.dispatchEvent(
+        new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 40, clientY: 60 }),
+      )
+    })
+    expect(menuHost.querySelector('[role="menu"]')).not.toBeNull()
+  })
+
   it("closes on Escape and on an outside mousedown", () => {
     const menuHost = openMenuOnText()
     act(() => {
