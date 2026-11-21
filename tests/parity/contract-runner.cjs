@@ -1792,16 +1792,22 @@ async function subFeatureAudit(page, ov, dialogSel) {
         }
         if (!preMenu) placeCaret(page);
         if (typeof ov.setValue === 'string') {
-          // synthetic-change trigger: <input type=color> handlers listen for
-          // 'change' (editor.js ~10782); a real pick is undrivable headless
-          // and a real click opens the native picker — set the value and
-          // dispatch change instead of clicking
-          return page.evaluate(({ sel, val }) => {
+          // synthetic-change trigger: <input type=color> / <select> onChange
+          // handlers listen for 'change' — a real pick is undrivable
+          // headless, so set the value and dispatch change instead of
+          // clicking. rev-bump needs the BEFORE snapshot first (select
+          // contracts assert the engine applied the value).
+          const snapSel = (ov.assertion || {}).kind === 'rev-bump'
+            ? page.evaluate(() => {
+                window.__woRev0 = document.querySelector('[data-wo-rev]')?.getAttribute('data-wo-rev') || '';
+              })
+            : Promise.resolve();
+          return snapSel.then(() => page.evaluate(({ sel, val }) => {
             const el = document.querySelector(sel);
             if (!el) throw new Error('setValue: control missing ' + sel);
             el.value = val;
             el.dispatchEvent(new Event('change', { bubbles: true }));
-          }, { sel: selector, val: ov.setValue })
+          }, { sel: selector, val: ov.setValue }))
             .then(() => ov.post ? sleep(250).then(() => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) throw new Error('post selector missing: ' + sel); el.click(); }, ov.post)) : null);
         }
         // click contracts for selection-moved/focus-moved/rev-bump need the BEFORE

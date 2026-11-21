@@ -487,7 +487,18 @@
     "equals": "Arial"
    },
    "subFeatures": null,
-   "note": "ledger row: formatting.font — #font-family is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font families' dropdown: trigger click unhides the list, post clicks the Arial menuitem; styleWithCSS is on, so execCommand('fontName') wraps the selected h1 word in <span style=\"font-family: Arial\"> which the runner's closest b,i,u,span,p reader reaches"
+   "note": "ledger row: formatting.font — #font-family is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font families' dropdown: trigger click unhides the list, post clicks the Arial menuitem; styleWithCSS is on, so execCommand('fontName') wraps the selected h1 word in <span style=\"font-family: Arial\"> which the runner's closest b,i,u,span,p reader reaches",
+   "contract": {
+    "selector": "#sel-font-family",
+    "setValue": "Arial",
+    "assertion": {
+     "kind": "rev-bump"
+    },
+    "pre": "canvas-type",
+    "woTab": null,
+    "post": "",
+    "note": "Home font-family select (fluent <select id=sel-font-family>) onChange dispatches wo-command fontFamily; rev-bump proves WASM applied the font"
+   }
   },
   {
    "tab": "tab:home",
@@ -509,7 +520,18 @@
     "equals": "48px"
    },
    "subFeatures": null,
-   "note": "ledger row: formatting.font-size — #font-size is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font sizes' dropdown: post clicks the 36 (HTML size 7) menuitem; styleWithCSS wraps the 32px h1 word in <span style=\"font-size: xxx-large\"> -> computed 48px (same ladder the proven shortcut.increasefontsize row steps to)"
+   "note": "ledger row: formatting.font-size — #font-size is a <select> (no option-set vocabulary), so the contract drives the sibling 'More font sizes' dropdown: post clicks the 36 (HTML size 7) menuitem; styleWithCSS wraps the 32px h1 word in <span style=\"font-size: xxx-large\"> -> computed 48px (same ladder the proven shortcut.increasefontsize row steps to)",
+   "contract": {
+    "selector": "#sel-font-size",
+    "setValue": "14pt",
+    "assertion": {
+     "kind": "rev-bump"
+    },
+    "pre": "canvas-type",
+    "woTab": null,
+    "post": "",
+    "note": "Home font-size select (sel-font-size) onChange dispatches wo-command fontSize; rev-bump proves WASM applied the size"
+   }
   },
   {
    "tab": "tab:home",
@@ -531,7 +553,8 @@
     "equals": "48px"
    },
    "subFeatures": null,
-   "note": "ledger row: formatting.increment-font-size-ctrl — toolbar A+ button (Ctrl+]) emits fontSizeInc, which steps the HTML size ladder and falls through to runCommand(\"fontSize\"): 32px h1 word -> <span style=\"font-size: xxx-large\"> -> computed 48px (identical effect to the proven shortcut.increasefontsize chord)"
+   "note": "ledger row: formatting.increment-font-size-ctrl — toolbar A+ button (Ctrl+]) emits fontSizeInc, which steps the HTML size ladder and falls through to runCommand(\"fontSize\"): 32px h1 word -> <span style=\"font-size: xxx-large\"> -> computed 48px (identical effect to the proven shortcut.increasefontsize chord)",
+   "contract": null
   },
   {
    "tab": "tab:home",
@@ -553,7 +576,8 @@
     "equals": "24px"
    },
    "subFeatures": null,
-   "note": "ledger row: formatting.decrement-font-size-ctrl — toolbar A- button (Ctrl+[) emits fontSizeDec: 32px h1 word -> <span style=\"font-size: x-large\"> -> computed 24px (identical effect to the proven shortcut.decreasefontsize chord)"
+   "note": "ledger row: formatting.decrement-font-size-ctrl — toolbar A- button (Ctrl+[) emits fontSizeDec: 32px h1 word -> <span style=\"font-size: x-large\"> -> computed 24px (identical effect to the proven shortcut.decreasefontsize chord)",
+   "contract": null
   },
   {
    "tab": "tab:home",
@@ -1031,7 +1055,18 @@
      "selector": "[name=widow]"
     }
    ],
-   "note": "ledger row promoted (L2N-01): the #line-spacing select carries a trailing value=options entry ('Line spacing options…', index.html) whose change handler (editor.js) opens openParagraphSettingsDialog -> #paragraph-settings-dialog, mirroring OO's line-spacing picker leading to the paragraph dialog. setValue drives it headless (a plain .click() on a <select> fires no change); the dialog now carries the OO Spacing group fields — before/after number inputs (name=spacing-before/spacing-after -> margin-top/bottom via applyParagraphSettings) and the widow/orphan checkbox (name=widow -> class widow-control) alongside the pre-existing first-line/line-spacing/keeps. Residual divergence: OO's dialog also has 'Don't add interval between paragraphs of the same style' (right-panel census); WO defers that to the right panel."
+   "note": "ledger row promoted (L2N-01): the #line-spacing select carries a trailing value=options entry ('Line spacing options…', index.html) whose change handler (editor.js) opens openParagraphSettingsDialog -> #paragraph-settings-dialog, mirroring OO's line-spacing picker leading to the paragraph dialog. setValue drives it headless (a plain .click() on a <select> fires no change); the dialog now carries the OO Spacing group fields — before/after number inputs (name=spacing-before/spacing-after -> margin-top/bottom via applyParagraphSettings) and the widow/orphan checkbox (name=widow -> class widow-control) alongside the pre-existing first-line/line-spacing/keeps. Residual divergence: OO's dialog also has 'Don't add interval between paragraphs of the same style' (right-panel census); WO defers that to the right panel.",
+   "contract": {
+    "selector": "#sel-line-spacing",
+    "setValue": "2",
+    "assertion": {
+     "kind": "rev-bump"
+    },
+    "pre": "canvas-type",
+    "woTab": null,
+    "post": "",
+    "note": "Home paragraph line-spacing select (sel-line-spacing) onChange dispatches wo-command lineSpacing -> OOXML 480/240; rev-bump proves application"
+   }
   },
   {
    "tab": "tab:home",
@@ -1052,7 +1087,18 @@
     "selector": "#editor [style*=\"direction: rtl\"]"
    },
    "subFeatures": null,
-   "note": "ledger row: formatting.text-direction — toolbar RTL button (editor.js:1087) routes through toggleBlockDirection, an inline block-level style write (not an execCommand): the caret block gains style=\"direction: rtl\" (updateActiveStates reads blk.style.direction === 'rtl')"
+   "note": "ledger row: formatting.text-direction — toolbar RTL button (editor.js:1087) routes through toggleBlockDirection, an inline block-level style write (not an execCommand): the caret block gains style=\"direction: rtl\" (updateActiveStates reads blk.style.direction === 'rtl')",
+   "contract": {
+    "selector": "#sel-text-direction",
+    "setValue": "rtl",
+    "assertion": {
+     "kind": "rev-bump"
+    },
+    "pre": "canvas-type",
+    "woTab": null,
+    "post": "",
+    "note": "Home text-direction select (sel-text-direction) onChange dispatches wo-command setTextDirection -> applyStructureOp set-text-direction-rtl; rev-bump proves it"
+   }
   },
   {
    "tab": "tab:home",
