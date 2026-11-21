@@ -1769,7 +1769,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#object-dialog"
@@ -1796,7 +1796,19 @@
      "selector": "#btn-object-ok"
     }
    ],
-   "note": "ledger row: insert.text-box — btn-textbox data-cmd=insertTextbox (index.html:452) → openObjectDialog(\"textbox\") (editor.js:1344, 3704-3728) opens #object-dialog with the textbox preset preselected"
+   "note": "ledger row: insert.text-box — btn-textbox data-cmd=insertTextbox (index.html:452) → openObjectDialog(\"textbox\") (editor.js:1344, 3704-3728) opens #object-dialog with the textbox preset preselected",
+   "contract": {
+    "selector": "#btn-insert-text-box",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"shape\"]"
+    },
+    "note": "insert tab btn-insert-text-box opens shape right panel"
+   }
   },
   {
    "tab": "tab:ins",
@@ -1811,7 +1823,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#object-dialog"
@@ -1838,7 +1850,19 @@
      "selector": "#btn-object-ok"
     }
    ],
-   "note": "ledger row: insert.text-art — btn-textart data-cmd=insertTextart (index.html:455) → openObjectDialog(\"textart\") (editor.js:1345, 3704-3728) opens #object-dialog with the textart preset"
+   "note": "ledger row: insert.text-art — btn-textart data-cmd=insertTextart (index.html:455) → openObjectDialog(\"textart\") (editor.js:1345, 3704-3728) opens #object-dialog with the textart preset",
+   "contract": {
+    "selector": "#btn-insert-text-art",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"textart\"]"
+    },
+    "note": "insert tab btn-insert-text-art opens textart right panel"
+   }
   },
   {
    "tab": "tab:ins",
@@ -2000,7 +2024,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#equation-dialog"
@@ -2023,7 +2047,19 @@
      "selector": "#btn-equation-ok"
     }
    ],
-   "note": "ledger row: insert.equation — editor.js opens #equation-dialog with input + live SVG preview"
+   "note": "ledger row: insert.equation — editor.js opens #equation-dialog with input + live SVG preview",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "insert tab btn-insert-symbol opens plugins right panel"
+   }
   },
   {
    "tab": "tab:ins",
@@ -2038,7 +2074,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#symbol-dialog"
@@ -2061,7 +2097,19 @@
      "selector": "#btn-symbol-close"
     }
    ],
-   "note": "ledger row: insert.symbol — button carries data-wo-cmd=btn-symbol (no data-cmd), wired in editor.js openSymbolDialog -> #symbol-dialog.open"
+   "note": "ledger row: insert.symbol — button carries data-wo-cmd=btn-symbol (no data-cmd), wired in editor.js openSymbolDialog -> #symbol-dialog.open",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "insert tab btn-insert-symbol opens plugins right panel"
+   }
   },
   {
    "tab": "tab:ins",
@@ -2323,13 +2371,25 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "structure",
+   "effektClass": "op",
    "assertion": {
     "kind": "dom-mutation",
     "selector": "#editor .page-break"
    },
    "subFeatures": null,
-   "note": "ledger row: page.breaks — Breaks ▾ 'Insert page break' (identical data-i18n trigger in the insert and layout tabs; the pre opens the first = insert tab's list, matching the ledger binding tab:insert) inserts div.page-break + trailing p via execCommand insertHTML (editor.js:1180)"
+   "note": "ledger row: page.breaks — Breaks ▾ 'Insert page break' (identical data-i18n trigger in the insert and layout tabs; the pre opens the first = insert tab's list, matching the ledger binding tab:insert) inserts div.page-break + trailing p via execCommand insertHTML (editor.js:1180)",
+   "contract": {
+    "selector": "#btn-breaks",
+    "pre": "canvas-type",
+    "woTab": "layout",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "note": "layout tab btn-breaks opens paragraph right panel"
+   }
   },
   {
    "tab": "tab:layout",
@@ -2618,7 +2678,7 @@
     "where": "tab:layout"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#colors-dialog"
@@ -2649,7 +2709,19 @@
      "selector": "#btn-colors-ok"
     }
    ],
-   "note": "ledger row: page.colors — clicking the Color scheme select opens the Color Scheme palette dialog (editor.js themeColorsSel click listener -> openColorsDialog)"
+   "note": "ledger row: page.colors — clicking the Color scheme select opens the Color Scheme palette dialog (editor.js themeColorsSel click listener -> openColorsDialog)",
+   "contract": {
+    "selector": "#btn-document-theme",
+    "pre": "canvas-type",
+    "woTab": "layout",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"theme\"]"
+    },
+    "note": "layout tab btn-document-theme opens theme right panel"
+   }
   },
   {
    "tab": "tab:links",
@@ -4946,7 +5018,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#symbol-dialog"
@@ -4969,7 +5041,19 @@
      "selector": "#btn-symbol-close"
     }
    ],
-   "note": "ledger row: insert.more-symbols — OO reaches the Symbol dialog from the equation gallery's More symbols item; WO's gallery ships no More-symbols entry (census matched the Symbols ▸ trigger instead) — the dialog is one hop away via the adjacent Ω button, #btn-symbol → openSymbolDialog → #symbol-dialog"
+   "note": "ledger row: insert.more-symbols — OO reaches the Symbol dialog from the equation gallery's More symbols item; WO's gallery ships no More-symbols entry (census matched the Symbols ▸ trigger instead) — the dialog is one hop away via the adjacent Ω button, #btn-symbol → openSymbolDialog → #symbol-dialog",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "insert tab btn-insert-symbol opens plugins right panel"
+   }
   },
   {
    "tab": "menu:equation",
@@ -4984,7 +5068,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "[data-wo-id=\"btn-equation\"] .menu-list"
@@ -5035,7 +5119,19 @@
      "selector": "[data-value=\"matrices\"]"
     }
    ],
-   "note": "ledger row: insert.symbols — the insert-tab Symbols ▾ menu-trigger (editor.js .rb-menu wiring, setMenu) discloses the equation gallery menu-list carrying all 11 template families"
+   "note": "ledger row: insert.symbols — the insert-tab Symbols ▾ menu-trigger (editor.js .rb-menu wiring, setMenu) discloses the equation gallery menu-list carrying all 11 template families",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "insert tab btn-insert-symbol opens plugins right panel"
+   }
   },
   {
    "tab": "menu:equation",
@@ -15239,7 +15335,7 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "insert",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-input",
     "set": [
@@ -15258,7 +15354,19 @@
     }
    },
    "subFeatures": null,
-   "note": "insert.text-box depth: openObjectDialog('textbox') -> confirmObjectDialog inserts div.object[data-type=textbox] carrying the typed label (editor.js:3789) [override-only: no ledger row matched this key]"
+   "note": "insert.text-box depth: openObjectDialog('textbox') -> confirmObjectDialog inserts div.object[data-type=textbox] carrying the typed label (editor.js:3789) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-text-box",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"shape\"]"
+    },
+    "note": "insert tab btn-insert-text-box opens shape right panel"
+   }
   },
   {
    "tab": "insert",
@@ -15270,7 +15378,7 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "insert",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-input",
     "set": [
@@ -15289,7 +15397,19 @@
     }
    },
    "subFeatures": null,
-   "note": "insert.text-art depth: openObjectDialog('textart') preset -> confirmObjectDialog inserts div.object[data-type=textart] (editor.js:1344) [override-only: no ledger row matched this key]"
+   "note": "insert.text-art depth: openObjectDialog('textart') preset -> confirmObjectDialog inserts div.object[data-type=textart] (editor.js:1344) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-text-art",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"textart\"]"
+    },
+    "note": "insert tab btn-insert-text-art opens textart right panel"
+   }
   },
   {
    "tab": "insert",
@@ -16075,14 +16195,26 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "insert",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-action",
     "button": "#btn-equation-cancel",
     "dialog": "#equation-dialog"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.equation — #btn-equation (index.html:462) → openDlg('equation-dialog') (editor.js:13941-13950); #btn-equation-cancel → closeDlg('equation-dialog') (editor.js:13951-13952). [override-only: no ledger row matched this key]"
+   "note": "ledger row: insert.equation — #btn-equation (index.html:462) → openDlg('equation-dialog') (editor.js:13941-13950); #btn-equation-cancel → closeDlg('equation-dialog') (editor.js:13951-13952). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "insert tab btn-insert-symbol opens plugins right panel"
+   }
   },
   {
    "tab": "insert",
@@ -16113,14 +16245,26 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "insert",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-action",
     "button": "#btn-cc-cancel",
     "dialog": "#cc-dialog"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]"
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Checkbox",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Insert tab Content Controls ▾ Checkbox opens form panel (dropdown single-dispatch fix)"
+   }
   },
   {
    "tab": "plugins",
@@ -17455,6 +17599,161 @@
    },
    "subFeatures": null,
    "note": " [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "insert",
+   "ooId": "insert.content-controls.insertCheckboxControl",
+   "label": "Checkbox",
+   "token": "insert.content-controls.insertCheckboxControl",
+   "feature": "insert.content-controls.insertCheckboxControl",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "insert",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dialog-action",
+    "button": "#btn-cc-cancel",
+    "dialog": "#cc-dialog"
+   },
+   "subFeatures": null,
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Checkbox",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Content Controls ▾ Checkbox opens form panel"
+   }
+  },
+  {
+   "tab": "insert",
+   "ooId": "insert.content-controls.insertDropdownControl",
+   "label": "Drop-Down List",
+   "token": "insert.content-controls.insertDropdownControl",
+   "feature": "insert.content-controls.insertDropdownControl",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "insert",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dialog-action",
+    "button": "#btn-cc-cancel",
+    "dialog": "#cc-dialog"
+   },
+   "subFeatures": null,
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Drop-Down List",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Content Controls ▾ Drop-Down List opens form panel"
+   }
+  },
+  {
+   "tab": "insert",
+   "ooId": "insert.content-controls.insertDatePickerControl",
+   "label": "Date Picker",
+   "token": "insert.content-controls.insertDatePickerControl",
+   "feature": "insert.content-controls.insertDatePickerControl",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "insert",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dialog-action",
+    "button": "#btn-cc-cancel",
+    "dialog": "#cc-dialog"
+   },
+   "subFeatures": null,
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Date Picker",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Content Controls ▾ Date Picker opens form panel"
+   }
+  },
+  {
+   "tab": "insert",
+   "ooId": "insert.content-controls.insertPlainTextControl",
+   "label": "Plain Text",
+   "token": "insert.content-controls.insertPlainTextControl",
+   "feature": "insert.content-controls.insertPlainTextControl",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "insert",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dialog-action",
+    "button": "#btn-cc-cancel",
+    "dialog": "#cc-dialog"
+   },
+   "subFeatures": null,
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Plain Text",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Content Controls ▾ Plain Text opens form panel"
+   }
+  },
+  {
+   "tab": "insert",
+   "ooId": "insert.content-controls.insertContentControl",
+   "label": "Rich Text",
+   "token": "insert.content-controls.insertContentControl",
+   "feature": "insert.content-controls.insertContentControl",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "insert",
+   "effektClass": "op",
+   "assertion": {
+    "kind": "dialog-action",
+    "button": "#btn-cc-cancel",
+    "dialog": "#cc-dialog"
+   },
+   "subFeatures": null,
+   "note": "ledger row: insert.content-controls — #btn-contentcontrol (index.html:548) → openDlg('cc-dialog') (editor.js:13371-13372); #btn-cc-cancel → closeDlg (editor.js:13373-13374). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "fluent-item:Rich Text",
+    "pre": "fluent-menu:#btn-insert-content-control",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"form\"]"
+    },
+    "note": "Content Controls ▾ Rich Text opens form panel"
+   }
   }
  ]
 }

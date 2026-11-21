@@ -258,9 +258,10 @@ function DropdownControl({
                 icon={item.icon ? <span>{getInlineIcon(item.icon)}</span> : undefined}
                 onClick={() => {
                   if (item.command) {
-                    window.dispatchEvent(
-                      new CustomEvent("wo-command", { detail: { command: item.command } }),
-                    )
+                    // Single dispatch via dispatch.onCommand (the app routes it
+                    // to wo-command). Once also fired the raw event here, which
+                    // made panel-toggle commands (insertContentControl, …) run
+                    // twice = open then immediately close.
                     dispatch.onCommand(item.command)
                   }
                 }}
@@ -324,9 +325,10 @@ function SplitButtonControl({
                 icon={item.icon ? <span>{getInlineIcon(item.icon)}</span> : undefined}
                 onClick={() => {
                   if (item.command) {
-                    window.dispatchEvent(
-                      new CustomEvent("wo-command", { detail: { command: item.command } }),
-                    )
+                    // Single dispatch via dispatch.onCommand (the app routes it
+                    // to wo-command). Once also fired the raw event here, which
+                    // made panel-toggle commands (insertContentControl, …) run
+                    // twice = open then immediately close.
                     dispatch.onCommand(item.command)
                   }
                 }}

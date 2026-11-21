@@ -548,7 +548,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'canvas-type') {
         // canvas editor: type real text and select it so a format chord has
@@ -1621,6 +1621,35 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.waitForSelector('.ribbon-page .menu-list:not([hidden])', { timeout: 3000 });
         await sleep(150);
       }
+      else if ((ov.pre || '').startsWith('fluent-menu:')) {
+        // Fluent UI dropdown: pre = 'fluent-menu:<trigger-selector>' — click
+        // the trigger so the Fluent Menu popover (body-portal [role=menu])
+        // mounts, then the contract selector targets a portal menuitem. The
+        // trigger lives in its ribbon page; activate the page first. Fluent
+        // menus need a real-ish mouse click (synthetic .click() on the
+        // trigger leaves the popover closed in some builds) — use the real
+        // mouse at the trigger center.
+        const trig = ov.pre.slice('fluent-menu:'.length);
+        // the insert-tab ribbon page is lazy-mounted: activate the tab first
+        // so the trigger button exists, then click it to open the Fluent popover
+        if (ov.woTab) await page.evaluate((t) => {
+          const tb = document.querySelector(`.ribbon-tab[data-tab="${t}"]`);
+          if (tb) tb.click();
+        }, ov.woTab).catch(() => {});
+        await sleep(300);
+        await page.waitForSelector(trig, { timeout: 10000 }).catch(() => {});
+        await page.evaluate((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) throw new Error('fluent-menu pre: trigger missing ' + sel);
+          el.scrollIntoView({ block: 'nearest' });
+        }, trig);
+        await sleep(200);
+        const tb = await page.locator(trig).first().boundingBox();
+        if (!tb) throw new Error('fluent-menu pre: no bounding box ' + trig);
+        await page.mouse.click(tb.x + tb.width / 2, tb.y + tb.height / 2);
+        await page.waitForSelector('[role="menuitem"]', { timeout: 3000 });
+        await sleep(250);
+      }
       else if ((ov.pre || '').startsWith('backstage:')) {
         // 'backstage:<pane>' — open the File backstage, then switch it to
         // <pane> (rows like [data-pane=info] swap the backstage panel;
@@ -1668,7 +1697,25 @@ async function subFeatureAudit(page, ov, dialogSel) {
       const key = ov.key || chordFromProse(e.wo && e.wo.match);
       const selector = ov.selector || (woToken ? `[data-cmd="${woToken}"]` : null);
       if (!key && !selector) throw new Error(`no trigger: neither a control selector nor a chord (wo.match=${JSON.stringify(e.wo && e.wo.match)})`);
+      let portaled = false;
       if (!key) {
+      portaled = typeof selector === 'string' && selector.startsWith('fluent-item:');
+      if (portaled) {
+        // Fluent portal menuitem by text — the popover body-portal items carry
+        // no stable ids/classes; resolve the text label to the item.
+        const label = selector.slice('fluent-item:'.length);
+        await page.waitForSelector('[role="menuitem"]', { timeout: 3000 });
+        const box = await page.evaluate((txt) => {
+          const items = [...document.querySelectorAll('[role="menuitem"]')];
+          const el = items.find((i) => (i.textContent || '').trim().includes(txt));
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2, text: (el.textContent || '').trim().slice(0, 40) };
+        }, label);
+        if (!box) throw new Error('fluent item not found: ' + label);
+        await page.mouse.click(box.x, box.y);
+      }
+      else {
       const loc = page.locator(selector).first();
       if (await loc.count() === 0) throw new Error(`control not found: ${selector}`);
       // hidden/unstable controls (contextual ctx items) never scroll into
@@ -1714,6 +1761,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
         if (!collapsed) throw new Error('control present but hit-test BLOCKED (elementFromPoint misses a control)');
       }
       } // end selector presence + hit-test (skipped for key-trigger contracts)
+      } // end else (non-portaled selector)
 
       // 3. caret placement (not needed for menu/dialog flows)
       if (!preMenu) {
@@ -1773,6 +1821,11 @@ async function subFeatureAudit(page, ov, dialogSel) {
       // would collapse it before the command handler runs). One retry for
       // cold-boot races (caret not settled, dialog open animation).
       const trigger = () => {
+        if (portaled) {
+          // item already clicked in the presence/hit-test block above — the
+          // selectors below are CSS-only and cannot address portal menuitems
+          return Promise.resolve();
+        }
         if (key) {
           // keyboard shortcut contract: dispatch a real key chord (handlers
           // listen on #editor — placeCaret focuses it and selects word 1)

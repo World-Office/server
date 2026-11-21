@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-21T18:33:32.759Z",
- "total": 668,
- "pass": 116,
+ "ranAt": "2026-11-21T22:33:26.058Z",
+ "total": 673,
+ "pass": 133,
  "knownGap": 0,
- "retarget": 552,
+ "retarget": 540,
  "fail": 0,
  "results": [
   {
@@ -590,21 +590,21 @@
    "token": "inserttextbox",
    "feature": "insert.text-box",
    "tab": "tab:ins",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"shape\\\"]\"} +5 subFeatures",
+   "observed": "found"
   },
   {
    "token": "inserttextart",
    "feature": "insert.text-art",
    "tab": "tab:ins",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"textart\\\"]\"} +5 subFeatures",
+   "observed": "found"
   },
   {
    "token": "toggledropcap",
@@ -650,21 +650,21 @@
    "token": "btn-equation",
    "feature": "insert.equation",
    "tab": "tab:ins",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +4 subFeatures",
+   "observed": "found"
   },
   {
    "token": "btn-symbol",
    "feature": "insert.symbol",
    "tab": "tab:ins",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +4 subFeatures",
+   "observed": "found"
   },
   {
    "token": "btn-contentcontrol",
@@ -740,11 +740,11 @@
    "token": "breaks",
    "feature": "page.breaks",
    "tab": "tab:layout",
-   "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"paragraph\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "togglelinenumbers",
@@ -850,11 +850,11 @@
    "token": "themecolors",
    "feature": "page.colors",
    "tab": "tab:layout",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"theme\\\"]\"} +6 subFeatures",
+   "observed": "found"
   },
   {
    "token": "updatetoc-dialog",
@@ -1600,21 +1600,21 @@
    "token": "insert.more-symbols",
    "feature": "insert.more-symbols",
    "tab": "menu:equation\n\n \n \nsymbol",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +4 subFeatures",
+   "observed": "found"
   },
   {
    "token": "insert.symbols",
    "feature": "insert.symbols",
    "tab": "menu:equation",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +11 subFeatures",
+   "observed": "found"
   },
   {
    "token": "fractions",
@@ -5700,21 +5700,21 @@
    "token": "dialoginput.textbox",
    "feature": "dialoginput.textbox",
    "tab": "insert",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"shape\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "dialoginput.textart",
    "feature": "dialoginput.textart",
    "tab": "insert",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"textart\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "dialoginput.symbol",
@@ -6040,11 +6040,11 @@
    "token": "insert.equation",
    "feature": "insert.equation",
    "tab": "insert",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "insert.symbol",
@@ -6060,11 +6060,11 @@
    "token": "insert.content-controls",
    "feature": "insert.content-controls",
    "tab": "insert",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "image.photo-editor",
@@ -6685,6 +6685,56 @@
    "ok": false,
    "retarget": true,
    "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+  },
+  {
+   "token": "insert.content-controls.insertCheckboxControl",
+   "feature": "insert.content-controls.insertCheckboxControl",
+   "tab": "insert",
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
+  },
+  {
+   "token": "insert.content-controls.insertDropdownControl",
+   "feature": "insert.content-controls.insertDropdownControl",
+   "tab": "insert",
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
+  },
+  {
+   "token": "insert.content-controls.insertDatePickerControl",
+   "feature": "insert.content-controls.insertDatePickerControl",
+   "tab": "insert",
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
+  },
+  {
+   "token": "insert.content-controls.insertPlainTextControl",
+   "feature": "insert.content-controls.insertPlainTextControl",
+   "tab": "insert",
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
+  },
+  {
+   "token": "insert.content-controls.insertContentControl",
+   "feature": "insert.content-controls.insertContentControl",
+   "tab": "insert",
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"form\\\"]\"}",
+   "observed": "found"
   }
  ],
  "unclassified": []

@@ -190,6 +190,7 @@ export const Viewport = observer(function Viewport({
           {rightMenuVisible && (
             <div
               className="de-viewport-right-menu"
+              data-wo-right-panel={documentStore.activeRightPanel || ""}
               style={{
                 width: "var(--wo-de-rightmenu-width, 40px)",
                 display: "flex",
