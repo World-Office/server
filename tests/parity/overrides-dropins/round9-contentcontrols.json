@@ -1,0 +1,69 @@
+{
+ "entries": {
+  "insert.content-controls.insertCheckboxControl": {
+   "selector": "fluent-item:Checkbox",
+   "pre": "fluent-menu:#btn-insert-content-control",
+   "woTab": "insert",
+   "post": "",
+   "xfail": false,
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "[data-wo-right-panel=\"form\"]"
+   },
+   "note": "PROMOTED round9: Content Controls ▾ Checkbox opens form panel",
+   "effektClass": "op"
+  },
+  "insert.content-controls.insertDropdownControl": {
+   "selector": "fluent-item:Drop-Down List",
+   "pre": "fluent-menu:#btn-insert-content-control",
+   "woTab": "insert",
+   "post": "",
+   "xfail": false,
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "[data-wo-right-panel=\"form\"]"
+   },
+   "note": "PROMOTED round9: Content Controls ▾ Drop-Down List opens form panel",
+   "effektClass": "op"
+  },
+  "insert.content-controls.insertDatePickerControl": {
+   "selector": "fluent-item:Date Picker",
+   "pre": "fluent-menu:#btn-insert-content-control",
+   "woTab": "insert",
+   "post": "",
+   "xfail": false,
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "[data-wo-right-panel=\"form\"]"
+   },
+   "note": "PROMOTED round9: Content Controls ▾ Date Picker opens form panel",
+   "effektClass": "op"
+  },
+  "insert.content-controls.insertPlainTextControl": {
+   "selector": "fluent-item:Plain Text",
+   "pre": "fluent-menu:#btn-insert-content-control",
+   "woTab": "insert",
+   "post": "",
+   "xfail": false,
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "[data-wo-right-panel=\"form\"]"
+   },
+   "note": "PROMOTED round9: Content Controls ▾ Plain Text opens form panel",
+   "effektClass": "op"
+  },
+  "insert.content-controls.insertContentControl": {
+   "selector": "fluent-item:Rich Text",
+   "pre": "fluent-menu:#btn-insert-content-control",
+   "woTab": "insert",
+   "post": "",
+   "xfail": false,
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "[data-wo-right-panel=\"form\"]"
+   },
+   "note": "PROMOTED round9: Content Controls ▾ Rich Text opens form panel",
+   "effektClass": "op"
+  }
+ }
+}

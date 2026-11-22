@@ -30,6 +30,25 @@ function ledgerDefault() {
 const OUT = arg('--out', path.join(HERE, 'word-parity-contracts.json'));
 const OVERRIDES = arg('--overrides', path.join(HERE, 'word-parity-overrides.json'));
 const { loadOverrides } = require('./overrides-loader.cjs');
+// Preserve hand-promoted react-port specs: under the react canvas editor the
+// runner only DRIVES rows carrying a manifest `contract` block (see
+// contract-runner.cjs `!legacyDom && !e.contract -> retarget`). A regen that
+// rebuilds entries from the ledger alone would silently wipe every promoted
+// contract and collapse the pass count to 0 (af-gate.sh regenerates before
+// running, so this broke the gate after the 2026-11-16 react cutover).
+// Carry over, keyed by token: the `contract` block, plus any whole entry that
+// is not a ledger row (hand-added sub-rows) and matched no override key.
+const PRIOR_PATH = path.join(HERE, 'word-parity-contracts.json');
+const PRIOR = fs.existsSync(PRIOR_PATH) ? JSON.parse(fs.readFileSync(PRIOR_PATH, 'utf8')) : null;
+const priorContracts = new Map();
+const priorExtraEntries = [];
+if (PRIOR && Array.isArray(PRIOR.entries)) {
+  for (const pe of PRIOR.entries) {
+    if (pe.contract) priorContracts.set(pe.token, pe.contract);
+    if (pe.censusStatus === 'override-only' && !pe.contract) priorExtraEntries.push(pe);
+  }
+}
+
 // --overrides path OR the merged base+overrides.d view
 const RAW = OVERRIDES === path.join(HERE, 'word-parity-overrides.json')
   ? loadOverrides(HERE)
@@ -151,6 +170,7 @@ for (const row of ledger) {
     subFeatures: (override && override.subFeatures) || null,
   };
   if (override && override.note) entry.note = override.note;
+  if (priorContracts.has(entry.token)) entry.contract = priorContracts.get(entry.token);
   entries.push(entry);
 }
 
@@ -166,7 +186,17 @@ for (const [key, ov] of Object.entries(overrides)) {
     assertion: ov.assertion || { kind: 'unspecified' },
     subFeatures: ov.subFeatures || null, note: (ov.note || '') + ' [override-only: no ledger row matched this key]',
   });
+  if (priorContracts.has(key)) entries[entries.length - 1].contract = priorContracts.get(key);
   console.warn(`WARN override "${key}" matched no ledger row — emitted as override-only entry`);
+}
+
+// hand-added sub-rows that are neither ledger rows nor override keys must also
+// survive a regen (contract preserved via priorContracts above)
+const seenTokens = new Set(entries.map(e => e.token));
+for (const pe of priorExtraEntries) {
+  if (seenTokens.has(pe.token)) continue;
+  if (priorContracts.has(pe.token)) pe.contract = priorContracts.get(pe.token);
+  entries.push(pe);
 }
 
 const byClass = {};
