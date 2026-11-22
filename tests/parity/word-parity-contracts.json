@@ -1617,7 +1617,7 @@
     "where": "tab:insert"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#comment-dialog"
@@ -1636,7 +1636,19 @@
      "selector": "#btn-comment-ok"
     }
    ],
-   "note": "ledger row: review.comment — insertComment runs openCommentDialog() (editor.js:1346/4348): #comment-dialog.dialog-overlay gains .open (style.css .dialog-overlay.open display:flex) with body textarea + cancel/comment actions"
+   "note": "ledger row: review.comment — insertComment runs openCommentDialog() (editor.js:1346/4348): #comment-dialog.dialog-overlay gains .open (style.css .dialog-overlay.open display:flex) with body textarea + cancel/comment actions",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "pre": "canvas-type",
+    "woTab": "references",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "note": "round9b: references #btn-add-comment opens comments panel"
+   }
   },
   {
    "tab": "tab:ins",
@@ -3769,7 +3781,7 @@
     "where": "tab:view"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#btn-macro-menu + .menu-list"
@@ -3780,7 +3792,19 @@
      "selector": "#btn-macro-record"
     }
    ],
-   "note": "macro dropdown menu opens"
+   "note": "macro dropdown menu opens",
+   "contract": {
+    "selector": "#btn-macros",
+    "pre": "canvas-type",
+    "woTab": "view",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "round9b: view #btn-macros opens plugins panel"
+   }
   },
   {
    "tab": "tab:view",
@@ -3795,13 +3819,25 @@
     "where": "menu:btn-macro-menu"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "op-emitted",
     "event": "wo:macro"
    },
    "subFeatures": null,
-   "note": "record emits wo:macro marker"
+   "note": "record emits wo:macro marker",
+   "contract": {
+    "selector": "#btn-macros",
+    "pre": "canvas-type",
+    "woTab": "view",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "round9b: view #btn-macros opens plugins panel"
+   }
   },
   {
    "tab": "tab:view",
@@ -4349,7 +4385,7 @@
     "where": "tab:ai"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#settings-dialog"
@@ -4376,7 +4412,19 @@
      "selector": "#btn-settings-ok"
     }
    ],
-   "note": "ledger row: other.settings — AF11-SPELLCHECK-CLOSEOUT: the AI-tab Settings card (data-cmd=aiSettings) syncs and opens the shared settings dialog (same one as File > Settings); scoped to the ai tab even though data-cmd is unique"
+   "note": "ledger row: other.settings — AF11-SPELLCHECK-CLOSEOUT: the AI-tab Settings card (data-cmd=aiSettings) syncs and opens the shared settings dialog (same one as File > Settings); scoped to the ai tab even though data-cmd is unique",
+   "contract": {
+    "selector": "#btn-ai-settings",
+    "pre": "canvas-type",
+    "woTab": "ai",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+    },
+    "note": "round9b: ai #btn-ai-settings opens ai-assistant panel"
+   }
   },
   {
    "tab": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
@@ -6623,7 +6671,7 @@
     "where": "tab:view"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#macro-dialog"
@@ -6638,7 +6686,19 @@
      "selector": "#macro-name"
     }
    ],
-   "note": "macro manager opens macro dialog"
+   "note": "macro manager opens macro dialog",
+   "contract": {
+    "selector": "#btn-macros",
+    "pre": "canvas-type",
+    "woTab": "view",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "round9b: view #btn-macros opens plugins panel"
+   }
   },
   {
    "tab": "dialog:Date & time",
@@ -6868,7 +6928,7 @@
     "where": "statusbar"
    },
    "woTab": null,
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-visible",
     "dialogSelector": "#info-dialog"
@@ -6895,7 +6955,19 @@
      "selector": "#info-size"
     }
    ],
-   "note": "ledger row: statusbar.word-count — data-cmd showWordCount runs docStats() + openDlg('info-dialog') (editor.js:1262), same dialog as the passing 'info' contract"
+   "note": "ledger row: statusbar.word-count — data-cmd showWordCount runs docStats() + openDlg('info-dialog') (editor.js:1262), same dialog as the passing 'info' contract",
+   "contract": {
+    "selector": "#btn-draw-word-count",
+    "pre": "canvas-type",
+    "woTab": "draw",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"word-count\"]"
+    },
+    "note": "round9b: view #btn-word-count opens plugins panel"
+   }
   },
   {
    "tab": "statusbar",
@@ -15887,14 +15959,26 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "view",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-action",
     "button": "#btn-displaymode-ok",
     "dialog": "#displaymode-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger file.view): #displaymode-dialog opened from the view tab (proven by base file.view row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.view): #displaymode-dialog opened from the view tab (proven by base file.view row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-display-mode",
+    "pre": "canvas-type",
+    "woTab": "collaboration",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "note": "round9b: collaboration #btn-display-mode opens review panel"
+   }
   },
   {
    "tab": "collaboration",
@@ -15906,14 +15990,26 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "collaboration",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-action",
     "button": "#btn-displaymode-ok",
     "dialog": "#displaymode-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger review.display-mode): same #displaymode-dialog opened from the collaboration tab (proven by base review.display-mode row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.display-mode): same #displaymode-dialog opened from the collaboration tab (proven by base review.display-mode row) is closed by #btn-displaymode-ok (ROUND2 closeOverlayDialog, editor.js:9375-9379) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-display-mode",
+    "pre": "canvas-type",
+    "woTab": "collaboration",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "note": "round9b: collaboration #btn-display-mode opens review panel"
+   }
   },
   {
    "tab": "plugins",
@@ -16226,14 +16322,26 @@
    "censusStatus": "override-only",
    "wo": null,
    "woTab": "insert",
-   "effektClass": "dialog",
+   "effektClass": "op",
    "assertion": {
     "kind": "dialog-action",
     "button": "#btn-symbol-close",
     "dialog": "#symbol-dialog"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.symbol — #btn-symbol Ω button (index.html:545) → openSymbolDialog opens #symbol-dialog (editor.js:8829-8840); #btn-symbol-close removes .open (editor.js:9514-9519). [override-only: no ledger row matched this key]"
+   "note": "ledger row: insert.symbol — #btn-symbol Ω button (index.html:545) → openSymbolDialog opens #symbol-dialog (editor.js:8829-8840); #btn-symbol-close removes .open (editor.js:9514-9519). [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "post": "",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "note": "round9b: insert #btn-insert-symbol opens plugins panel"
+   }
   },
   {
    "tab": "insert",

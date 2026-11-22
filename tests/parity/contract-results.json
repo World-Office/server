@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-21T22:33:26.058Z",
+ "ranAt": "2026-11-22T05:58:15.042Z",
  "total": 673,
- "pass": 133,
+ "pass": 142,
  "knownGap": 0,
- "retarget": 540,
+ "retarget": 531,
  "fail": 0,
  "results": [
   {
@@ -550,11 +550,11 @@
    "token": "insertcomment",
    "feature": "review.comment",
    "tab": "tab:ins",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"comments\\\"]\"} +3 subFeatures",
+   "observed": "found"
   },
   {
    "token": "link",
@@ -1180,21 +1180,21 @@
    "token": "btn-macro-menu",
    "feature": "macros.macros",
    "tab": "tab:view",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +1 subFeatures",
+   "observed": "found"
   },
   {
    "token": "macros.record-macro",
    "feature": "macros.record-macro",
    "tab": "tab:view",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "view.pause-recording",
@@ -1370,11 +1370,11 @@
    "token": "aisettings",
    "feature": "other.settings",
    "tab": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"ai-assistant\\\"]\"} +5 subFeatures",
+   "observed": "found"
   },
   {
    "token": "btn-ai-assistant",
@@ -2220,11 +2220,11 @@
    "token": "btn-macro-menu",
    "feature": "macros.dlg-macros",
    "tab": "dialog:Macros",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"} +2 subFeatures",
+   "observed": "found"
   },
   {
    "token": "btn-datetime",
@@ -2300,11 +2300,11 @@
    "token": "sb-word-count",
    "feature": "statusbar.word-count",
    "tab": "statusbar",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"word-count\\\"]\"} +5 subFeatures",
+   "observed": "found"
   },
   {
    "token": "sb-lang",
@@ -5890,21 +5890,21 @@
    "token": "dialogdepth-fr.displaymode-ok-view",
    "feature": "dialogdepth-fr.displaymode-ok-view",
    "tab": "view",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"review\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "dialogdepth-fr.displaymode-ok-collab",
    "feature": "dialogdepth-fr.displaymode-ok-collab",
    "tab": "collaboration",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"review\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "dialogdepth-fr.plugins-close",
@@ -6050,11 +6050,11 @@
    "token": "insert.symbol",
    "feature": "insert.symbol",
    "tab": "insert",
-   "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "cls": "op",
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"plugins\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "insert.content-controls",
