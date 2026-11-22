@@ -18,6 +18,9 @@ export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
+# af worktrees have no built UI (dist/ is gitignored) — reuse the MAIN
+# checkout's prebuilt react bundle unless the caller set EDITOR_UI_DIR.
+export EDITOR_UI_DIR="${EDITOR_UI_DIR:-/home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist}"
 
 /usr/bin/node parity/generate-manifest.cjs >/dev/null
 set +e
