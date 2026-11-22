@@ -1,0 +1,81 @@
+{
+ "_meta": {
+  "name": "l2r9",
+  "description": "Round 9b af campaign: promote remaining mechanically-provable retargeted rows to manifest `contract` blocks (react-port specs). Baseline 142 PASS / 0 FAIL at server 85435473a. generate-manifest.cjs now PRESERVES contract blocks, so af-gate.sh counts them. Workers promote ONLY rows that PASS via --only; a FAIL row in the manifest breaks the fail==0 gate.",
+  "createdAt": "2026-11-21",
+  "baseline": { "pass": 142, "knownGap": 0, "fail": 0 }
+ },
+ "defaults": {
+  "provider": "litellm",
+  "model": "litellm/glm-5.3-flash",
+  "api_key_env": "LITELLM_API_KEY",
+  "cli": "pi",
+  "params_b": 8,
+  "max_parallel": 1,
+  "branch": "tf/l2r9-{id}",
+  "commit_style": "parity: promote <rows> via react-port contract blocks (round9b)"
+ },
+ "tasks": [
+  {
+   "id": "R9-01",
+   "title": "AI-tab + view-tab panel/view buttons -> contract blocks",
+   "repo": "server",
+   "files": ["tests/parity/word-parity-contracts.json"],
+   "steps": [
+    "Edit ONLY tests/parity/word-parity-contracts.json. Do NOT run generate-manifest.cjs. Do NOT touch other files.",
+    "For each token below that is still WITHOUT a `contract` key, add a contract block using the exact binding. Ribbon DOM ids: button=`#btn-<id>`, checkbox=`#chk-<id>`, select=`#sel-<id>`.",
+    "PANEL recipe (assertion via the Viewport marker): {\"selector\":\"#btn-X\",\"pre\":\"canvas-type\",\"woTab\":\"<tab>\",\"post\":\"\",\"xfail\":false,\"assertion\":{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"<panel>\\\"]\"},\"note\":\"round9b <note>\"} and set entry effektClass to \"op\".",
+    "Verify each token with: node tests/parity/contract-runner.cjs --only <csv> --results /tmp/r9.json  (--only takes a SEPARATE arg, space-separated csv). pkill -f contract-runner.cjs first if stale.",
+    "Keep ONLY tokens that print PASS. Delete the contract block from any FAIL token.",
+    "Bindings (token -> btn, tab, panel): btn-ai-assistant -> #btn-ai-assistant-panel, ai, ai-assistant; createaiassistant -> #btn-ai-chatbot, ai, ai-assistant; aisummarize -> #btn-ai-summarization, ai, ai-assistant; aitranslate -> #btn-ai-translation, ai, ai-assistant; airewrite -> #btn-ai-grammar-spelling, ai, ai-assistant; btn-speech/dictate -> #btn-draw-word-count is WRONG, probe the real speech button (cmd speechInput -> panel plugins), else skip; btn-track-changes -> #btn-track-changes, view, panel 'review' (assert .de-track-changes-panel OR [data-wo-right-panel=\"review\"]); btn-view-headings -> #chk-navigation, view, probe; btn-view-darkdoc -> #chk-dark-document, view, probe assertion (dom-attr on <html> data-theme or dom-mutation .de-viewport).",
+    "If a binding does not PASS after 2 tries, DROP that token (do not commit a failing contract)."
+   ],
+   "tokens": ["btn-ai-assistant","createaiassistant","aisummarize","airewrite","aitranslate","btn-speech","dictate","btn-ai-grammar","btn-track-changes","btn-view-headings","btn-view-darkdoc"],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 145"
+  },
+  {
+   "id": "R9-02",
+   "title": "View-tab zoom/fit/multipage statusbar buttons -> contract blocks",
+   "repo": "server",
+   "files": ["tests/parity/word-parity-contracts.json"],
+   "steps": [
+    "Edit ONLY tests/parity/word-parity-contracts.json. Do NOT run generate-manifest.cjs.",
+    "Contract shape for a ribbon button: {\"selector\":\"#btn-X\",\"pre\":\"canvas-type\",\"woTab\":\"view\",\"post\":\"\",\"xfail\":false,\"assertion\":{...},\"note\":\"round9b ...\"}, effektClass=\"view\".",
+    "StatusBar DOM assertion surface (apps/web/apps/documenteditor-react/src/components/StatusBar/StatusBar.tsx): zoom label = .de-statusbar-zoom-label .de-statusbar-label (text like '100%'); multipage = .de-statusbar-btn.de-statusbar-multipage.active; fit-to-page/fit-to-width toggle .active on their .de-statusbar-btn.",
+    "Bindings: btn-zoom-in -> #btn-zoom-in, view, assertion dom-mutation on .de-statusbar-zoom-label (zoom 100->110 changes label text); btn-zoom-out -> #btn-zoom-out (100->90); btn-zoom-reset -> #btn-zoom-100, pre 'zoom-reset' may help; btn-view-fit-width -> #btn-fit-to-width, assertion dom-mutation .de-statusbar (active class toggles); btn-multipage -> #btn-multiple-pages, view, assertion dom-mutation selector '.de-statusbar-btn.de-statusbar-multipage'; btn-gridlines -> #chk-gridlines (checkbox), probe a DOM surface (may be canvas-only -> DROP if none); togglelinenumbers -> probe, likely no DOM -> DROP if none; ctrl+0 -> {\"key\":\"Control+Digit0\",\"pre\":\"canvas-type\",\"assertion\":{\"kind\":\"dom-mutation\",\"selector\":\".de-statusbar-zoom-label\"},\"xfail\":false}; ctrl+plus/= -> {\"key\":\"Control+Equal\",...}; ctrl+minus -> {\"key\":\"Control+Minus\",...}.",
+    "Verify with: node tests/parity/contract-runner.cjs --only <csv> --results /tmp/r9.json. Keep ONLY PASS tokens; drop FAILs.",
+    "Do NOT commit a failing contract (gate requires fail==0)."
+   ],
+   "tokens": ["btn-zoom-in","btn-zoom-out","btn-zoom-reset","btn-view-fit-width","btn-multipage","btn-gridlines","togglelinenumbers","ctrl+0","ctrl+plus/=","ctrl+minus"],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 148"
+  },
+  {
+   "id": "R9-03",
+   "title": "Keyboard chords with real document/panel effects -> contract blocks",
+   "repo": "server",
+   "files": ["tests/parity/word-parity-contracts.json"],
+   "steps": [
+    "Edit ONLY tests/parity/word-parity-contracts.json. Do NOT run generate-manifest.cjs.",
+    "Chord contract shape (proven): {\"key\":\"Control+KeyK\",\"pre\":\"canvas-type\",\"assertion\":{\"kind\":\"dom-mutation\",\"selector\":\"[data-wo-right-panel=\\\"crossreference\\\"]\"},\"xfail\":false,\"note\":\"round9b Ctrl+K opens link/crossref panel\"}. For pure document mutations use {\"kind\":\"rev-bump\"}. Playwright key names: Control+KeyK, Control+S, Control+Alt+KeyG, Alt+SemiColon, Shift+Enter etc.",
+    "Bindings: ctrl+k -> key Control+KeyK, assertion [data-wo-right-panel=\"crossreference\"] (link command opens crossref panel); emdash -> key Control+Alt+Minus? NO — emdash is a shortcut token; check word-commands for its chord, else use rev-bump with pre canvas-type; endash, insertlinebreak already has rev-bump contract pattern -> if token still retargeted give {\"key\":<its chord>,\"pre\":\"canvas-type\",\"assertion\":{\"kind\":\"rev-bump\"},\"xfail\":false}; ctrl+alt+g/e/r/t/q/= -> field-insert chords, rev-bump; alt+; -> rev-bump; ctrl+shift+k / ctrl+shift+space / ctrl+shift+minus -> rev-bump; ctrl+s -> key Control+S, assertion dom-mutation on .de-findreplace-panel is wrong — probe save (may emit event) else rev-bump; escape/backspace/delete -> probe, likely DROP if no observable DOM/rev.",
+    "Verify with: node tests/parity/contract-runner.cjs --only <csv> --results /tmp/r9.json. Keep ONLY PASS; drop FAILs. Never commit a FAIL contract."
+   ],
+   "tokens": ["ctrl+k","ctrl+s","emdash","endash","insertlinebreak","ctrl+alt+g","ctrl+alt+e","ctrl+alt+r","ctrl+alt+t","ctrl+alt+q","ctrl+alt+=","alt+;","ctrl+shift+k","ctrl+shift+space","ctrl+shift+minus","escape","backspace","delete"],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 151"
+  },
+  {
+   "id": "R9-04",
+   "title": "Insert/layout structural buttons (rev-bump / panel) -> contract blocks",
+   "repo": "server",
+   "files": ["tests/parity/word-parity-contracts.json"],
+   "steps": [
+    "Edit ONLY tests/parity/word-parity-contracts.json. Do NOT run generate-manifest.cjs.",
+    "Button contract: {\"selector\":\"#btn-X\",\"pre\":\"canvas-type\",\"woTab\":\"<tab>\",\"post\":\"\",\"xfail\":false,\"assertion\":{...},\"note\":\"round9b ...\"}, effektClass op/structure.",
+    "Bindings: insertblankpage -> #btn-blank-page, insert, rev-bump (proven by existing btn-multipage row); btn-table -> #btn-insert-table, insert, panel 'table' ([data-wo-right-panel=\"table\"]); link -> #btn-insert-link, insert, panel 'crossreference'; btn-field -> #btn-insert-field, layout, probe panel; insertpagenumber -> #btn-insert-page-number, layout, probe (headerFooterMode footer -> dom); insertheaderfooter -> #btn-edit-header? probe layout tab (edit-header), panel; btn-hf-close -> #btn-close-header-footer, layout, probe; btn-hf-image -> probe; updatetoc -> references tab, probe; insertcaption -> references, probe; btn-addtext -> probe; align -> #btn-align, probe (layout object ops, likely needs selection -> DROP); btn-mergeshapes -> #btn-merge-shapes, DROP if needs selection; wrapping -> #btn-wrapping, DROP if needs selection; btn-textfile -> #btn-text-from-file, insert, likely opens file dialog -> DROP if dialog not provable.",
+    "Verify with: node tests/parity/contract-runner.cjs --only <csv> --results /tmp/r9.json. Keep ONLY PASS; drop FAILs. Never commit a FAIL contract."
+   ],
+   "tokens": ["insertblankpage","btn-table","link","btn-field","insertpagenumber","insertheaderfooter","btn-hf-close","btn-hf-image","updatetoc","insertcaption","btn-addtext","align","btn-mergeshapes","wrapping","btn-textfile"],
+   "accept": "cd \"$(git rev-parse --show-toplevel)\" && bash tests/parity/af-gate.sh 154"
+  }
+ ]
+}
