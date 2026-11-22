@@ -9,7 +9,7 @@
   {
    "name": "r9-w0",
    "provider": "litellm",
-   "model": "glm-5.3",
+   "model": "saia/glm-5.3-flash",
    "api_key_env": "LITELLM_API_KEY",
    "enabled": true,
    "cli": "builtin",
@@ -21,7 +21,7 @@
   {
    "name": "r9-w1",
    "provider": "litellm",
-   "model": "glm-5.3",
+   "model": "saia/glm-5.3-flash",
    "api_key_env": "LITELLM_API_KEY",
    "enabled": true,
    "cli": "builtin",
@@ -33,7 +33,7 @@
   {
    "name": "r9-w2",
    "provider": "litellm",
-   "model": "glm-5.3",
+   "model": "saia/glm-5.3-flash",
    "api_key_env": "LITELLM_API_KEY",
    "enabled": true,
    "cli": "builtin",
@@ -45,7 +45,7 @@
   {
    "name": "r9-w3",
    "provider": "litellm",
-   "model": "glm-5.3",
+   "model": "saia/glm-5.3-flash",
    "api_key_env": "LITELLM_API_KEY",
    "enabled": true,
    "cli": "builtin",
