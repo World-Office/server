@@ -11,6 +11,13 @@ MIN_PASS="${1:?usage: af-gate.sh <min-pass-count>}"
 ROOT="$(git rev-parse --show-toplevel)"
 BIN=/home/weiss/git/World-Office/server/target/debug/wo-docserver
 
+ui_stage() {
+  local stage
+  stage="$(mktemp -d /tmp/wo-parity-ui-XXXXXX)"
+  ln -s /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist "$stage/word"
+  echo "$stage"
+}
+
 [ -x "$BIN" ] || { echo "gate: docserver binary missing: $BIN" >&2; exit 1; }
 
 cd "$ROOT/tests"
@@ -18,9 +25,11 @@ export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
-# af worktrees have no built UI (dist/ is gitignored) — reuse the MAIN
-# checkout's prebuilt react bundle unless the caller set EDITOR_UI_DIR.
-export EDITOR_UI_DIR="${EDITOR_UI_DIR:-/home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist}"
+# af worktrees have no built UI (dist/ is gitignored). The docserver serves
+# /word/ from $EDITOR_UI_DIR/word/symlink to index.html, so stage a tmp root
+# with a word symlink to the MAIN checkout's prebuilt react bundle.
+export EDITOR_UI_DIR="${EDITOR_UI_DIR:-$(ui_stage)}"
+[ -f "$EDITOR_UI_DIR/word/index.html" ] || export EDITOR_UI_DIR="$(ui_stage)"
 
 /usr/bin/node parity/generate-manifest.cjs >/dev/null
 set +e

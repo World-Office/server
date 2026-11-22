@@ -17,8 +17,14 @@ BIN=/home/weiss/git/World-Office/server/target/debug/wo-docserver
 export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export NO_PROXY=127.0.0.1,localhost
-# af worktrees have no built UI (dist/ gitignored) — reuse main's bundle.
-export EDITOR_UI_DIR="${EDITOR_UI_DIR:-/home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist}"
+# af worktrees have no built UI (dist/ gitignored). The docserver serves
+# /word/ from $EDITOR_UI_DIR/word (symlink to index.html), so stage a tmp
+# root with a word symlink to MAIN's prebuilt react bundle.
+if [ -z "${EDITOR_UI_DIR:-}" ] || [ ! -f "$EDITOR_UI_DIR/word/index.html" ]; then
+  STAGE="$(mktemp -d /tmp/wo-parity-ui-XXXXXX)"
+  ln -s /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist "$STAGE/word"
+  export EDITOR_UI_DIR="$STAGE"
+fi
 
 cd "$ROOT/tests"
 /usr/bin/node parity/generate-manifest.cjs >/dev/null 2>&1
