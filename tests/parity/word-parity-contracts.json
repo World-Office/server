@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T08:17:05.857Z",
+ "generatedAt": "2026-11-23T19:37:05.908Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -16609,12 +16609,21 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-link-cancel",
-    "dialog": "#link-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.link-dialog.l4 — #link-dialog (opener #btn-link proven by the green dialog.link-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-link-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-link",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop17 react-port: insert-tab Link button opens the Cross-Ref right rail (the link-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "insert",
@@ -16628,12 +16637,21 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-table-cancel",
-    "dialog": "#table-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.table-dialog.l4 — #table-dialog insert-pop (opener #btn-table proven by the green dialog.table-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-table-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-table",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"table\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop17 react-port: insert-tab Table button opens the Table settings right rail (TablePanel)"
+   }
   },
   {
    "tab": "insert",
@@ -16647,12 +16665,21 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-equation-cancel",
-    "dialog": "#equation-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.equation-dialog.l4 — #equation-dialog (opener #btn-equation proven by the green dialog.equation-dialog.l4 dialog-visible row; insert.equation row also closes via this button) is closed by its Cancel button #btn-equation-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-equation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop17 react-port: insert-tab Equation button opens the plugins right rail (Equation Editor plugin surface)"
+   }
   },
   {
    "tab": "collaboration",
@@ -16666,12 +16693,21 @@
    "woTab": "collaboration",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-comment-cancel",
-    "dialog": "#comment-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.comment-dialog.l4 — #comment-dialog (opener #btn-comment proven by the green dialog.comment-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-comment-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop17 react-port: collaboration-tab Comment button opens the comments right rail"
+   }
   },
   {
    "tab": "collaboration",
@@ -16685,12 +16721,21 @@
    "woTab": "collaboration",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-compare-cancel",
-    "dialog": "#compare-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.compare-dialog.l4 — #compare-dialog (opener [data-cmd=compareVersion] proven by the green dialog.compare-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-compare-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-compare-documents",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop17 react-port: collaboration-tab Compare opens the review right rail"
+   }
   },
   {
    "tab": "collaboration",
@@ -16704,12 +16749,21 @@
    "woTab": "collaboration",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-combine-cancel",
-    "dialog": "#combine-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.combine-dialog.l4 — #combine-dialog (opener [data-cmd=combineRevisions] proven by the green dialog.combine-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-combine-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-combine-documents",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop17 react-port: collaboration-tab Combine opens the review right rail"
+   }
   },
   {
    "tab": "insert",
