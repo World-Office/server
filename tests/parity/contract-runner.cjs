@@ -1802,6 +1802,11 @@ async function subFeatureAudit(page, ov, dialogSel) {
           window.addEventListener('world-office:chart-type', window.__woCollect);
           window.addEventListener('world-office:chart-update', window.__woCollect);
           window.addEventListener('world-office:doc-language', window.__woCollect);
+          // generic ribbon command bus: react editor dispatches wo-command
+          // (detail.command) for every control click — op-emitted contracts
+          // whose control has no DOM/engine effect (e.g. line-numbers store
+          // toggle) assert against it
+          window.addEventListener('wo-command', window.__woCollect);
         });
       }
 
