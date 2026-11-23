@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T20:39:35.308Z",
+ "generatedAt": "2026-11-23T21:45:10.595Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -17074,7 +17074,18 @@
      "selector": "#ps-size"
     }
    ],
-   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]"
+   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: layout-tab Margins button dispatches world-office:page-layout (the page-setup surface in the react canvas editor — no #page-setup-dialog)"
+   }
   },
   {
    "tab": "layout",
@@ -17088,12 +17099,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-columns-ok",
-    "dialog": "#columns-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Columns: WO-only layout button opens #columns-dialog; Insert wraps section and closes [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-columns",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:columns"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: layout-tab Columns button dispatches world-office:columns (the columns surface in the react canvas editor — no #columns-dialog)"
+   }
   },
   {
    "tab": "layout",
@@ -17107,12 +17127,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-linenumbers-ok",
-    "dialog": "#linenumbers-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Line numbers dialog; OK sets section marker and closes [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-line-numbers",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: layout-tab Line Numbers toggle dispatches its ribbon command via the wo-command bus (line-numbers surface in the react canvas editor — no #linenumbers-dialog)"
+   }
   },
   {
    "tab": "layout",
@@ -17126,12 +17155,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-hyphenation-ok",
-    "dialog": "#hyphenation-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Hyphenation dialog; OK sets section marker and closes [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-hyphenation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: layout-tab Hyphenation button opens the Paragraph settings right rail (the hyphenation surface in the react canvas editor — no #hyphenation-dialog)"
+   }
   },
   {
    "tab": "layout",
@@ -17145,12 +17183,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-hyphenation-ok",
-    "dialog": "#hyphenation-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "None option lives in #hyphenation-dialog (#hy-mode value none); OK closes [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-hyphenation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: the Hyphenation control (none is the $('#hy-mode') value \"none\" inside it) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+   }
   },
   {
    "tab": "layout",
@@ -17164,12 +17211,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-hyphenation-ok",
-    "dialog": "#hyphenation-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Automatic is the default #hy-mode option; OK closes [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-hyphenation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop17 react-port: the Hyphenation control (automatic is the default mode inside it) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+   }
   },
   {
    "tab": "layout",

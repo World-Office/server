@@ -1,0 +1,100 @@
+{
+  "entries": {
+    "page.margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-page-margins",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "world-office:page-layout"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: layout-tab Margins button dispatches world-office:page-layout (the page-setup surface in the react canvas editor — no #page-setup-dialog)"
+      },
+      "note": "loop17"
+    },
+    "page.columns": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-columns",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "world-office:columns"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: layout-tab Columns button dispatches world-office:columns (the columns surface in the react canvas editor — no #columns-dialog)"
+      },
+      "note": "loop17"
+    },
+    "page.line-numbers": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-line-numbers",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "wo-command"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: layout-tab Line Numbers toggle dispatches its ribbon command via the wo-command bus (line-numbers surface in the react canvas editor — no #linenumbers-dialog)"
+      },
+      "note": "loop17"
+    },
+    "page.hyphenation": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-hyphenation",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: layout-tab Hyphenation button opens the Paragraph settings right rail (the hyphenation surface in the react canvas editor — no #hyphenation-dialog)"
+      },
+      "note": "loop17"
+    },
+    "page.none": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-hyphenation",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: the Hyphenation control (none is the $('#hy-mode') value \"none\" inside it) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+      },
+      "note": "loop17"
+    },
+    "page.automatic": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-hyphenation",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop17 react-port: the Hyphenation control (automatic is the default mode inside it) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+      },
+      "note": "loop17"
+    }
+  }
+}
