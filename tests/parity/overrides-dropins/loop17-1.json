@@ -1,0 +1,76 @@
+{
+  "entries": {
+    "dialogdepth.link-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-link",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"crossreference\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: insert-tab Link button opens the Cross-Ref right rail (the link-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.table-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-table",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"table\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: insert-tab Table button opens the Table settings right rail (TablePanel)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.equation-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-equation",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: insert-tab Equation button opens the plugins right rail (Equation Editor plugin surface)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.comment-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: collaboration-tab Comment button opens the comments right rail"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.compare-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "contract": {
+        "selector": "#btn-compare-documents",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"review\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: collaboration-tab Compare opens the review right rail"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.combine-cancel": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "contract": {
+        "selector": "#btn-combine-documents",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"review\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop17 react-port: collaboration-tab Combine opens the review right rail"
+      },
+      "note": "loop17"
+    }
+  }
+}
