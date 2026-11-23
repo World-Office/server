@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T23:02:49.129Z",
+ "generatedAt": "2026-11-23T23:09:48.985Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -17432,7 +17432,19 @@
     "dialog": "#crossref-dialog"
    },
    "subFeatures": null,
-   "note": "Cross-reference dialog depth: same #crossref-dialog, Cancel closes [override-only: no ledger row matched this key]"
+   "note": "Cross-reference dialog depth: same #crossref-dialog, Cancel closes [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-cross-reference",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Cross-reference button opens the Cross-reference right rail (the #crossref-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "insert",
@@ -17471,7 +17483,19 @@
      "selector": "#btn-textfromfile-cancel"
     }
    ],
-   "note": "ledger row: file.file — insert-tab Text from File button opens #textfromfile-dialog (editor.js:12829 openDlg), not a native picker [override-only: no ledger row matched this key]"
+   "note": "ledger row: file.file — insert-tab Text from File button opens #textfromfile-dialog (editor.js:12829 openDlg), not a native picker [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-text-from-file",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: insert-tab Text from File button dispatches textFromFile via the wo-command bus (native file picker in the react canvas editor — no #textfromfile-dialog)"
+   }
   },
   {
    "tab": "",
@@ -17688,7 +17712,19 @@
      "selector": "#image-alt-input"
     }
    ],
-   "note": "pilot3: ctx-menu-on-image pre — EditAltText opens #image-alt-dialog [override-only: no ledger row matched this key]"
+   "note": "pilot3: ctx-menu-on-image pre — EditAltText opens #image-alt-dialog [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-image",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"image\"] input[placeholder=\"Descriptive text for accessibility\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: the react canvas editor renders bare <canvas> pages (no img ctx targets, no EditAltText row) — the alt-text surface is the Image right rail panel's Alt Text input"
+   }
   },
   {
    "tab": "chart-design",
@@ -17715,7 +17751,19 @@
      "selector": "#chart-title"
     }
    ],
-   "note": "pilot3: chart-selection pre — clicking the fixture chart activates the contextual chart-design tab; EditData opens #chart-dialog (openVectorEditor) [override-only: no ledger row matched this key]"
+   "note": "pilot3: chart-selection pre — clicking the fixture chart activates the contextual chart-design tab; EditData opens #chart-dialog (openVectorEditor) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-chart",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"chart\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: the react chart-design tab is contextual (no canvas chart fixture to select) — EditData retargets to insert-tab Chart opening the Chart settings right rail (editChartData maps to the same toggleRightPanel(\"chart\"))"
+   }
   },
   {
    "tab": "home",
@@ -17734,7 +17782,18 @@
     "dialog": "#find-dialog"
    },
    "subFeatures": null,
-   "note": "pilot6: find dialog close button [override-only: no ledger row matched this key]"
+   "note": "pilot6: find dialog close button [override-only: no ledger row matched this key]",
+   "contract": {
+    "key": "Control+f",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-findreplace-panel"
+    },
+    "pre": "",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: Ctrl+F opens the FindReplacePanel (OO OpenFindDialog — no #find-dialog); same surface as the ctrl+f row"
+   }
   },
   {
    "tab": "collaboration",
@@ -17758,7 +17817,19 @@
     "event": "wo:coedit-mode"
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-06: dialog-input selectOption fires the change event the synthetic click could not; the runner now arms wo:coedit-mode in the event collector and dialog-input asserts dispatch (strict -> wo:coedit-mode {mode:'strict'}) [override-only: no ledger row matched this key]"
+   "note": "PROMOTED 2026-11-06: dialog-input selectOption fires the change event the synthetic click could not; the runner now arms wo:coedit-mode in the event collector and dialog-input asserts dispatch (strict -> wo:coedit-mode {mode:'strict'}) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-co-editing-mode",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-statusbar-btn[title=\"Co-editing Mode\"].active"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "subFeatures": [],
+    "xfail": false,
+    "note": "loop18 react-port: collaboration-tab Co-editing Mode button toggles the statusbar co-editing state (no #coedit-mode select)"
+   }
   },
   {
    "tab": "insert",
