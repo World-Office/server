@@ -16,6 +16,7 @@ BIN=/home/weiss/git/World-Office/server/target/debug/wo-docserver
 
 export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
+export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
 # af worktrees have no built UI (dist/ gitignored). The docserver serves
 # /word/ from $EDITOR_UI_DIR/word (symlink to index.html), so stage a tmp

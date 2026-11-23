@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-22T18:42:23.485Z",
+ "generatedAt": "2026-11-23T08:14:35.642Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -14220,11 +14220,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#text-to-table-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "L4 route: text-to-table dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-insert-table",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"table\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "note": "react-port: insert-tab Table button opens the Table settings right rail (TablePanel)",
+    "xfail": false
+   }
   },
   {
    "tab": "ctx-menu:DropcapSettings",
@@ -14241,11 +14252,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogId": "dropcap-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "L4 route: drop cap dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-insert-drop-cap",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-styles-panel"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "note": "react-port: insert-tab Drop Cap button opens the paragraph styles panel",
+    "xfail": false
+   }
   },
   {
    "tab": "layout:btn-watermark",
@@ -14262,11 +14284,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#watermark-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #watermark-dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-watermark",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-properties-panel"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "subFeatures": [],
+    "note": "react-port: layout-tab Watermark button opens the image/page-background settings rail",
+    "xfail": false
+   }
   },
   {
    "tab": "insert:btn-pagenumber",
@@ -14283,11 +14316,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#pagenumber-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #pagenumber-dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-insert-page-number",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-header-footer-region=\"footer\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "subFeatures": [],
+    "note": "react-port: Page Number button enters footer edit mode (footer region renders)",
+    "xfail": false
+   }
   },
   {
    "tab": "references:btn-bookmark",
@@ -14304,11 +14348,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#bookmark-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #bookmark-dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-insert-bookmark",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "#cross-reference-panel"
+    },
+    "pre": "",
+    "woTab": "references",
+    "subFeatures": [],
+    "note": "react-port: references-tab Bookmark button opens the cross-reference panel",
+    "xfail": false
+   }
   },
   {
    "tab": "references:btn-toc",
@@ -14325,11 +14380,22 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#toc-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #toc-dialog"
+   "subFeatures": null,
+   "note": "loop15",
+   "contract": {
+    "selector": "#btn-insert-toc",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "#cross-reference-panel"
+    },
+    "pre": "",
+    "woTab": "references",
+    "subFeatures": [],
+    "note": "react-port: references-tab Table of Contents button opens the cross-reference panel",
+    "xfail": false
+   }
   },
   {
    "tab": "references:openCrossref",

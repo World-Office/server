@@ -1,0 +1,76 @@
+{
+  "entries": {
+    "dialog.text-to-table-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-table",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"table\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: insert-tab Table button opens the Table settings right rail (TablePanel)"
+      },
+      "note": "loop15"
+    },
+    "dialog.dropcap-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-drop-cap",
+        "assertion": { "kind": "dom-mutation", "selector": ".de-styles-panel" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: insert-tab Drop Cap button opens the paragraph styles panel"
+      },
+      "note": "loop15"
+    },
+    "dialog.watermark-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-watermark",
+        "assertion": { "kind": "dom-mutation", "selector": ".de-properties-panel" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: layout-tab Watermark button opens the image/page-background settings rail"
+      },
+      "note": "loop15"
+    },
+    "dialog.pagenumber-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-page-number",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-header-footer-region=\"footer\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: Page Number button enters footer edit mode (footer region renders)"
+      },
+      "note": "loop15"
+    },
+    "dialog.bookmark-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "contract": {
+        "selector": "#btn-insert-bookmark",
+        "assertion": { "kind": "dom-mutation", "selector": "#cross-reference-panel" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: references-tab Bookmark button opens the cross-reference panel"
+      },
+      "note": "loop15"
+    },
+    "dialog.toc-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "contract": {
+        "selector": "#btn-insert-toc",
+        "assertion": { "kind": "dom-mutation", "selector": "#cross-reference-panel" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop15 react-port: references-tab Table of Contents button opens the cross-reference panel"
+      },
+      "note": "loop15"
+    }
+  }
+}
