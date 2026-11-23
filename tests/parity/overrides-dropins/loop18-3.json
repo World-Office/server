@@ -1,0 +1,100 @@
+{
+  "entries": {
+    "page.hyphenation-options": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-hyphenation",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop18 react-port: layout-tab Hyphenation button (the hyphenation-options surface, sibling of loop17's page.hyphenation/none/automatic retarget) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+      },
+      "note": "loop18"
+    },
+    "page.watermark": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-watermark",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"image\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop18 react-port: layout-tab Watermark button opens the Image right rail (the watermark surface in the react canvas editor — no #watermark-dialog)"
+      },
+      "note": "loop18"
+    },
+    "page.colors": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-colors",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"image\"]"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop18 react-port: layout-tab Colors button (documentColors, the #themecolors scheme surface) opens the Image right rail in the react canvas editor — no #colors-dialog"
+      },
+      "note": "loop18"
+    },
+    "table.update-table": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "contract": {
+        "selector": "#btn-update-toc",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Update Table button opens the Cross-reference right rail (the TOC-update surface in the react canvas editor — no #updatetoc-dialog)"
+      },
+      "note": "loop18"
+    },
+    "references.add-text": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "contract": {
+        "selector": "#btn-add-toc-text",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Add Text button opens the Cross-reference right rail (the add-toc-text surface in the react canvas editor — no #addtext-dialog)"
+      },
+      "note": "loop18"
+    },
+    "references.cross-reference": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "contract": {
+        "selector": "#btn-insert-cross-reference",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Cross-reference button opens the Cross-reference right rail in the react canvas editor (sibling of loop17's insert-tab link retarget — no #crossref-dialog)"
+      },
+      "note": "loop18"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T22:41:53.921Z",
+ "generatedAt": "2026-11-23T23:02:27.442Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -17259,12 +17259,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-hyphenation-ok",
-    "dialog": "#hyphenation-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Hyphenation options dialog; OK closes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-hyphenation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop18 react-port: layout-tab Hyphenation button (the hyphenation-options surface, sibling of loop17's page.hyphenation/none/automatic retarget) opens the Paragraph settings right rail in the react canvas editor — no #hyphenation-dialog"
+   }
   },
   {
    "tab": "layout",
@@ -17278,12 +17287,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-watermark-ok",
-    "dialog": "#watermark-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Watermark dialog; OK writes watermark section marker and closes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-watermark",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"image\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop18 react-port: layout-tab Watermark button opens the Image right rail (the watermark surface in the react canvas editor — no #watermark-dialog)"
+   }
   },
   {
    "tab": "layout",
@@ -17297,12 +17315,21 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-colors-ok",
-    "dialog": "#colors-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Colors: clicking the #themecolors select opens the scheme dialog (OO-parity handler); OK applies scheme and closes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-colors",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"image\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop18 react-port: layout-tab Colors button (documentColors, the #themecolors scheme surface) opens the Image right rail in the react canvas editor — no #colors-dialog"
+   }
   },
   {
    "tab": "references",
@@ -17316,12 +17343,21 @@
    "woTab": "references",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-updatetoc-ok",
-    "dialog": "#updatetoc-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Update table/TOC ribbon buttons (both data-cmd=updateToc) open #updatetoc-dialog; Update refreshes TOC and closes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-update-toc",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Update Table button opens the Cross-reference right rail (the TOC-update surface in the react canvas editor — no #updatetoc-dialog)"
+   }
   },
   {
    "tab": "references",
@@ -17335,12 +17371,21 @@
    "woTab": "references",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-addtext-close",
-    "dialog": "#addtext-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Add Text dialog; Close/Cancel closes (btn-addtext-close is the Cancel button) [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-toc-text",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Add Text button opens the Cross-reference right rail (the add-toc-text surface in the react canvas editor — no #addtext-dialog)"
+   }
   },
   {
    "tab": "references",
@@ -17354,12 +17399,21 @@
    "woTab": "references",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-crossref-cancel",
-    "dialog": "#crossref-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Cross-reference dialog; Cancel closes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-cross-reference",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Cross-reference button opens the Cross-reference right rail in the react canvas editor (sibling of loop17's insert-tab link retarget — no #crossref-dialog)"
+   }
   },
   {
    "tab": "references",
