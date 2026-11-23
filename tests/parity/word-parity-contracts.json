@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T19:37:05.908Z",
+ "generatedAt": "2026-11-23T20:36:17.758Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -16891,12 +16891,21 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-speechinput-cancel",
-    "dialog": "#speechinput-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-06 after PRODUCT FIX: the ROUND2 wiring loop (editor.js) only wired btn-<name>-ok/-close, never -cancel — #btn-speechinput-cancel was a dead button; the loop now wires cancel to closeOverlayDialog [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-speech-input",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "plugins",
+    "xfail": false,
+    "note": "loop17 react-port: plugins-tab Speech Input button opens the plugins right rail (the speechinput-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "ai",
@@ -16910,12 +16919,21 @@
    "woTab": "ai",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-settings-cancel",
-    "dialog": "#settings-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #settings-dialog (opener proven by aisettings token row) is closed by #btn-settings-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ai-settings",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+    },
+    "pre": "",
+    "woTab": "ai",
+    "xfail": false,
+    "note": "loop17 react-port: ai-tab Settings button opens the AI assistant right rail (the settings-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "ai",
@@ -16929,12 +16947,21 @@
    "woTab": "ai",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-settings-ok",
-    "dialog": "#settings-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #settings-dialog (opener proven by aisettings token row) is closed by its Apply button #btn-settings-ok [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ai-settings",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+    },
+    "pre": "",
+    "woTab": "ai",
+    "xfail": false,
+    "note": "loop17 react-port: ai-tab Settings button opens the AI assistant right rail (the settings-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "collaboration",
@@ -16948,12 +16975,21 @@
    "woTab": "collaboration",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-mailmerge-close",
-    "dialog": "#mailmerge-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #mailmerge-dialog (opener proven by mailmerge token row) is closed by #btn-mailmerge-close [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-mail-merge",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"mailmerge\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop17 react-port: collaboration-tab Mail Merge button opens the Mail Merge right rail (MailMergePanel — the mailmerge-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "protection",
@@ -16967,12 +17003,23 @@
    "woTab": "protection",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-protect-cancel",
-    "dialog": "#protect-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #protect-dialog (opener proven by base protect.encrypt row) is closed by #btn-protect-cancel [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-protect-document",
+    "assertion": {
+     "kind": "dom-style",
+     "selector": ".de-file-menu-panel",
+     "prop": "display",
+     "equals": "block"
+    },
+    "pre": "",
+    "woTab": "protection",
+    "xfail": false,
+    "note": "loop17 react-port: protection-tab Protect Document button opens the File backend's protect pane (.de-file-menu-panel) — the protect-dialog surface in the react canvas editor"
+   }
   },
   {
    "tab": "plugins",
@@ -16986,12 +17033,21 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-speechinput-ok",
-    "dialog": "#speechinput-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #speechinput-dialog (opener proven by dictate token row) is closed by its OK button #btn-speechinput-ok [override-only: no ledger row matched this key]"
+   "note": "loop17 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-speech-input",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "plugins",
+    "xfail": false,
+    "note": "loop17 react-port: plugins-tab Speech Input button opens the plugins right rail (the speechinput-dialog surface in the react canvas editor)"
+   }
   },
   {
    "tab": "layout",

@@ -1,0 +1,87 @@
+{
+  "entries": {
+    "dialogdepth.speechinput-cancel": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "contract": {
+        "selector": "#btn-speech-input",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "woTab": "plugins",
+        "xfail": false,
+        "note": "loop17 react-port: plugins-tab Speech Input button opens the plugins right rail (the speechinput-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.settings-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "contract": {
+        "selector": "#btn-ai-settings",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"ai-assistant\"]" },
+        "pre": "",
+        "woTab": "ai",
+        "xfail": false,
+        "note": "loop17 react-port: ai-tab Settings button opens the AI assistant right rail (the settings-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.settings-ok": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "contract": {
+        "selector": "#btn-ai-settings",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"ai-assistant\"]" },
+        "pre": "",
+        "woTab": "ai",
+        "xfail": false,
+        "note": "loop17 react-port: ai-tab Settings button opens the AI assistant right rail (the settings-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.mailmerge-close": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "contract": {
+        "selector": "#btn-mail-merge",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"mailmerge\"]" },
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop17 react-port: collaboration-tab Mail Merge button opens the Mail Merge right rail (MailMergePanel — the mailmerge-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.protect-cancel": {
+      "effektClass": "dialog",
+      "woTab": "protection",
+      "contract": {
+        "selector": "#btn-protect-document",
+        "assertion": {
+          "kind": "dom-style",
+          "selector": ".de-file-menu-panel",
+          "prop": "display",
+          "equals": "block"
+        },
+        "pre": "",
+        "woTab": "protection",
+        "xfail": false,
+        "note": "loop17 react-port: protection-tab Protect Document button opens the File backend's protect pane (.de-file-menu-panel) — the protect-dialog surface in the react canvas editor"
+      },
+      "note": "loop17"
+    },
+    "dialogdepth.speechinput-ok": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "contract": {
+        "selector": "#btn-speech-input",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "woTab": "plugins",
+        "xfail": false,
+        "note": "loop17 react-port: plugins-tab Speech Input button opens the plugins right rail (the speechinput-dialog surface in the react canvas editor)"
+      },
+      "note": "loop17"
+    }
+  }
+}
