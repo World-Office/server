@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T21:45:10.595Z",
+ "generatedAt": "2026-11-23T22:41:53.921Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -13697,7 +13697,18 @@
      "selector": "#btn-link-ok"
     }
    ],
-   "note": "ledger row: dialog.link-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-link') — #btn-link click -> insertLink -> #link-dialog with the OO Text to display/URL fields (2/2 L4 field parity)"
+   "note": "ledger row: dialog.link-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-link') — #btn-link click -> insertLink -> #link-dialog with the OO Text to display/URL fields (2/2 L4 field parity)",
+   "contract": {
+    "selector": "#btn-insert-link",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop18 react-port: insert-tab Link button opens the Cross-Reference right rail (the hyperlink surface in the react canvas editor — no #link-dialog)"
+   }
   },
   {
    "tab": "tab:home (font group)",
@@ -13714,52 +13725,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#font-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "font family",
-     "selector": "#font-dialog-family"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#sel-font-family",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "#sel-font-size"
     },
-    {
-     "name": "font size",
-     "selector": "#font-dialog-size"
-    },
-    {
-     "name": "increment font size",
-     "selector": "#font-dialog-inc"
-    },
-    {
-     "name": "decrement font size",
-     "selector": "#font-dialog-dec"
-    },
-    {
-     "name": "bold",
-     "selector": "#font-dialog-bold"
-    },
-    {
-     "name": "italic",
-     "selector": "#font-dialog-italic"
-    },
-    {
-     "name": "underline",
-     "selector": "#font-dialog-underline"
-    },
-    {
-     "name": "strikethrough",
-     "selector": "#font-dialog-strike"
-    },
-    {
-     "name": "highlight color",
-     "selector": "#font-dialog-highlight"
-    },
-    {
-     "name": "font color",
-     "selector": "#font-dialog-color"
-    }
-   ],
-   "note": "ledger row: dialog.font-dialog.l4 — PROMOTED 2026-11-07: the home Font group now carries the OO corner launcher (#btn-font-dialog) opening #font-dialog, whose fields are the OO font-group family verbatim (family, size, +/- steps, B/I/U/S, highlight + font color) seeded from the selection and applied on OK through the same wo-command bus the home pickers use"
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop18 react-port: the OO font-dialog fields are delivered inline by the home Font group's family/size pickers in the react canvas editor (no #btn-font-dialog / #font-dialog)"
+   }
   },
   {
    "tab": "insert:btn-inserttable",
@@ -13797,7 +13777,18 @@
      "selector": "#btn-table-ok"
     }
    ],
-   "note": "ledger row: dialog.table-dialog.l4 (L4 pinned, evidence: 'opens via real clicks (Insert tab + #btn-table); title Insert table, Rows/Columns number fields') — insertTable() adds .open to the anchored #table-dialog insert-pop with defaults 2/3 (editor.js:2121); the insert mutation itself is contracted at table.table"
+   "note": "ledger row: dialog.table-dialog.l4 (L4 pinned, evidence: 'opens via real clicks (Insert tab + #btn-table); title Insert table, Rows/Columns number fields') — insertTable() adds .open to the anchored #table-dialog insert-pop with defaults 2/3 (editor.js:2121); the insert mutation itself is contracted at table.table",
+   "contract": {
+    "selector": "#btn-insert-table",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"table\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop18 react-port: insert-tab Table button opens the Table settings right rail (TablePanel — no #table-dialog)"
+   }
   },
   {
    "tab": "dialog:Symbol",
@@ -13814,11 +13805,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#symbol-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #symbol-dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop18 react-port: insert-tab Symbol button opens the Plugins right rail (symbol surface in the react canvas editor — no #symbol-dialog)"
+   }
   },
   {
    "tab": "insert:btn-image",
@@ -13835,11 +13836,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#image-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #image-dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-insert-image",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"image\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop18 react-port: insert-tab Image button opens the Image right rail (ImagePanel — no #image-dialog)"
+   }
   },
   {
    "tab": "ctx-menu:ParagraphSettings",
@@ -13856,11 +13867,20 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#paragraph-settings-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #paragraph-settings-dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "[data-row-id=\"ParagraphSettings\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "ctx-menu-react",
+    "xfail": false,
+    "note": "loop18 react-port: text-context-menu Paragraph Settings opens the Paragraph settings right rail (the paragraph-advanced-settings surface in the react canvas editor — no #paragraph-settings-dialog)"
+   }
   },
   {
    "tab": "dialog:equation-dialog",

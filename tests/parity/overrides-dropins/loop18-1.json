@@ -1,0 +1,66 @@
+{
+  "entries": {
+    "dialog.font-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "contract": {
+        "selector": "#sel-font-family",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "#sel-font-size"
+        },
+        "pre": "",
+        "woTab": "home",
+        "xfail": false,
+        "note": "loop18 react-port: the OO font-dialog fields are delivered inline by the home Font group's family/size pickers in the react canvas editor (no #btn-font-dialog / #font-dialog)"
+      },
+      "note": "loop18"
+    },
+    "dialog.symbol-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop18 react-port: insert-tab Symbol button opens the Plugins right rail (symbol surface in the react canvas editor — no #symbol-dialog)"
+      },
+      "note": "loop18"
+    },
+    "dialog.image-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-image",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"image\"]"
+        },
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop18 react-port: insert-tab Image button opens the Image right rail (ImagePanel — no #image-dialog)"
+      },
+      "note": "loop18"
+    },
+    "dialog.paragraph-settings-dialog.l4": {
+      "effektClass": "dialog",
+      "contract": {
+        "selector": "[data-row-id=\"ParagraphSettings\"]",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "ctx-menu-react",
+        "xfail": false,
+        "note": "loop18 react-port: text-context-menu Paragraph Settings opens the Paragraph settings right rail (the paragraph-advanced-settings surface in the react canvas editor — no #paragraph-settings-dialog)"
+      },
+      "note": "loop18"
+    }
+  }
+}
