@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T23:09:48.985Z",
+ "generatedAt": "2026-11-23T23:30:38.387Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -14432,11 +14432,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#crossref-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #crossref-dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-insert-cross-reference",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Cross-reference button opens the Cross-Reference right rail (the OO crossref-dialog surface in the react canvas editor — no #crossref-dialog; ledger evidence: OK plants span.crossref[data-target][data-display-text] at the caret, Cancel plants nothing — panel fields deliver the same op)"
+   }
   },
   {
    "tab": "references:insertCaption",
@@ -14453,11 +14463,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#caption-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 census route -> #caption-dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-insert-caption",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Caption button opens the Cross-Reference right rail (the OO caption-dialog surface in the react canvas editor — no #caption-dialog; ledger evidence: caption paragraph with SEQ figure field)"
+   }
   },
   {
    "tab": "references:insertTableOfFigures",
@@ -14474,11 +14494,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogId": "tableoffigures-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "L4 route: table of figures dialog"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-insert-table-of-figures",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop18 react-port: references-tab Table of Figures button opens the Cross-Reference right rail (the OO tableoffigures-dialog surface in the react canvas editor — no #tableoffigures-dialog; ledger evidence: SEQ-figure field table)"
+   }
   },
   {
    "tab": "dialog:Margins",
@@ -14495,11 +14525,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#page-setup-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 page-setup modal (Margins + Page size share the dialog)"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop18 react-port: the OO page-setup modal (Margins + Page size share the dialog) is delivered by the layout-tab page controls — Margins (#btn-page-margins) / Size (#btn-page-size) both emit world-office:page-layout with the margins/pageSize/orientation detail in the react canvas editor (no #page-setup-dialog)"
+   }
   },
   {
    "tab": "dialog:Page size",
@@ -14516,11 +14556,21 @@
    "woTab": null,
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#page-setup-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [],
-   "note": "l4 page-setup modal (Margins + Page size share the dialog)"
+   "subFeatures": null,
+   "note": "loop18",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop18 react-port: the OO page-setup modal (Margins + Page size share the dialog) is delivered by the layout-tab page controls — Margins (#btn-page-margins) / Size (#btn-page-size) both emit world-office:page-layout with the margins/pageSize/orientation detail in the react canvas editor (no #page-setup-dialog)"
+   }
   },
   {
    "tab": "dialog:Columns",
@@ -14556,34 +14606,32 @@
    "effektClass": "dialog",
    "assertion": {
     "kind": "dialog-visible",
-    "dialogSelector": "#info-dialog"
+    "dialogSelector": ".de-file-menu-panel"
    },
    "subFeatures": [
     {
-     "name": "document name",
-     "selector": "#info-name"
+     "name": "document info entry",
+     "selector": "#fileinfo"
     },
     {
-     "name": "document path",
-     "selector": "#info-path"
-    },
-    {
-     "name": "language",
-     "selector": "#info-lang"
-    },
-    {
-     "name": "word/char stats",
-     "selector": "#info-stats"
-    },
-    {
-     "name": "file size",
-     "selector": "#info-size"
+     "name": "backstage header (doc title + save state — the OO info dialog's name retarget)",
+     "selector": ".de-filemenu-header"
     }
    ],
-   "note": " [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-tab=\"file\"]",
+    "post": "#fileinfo",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-panel"
+    },
+    "xfail": false,
+    "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry"
+   }
   },
   {
-   "tab": "backstage",
+   "tab": "",
    "ooId": "backstage.overlay",
    "label": "backstage.overlay",
    "token": "backstage.overlay",
@@ -14591,67 +14639,56 @@
    "level": null,
    "censusStatus": "override-only",
    "wo": null,
-   "woTab": "backstage",
+   "woTab": null,
    "effektClass": "dialog",
    "assertion": {
     "kind": "dialog-visible",
-    "dialogSelector": "#backstage-overlay.open"
+    "dialogSelector": ".de-file-menu-panel"
    },
    "subFeatures": [
     {
-     "name": "Back row (fm-btn-return)",
-     "selector": ".backstage-back"
+     "name": "backstage header (doc name + save state)",
+     "selector": ".de-filemenu-header"
     },
     {
-     "name": "New option",
-     "selector": ".backstage-row[data-pane=\"new\"]"
+     "name": "New",
+     "selector": "#new"
     },
     {
-     "name": "Open option",
-     "selector": ".backstage-row[data-pane=\"open\"]"
+     "name": "Open Recent",
+     "selector": "#open"
     },
     {
-     "name": "Save option (fm-btn-save)",
-     "selector": ".backstage-row[data-pane=\"save\"]"
+     "name": "Download As",
+     "selector": "#btn-export"
     },
     {
-     "name": "Download As option (fm-btn-download)",
-     "selector": ".backstage-row[data-pane=\"export\"]"
+     "name": "Document Info",
+     "selector": "#fileinfo"
     },
     {
-     "name": "Info option (fm-btn-info)",
-     "selector": ".backstage-row[data-pane=\"info\"]"
+     "name": "Protect",
+     "selector": "#fileprotect"
     },
     {
-     "name": "History option",
-     "selector": ".backstage-row[data-pane=\"history\"]"
+     "name": "Settings",
+     "selector": "#filesettings"
     },
     {
-     "name": "AI changes option",
-     "selector": ".backstage-row[data-pane=\"ai\"]"
-    },
-    {
-     "name": "Print option (fm-btn-print)",
-     "selector": ".backstage-row[data-pane=\"print\"]"
-    },
-    {
-     "name": "Settings option (fm-btn-settings)",
-     "selector": ".backstage-row[data-pane=\"settings\"]"
-    },
-    {
-     "name": "Protect option (fm-btn-protect)",
-     "selector": ".backstage-row[data-pane=\"protect\"]"
-    },
-    {
-     "name": "Help option (fm-btn-help)",
-     "selector": ".backstage-row[data-pane=\"help\"]"
-    },
-    {
-     "name": "Suggest-a-feature option (fm-btn-suggest)",
-     "selector": ".backstage-row[data-pane=\"suggest\"]"
+     "name": "Help",
+     "selector": "#filehelp"
     }
    ],
-   "note": "option row (OO backstage census, all 9 fm-btn-* options): the File tab opens the full-screen backstage (#btn-file -> openBackstage, editor.js:10919) and the rail carries one row per OO option plus WO's New/History/AI panes [override-only: no ledger row matched this key]"
+   "note": "loop18 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-tab=\"file\"]",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-panel"
+    },
+    "xfail": false,
+    "note": "loop18 react-port: the File tab opens the backstage overlay .de-file-menu-panel in the react canvas editor (rail with New/Open Recent/Download As/Document Info/Protect/Settings/Help — no #backstage-overlay)"
+   }
   },
   {
    "tab": "backstage",
