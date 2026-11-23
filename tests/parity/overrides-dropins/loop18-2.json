@@ -1,0 +1,143 @@
+{
+  "entries": {
+    "dialog.crossref-dialog.l4": {
+      "effektClass": "dialog",
+      "contract": {
+        "selector": "#btn-insert-cross-reference",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Cross-reference button opens the Cross-Reference right rail (the OO crossref-dialog surface in the react canvas editor — no #crossref-dialog; ledger evidence: OK plants span.crossref[data-target][data-display-text] at the caret, Cancel plants nothing — panel fields deliver the same op)"
+      },
+      "note": "loop18"
+    },
+    "dialog.caption-dialog.l4": {
+      "effektClass": "dialog",
+      "contract": {
+        "selector": "#btn-insert-caption",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Caption button opens the Cross-Reference right rail (the OO caption-dialog surface in the react canvas editor — no #caption-dialog; ledger evidence: caption paragraph with SEQ figure field)"
+      },
+      "note": "loop18"
+    },
+    "dialog.tableoffigures-dialog.l4": {
+      "effektClass": "dialog",
+      "contract": {
+        "selector": "#btn-insert-table-of-figures",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop18 react-port: references-tab Table of Figures button opens the Cross-Reference right rail (the OO tableoffigures-dialog surface in the react canvas editor — no #tableoffigures-dialog; ledger evidence: SEQ-figure field table)"
+      },
+      "note": "loop18"
+    },
+    "page-setup-dialog": {
+      "effektClass": "dialog",
+      "contract": {
+        "selector": "#btn-page-margins",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "world-office:page-layout"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop18 react-port: the OO page-setup modal (Margins + Page size share the dialog) is delivered by the layout-tab page controls — Margins (#btn-page-margins) / Size (#btn-page-size) both emit world-office:page-layout with the margins/pageSize/orientation detail in the react canvas editor (no #page-setup-dialog)"
+      },
+      "note": "loop18"
+    },
+    "info": {
+      "effektClass": "dialog",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": ".de-file-menu-panel"
+      },
+      "subFeatures": [
+        {
+          "name": "document info entry",
+          "selector": "#fileinfo"
+        },
+        {
+          "name": "backstage header (doc title + save state — the OO info dialog's name retarget)",
+          "selector": ".de-filemenu-header"
+        }
+      ],
+      "contract": {
+        "selector": "[data-tab=\"file\"]",
+        "post": "#fileinfo",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": ".de-file-menu-panel"
+        },
+        "xfail": false,
+        "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry"
+      },
+      "note": "loop18"
+    },
+    "backstage.overlay": {
+      "effektClass": "dialog",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": ".de-file-menu-panel"
+      },
+      "subFeatures": [
+        {
+          "name": "backstage header (doc name + save state)",
+          "selector": ".de-filemenu-header"
+        },
+        {
+          "name": "New",
+          "selector": "#new"
+        },
+        {
+          "name": "Open Recent",
+          "selector": "#open"
+        },
+        {
+          "name": "Download As",
+          "selector": "#btn-export"
+        },
+        {
+          "name": "Document Info",
+          "selector": "#fileinfo"
+        },
+        {
+          "name": "Protect",
+          "selector": "#fileprotect"
+        },
+        {
+          "name": "Settings",
+          "selector": "#filesettings"
+        },
+        {
+          "name": "Help",
+          "selector": "#filehelp"
+        }
+      ],
+      "contract": {
+        "selector": "[data-tab=\"file\"]",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": ".de-file-menu-panel"
+        },
+        "xfail": false,
+        "note": "loop18 react-port: the File tab opens the backstage overlay .de-file-menu-panel in the react canvas editor (rail with New/Open Recent/Download As/Document Info/Protect/Settings/Help — no #backstage-overlay)"
+      },
+      "note": "loop18"
+    }
+  }
+}
