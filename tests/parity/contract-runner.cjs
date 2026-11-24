@@ -548,7 +548,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog','hf-caret'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'canvas-type') {
         // canvas editor: type real text and select it so a format chord has
@@ -902,6 +902,38 @@ async function subFeatureAudit(page, ov, dialogSel) {
         await page.evaluate(() => {
           const inp = document.querySelector('#find-dialog input, #find-dialog button');
           if (inp) inp.focus();
+        });
+        await sleep(100);
+      }
+      else if (ov.pre === 'hf-caret') {
+        // header/footer contentEditable caret (react canvas editor): the
+        // canvas body has no DOM selection — the HF region is the editor's
+        // only DOM text surface (tiptap). Insert ▸ Footer enters footer
+        // editing, then collapse the caret at the START of its text so a
+        // navigation chord (End) has a measurable before-state
+        await page.evaluate(() => {
+          const tab = document.querySelector('.ribbon-tab[data-tab="insert"]');
+          if (!tab) throw new Error('hf-caret pre: insert tab missing');
+          tab.click();
+        });
+        await sleep(150);
+        await page.evaluate(() => {
+          const btn = document.querySelector('#btn-edit-footer');
+          if (!btn) throw new Error('hf-caret pre: #btn-edit-footer missing');
+          btn.click();
+        });
+        await page.waitForSelector('[data-header-footer-region="footer"] [contenteditable="true"] p', { timeout: 3000 });
+        await page.evaluate(() => {
+          const reg = document.querySelector('[data-header-footer-region="footer"]');
+          const ce = reg.querySelector('[contenteditable="true"]');
+          ce.focus();
+          const n = reg.querySelector('p').firstChild;
+          const range = document.createRange();
+          range.setStart(n, 1);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
         });
         await sleep(100);
       }
