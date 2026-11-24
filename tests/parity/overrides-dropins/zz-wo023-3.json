@@ -1,0 +1,88 @@
+{
+ "entries": {
+  "shortcut.bigmoveobjectleft": {
+   "effektClass": "format",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowLeft",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the react editor's only DOM text surface: the hf-caret pre enters footer editing (Insert ▸ Footer) with the caret at offset 1 of the 'Footer' text; ArrowLeft natively moves the caret one char left (offset 1->0)"
+  },
+  "shortcut.bigmoveobjectright": {
+   "effektClass": "format",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowRight",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); ArrowRight natively moves the caret one char right (offset 1->2)"
+  },
+  "shortcut.bigmoveobjectup": {
+   "effektClass": "format",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowUp",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); ArrowUp clamps the caret to the line start (offset 1->0)"
+  },
+  "shortcut.bigmoveobjectdown": {
+   "effektClass": "format",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowDown",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); ArrowDown clamps the caret to the line end (offset 1->6)"
+  },
+  "shortcut.movefocustonextobject": {
+   "effektClass": "view",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Tab",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no focusable objects — 'move focus to the next object' is exercised as native tab-order focus nav: the hf-caret pre focuses the footer contentEditable (the react editor's only DOM text surface); Tab moves activeElement to the next tabbable control (focus-moved)"
+  },
+  "shortcut.movefocustopreviousobject": {
+   "effektClass": "view",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+Tab",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    }
+   },
+   "note": "WO023-3: the canvas body has no focusable objects — 'move focus to the previous object' is exercised as native tab-order focus nav: the hf-caret pre focuses the footer contentEditable; Shift+Tab moves activeElement back to the previous tabbable control (focus-moved)"
+  }
+ }
+}

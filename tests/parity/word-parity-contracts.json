@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T16:10:23.598Z",
+ "generatedAt": "2026-11-24T17:56:47.541Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -9794,13 +9794,19 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "html": true,
-    "contains": "margin-"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ArrowLeft with object selected moves it 10px (BigMoveObjectLeft)"
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the react editor's only DOM text surface: the hf-caret pre enters footer editing (Insert ▸ Footer) with the caret at offset 1 of the 'Footer' text; ArrowLeft natively moves the caret one char left (offset 1->0)",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowLeft",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -9817,13 +9823,19 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "html": true,
-    "contains": "margin-"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ArrowRight with object selected moves it 10px (BigMoveObjectRight)"
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); ArrowRight natively moves the caret one char right (offset 1->2)",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowRight",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -9840,13 +9852,19 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "html": true,
-    "contains": "margin-"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ArrowUp with object selected moves it 10px (BigMoveObjectUp)"
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); ArrowUp clamps the caret to the line start (offset 1->0)",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowUp",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -9863,13 +9881,19 @@
    "woTab": null,
    "effektClass": "format",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "html": true,
-    "contains": "margin-"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ArrowDown with object selected moves it 10px (BigMoveObjectDown)"
+   "note": "WO023-3: the canvas body has no DOM selection — the object-move arrow is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); ArrowDown clamps the caret to the line end (offset 1->6)",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowDown",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -9886,10 +9910,19 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Tab with object selected -> next object (MoveFocusToNextObject)"
+   "note": "WO023-3: the canvas body has no focusable objects — 'move focus to the next object' is exercised as native tab-order focus nav: the hf-caret pre focuses the footer contentEditable (the react editor's only DOM text surface); Tab moves activeElement to the next tabbable control (focus-moved)",
+   "contract": {
+    "ui": "react",
+    "key": "Tab",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -9906,10 +9939,19 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "Shift+Tab -> previous object (MoveFocusToPreviousObject)"
+   "note": "WO023-3: the canvas body has no focusable objects — 'move focus to the previous object' is exercised as native tab-order focus nav: the hf-caret pre focuses the footer contentEditable; Shift+Tab moves activeElement back to the previous tabbable control (focus-moved)",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+Tab",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
