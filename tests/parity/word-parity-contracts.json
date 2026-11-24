@@ -1,16 +1,16 @@
 {
- "generatedAt": "2026-11-24T11:59:40.143Z",
+ "generatedAt": "2026-11-24T13:03:40.303Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
  },
  "counts": {
-  "total": 673,
+  "total": 678,
   "byClass": {
    "dialog": 289,
-   "view": 59,
-   "structure": 70,
-   "op": 179,
+   "view": 62,
+   "structure": 71,
+   "op": 180,
    "format": 76
   },
   "unclassified": 0
@@ -6889,11 +6889,10 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "contains": "toc"
+    "kind": "unspecified"
    },
    "subFeatures": null,
+   "note": "loop22-inline: OO TOC dialog maps to the react References ▸ Table of Contents button (#btn-insert-toc, lazy tab via woTab) — insertToc routes toggleRightPanel(\"crossreference\") (word-commands.ts:1077), observable as [data-wo-right-panel=crossreference] on .de-viewport-right-menu (Viewport.tsx:193)",
    "contract": {
     "ui": "react",
     "selector": "#btn-insert-toc",
@@ -6994,15 +6993,12 @@
     "where": "backstage"
    },
    "woTab": null,
-   "effektClass": "view",
+   "effektClass": "op",
    "assertion": {
-    "kind": "viewport-flag",
-    "rootSelector": "#backstage-overlay",
-    "attr": "class",
-    "equals": "backstage-overlay"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: file.back — backstage Back row routes closeFileMenu → closeBackstage → hideBackstage which removes the .open class from #backstage-overlay (editor.js:1266, 10503-10508)",
+   "note": "loop22-inline: two-step backstage contract — trigger opens the File menu (button[data-tab=file] flips documentStore.isFileMenuOpen), post clicks the Back row ([aria-label=Back], FileMenuItems.tsx:295 handleBack) which closes it; panel display flips block→none (Viewport.tsx:121)",
    "contract": {
     "ui": "react",
     "selector": "button[data-tab=\"file\"]",
@@ -7314,13 +7310,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "viewport-flag",
-    "rootSelector": "#sb-doc-spell",
-    "attr": "aria-pressed",
-    "equals": "true"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-doc-spell — statusbar Spell button toggles the inline spellcheck engine; click flips aria-pressed false->true and syncs the settings checkbox",
+   "note": "loop22-inline: statusbar Spell Check toggle (StatusBar.tsx ~410) — starts active (default ON), click disables: setSpellingEnabled(false), button loses .active",
    "contract": {
     "ui": "react",
     "selector": ".de-statusbar [title=\"Spell Check\"]",
@@ -7348,13 +7341,10 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "viewport-flag",
-    "rootSelector": "#sb-track-changes",
-    "attr": "aria-pressed",
-    "equals": "true"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-doc-review — #sb-track-changes toggles tracking via setTrackChanges(!trackChangesOn) (editor.js:10433/4037): flips aria-pressed true/false on the statusbar button and .track-on on #editor; it does NOT open #trackchanges-dialog (only the collaboration-tab #btn-track-changes does), so the honest statusbar contract asserts the toggle state",
+   "note": "loop22-inline: statusbar Track Changes toggle (StatusBar.tsx ~382) — setTrackChanges flips, button gains .active",
    "contract": {
     "ui": "react",
     "selector": ".de-statusbar [title=\"Track Changes\"]",
@@ -7413,12 +7403,10 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "text-mutation",
-    "selector": "#sb-zoom-label",
-    "contains": "181%"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-zoom-topage — PROMOTED 2026-11-08 (L2N-03): OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10641). Order-independent on both sides now: the zoom-reset pre (contract-runner.cjs) drops any persisted wo-zoom and reloads, so the row boots at a distinct '100%' label — the 181% hit proves the fit click ran no matter what earlier contracts left in localStorage — and the new cleanup hook clicks #btn-zoom-reset AFTER the effect check, restoring wo-zoom=1 so the downstream relative-zoom contracts (view-flags btn-zoom-out 1->0.9, btn-zoom-in 0.9->1) keep their fresh-zoom premise. Old honest-gap reason: applyZoom persisted 1.81 and broke zoom-down/up, and `post` could not reset it because post runs before the effect check",
+   "note": "loop22-inline: OO fit-to-page maps to the single react statusbar Fit to Page button (StatusBar.tsx:208 fitToPage state) — click sets fitToPage, button gains .active",
    "contract": {
     "ui": "react",
     "selector": ".de-statusbar [title=\"Fit to Page\"]",
@@ -7445,12 +7433,20 @@
    "woTab": null,
    "effektClass": "view",
    "assertion": {
-    "kind": "text-mutation",
-    "selector": "#sb-zoom-label",
-    "contains": "181%"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-zoom-towidth — PROMOTED 2026-11-08 (L2N-03): same single WO control as btn-zoom-topage (#btn-zoom-fit fits the page width into the viewport, editor.js:10641; deterministic 181% at 1600px); same order-independence fix: zoom-reset pre boots the row at a clean 100% label and the cleanup hook restores wo-zoom=1 after the check, so neither row depends on nor disturbs the neighbouring zoom contracts"
+   "note": "loop22-inline: OO fit-to-page maps to the single react statusbar Fit to Page button (StatusBar.tsx:208 fitToPage state) — click sets fitToPage, button gains .active",
+   "contract": {
+    "ui": "react",
+    "selector": ".de-statusbar [title=\"Fit to Page\"]",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-statusbar [title=\"Fit to Page\"].active"
+    },
+    "woTab": "surface:statusbar"
+   }
   },
   {
    "tab": "statusbar",
@@ -17721,6 +17717,26 @@
   },
   {
    "tab": "",
+   "ooId": "file.back",
+   "label": "file.back",
+   "token": "file.back",
+   "feature": "file.back",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "view",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#backstage-overlay",
+    "attr": "class",
+    "equals": "backstage-overlay"
+   },
+   "subFeatures": null,
+   "note": "ledger row: file.back — backstage Back row routes closeFileMenu → closeBackstage → hideBackstage which removes the .open class from #backstage-overlay (editor.js:1266, 10503-10508) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
    "ooId": "shortcut.bold",
    "label": "shortcut.bold",
    "token": "shortcut.bold",
@@ -17912,6 +17928,44 @@
    },
    "subFeatures": null,
    "note": "ledger row: shortcut.insertpagebreak — Ctrl+Enter emits insertPageBreak which plants div.page-break + trailing p (editor.js:11231, 1177-1194) [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "statusbar.btn-zoom-topage",
+   "label": "statusbar.btn-zoom-topage",
+   "token": "statusbar.btn-zoom-topage",
+   "feature": "statusbar.btn-zoom-topage",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "view",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "181%"
+   },
+   "subFeatures": null,
+   "note": "ledger row: statusbar.btn-zoom-topage — PROMOTED 2026-11-08 (L2N-03): OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10641). Order-independent on both sides now: the zoom-reset pre (contract-runner.cjs) drops any persisted wo-zoom and reloads, so the row boots at a distinct '100%' label — the 181% hit proves the fit click ran no matter what earlier contracts left in localStorage — and the new cleanup hook clicks #btn-zoom-reset AFTER the effect check, restoring wo-zoom=1 so the downstream relative-zoom contracts (view-flags btn-zoom-out 1->0.9, btn-zoom-in 0.9->1) keep their fresh-zoom premise. Old honest-gap reason: applyZoom persisted 1.81 and broke zoom-down/up, and `post` could not reset it because post runs before the effect check [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "",
+   "ooId": "statusbar.btn-zoom-towidth",
+   "label": "statusbar.btn-zoom-towidth",
+   "token": "statusbar.btn-zoom-towidth",
+   "feature": "statusbar.btn-zoom-towidth",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "view",
+   "assertion": {
+    "kind": "text-mutation",
+    "selector": "#sb-zoom-label",
+    "contains": "181%"
+   },
+   "subFeatures": null,
+   "note": "ledger row: statusbar.btn-zoom-towidth — PROMOTED 2026-11-08 (L2N-03): same single WO control as btn-zoom-topage (#btn-zoom-fit fits the page width into the viewport, editor.js:10641; deterministic 181% at 1600px); same order-independence fix: zoom-reset pre boots the row at a clean 100% label and the cleanup hook restores wo-zoom=1 after the check, so neither row depends on nor disturbs the neighbouring zoom contracts [override-only: no ledger row matched this key]"
   },
   {
    "tab": "layout",
@@ -18570,6 +18624,26 @@
    }
   },
   {
+   "tab": "",
+   "ooId": "statusbar.btn-doc-spell",
+   "label": "statusbar.btn-doc-spell",
+   "token": "statusbar.btn-doc-spell",
+   "feature": "statusbar.btn-doc-spell",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": null,
+   "effektClass": "view",
+   "assertion": {
+    "kind": "viewport-flag",
+    "rootSelector": "#sb-doc-spell",
+    "attr": "aria-pressed",
+    "equals": "true"
+   },
+   "subFeatures": null,
+   "note": "ledger row: statusbar.btn-doc-spell — statusbar Spell button toggles the inline spellcheck engine; click flips aria-pressed false->true and syncs the settings checkbox [override-only: no ledger row matched this key]"
+  },
+  {
    "tab": "layout",
    "ooId": "hyphenation-dialog",
    "label": "hyphenation-dialog",
@@ -18609,6 +18683,25 @@
    },
    "subFeatures": null,
    "note": "co-edit mode select [override-only: no ledger row matched this key]"
+  },
+  {
+   "tab": "references",
+   "ooId": "table.dlg-table-of-contents",
+   "label": "table.dlg-table-of-contents",
+   "token": "table.dlg-table-of-contents",
+   "feature": "table.dlg-table-of-contents",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "references",
+   "effektClass": "structure",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "toc"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]"
   }
  ]
 }
