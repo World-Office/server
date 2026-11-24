@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-23T23:31:02.041Z",
+ "generatedAt": "2026-11-24T00:02:40.043Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -17729,6 +17729,73 @@
    "note": "ledger row: shortcut.insertpagebreak — Ctrl+Enter emits insertPageBreak which plants div.page-break + trailing p (editor.js:11231, 1177-1194) [override-only: no ledger row matched this key]"
   },
   {
+   "tab": "layout",
+   "ooId": "page.dlg-margins",
+   "label": "page.dlg-margins",
+   "token": "page.dlg-margins",
+   "feature": "page.dlg-margins",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "layout",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dialog-visible",
+    "dialogSelector": "#page-setup-dialog"
+   },
+   "subFeatures": [
+    {
+     "name": "title",
+     "selector": "#page-setup-title"
+    },
+    {
+     "name": "size",
+     "selector": "#ps-size"
+    }
+   ],
+   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop19 react-port: the OO Margins dialog (page.dlg-margins) is delivered by the layout-tab Margins control #btn-page-margins, which emits world-office:page-layout in the react canvas editor (no #page-setup-dialog)"
+   }
+  },
+  {
+   "tab": "chart-design",
+   "ooId": "file.advanced-settings",
+   "label": "file.advanced-settings",
+   "token": "file.advanced-settings",
+   "feature": "file.advanced-settings",
+   "level": null,
+   "censusStatus": "override-only",
+   "wo": null,
+   "woTab": "chart-design",
+   "effektClass": "dialog",
+   "assertion": {
+    "kind": "dom-mutation",
+    "selector": "#editor",
+    "contains": "fixture-chart"
+   },
+   "subFeatures": null,
+   "note": " [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-tab=\"file\"]",
+    "post": "#filesettings",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-panel"
+    },
+    "xfail": false,
+    "note": "loop19 react-port: the OO File>Advanced Settings dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #filesettings is the Advanced Settings entry (SettingsPanel) in the react canvas editor (no #settings-dialog)"
+   }
+  },
+  {
    "tab": "",
    "ooId": "ctx.edit-alt-text",
    "label": "ctx.edit-alt-text",
@@ -18357,52 +18424,6 @@
    },
    "subFeatures": null,
    "note": "co-edit mode select [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "layout",
-   "ooId": "page.dlg-margins",
-   "label": "page.dlg-margins",
-   "token": "page.dlg-margins",
-   "feature": "page.dlg-margins",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "layout",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#page-setup-dialog"
-   },
-   "subFeatures": [
-    {
-     "name": "title",
-     "selector": "#page-setup-title"
-    },
-    {
-     "name": "size",
-     "selector": "#ps-size"
-    }
-   ],
-   "note": "margins live in the page-setup dialog [override-only: no ledger row matched this key]"
-  },
-  {
-   "tab": "chart-design",
-   "ooId": "file.advanced-settings",
-   "label": "file.advanced-settings",
-   "token": "file.advanced-settings",
-   "feature": "file.advanced-settings",
-   "level": null,
-   "censusStatus": "override-only",
-   "wo": null,
-   "woTab": "chart-design",
-   "effektClass": "dialog",
-   "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor",
-    "contains": "fixture-chart"
-   },
-   "subFeatures": null,
-   "note": " [override-only: no ledger row matched this key]"
   }
  ]
 }
