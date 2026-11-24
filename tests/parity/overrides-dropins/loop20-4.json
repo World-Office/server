@@ -1,0 +1,100 @@
+{
+  "entries": {
+    "insert.functions": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Functions row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.accents": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Accents row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.limits-and-logarithms": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Limits and logarithms row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.operators": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Operators row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.matrices": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Matrices row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "page.last-custom": {
+      "effektClass": "op",
+      "woTab": "layout",
+      "contract": {
+        "selector": "#btn-page-margins",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "world-office:page-layout"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Margins menu's Last Custom preset (page.last-custom) is delivered by the layout-tab Margins control #btn-page-margins, which emits world-office:page-layout in the react canvas editor (margins+pageSize+orientation surface — no .page-setup marker / wo-last-custom-margins localStorage seed)"
+      },
+      "note": "loop20"
+    }
+  }
+}
