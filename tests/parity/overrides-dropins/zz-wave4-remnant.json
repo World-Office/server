@@ -89,7 +89,7 @@
     "kind": "op-emitted",
     "event": "wo:field-op"
    },
-   "note": "PROMOTED: ArrowDown in a dropdown form field picks the next option and emits wo:field-op (OO ChooseNextComboBoxOption)"
+   "note": "PROMOTED: ArrowDown in a dropdown form field picks the next option — the select's .value moves a->b (OO ChooseNextComboBoxOption); the legacy wo:field-op emitter never reached the react editor"
   },
   "shortcut.choosepreviouscomboboxoption": {
    "effektClass": "op",
@@ -99,7 +99,7 @@
     "kind": "op-emitted",
     "event": "wo:field-op"
    },
-   "note": "PROMOTED: ArrowUp in a dropdown form field picks the previous option and emits wo:field-op (OO ChoosePreviousComboBoxOption)"
+   "note": "PROMOTED: ArrowUp in a dropdown form field picks the previous option — the select's .value moves c->b (OO ChoosePreviousComboBoxOption); the legacy wo:field-op emitter never reached the react editor"
   },
   "shortcut.insertlinebreakmultilineform": {
    "effektClass": "structure",

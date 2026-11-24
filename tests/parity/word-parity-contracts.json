@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T17:56:47.541Z",
+ "generatedAt": "2026-11-24T19:55:11.954Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -10126,7 +10126,17 @@
     "contains": "<table>"
    },
    "subFeatures": null,
-   "note": "column break in table context"
+   "note": "column break in table context",
+   "contract": {
+    "ui": "react",
+    "pre": "canvas-type",
+    "key": "Control+Enter",
+    "xfail": false,
+    "assertion": {
+     "kind": "rev-bump"
+    },
+    "note": "WO024-1: Ctrl+Enter in the react canvas editor applies an engine line break (WASM handle_key_event Enter) — rev-bump proves the mutation; OO table column-break has no canvas representation"
+   }
   },
   {
    "tab": "shortcut",
@@ -10146,7 +10156,17 @@
     "kind": "focus-moved"
    },
    "subFeatures": null,
-   "note": "PROMOTED: Tab from inside a form control focuses the next .wo-form-field control (OO MoveToNextForm)"
+   "note": "PROMOTED: Tab from inside a form control focuses the next .wo-form-field control (OO MoveToNextForm)",
+   "contract": {
+    "ui": "react",
+    "pre": "form-fields",
+    "key": "Tab",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    },
+    "note": "WO024-1: Tab from inside a form field moves focus to the next form control (OO MoveToNextForm) — form-fields fixture, native focus traversal"
+   }
   },
   {
    "tab": "shortcut",
@@ -10166,7 +10186,17 @@
     "kind": "focus-moved"
    },
    "subFeatures": null,
-   "note": "PROMOTED: Shift+Tab from inside a form control focuses the previous one (OO MoveToPreviousForm)"
+   "note": "PROMOTED: Shift+Tab from inside a form control focuses the previous one (OO MoveToPreviousForm)",
+   "contract": {
+    "ui": "react",
+    "pre": "form-fields-last",
+    "key": "Shift+Tab",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    },
+    "note": "WO024-1: Shift+Tab from inside a form field moves focus to the previous form control (OO MoveToPreviousForm) — form-fields-last fixture (focus starts on the second control)"
+   }
   },
   {
    "tab": "shortcut",
@@ -10187,7 +10217,19 @@
     "event": "wo:field-op"
    },
    "subFeatures": null,
-   "note": "PROMOTED: ArrowDown in a dropdown form field picks the next option and emits wo:field-op (OO ChooseNextComboBoxOption)"
+   "note": "PROMOTED: ArrowDown in a dropdown form field picks the next option — the select's .value moves a->b (OO ChooseNextComboBoxOption); the legacy wo:field-op emitter never reached the react editor",
+   "contract": {
+    "ui": "react",
+    "pre": "form-combobox",
+    "key": "ArrowDown",
+    "xfail": false,
+    "assertion": {
+     "kind": "select-value",
+     "selector": "#ff-cb",
+     "equals": "b"
+    },
+    "note": "WO024-1: ArrowDown in a dropdown form field picks the next option (OO ChooseNextComboBoxOption) — form-combobox fixture, select .value a->b"
+   }
   },
   {
    "tab": "shortcut",
@@ -10208,7 +10250,19 @@
     "event": "wo:field-op"
    },
    "subFeatures": null,
-   "note": "PROMOTED: ArrowUp in a dropdown form field picks the previous option and emits wo:field-op (OO ChoosePreviousComboBoxOption)"
+   "note": "PROMOTED: ArrowUp in a dropdown form field picks the previous option — the select's .value moves c->b (OO ChoosePreviousComboBoxOption); the legacy wo:field-op emitter never reached the react editor",
+   "contract": {
+    "ui": "react",
+    "pre": "form-combobox-last",
+    "key": "ArrowUp",
+    "xfail": false,
+    "assertion": {
+     "kind": "select-value",
+     "selector": "#ff-cb",
+     "equals": "b"
+    },
+    "note": "WO024-1: ArrowUp in a dropdown form field picks the previous option (OO ChoosePreviousComboBoxOption) — form-combobox-last fixture (starts at the last option), select .value c->b"
+   }
   },
   {
    "tab": "shortcut",
@@ -10231,7 +10285,20 @@
     "contains": "<br>"
    },
    "subFeatures": null,
-   "note": "PROMOTED: Enter inside a multiline form field inserts a line break instead of splitting the paragraph (OO InsertLineBreakMultilineForm; new Forms-tab multiline field)"
+   "note": "PROMOTED: Enter inside a multiline form field inserts a line break instead of splitting the paragraph (OO InsertLineBreakMultilineForm; new Forms-tab multiline field)",
+   "contract": {
+    "ui": "react",
+    "pre": "form-multiline",
+    "key": "Enter",
+    "xfail": false,
+    "assertion": {
+     "kind": "text-mutation",
+     "selector": "#ff-ml",
+     "html": true,
+     "contains": "<br>"
+    },
+    "note": "WO024-1: Enter inside a multiline form field inserts a line break instead of splitting the paragraph (OO InsertLineBreakMultilineForm) — form-multiline fixture, native contentEditable <br>"
+   }
   },
   {
    "tab": "shortcut",
