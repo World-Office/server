@@ -6893,7 +6893,17 @@
     "selector": "#editor",
     "contains": "toc"
    },
-   "subFeatures": null
+   "subFeatures": null,
+   "contract": {
+    "ui": "react",
+    "selector": "#btn-insert-toc",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-viewport-right-menu[data-wo-right-panel=\"crossreference\"]"
+    },
+    "woTab": "references"
+   }
   },
   {
    "tab": "dialog:Macros",
@@ -6992,7 +7002,20 @@
     "equals": "backstage-overlay"
    },
    "subFeatures": null,
-   "note": "ledger row: file.back — backstage Back row routes closeFileMenu → closeBackstage → hideBackstage which removes the .open class from #backstage-overlay (editor.js:1266, 10503-10508)"
+   "note": "ledger row: file.back — backstage Back row routes closeFileMenu → closeBackstage → hideBackstage which removes the .open class from #backstage-overlay (editor.js:1266, 10503-10508)",
+   "contract": {
+    "ui": "react",
+    "selector": "button[data-tab=\"file\"]",
+    "post": "[aria-label=\"Back\"]",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-style",
+     "selector": ".de-file-menu-panel",
+     "prop": "display",
+     "equals": "none"
+    },
+    "woTab": "backstage"
+   }
   },
   {
    "tab": "backstage",
@@ -7297,7 +7320,18 @@
     "equals": "true"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-doc-spell — statusbar Spell button toggles the inline spellcheck engine; click flips aria-pressed false->true and syncs the settings checkbox"
+   "note": "ledger row: statusbar.btn-doc-spell — statusbar Spell button toggles the inline spellcheck engine; click flips aria-pressed false->true and syncs the settings checkbox",
+   "contract": {
+    "ui": "react",
+    "selector": ".de-statusbar [title=\"Spell Check\"]",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-statusbar [title=\"Spell Check\"].active",
+     "absent": true
+    },
+    "woTab": "surface:statusbar"
+   }
   },
   {
    "tab": "statusbar",
@@ -7320,7 +7354,17 @@
     "equals": "true"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-doc-review — #sb-track-changes toggles tracking via setTrackChanges(!trackChangesOn) (editor.js:10433/4037): flips aria-pressed true/false on the statusbar button and .track-on on #editor; it does NOT open #trackchanges-dialog (only the collaboration-tab #btn-track-changes does), so the honest statusbar contract asserts the toggle state"
+   "note": "ledger row: statusbar.btn-doc-review — #sb-track-changes toggles tracking via setTrackChanges(!trackChangesOn) (editor.js:10433/4037): flips aria-pressed true/false on the statusbar button and .track-on on #editor; it does NOT open #trackchanges-dialog (only the collaboration-tab #btn-track-changes does), so the honest statusbar contract asserts the toggle state",
+   "contract": {
+    "ui": "react",
+    "selector": ".de-statusbar [title=\"Track Changes\"]",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-statusbar [title=\"Track Changes\"].active"
+    },
+    "woTab": "surface:statusbar"
+   }
   },
   {
    "tab": "statusbar",
@@ -7374,7 +7418,17 @@
     "contains": "181%"
    },
    "subFeatures": null,
-   "note": "ledger row: statusbar.btn-zoom-topage — PROMOTED 2026-11-08 (L2N-03): OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10641). Order-independent on both sides now: the zoom-reset pre (contract-runner.cjs) drops any persisted wo-zoom and reloads, so the row boots at a distinct '100%' label — the 181% hit proves the fit click ran no matter what earlier contracts left in localStorage — and the new cleanup hook clicks #btn-zoom-reset AFTER the effect check, restoring wo-zoom=1 so the downstream relative-zoom contracts (view-flags btn-zoom-out 1->0.9, btn-zoom-in 0.9->1) keep their fresh-zoom premise. Old honest-gap reason: applyZoom persisted 1.81 and broke zoom-down/up, and `post` could not reset it because post runs before the effect check"
+   "note": "ledger row: statusbar.btn-zoom-topage — PROMOTED 2026-11-08 (L2N-03): OO fit-to-page maps to the single statusbar #btn-zoom-fit; at the runner's 1600px viewport the handler zoomLevel=(1600-96)/830=1.812 -> applyZoom writes '181%' into #sb-zoom-label (editor.js:10641). Order-independent on both sides now: the zoom-reset pre (contract-runner.cjs) drops any persisted wo-zoom and reloads, so the row boots at a distinct '100%' label — the 181% hit proves the fit click ran no matter what earlier contracts left in localStorage — and the new cleanup hook clicks #btn-zoom-reset AFTER the effect check, restoring wo-zoom=1 so the downstream relative-zoom contracts (view-flags btn-zoom-out 1->0.9, btn-zoom-in 0.9->1) keep their fresh-zoom premise. Old honest-gap reason: applyZoom persisted 1.81 and broke zoom-down/up, and `post` could not reset it because post runs before the effect check",
+   "contract": {
+    "ui": "react",
+    "selector": ".de-statusbar [title=\"Fit to Page\"]",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-statusbar [title=\"Fit to Page\"].active"
+    },
+    "woTab": "surface:statusbar"
+   }
   },
   {
    "tab": "statusbar",
@@ -8018,7 +8072,17 @@
     "kind": "focus-moved"
    },
    "subFeatures": null,
-   "note": "Tab cycles modal fields"
+   "note": "Tab cycles modal fields",
+   "contract": {
+    "ui": "react",
+    "key": "Tab",
+    "pre": "find-dialog",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",

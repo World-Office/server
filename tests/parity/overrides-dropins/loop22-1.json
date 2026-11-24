@@ -1,0 +1,92 @@
+{
+  "entries": {
+    "toc-dialog": {
+      "effektClass": "structure",
+      "woTab": "references",
+      "contract": {
+        "ui": "react",
+        "selector": "#btn-insert-toc",
+        "xfail": false,
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": ".de-viewport-right-menu[data-wo-right-panel=\"crossreference\"]"
+        }
+      },
+      "note": "loop22-inline: OO TOC dialog maps to the react References ▸ Table of Contents button (#btn-insert-toc, lazy tab via woTab) — insertToc routes toggleRightPanel(\"crossreference\") (word-commands.ts:1077), observable as [data-wo-right-panel=crossreference] on .de-viewport-right-menu (Viewport.tsx:193)"
+    },
+    "back": {
+      "effektClass": "op",
+      "woTab": "backstage",
+      "contract": {
+        "ui": "react",
+        "selector": "button[data-tab=\"file\"]",
+        "post": "[aria-label=\"Back\"]",
+        "xfail": false,
+        "assertion": {
+          "kind": "dom-style",
+          "selector": ".de-file-menu-panel",
+          "prop": "display",
+          "equals": "none"
+        }
+      },
+      "note": "loop22-inline: two-step backstage contract — trigger opens the File menu (button[data-tab=file] flips documentStore.isFileMenuOpen), post clicks the Back row ([aria-label=Back], FileMenuItems.tsx:295 handleBack) which closes it; panel display flips block→none (Viewport.tsx:121)"
+    },
+    "sb-track-changes": {
+      "effektClass": "op",
+      "woTab": "surface:statusbar",
+      "contract": {
+        "ui": "react",
+        "selector": ".de-statusbar [title=\"Track Changes\"]",
+        "xfail": false,
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": ".de-statusbar [title=\"Track Changes\"].active"
+        }
+      },
+      "note": "loop22-inline: statusbar Track Changes toggle (StatusBar.tsx ~382) — setTrackChanges flips, button gains .active"
+    },
+    "sb-doc-spell": {
+      "effektClass": "view",
+      "woTab": "surface:statusbar",
+      "contract": {
+        "ui": "react",
+        "selector": ".de-statusbar [title=\"Spell Check\"]",
+        "xfail": false,
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": ".de-statusbar [title=\"Spell Check\"].active",
+          "absent": true
+        }
+      },
+      "note": "loop22-inline: statusbar Spell Check toggle (StatusBar.tsx ~410) — starts active (default ON), click disables: setSpellingEnabled(false), button loses .active"
+    },
+    "btn-zoom-fit": {
+      "effektClass": "view",
+      "woTab": "surface:statusbar",
+      "contract": {
+        "ui": "react",
+        "selector": ".de-statusbar [title=\"Fit to Page\"]",
+        "xfail": false,
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": ".de-statusbar [title=\"Fit to Page\"].active"
+        }
+      },
+      "note": "loop22-inline: OO fit-to-page maps to the single react statusbar Fit to Page button (StatusBar.tsx:208 fitToPage state) — click sets fitToPage, button gains .active"
+    },
+    "shortcut.nextmodalcontrol": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Tab",
+        "pre": "find-dialog",
+        "xfail": false,
+        "assertion": {
+          "kind": "focus-moved"
+        }
+      },
+      "note": "loop22-inline: Tab cycles modal fields — find-dialog pre opens the find UI (#btn-find, Home ▸ Editing) and focuses its first input; Tab moves activeElement to the next control (native focus nav)"
+    }
+  }
+}
