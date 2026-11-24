@@ -1,0 +1,274 @@
+{
+  "entries": {
+    "shortcut.movetostartline": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Home",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Home (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetoendline": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "End",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord End (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetostartdocument": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+Home",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+Home (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetoenddocument": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+End",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+End (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.scrolldown": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "PageDown",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord PageDown (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.scrollup": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "PageUp",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord PageUp (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetorightchar": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "ArrowRight",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord ArrowRight (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetoleftchar": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "ArrowLeft",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord ArrowLeft (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetoupline": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "ArrowUp",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord ArrowUp (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetodownline": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "ArrowDown",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord ArrowDown (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetostartword": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+ArrowLeft",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+ArrowLeft (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.movetoendword": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+ArrowRight",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+ArrowRight (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selecttostartline": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Shift+Home",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Shift+Home (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selectlinedown": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Shift+ArrowDown",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Shift+ArrowDown (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selectpageup": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Shift+PageUp",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Shift+PageUp (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selectpagedown": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Shift+PageDown",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Shift+PageDown (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selectrightword": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+Shift+ArrowRight",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+Shift+ArrowRight (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    },
+    "shortcut.selectleftword": {
+      "effektClass": "view",
+      "woTab": "_",
+      "contract": {
+        "ui": "react",
+        "key": "Control+Shift+ArrowLeft",
+        "pre": "hf-caret-fill",
+        "xfail": false,
+        "assertion": {
+          "kind": "selection-moved"
+        },
+        "woTab": "_"
+      },
+      "note": "loop22-inline: OO chord Ctrl+Shift+ArrowLeft (oo-shortcuts.json ground truth) driven in the footer contentEditable — the react canvas editor's only DOM text surface; pre hf-caret-fill types two multi-word paragraphs through real key events (tiptap owns the DOM) and parks the caret at offset 1. Probed: 9/9 chords register a selection change."
+    }
+  }
+}

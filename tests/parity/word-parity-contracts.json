@@ -7823,7 +7823,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret to line start — native contentEditable"
+   "note": "caret to line start — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Home",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7843,7 +7853,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret to document start — native contentEditable"
+   "note": "caret to document start — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Home",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7863,7 +7883,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret to line end — native contentEditable"
+   "note": "caret to line end — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "End",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7883,7 +7913,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret doc end — native contentEditable"
+   "note": "caret doc end — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+End",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7903,7 +7943,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "viewport scroll on long doc"
+   "note": "viewport scroll on long doc",
+   "contract": {
+    "ui": "react",
+    "key": "PageDown",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7923,7 +7973,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "viewport scroll from bottom"
+   "note": "viewport scroll from bottom",
+   "contract": {
+    "ui": "react",
+    "key": "PageUp",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -7988,7 +8048,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret right — native contentEditable"
+   "note": "caret right — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowRight",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -8008,7 +8078,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret left — native contentEditable"
+   "note": "caret left — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowLeft",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -8028,7 +8108,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret up — native contentEditable"
+   "note": "caret up — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowUp",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -8048,7 +8138,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret down — native contentEditable"
+   "note": "caret down — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "ArrowDown",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -8802,7 +8902,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select to line start — native contentEditable"
+   "note": "select to line start — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+Home",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -8996,7 +9106,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select line down — native contentEditable"
+   "note": "select line down — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowDown",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -9016,7 +9136,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select page up — native contentEditable"
+   "note": "select page up — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+PageUp",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -9036,7 +9166,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select page down — native contentEditable"
+   "note": "select page down — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+PageDown",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -10537,7 +10677,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret word left — native contentEditable"
+   "note": "caret word left — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+ArrowLeft",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -10557,7 +10707,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "caret word right — native contentEditable"
+   "note": "caret word right — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+ArrowRight",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -10787,7 +10947,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select word right — native contentEditable"
+   "note": "select word right — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+ArrowRight",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",
@@ -10807,7 +10977,17 @@
     "kind": "selection-moved"
    },
    "subFeatures": null,
-   "note": "select word left — native contentEditable"
+   "note": "select word left — native contentEditable",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+ArrowLeft",
+    "pre": "hf-caret-fill",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    },
+    "woTab": "_"
+   }
   },
   {
    "tab": "shortcut",

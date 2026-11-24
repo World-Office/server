@@ -559,7 +559,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-fields-last','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog','hf-caret'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-fields-last','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog','hf-caret','hf-caret-fill'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'canvas-type') {
         // canvas editor: type real text and select it so a format chord has
@@ -957,6 +957,46 @@ async function subFeatureAudit(page, ov, dialogSel) {
           const sel = window.getSelection();
           sel.removeAllRanges();
           sel.addRange(range);
+        });
+        await sleep(100);
+      }
+      else if (ov.pre === 'hf-caret-fill') {
+        // movement/selection chords need text to traverse: the hf-caret
+        // fixture (footer contentEditable = the canvas editor's only DOM
+        // text surface) filled with two paragraphs through real key events
+        // (tiptap owns the DOM — innerHTML would be reconciled away); caret
+        // collapsed at offset 1 so Home/Left have somewhere to go and
+        // End/Right/Down/word-moves have text to cross.
+        await page.evaluate(() => {
+          const tab = document.querySelector('.ribbon-tab[data-tab="insert"]');
+          if (!tab) throw new Error('hf-caret-fill pre: insert tab missing');
+          tab.click();
+        });
+        await sleep(150);
+        await page.evaluate(() => {
+          const btn = document.querySelector('#btn-edit-footer');
+          if (!btn) throw new Error('hf-caret-fill pre: #btn-edit-footer missing');
+          btn.click();
+        });
+        await page.waitForSelector('[data-header-footer-region="footer"] [contenteditable="true"]', { timeout: 3000 });
+        await page.evaluate(() => {
+          document.querySelector('[data-header-footer-region="footer"] [contenteditable="true"]').focus();
+        });
+        await page.keyboard.press('Control+a');
+        await page.keyboard.type('alpha beta gamma delta');
+        await page.keyboard.press('Enter');
+        await page.keyboard.type('epsilon zeta eta theta');
+        await sleep(150);
+        await page.evaluate(() => {
+          const ce = document.querySelector('[data-header-footer-region="footer"] [contenteditable="true"]');
+          const n = ce.querySelector('p').firstChild;
+          const range = document.createRange();
+          range.setStart(n, 1);
+          range.collapse(true);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ce.focus();
         });
         await sleep(100);
       }
