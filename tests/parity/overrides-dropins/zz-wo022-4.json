@@ -1,0 +1,88 @@
+{
+ "entries": {
+  "shortcut.selectleftchar": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowLeft",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-left is exercised on the react editor's only DOM text surface: the hf-caret pre enters footer editing (Insert ▸ Footer) with the caret at offset 1 of the 'Footer' text; Shift+ArrowLeft natively extends the selection one char left (offset 1->0)"
+  },
+  "shortcut.selectrightchar": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowRight",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-right is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Shift+ArrowRight natively extends the selection one char right (offset 1->2)"
+  },
+  "shortcut.selectlineup": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowUp",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-line-up is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); Shift+ArrowUp natively extends the selection to the line start (offset 1->0)"
+  },
+  "shortcut.selecttoendline": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+End",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-end-of-line is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Shift+End natively extends the selection to the line end (offset 1->6)"
+  },
+  "shortcut.selecttostartdocument": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+Home",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-start-of-document is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Ctrl+Shift+Home natively extends the selection to the document start (offset 1->0)"
+  },
+  "shortcut.selecttoenddocument": {
+   "effektClass": "op",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+End",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-end-of-document is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Ctrl+Shift+End natively extends the selection to the document end (offset 1->6)"
+  }
+ }
+}

@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T15:58:05.662Z",
+ "generatedAt": "2026-11-24T16:10:23.598Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -8819,10 +8819,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select to line end — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-end-of-line is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Shift+End natively extends the selection to the line end (offset 1->6)",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+End",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -8839,10 +8848,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select to doc start — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-start-of-document is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Ctrl+Shift+Home natively extends the selection to the document start (offset 1->0)",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+Home",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -8859,10 +8877,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select to doc end — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-to-end-of-document is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Ctrl+Shift+End natively extends the selection to the document end (offset 1->6)",
+   "contract": {
+    "ui": "react",
+    "key": "Control+Shift+End",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -8879,10 +8906,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select char right — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-right is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of 'Footer'); Shift+ArrowRight natively extends the selection one char right (offset 1->2)",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowRight",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -8899,10 +8935,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select char left — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-left is exercised on the react editor's only DOM text surface: the hf-caret pre enters footer editing (Insert ▸ Footer) with the caret at offset 1 of the 'Footer' text; Shift+ArrowLeft natively extends the selection one char left (offset 1->0)",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowLeft",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
@@ -8919,10 +8964,19 @@
    "woTab": null,
    "effektClass": "op",
    "assertion": {
-    "kind": "selection-moved"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "select line up — native contentEditable"
+   "note": "WO022-4: the canvas body has no DOM selection — select-line-up is exercised on the footer tiptap surface (hf-caret pre, caret at offset 1 of the single 'Footer' line); Shift+ArrowUp natively extends the selection to the line start (offset 1->0)",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+ArrowUp",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   }
   },
   {
    "tab": "shortcut",
