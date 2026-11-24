@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T10:54:25.214Z",
+ "generatedAt": "2026-11-24T11:56:28.452Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -5455,11 +5455,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.functions — gallery Functions row inserts the functions equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Functions row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5476,11 +5486,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.accents — gallery Accents row inserts the accents equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Accents row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5497,11 +5517,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.limits-and-logarithms — gallery Limits and logarithms row inserts the limits equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Limits and logarithms row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5518,11 +5548,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.operators — gallery Operators row inserts the operators equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Operators row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5539,11 +5579,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.matrices — gallery Matrices row inserts the matrices equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Matrices row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:margins",
@@ -5564,7 +5614,18 @@
     "selector": ".page-setup[data-margin-top=\"120\"][data-margin-bottom=\"120\"][data-margin-left=\"130\"][data-margin-right=\"130\"]"
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-07 (L2L-05): the custom-margins pre seeds localStorage wo-last-custom-margins {top:120,bottom:120,left:130,right:130} and opens the Layout margins dropdown, so applyPageMarginsPreset('last-custom') (editor.js:6320-6338) takes the readCustomMargins() branch and writePageSetupMarker (editor.js:6300-6310) writes the seeded twips onto the .page-setup marker"
+   "note": "PROMOTED 2026-11-07 (L2L-05): the custom-margins pre seeds localStorage wo-last-custom-margins {top:120,bottom:120,left:130,right:130} and opens the Layout margins dropdown, so applyPageMarginsPreset('last-custom') (editor.js:6320-6338) takes the readCustomMargins() branch and writePageSetupMarker (editor.js:6300-6310) writes the seeded twips onto the .page-setup marker",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Margins menu's Last Custom preset (page.last-custom) is delivered by the layout-tab Margins control #btn-page-margins, which emits world-office:page-layout in the react canvas editor (margins+pageSize+orientation surface — no .page-setup marker / wo-last-custom-margins localStorage seed)"
+   }
   },
   {
    "tab": "menu:margins",
