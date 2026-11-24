@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-24T00:03:56.555Z",
+ "generatedAt": "2026-11-24T10:54:25.214Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -5269,11 +5269,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.fractions — gallery Fractions row dispatches equationTemplate(\"fractions\") → insertEquationTemplate → insertVectorObject renders img.vector-object[data-kind=equation] into #editor (editor.js:1548, 2359, 13072)"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Fractions row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5290,11 +5300,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.scripts — gallery Scripts row inserts the scripts equation template as img[data-kind=equation]"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Scripts row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5311,11 +5331,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.radicals — gallery Radicals row inserts the radicals equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Radicals row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5332,11 +5362,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.integrals — gallery Integrals row inserts the integrals equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Integrals row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5353,11 +5393,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.large-operators — gallery Large operators row inserts the large-operators equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Large operators row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",
@@ -5374,11 +5424,21 @@
    "woTab": null,
    "effektClass": "structure",
    "assertion": {
-    "kind": "dom-mutation",
-    "selector": "#editor img[data-kind=\"equation\"]"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.brackets — gallery Brackets row inserts the brackets equation template"
+   "note": "loop20",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "canvas-type",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop20 react-port: the OO Symbols equation-gallery Brackets row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+   }
   },
   {
    "tab": "menu:equation",

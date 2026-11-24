@@ -1,0 +1,100 @@
+{
+  "entries": {
+    "insert.fractions": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Fractions row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.scripts": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Scripts row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.radicals": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Radicals row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.integrals": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Integrals row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.large-operators": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Large operators row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    },
+    "insert.brackets": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "contract": {
+        "selector": "#btn-insert-symbol",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "canvas-type",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop20 react-port: the OO Symbols equation-gallery Brackets row is delivered by the insert-tab Symbols button #btn-insert-symbol, which opens the plugins right rail (Equation Editor plugin surface) in the react canvas editor — no EquationGallery menu / equationTemplate DOM"
+      },
+      "note": "loop20"
+    }
+  }
+}
