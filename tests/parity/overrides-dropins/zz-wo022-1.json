@@ -1,0 +1,96 @@
+{
+ "entries": {
+  "shortcut.previousmodalcontrol": {
+   "effektClass": "view",
+   "woTab": "_",
+   "contract": {
+    "ui": "react",
+    "key": "Shift+Tab",
+    "pre": "find-dialog",
+    "xfail": false,
+    "assertion": {
+     "kind": "focus-moved"
+    }
+   },
+   "note": "WO022-1: Shift+Tab cycles modal fields back — find-dialog pre opens the Find panel (#btn-find, Home ▸ Editing; search input auto-focuses), Shift+Tab moves activeElement to the previous tabbable control (find input → canvas): native focus nav observable in the react canvas editor"
+  },
+  "shortcut.movetolowerheaderfooter": {
+   "effektClass": "view",
+   "contract": {
+    "ui": "react",
+    "key": null,
+    "pre": null,
+    "selector": "#btn-insert-page-number",
+    "woTab": "insert",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-header-footer-region=\"footer\"]"
+    }
+   },
+   "note": "WO022-1: the react canvas editor's 'jump into the footer' surface is entering footer editing — Insert ▸ Page Number (#btn-insert-page-number) sets headerFooterMode=footer (word-commands.ts) and the footer region [data-header-footer-region=footer] mounts (absent before the click) as an editable tiptap (Viewport.tsx)"
+  },
+  "shortcut.movetoupperheaderfooter": {
+   "effektClass": "view",
+   "contract": {
+    "ui": "react",
+    "key": null,
+    "pre": null,
+    "selector": "#btn-insert-date-time",
+    "woTab": "insert",
+    "xfail": false,
+    "assertion": {
+     "kind": "text-mutation",
+     "selector": "[data-header-footer-region=\"header\"]",
+     "containsDate": true
+    }
+   },
+   "note": "WO022-1: the react canvas editor's 'jump into the header' surface is entering header editing — Insert ▸ Date & Time (#btn-insert-date-time) sets headerFooterMode=header and writes a timestamp into headerHtml (word-commands.ts); the header region mounts carrying the timestamp text (tiptap drops the data-wo-field span, so the date text is asserted)"
+  },
+  "shortcut.movetolowerheader": {
+   "effektClass": "view",
+   "contract": {
+    "ui": "react",
+    "key": null,
+    "pre": null,
+    "selector": "#btn-edit-footer",
+    "woTab": "insert",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-header-footer-region=\"footer\"]"
+    }
+   },
+   "note": "WO022-1: the react canvas editor's 'caret into the footer' surface is entering footer editing — Insert ▸ Footer (#btn-edit-footer) sets headerFooterMode=footer (word-commands.ts) and the footer region [data-header-footer-region=footer] mounts (absent before the click) as an editable tiptap"
+  },
+  "shortcut.movetoupperheader": {
+   "effektClass": "view",
+   "contract": {
+    "ui": "react",
+    "key": null,
+    "pre": null,
+    "selector": "#btn-edit-header",
+    "woTab": "insert",
+    "xfail": false,
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-header-footer-region=\"header\"]"
+    }
+   },
+   "note": "WO022-1: the react canvas editor's 'caret into the header' surface is entering header editing — Insert ▸ Header (#btn-edit-header) sets headerFooterMode=header (word-commands.ts) and the header region [data-header-footer-region=header] mounts (absent before the click) as an editable tiptap"
+  },
+  "shortcut.endparagraph": {
+   "effektClass": "format",
+   "contract": {
+    "ui": "react",
+    "key": "End",
+    "pre": "hf-caret",
+    "xfail": false,
+    "assertion": {
+     "kind": "selection-moved"
+    }
+   },
+   "note": "WO022-1: the canvas body has no DOM selection — End is exercised on the react editor's only DOM text surface: the hf-caret pre enters footer editing (Insert ▸ Footer) with the caret at the start of the 'Footer' text; End natively moves it to the paragraph end (offset 1→6)"
+  }
+ }
+}
