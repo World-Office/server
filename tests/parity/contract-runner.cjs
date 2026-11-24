@@ -399,6 +399,17 @@ async function checkEffect(page, ov, assertion) {
           ? `events: ${(window.__woEvents || []).join(',')}`
           : 'no wo:* events observed',
       }), assertion.event || `wo:${assertion.selector || ''}`), undefined);
+    case 'select-value':
+      // form combobox option-picking (react canvas lane): a native <select>'s
+      // arrow-key selection is DOM property state — ArrowUp/Down mutates
+      // .value without touching innerHTML, so the option change is only
+      // observable through the property
+      return poll(page, (a) => page.evaluate((a) => {
+        const el = document.querySelector(a.selector);
+        if (!el) return { ok: false, observed: `no ${a.selector}` };
+        const v = el.value;
+        return { ok: v === a.equals, observed: `${a.selector}.value=${v}`, expected: `value=${a.equals}` };
+      }, assertion));
     case 'selection-moved':
       // caret/selection contracts: the before-state was captured on the
       // window (see trigger); pass iff the selection CHANGED (offsets,
@@ -548,7 +559,7 @@ async function subFeatureAudit(page, ov, dialogSel) {
       }
       // 1. prerequisites FIRST (a control inside a closed menu is invisible;
       // then presence + hit-test (elementFromPoint, not just DOM)
-      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog','hf-caret'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
+      const preMenu = ['file-menu','list','ctx-menu','ctx-menu-react','ctx-menu-in-list','ctx-menu-in-table','ctx-menu-in-colspan-cell','ctx-menu-on-image','ctx-menu-on-chart','ctx-menu-cells','link-at-caret','chart-selection','chart-selection-line','ctx-menu-misspelled','ctx-menu-misspelled-react','ctx-menu-trackchanges','ctx-menu-two-objects','ctx-menu-on-comment','ctx-menu-on-field','ctx-menu-on-cc','grouped-objects','hf-editing','ctx-menu-on-vertical','formatted-selection','tracked-ahead','tracked-behind','ctx-menu-in-two-lists','bookmark-at-caret','ctx-menu-on-equation','ctx-menu-on-image-in-cell','custom-margins','in-table','in-table-last','object-selection','resetchar-bold','page2-caret','equation-selection','form-fields','form-fields-last','form-combobox','form-combobox-last','form-multiline','in-list','in-nested-list','hf-doc','dirty-undo','dirty-type','dirty-indent','dirty-ctx','dirty-undo-ctx','ctx-menu-textdir','chart-menu','ink-pen','long-doc','find-dialog','hf-caret'].includes(ov.pre) || /^(backstage|menu|fluent-menu):/.test(ov.pre || ''); // list/ctx-menu manage their own caret
       if (ov.pre === 'file-menu') await openFileMenu(page);
       else if (ov.pre === 'canvas-type') {
         // canvas editor: type real text and select it so a format chord has
@@ -711,6 +722,18 @@ async function subFeatureAudit(page, ov, dialogSel) {
           ed.innerHTML = '<p>F1 <span class="form-field wo-form-field" contenteditable="false" data-form-field="text"><input type="text" id="ff-1" value="one" style="pointer-events:auto"></span> mid <span class="form-field wo-form-field" contenteditable="false" data-form-field="dropdown"><select id="ff-2" style="pointer-events:auto"><option value="a">Alpha</option><option value="b">Beta</option></select></span> F2</p>';
           const first = ed.querySelector('#ff-1');
           if (first) first.focus();
+        });
+        await sleep(150);
+      }
+      else if (ov.pre === 'form-fields-last') {
+        // form-field focus nav UPWARD: focus starts on the SECOND control
+        // so Shift+Tab has a previous form field to land on
+        await page.evaluate(() => {
+          const ed = document.querySelector('#editor');
+          if (!ed) throw new Error('#editor missing');
+          ed.innerHTML = '<p>F1 <span class="form-field wo-form-field" contenteditable="false" data-form-field="text"><input type="text" id="ff-1" value="one" style="pointer-events:auto"></span> mid <span class="form-field wo-form-field" contenteditable="false" data-form-field="dropdown"><select id="ff-2" style="pointer-events:auto"><option value="a">Alpha</option><option value="b">Beta</option></select></span> F2</p>';
+          const last = ed.querySelector('#ff-2');
+          if (last) last.focus();
         });
         await sleep(150);
       }
