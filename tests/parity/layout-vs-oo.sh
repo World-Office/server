@@ -11,8 +11,11 @@
 # Exits 0 whenever it produced a report (also if every tab regresses);
 # exits 1 only when it could not capture (no dist, no docserver, no browser).
 # Usage: tests/parity/layout-vs-oo.sh [harness-checkout] [dist-dir]
-# Env:   WO_TEST_HARNESS (default ../wo-test-harness), WO_DOCSERVER_BIN, NODE_PATH,
+# Env:   WO_TEST_HARNESS (default ../wo-test-harness), WO_DOCSERVER_BIN,
 #        LAYOUT_OUT (keep the fresh census there instead of a temp dir)
+# Playwright: the harness's own census/node_modules (tracked in that repo; the
+# nearest node_modules wins over NODE_PATH) — the version the goldens were
+# captured with. CI only has to install its browsers.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -22,8 +25,6 @@ export WO_DOCSERVER_BIN="${WO_DOCSERVER_BIN:-$ROOT/target/debug/wo-docserver}"
 export WO_PORT="${WO_PORT:-$((19000 + RANDOM % 900))}"      # own port; never a dev server's
 export NO_PROXY=127.0.0.1,localhost
 PY="$(command -v /usr/bin/python3 || command -v python3)"
-# the committed WO golden was captured with tests/node_modules' playwright: prefer it
-[ -d "$ROOT/tests/node_modules/playwright" ] && export NODE_PATH="$ROOT/tests/node_modules${NODE_PATH:+:$NODE_PATH}"
 
 [ -f "$DIST/index.html" ] && [ -x "$WO_DOCSERVER_BIN" ] && [ -f "$HARNESS/census/layout-diff.py" ] || {
   echo "layout-vs-oo: need a built dist ($DIST/index.html), a docserver binary ($WO_DOCSERVER_BIN) and the harness ($HARNESS/census)" >&2

@@ -154,7 +154,7 @@ jobs:
   layout-vs-oo:
     name: Ribbon Layout vs OO (advisory)
     needs: build
-    runs-on: ubuntu-24.04  # playwright@1.59.1 has no ubuntu-26.04 browser deps
+    runs-on: ubuntu-24.04  # fixed image for a geometry measurement: ubuntu-latest moves (fonts/libs) and changes the score; also the image `build` runs on
     timeout-minutes: 15
     if: inputs.full_test == 'true' || github.ref == 'refs/heads/main'
     steps:
@@ -173,22 +173,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # pinned to the playwright the committed WO golden was captured with
-      - name: Install Playwright
+      # The harness ships its playwright in census/node_modules (tracked), and the
+      # nearest node_modules wins over NODE_PATH — so install THAT version's
+      # browsers; a separately pinned playwright would be ignored.
+      - name: Install browsers for the harness's Playwright
         run: |-
-          npm install --prefix "$RUNNER_TEMP/pw" playwright@1.59.1
-          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+          cd wo-test-harness
+          ./census/node_modules/.bin/playwright install --with-deps chromium
       # The contract gate asks "does this control exist?"; this asks "is it on
       # the right row, in the right group, in order?". 2026-11-25: 266
       # contracts green while 6 of 9 scorable tabs regressed on layout. The
-      # script always exits 0 once it wrote a report; continue-on-error covers
-      # a failed capture, so this job can never fail the run.
+      # script exits 0 once it wrote a report and 1 only when it could not
+      # capture; that step is continue-on-error, so a missing report never
+      # fails the run (it shows as a failed step with the reason in its log).
       - name: Layout report
         continue-on-error: true
         run: |-
           chmod +x layout-inputs/wo-docserver
           cd server
-          NODE_PATH="$RUNNER_TEMP/pw/node_modules" \
           WO_DOCSERVER_BIN="$GITHUB_WORKSPACE/layout-inputs/wo-docserver" \
           LAYOUT_OUT="$RUNNER_TEMP/layout" \
           bash tests/parity/layout-vs-oo.sh "$GITHUB_WORKSPACE/wo-test-harness" \
