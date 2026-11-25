@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Gate: build, measure and verify the Leptos ribbon against ONLYOFFICE layout.
 # Usage: bash apps/web/apps/ribbon-leptos/gate/measure.sh
+#
+# MEASUREMENTS.md is REGENERATED on every run and is tracked, so it must be a
+# pure function of the crate's build inputs: no wall-clock time, no ports, no
+# timings — a second run on the same sources leaves `git status` clean.
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -10,14 +14,11 @@ cd "$CRATE"
 # --- Build (trunk build --release) ---
 echo "=== TRUNK BUILD ==="
 LOG="$(mktemp)"
-BUILD_START=$(date +%s)
 if ! trunk build --release >"$LOG" 2>&1; then
-    grep -E "^error|ERROR|error\[:digit:\]" -A6 "$LOG" | head -60
+    grep -E "^error|ERROR|error\[[A-Z][0-9]+\]" -A6 "$LOG" | head -60
     echo "gate: BUILD FAILED"
     exit 1
 fi
-BUILD_END=$(date +%s)
-BUILD_S=$((BUILD_END - BUILD_START))
 grep -E "wasm-bindgen version|success" "$LOG" | tail -2 || true
 
 # --- Capture file sizes ---
@@ -63,8 +64,12 @@ WO_ROWS=$(echo "$JSON_OUTPUT" | /usr/bin/python3 -c "import json, sys; d=json.lo
 WO_GROUPS=$(echo "$JSON_OUTPUT" | /usr/bin/python3 -c "import json, sys; d=json.load(sys.stdin); print(d.get('wo', {}).get('groups', 'N/A'))")
 LAYOUT_OK=$(echo "$JSON_OUTPUT" | /usr/bin/python3 -c "import json, sys; d=json.load(sys.stdin); print(int(d.get('ok', False)))")
 
-# Get commit hash
-WO_COMMIT=$(git rev-parse --short HEAD)
+# The commit that last changed the crate's BUILD INPUTS (not HEAD: a file
+# cannot contain its own commit, and HEAD would lag one commit forever).
+WO_COMMIT=$(git log -1 --format=%h -- src Cargo.toml Cargo.lock index.html)
+WO_COMMIT_DATE=$(git log -1 --format=%cI "$WO_COMMIT")
+LEPTOS_V=$(awk -F'"' '/^name = "leptos"$/{getline; print $2}' Cargo.lock | head -1)
+TRUNK_V=$(trunk --version | awk '{print $2}')
 
 # --- WRITE MEASUREMENTS.md ---
 cat > "$CRATE/MEASUREMENTS.md" <<EOF
@@ -77,7 +82,6 @@ WASM_RAW=$WASM_RAW
 WASM_GZ=$WASM_GZ
 JS_RAW=$JS_RAW
 JS_GZ=$JS_GZ
-BUILD_S=$BUILD_S
 OO_ROWS=$OO_ROWS
 WO_ROWS=$WO_ROWS
 OO_GROUPS=$OO_GROUPS
@@ -94,7 +98,6 @@ LAYOUT_OK=$LAYOUT_OK
 | WASM gzipped | N/A | $WASM_GZ B |
 | JS raw size | N/A | $JS_RAW B |
 | JS gzipped | N/A | $JS_GZ B |
-| Build time | N/A | ${BUILD_S}s |
 | Layout parity | N/A | $(if [ $LAYOUT_OK -eq 1 ]; then echo "PASS"; else echo "FAIL"; fi) |
 
 ## Verbatim layout-diff output
@@ -105,11 +108,11 @@ $LAYOUT_OUTPUT
 
 ## Method
 
-- Toolchain: trunk $(trunk --version 2>/dev/null || echo 'unknown') + $(grep -A1 'name = "leptos"' Cargo.lock | tail -1 | tr -s ' ' | cut -d' ' -f2- | tr -d '\"' || echo 'unknown')
-- Census: census-react-deep.cjs from /home/weiss/git/World-Office/wo-test-harness/census/ running against local build served at http://127.0.0.1:$PORT/
+- Toolchain: trunk $TRUNK_V + leptos $LEPTOS_V (rustc $(rustc --version | awk '{print $2}'))
+- Census: census-react-deep.cjs from /home/weiss/git/World-Office/wo-test-harness/census/ running against the local build served on 127.0.0.1 (random port 8700-8799)
 - Layout diff: layout-diff.py from /home/weiss/git/World-Office/wo-test-harness/census/ comparing against golden census-oo-deep.json
 - Viewport: 1600x1000
-- Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+- Source commit date: $WO_COMMIT_DATE
 EOF
 
 # --- Exit gate ---
