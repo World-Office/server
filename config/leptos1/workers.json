@@ -1,0 +1,36 @@
+{
+ "defaults": {
+  "accept_timeout_s": 900,
+  "max_attempts": 4,
+  "retry_delay_s": 30,
+  "agent_timeout_s": 5400
+ },
+ "workers": [
+  {
+   "name": "tud-glm52",
+   "model": "tud/glm-5.2-awq",
+   "provider": "tud",
+   "api_base": "http://192.168.42.42:4000/v1",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "builtin",
+   "price_per_mtok_usd": 0.001095,
+   "params_b": 355,
+   "max_turns": 64,
+   "max_in_flight": 4
+  },
+  {
+   "name": "tud-mistral-medium",
+   "model": "tud/mistral-medium-3.5-128b",
+   "provider": "tud",
+   "api_base": "http://192.168.42.42:4000/v1",
+   "api_key_env": "LITELLM_API_KEY",
+   "enabled": true,
+   "cli": "builtin",
+   "price_per_mtok_usd": 0.0008,
+   "params_b": 128,
+   "max_turns": 64,
+   "max_in_flight": 4
+  }
+ ]
+}
