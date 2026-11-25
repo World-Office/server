@@ -20,6 +20,23 @@ ui_stage() {
 
 [ -x "$BIN" ] || { echo "gate: docserver binary missing: $BIN" >&2; exit 1; }
 
+# A gate run must not leave the shared merge target dirty: af parks every
+# dispatch on a dirty main (the loop stalled on this until someone committed
+# the noise by hand), and loop-gate.sh's dirty-main refusal must mean
+# pollution, not this script's timestamps. Outputs whose ONLY changes are
+# timestamps are noise -> restored; any other diff is a real result change
+# and stays dirty for a human to review and commit.
+restore_noise() {
+  local f
+  for f in tests/parity/word-parity-contracts.json tests/parity/contract-results.json; do
+    if [ -n "$(git -C "$ROOT" status --porcelain -- "$f")" ] && \
+       [ -z "$(git -C "$ROOT" diff -U0 HEAD -- "$f" | grep -E '^[+-][^+-]' | grep -vE '"(ranAt|generatedAt)"')" ]; then
+      git -C "$ROOT" checkout -- "$f" || true
+    fi
+  done
+}
+trap restore_noise EXIT
+
 cd "$ROOT/tests"
 export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
@@ -30,6 +47,11 @@ export NO_PROXY=127.0.0.1,localhost
 # with a word symlink to the MAIN checkout's prebuilt react bundle.
 export EDITOR_UI_DIR="${EDITOR_UI_DIR:-$(ui_stage)}"
 [ -f "$EDITOR_UI_DIR/word/index.html" ] || export EDITOR_UI_DIR="$(ui_stage)"
+
+# The gates must be able to vouch for what they judge before their verdict
+# counts (refuse on a dirty merge target / a worktree that is not exactly its
+# drop-in / out-of-task claims; no timestamp noise left behind). ~25 s.
+GATE_HYGIENE_REPO="$ROOT" bash parity/gate-hygiene.check.sh || { echo "gate: gate-hygiene check FAILED"; exit 1; }
 
 /usr/bin/node parity/generate-manifest.cjs >/dev/null
 set +e

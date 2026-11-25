@@ -11,6 +11,41 @@ CSV="${1:?usage: loop-gate.sh <token-csv>}"
 [ -n "$CSV" ] || { echo "loop-gate: empty token csv" >&2; exit 1; }
 ROOT="$(git rev-parse --show-toplevel)"
 BIN=/home/weiss/git/World-Office/server/target/debug/wo-docserver
+STAGE=""; MF=""
+cleanup() { [ -z "$STAGE" ] || rm -rf "$STAGE"; [ -z "$MF" ] || rm -f "$MF"; true; }
+trap cleanup EXIT
+fail() { echo "loop-gate: $*" >&2; exit 1; }
+
+# A loop task promises exactly one thing: its own drop-in file. Until that is
+# true, main's prebuilt bundle proves nothing about the worktree — so check it
+# before anything is booted, and refuse to judge when it fails (2026-11-25:
+# WO031-4 copied editor code into main and patched main's contract-runner.cjs
+# to get its rows green; the gate then tested main and could not tell).
+# Only meaningful in a linked (task) worktree: run in main itself there is no
+# merge target to protect and nothing to compare a base against.
+linked() { [ "$(cd "$(git rev-parse --git-dir)" && pwd -P)" != "$(cd "$(git rev-parse --git-common-dir)" && pwd -P)" ]; }
+hygiene() {
+  local main dirty base own extra
+  linked || return 0
+  main="$(git worktree list --porcelain | head -n1 | sed 's/^worktree //')"
+  dirty="$(git -C "$main" status --porcelain)"
+  [ -z "$dirty" ] || fail "merge target is dirty — refusing to judge ($main); a gate must never pass because of what someone left in the checkout it trusts:
+$dirty"
+  base="$(git merge-base HEAD main)"
+  own="$( { git diff --name-only "$base"; git ls-files --others --exclude-standard; } | sed '/^$/d')"
+  [ -n "$own" ] || fail "no drop-in committed: this worktree does not differ from its base ($base)"
+  { [ "$(printf '%s\n' "$own" | wc -l)" -eq 1 ] && case "$own" in tests/parity/overrides-dropins/*.json) true ;; *) false ;; esac; } \
+    || fail "a loop task changes exactly its own drop-in file; this worktree differs from its base ($base) by:
+$own"
+  extra="$(/usr/bin/node -e '
+    const [f, csv] = process.argv.slice(1);
+    const d = JSON.parse(require("fs").readFileSync(f, "utf8"));
+    const mine = new Set(csv.split(",").map(s => s.trim()).filter(Boolean));
+    console.log(Object.keys(d.entries || {}).filter(k => !mine.has(k)).join(" "));
+  ' "$ROOT/$own" "$CSV" 2>&1)" || fail "drop-in unreadable: $extra"
+  [ -z "$extra" ] || fail "drop-in claims tokens outside this task ($CSV): $extra"
+}
+hygiene
 
 [ -x "$BIN" ] || { echo "loop-gate: docserver binary missing: $BIN" >&2; exit 1; }
 
@@ -18,19 +53,25 @@ export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
-# af worktrees have no built UI (dist/ gitignored). The docserver serves
-# /word/ from $EDITOR_UI_DIR/word (symlink to index.html), so stage a tmp
-# root with a word symlink to MAIN's prebuilt react bundle.
+# af worktrees cannot build the UI (no node_modules, dist/ gitignored), so the
+# docserver serves MAIN's prebuilt bundle. That is the worktree's build by
+# construction once `hygiene` has shown the worktree is main + one drop-in.
 if [ -z "${EDITOR_UI_DIR:-}" ] || [ ! -f "$EDITOR_UI_DIR/word/index.html" ]; then
   STAGE="$(mktemp -d /tmp/wo-parity-ui-XXXXXX)"
   ln -s /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist "$STAGE/word"
   export EDITOR_UI_DIR="$STAGE"
 fi
 
+# The manifest is regenerated for every run (pure function of the ledger), but
+# to a temp path: the tracked copy is a committed artifact, and a gate run
+# must not leave the worktree dirty — af commits whatever it finds there
+# before judging the task's scope.
 cd "$ROOT/tests"
-/usr/bin/node parity/generate-manifest.cjs >/dev/null 2>&1
+MF="$(mktemp /tmp/wo-loop-manifest-XXXXXX.json)"
+/usr/bin/node parity/generate-manifest.cjs --out "$MF" >/dev/null 2>&1 \
+  || fail "manifest generation failed (ledger missing at WO_LEDGER=$WO_LEDGER?)"
 set +e
-OUT=$(/usr/bin/node parity/contract-runner.cjs --only "$CSV" --results /tmp/loop-gate.json 2>&1)
+OUT=$(/usr/bin/node parity/contract-runner.cjs --manifest "$MF" --only "$CSV" --results /tmp/loop-gate.json 2>&1)
 RC=$?
 set -e
 
