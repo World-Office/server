@@ -81,11 +81,12 @@ jobs:
 
       # Bake the build-info.json canary into the artifact itself: the
       # freshness probe (tests/parity/surfaces/deploy-freshness.cjs) gates
-      # prod on <editor>/build-info.json {sha,builtAt}. The vanilla word/
-      # dir gets it from tests/parity/make-editor-ui.sh, but the react
-      # editors ship only what this artifact carries — so write it here for
-      # all five dirs. (word/ in this artifact is the react build; prod's
-      # word/ is the vanilla wysiwyg app staged by make-editor-ui.sh.)
+      # prod on <editor>/build-info.json {sha,builtAt}. The editors ship
+      # only what this artifact carries — so write it here for all five
+      # dirs. (All five are React builds: scripts/collect-frontend-dist.mjs
+      # maps word -> documenteditor-react. The vanilla wysiwyg app was
+      # retired 2026-11-16; tests/parity/surfaces/deploy-freshness.cjs fails
+      # if prod's /word/ is not this build.)
       - name: Restructure dist directories (bake build-info.json canary)
         timeout-minutes: 5
         run: |

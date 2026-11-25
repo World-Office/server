@@ -7,8 +7,12 @@ name: build-docserver-image
 # showed "Failed to load document … Invalid checksum". Rebuilding at main bakes
 # the valid assets/demo.docx (and the fixed embedded fallback).
 #
-# Dockerfile requirement: frontend-dist/ must exist in the build context — we
-# reuse the UI already staged at /home/weiss/editor-ui-b2c1c282.
+# 2026-11-17 lesson: this workflow baked a HARDCODED staged UI dir and
+# recreated the container from the stale ~/compose-cutover compose file, which
+# still mounted the vanilla-era bundle ebae8fc3. That swap put the retired
+# editor back on prod for 8 days. Now the baked UI is whatever the canonical
+# compose file mounts (symlinks resolved), the container is recreated from the
+# canonical file only, and a non-React word/ fails the build.
 
 on:
   workflow_dispatch:
@@ -20,25 +24,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Prepare frontend-dist build context
+      - name: Prepare frontend-dist build context (the UI prod mounts)
         run: |
-          SRC=/home/weiss/editor-ui-b2c1c282
-          # fallbacks: current live bundle dirs (compose bind-mounts override anyway)
-          [ -d "$SRC/word" ] || SRC=/home/weiss/editor-ui-ebae8fc3
-          [ -d "$SRC/word" ] || SRC=/home/weiss/editor-ui-latest
-          [ -d "$SRC/word" ] || { echo "staged UI missing ($SRC) — run stage-ui first"; exit 1; }
-          mkdir -p frontend-dist
-          cp -a "$SRC/." frontend-dist/
-          echo "frontend-dist: $(ls frontend-dist | tr '\n' ' ')"
+          COMPOSE=/home/weiss/opencloud-compose/docker-compose.yml
+          SRC=$(grep -oE '/home/weiss/editor-ui-[0-9A-Za-z_-]+/word' "$COMPOSE" | head -1)
+          [ -n "$SRC" ] || { echo "no editor-ui word mount in $COMPOSE"; exit 1; }
+          SRC=$(dirname "$(readlink -f "$SRC")")   # editor-ui-latest is a symlink
+          for d in word sheet slide diagram pdf; do
+            [ -f "$SRC/$d/index.html" ] || { echo "staged UI incomplete: $SRC/$d"; exit 1; }
+          done
+          # substance: never bake the retired vanilla editor again
+          grep -q 'id="root"' "$SRC/word/index.html" && ! grep -q 'id="toolbar"' "$SRC/word/index.html" \
+            || { echo "staged word/ is not the React editor: $SRC/word"; exit 1; }
+          mkdir -p frontend-dist && cp -a "$SRC/." frontend-dist/
+          echo "frontend-dist from $SRC: $(ls frontend-dist | tr '\n' ' ')"
       - name: Build docserver image
         run: |
           docker build -t worldoffice/documentserver:latest -f core/crates/wo-docserver/Dockerfile .
           docker images worldoffice/documentserver --format '{{.ID}} {{.CreatedSince}} {{.Size}}'
-      - name: Recreate docserver container
+      - name: Recreate docserver container (canonical compose file only)
         run: |
           docker compose -p opencloud-compose \
             --project-directory /home/weiss/opencloud-compose \
-            -f /home/weiss/compose-cutover/docker-compose.yml up -d docserver
+            -f /home/weiss/opencloud-compose/docker-compose.yml up -d --no-deps docserver
           sleep 6
           docker ps --format '{{.Names}} | {{.Status}} | {{.Image}}' | grep opencloud-compose-docserver
       - name: Verify /demo/document is a valid zip
@@ -51,6 +59,11 @@ jobs:
           print("demo docx entries:", len(z.namelist()), "bad:", bad)
           sys.exit(1 if bad else 0)
           PY
-      - name: Verify public /word/ still serves the new UI bundle
+      # WRONG APP fails the run; STALE only warns (an image rebuild for a
+      # docserver fix must not fail because the staged UI lags main).
+      - name: Verify public /word/ is the React editor (substance gate)
         run: |
-          curl -fsSL https://editor.cloud.graphwiz.ai/word/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS https://editor.cloud.graphwiz.ai/word/ -o /dev/null && break; sleep 3
+          done
+          WO_FRESHNESS_ALLOW_STALE=1 node tests/parity/surfaces/deploy-freshness.cjs

@@ -2,7 +2,12 @@
 # make-editor-ui.sh — stage the editor-ui bundle for a legion deploy.
 #
 # Prod (legion, opencloud-compose) serves editor UI from
-# ~/editor-ui-<sha>/{word,sheet,slide,diagram,pdf} via ro compose mounts.
+# ~/editor-ui-<sha>/{word,sheet,slide,diagram,pdf} via ro compose mounts. The
+# compose file points at ~/editor-ui-latest, a SYMLINK to the release dir —
+# a flip re-points the symlink and recreates the container (the mounts of a
+# running container are fixed at creation). Never cp/rm through the symlink:
+# `cp -a ~/editor-ui-latest ~/editor-ui-<new>` copies the LINK, and the next
+# rm -rf lands in the live release (2026-11-25: that cost the 3c8c1f9 bundle).
 # There is NO automated deploy (see .github/workflows/deploy.yml NOTE):
 # production is VPN-only, GitHub runners cannot reach it.
 #
@@ -61,7 +66,8 @@ for d in word sheet slide diagram pdf; do cp "$STAGE/build-info.json" "$STAGE/$d
 cat <<EOF
 staged: $STAGE
 deploy:
+  ssh legion-vpn "test ! -e ~/editor-ui-$SHA"            # new release dir, never write through an existing one
   rsync -a $STAGE/ legion-vpn:~/editor-ui-$SHA/
-  ssh legion-vpn "sed -i 's|editor-ui-[0-9a-f]*/|editor-ui-$SHA/|g' /home/weiss/opencloud-compose/docker-compose.yml && docker compose -p opencloud-compose --project-directory /home/weiss/opencloud-compose -f /home/weiss/opencloud-compose/docker-compose.yml up -d docserver"
+  ssh legion-vpn "ln -sfn editor-ui-$SHA editor-ui-latest && docker compose -p opencloud-compose --project-directory /home/weiss/opencloud-compose -f /home/weiss/opencloud-compose/docker-compose.yml up -d --no-deps docserver"
 verify: node tests/parity/surfaces/deploy-freshness.cjs
 EOF
