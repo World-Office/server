@@ -1,0 +1,31 @@
+[package]
+name = "wo-ribbon-leptos"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "PoC: ONLYOFFICE-style ribbon UI in Rust compiled to wasm (Leptos 0.8 + trunk). See ADR-F1."
+
+# Standalone crate inside the server/ workspace tree (same trick as desktop/tauri-poc/src-tauri).
+# NOT a workspace member: own Cargo.lock, own wasm-bindgen version (trunk auto-matches its CLI to it),
+# never built by `cargo build --workspace` or CI. If it is ever merged into the workspace it MUST pin
+# `[tools] wasm-bindgen = "0.2.118"` in Trunk.toml to match the engine (core/crates/wo-renderer-wasm).
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Leptos 0.8 (csr = client-side rendering). 0.9 is still an RC — do not upgrade for a measurement.
+leptos = { version = "0.8", features = ["csr"] }
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+web-sys = { version = "0.3", features = [
+  "CompositionEvent", "InputEvent", "KeyboardEvent", "Event", "EventTarget",
+  "Element", "HtmlElement", "DomRect", "Window", "Document",
+] }
+
+[profile.release]
+opt-level = "z"     # size: ribbon chrome is cold UI, not a hot loop
+lto = true
+codegen-units = 1
+panic = "abort"

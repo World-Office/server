@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World-Office — ribbon PoC (Rust/Leptos)</title>
+  <!-- Base geometry mirrors the OO ribbon at 1600×1000: tab strip, then a 2-row group body
+       (top row y≈68: combos + large buttons; bottom row y≈104: 24×24 icons), caption under each group. -->
+  <style>
+    html,body{margin:0;height:100%;background:#ececec;font:13px/1.2 "Segoe UI",Arial,sans-serif;user-select:none}
+    #toolbar{background:#f4f4f4;border-bottom:1px solid #d1d1d1}
+    #ribbon-tabs{display:flex;gap:2px;padding:4px 8px 0 110px;height:28px;align-items:stretch}
+    #ribbon-tabs .tab{border:1px solid transparent;border-bottom:0;background:transparent;padding:0 12px;cursor:pointer;font:inherit;color:#333}
+    #ribbon-tabs .tab.active{background:#fff;border-color:#d1d1d1}
+    .panel{display:flex;align-items:stretch;min-height:86px;padding:4px 10px 2px;background:#fff}
+    .group{display:flex;flex-direction:column;align-items:center;padding:0 7px;border-right:1px solid #e1e1e1}
+    .group:last-child{border-right:0}
+    .elset{display:flex;flex-direction:column;justify-content:space-between;height:60px;min-width:28px}
+    .row{display:flex;align-items:center;justify-content:center;gap:2px;min-height:24px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;border:1px solid transparent;background:transparent;padding:0 2px;cursor:pointer;font:inherit;color:#333}
+    .btn:hover{border-color:#c5c5c5;background:#e9e9e9}
+    .btn[aria-pressed="true"]{background:#cfe0f5;border-color:#9bc0e6}
+    /* OO golden: EVERY control is 24px tall on both rows. data-size only decides the row
+       (Large = top row, Small = bottom row); buttons are 24×24 icon-only, combos are wider. */
+    .btn[data-size]{width:24px;height:24px}
+    .btn[data-kind=select]{width:auto;min-width:90px;padding:0 5px;gap:4px;justify-content:space-between}
+    .btn[data-kind=color-picker]{flex-direction:column;gap:1px}
+    .btn .icon{font-size:12px;line-height:16px;height:16px}
+    .btn .caret{font-size:10px;line-height:10px}
+    .btn .color-bar{display:block;width:14px;height:3px}
+    .group-label{font-size:11px;color:#444;line-height:14px;height:14px;margin-top:2px}
+  </style>
+  <link data-trunk rel="rust" data-bin-pkg="wo-ribbon-leptos">
+</head>
+<body></body>
+</html>
