@@ -16,11 +16,14 @@
 # Playwright: the harness's own census/node_modules (tracked in that repo; the
 # nearest node_modules wins over NODE_PATH) — the version the goldens were
 # captured with. CI only has to install its browsers.
+# _boot.cjs lives in THIS repo (no node_modules on a fresh checkout), the census
+# beside the harness's playwright — put both module trees on that one install.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HARNESS="${1:-${WO_TEST_HARNESS:-$ROOT/../wo-test-harness}}"
 DIST="${2:-$ROOT/apps/web/apps/documenteditor-react/dist}"
+export NODE_PATH="$HARNESS/census/node_modules${NODE_PATH:+:$NODE_PATH}"
 export WO_DOCSERVER_BIN="${WO_DOCSERVER_BIN:-$ROOT/target/debug/wo-docserver}"
 export WO_PORT="${WO_PORT:-$((19000 + RANDOM % 900))}"      # own port; never a dev server's
 export NO_PROXY=127.0.0.1,localhost
