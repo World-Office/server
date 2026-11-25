@@ -148,7 +148,8 @@ const url = process.argv[2];
   // #font-size is select
   await check('#font-size has data-kind=select', (await page.locator('#font-size').getAttribute('data-kind')) === 'select');
   await check('#font-size has .caption', (await page.locator('#font-size .caption').count()) === 1);
-  await check('#font-size .caption text is Font Size', (await page.locator('#font-size .caption').textContent()) === 'Font Size');
+  // The caption must be the word-ribbon.ts label verbatim: "Font size" (lowercase s).
+  await check('#font-size .caption text is "Font size" (TS label)', (await page.locator('#font-size .caption').textContent()) === 'Font size');
   await check('#font-size has .caret', (await page.locator('#font-size .caret').count()) === 1);
 
   // #text-color is color-picker with color-bar
