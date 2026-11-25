@@ -59,6 +59,11 @@ async function ensureServer() {
   const up = await waitFor(`${BASE}/word/`, 20000);
   if (!up) { child.kill('SIGKILL'); throw new Error('testserver did not come up on ' + BASE); }
   child._woDataDir = dataDir;
+  // Reap the server we spawned on every exit path (normal exit, and the
+  // signals `timeout` sends a gate). All callers converge here; one that
+  // leaks its server squats a gate port and the next gate reuses it.
+  process.on('exit', () => { try { child.kill('SIGKILL'); } catch {} });
+  for (const sig of ['SIGINT', 'SIGHUP', 'SIGTERM']) process.on(sig, () => process.exit(130));
   return { base: BASE, owned: true, child };
 }
 
