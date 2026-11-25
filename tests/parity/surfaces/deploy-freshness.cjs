@@ -33,30 +33,65 @@ const UI_PATHS = [
 const uiHead = execSync(`git log -1 --format=%h -- ${UI_PATHS}`, opts).toString().trim();
 const head = uiHead || execSync('git rev-parse --short HEAD', opts).toString().trim();
 
-https.get(url, { timeout: 20000 }, (res) => {
-  let body = '';
-  res.on('data', (c) => { body += c; });
-  res.on('end', () => {
-    if (res.statusCode !== 200) {
-      return finish(`deploy freshness: ${url} -> HTTP ${res.statusCode} (build-info.json missing or docserver down)`);
-    }
-    let info;
-    try { info = JSON.parse(body); } catch { return finish(`deploy freshness: ${url} is not JSON`); }
-    if (!info.sha) return finish('deploy freshness: build-info.json lacks "sha"');
-    // fresh iff prod's sha contains the newest UI-touching commit (ancestry,
-    // not equality — prod is deployed at wave boundaries, not per commit)
-    let anc = false;
-    try {
-      execSync(`git merge-base --is-ancestor ${head} ${info.sha}`, opts);
-      anc = true;
-    } catch { anc = false; }
-    if (anc) {
-      console.log(`deploy freshness: ok — prod serves ${info.sha} (covers UI head ${head})`);
-      process.exit(0);
-    }
-    finish(`deploy freshness: STALE — prod serves ${info.sha}, local HEAD is ${head}. Deploy: download frontend-dist artifact, then make-editor-ui.sh ${head} builds word/ from documenteditor-react; rsync ~/editor-ui-${head}/ to legion, flip compose mounts, up -d docserver.`);
+// Substance gate: build-info.json is a STAMP, not content — it can certify
+// the wrong app. 2026-11-17..25: prod /word/ served the RETIRED vanilla
+// wysiwyg app (id="toolbar" + wo-bridge.js) while the parity census measured
+// the React editor. Ancestry of a sha cannot see that; the served HTML can.
+const REACT_MARK = 'id="root"';          // documenteditor-react mount point
+const VANILLA_MARKS = ['id="toolbar"', 'wo-bridge.js']; // retired wysiwyg app
+
+function getText(u) {
+  return new Promise((resolve, reject) => {
+    const mod = u.startsWith('http:') ? require('http') : https;
+    mod.get(u, { timeout: 20000 }, (res) => {
+      let b = '';
+      res.on('data', (c) => { b += c; });
+      res.on('end', () => resolve({ status: res.statusCode, body: b }));
+    }).on('error', reject);
   });
-}).on('error', (e) => finish(`deploy freshness: fetch failed — ${e.message}`));
+}
+
+async function checkSubstance() {
+  const u = `${BASE}/word/`;
+  const { status, body } = await getText(u);
+  if (status !== 200) return `deploy substance: ${u} -> HTTP ${status}`;
+  const vanilla = VANILLA_MARKS.filter((m) => body.includes(m));
+  if (!body.includes(REACT_MARK) || vanilla.length) {
+    return `deploy substance: WRONG APP — ${u} serves ${body.length}B without "${REACT_MARK}"${vanilla.length ? ` and with the retired-editor markers ${vanilla.join(', ')}` : ''}. ` +
+      `The word/ dir staged into editor-ui is the vanilla wysiwyg app, not the documenteditor-react vite build. ` +
+      `Re-stage: tests/parity/make-editor-ui.sh ${head} <frontend-dist.zip> (word/ must be a React dist: index.html with id="root").`;
+  }
+  console.log(`deploy substance: ok — ${u} is the React editor (${body.length}B, id="root")`);
+  return null;
+}
+
+(async () => {
+  const bad = await checkSubstance().catch((e) => `deploy substance: fetch failed — ${e.message}`);
+  if (bad) return finish(bad);
+
+  // Freshness (ancestry) — only meaningful once substance proves the RIGHT app is served.
+  let r;
+  try { r = await getText(url); } catch (e) { return finish(`deploy freshness: fetch failed — ${e.message}`); }
+  const { status: statusCode, body } = r;
+  if (statusCode !== 200) {
+    return finish(`deploy freshness: ${url} -> HTTP ${statusCode} (build-info.json missing or docserver down)`);
+  }
+  let info;
+  try { info = JSON.parse(body); } catch { return finish(`deploy freshness: ${url} is not JSON`); }
+  if (!info.sha) return finish('deploy freshness: build-info.json lacks "sha"');
+  // fresh iff prod's sha contains the newest UI-touching commit (ancestry,
+  // not equality — prod is deployed at wave boundaries, not per commit)
+  let anc = false;
+  try {
+    execSync(`git merge-base --is-ancestor ${head} ${info.sha}`, opts);
+    anc = true;
+  } catch { anc = false; }
+  if (anc) {
+    console.log(`deploy freshness: ok — prod serves ${info.sha} (covers UI head ${head})`);
+    process.exit(0);
+  }
+  finish(`deploy freshness: STALE — prod serves ${info.sha}, local HEAD is ${head}. Deploy: download frontend-dist artifact, then make-editor-ui.sh ${head} builds word/ from documenteditor-react; rsync ~/editor-ui-${head}/ to legion, flip compose mounts, up -d docserver.`);
+})();
 
 function finish(msg) {
   if (process.env.WO_FRESHNESS_ALLOW_STALE === '1') {
