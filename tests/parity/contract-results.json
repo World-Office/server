@@ -1,9 +1,9 @@
 {
- "ranAt": "2026-11-24T13:13:50.489Z",
+ "ranAt": "2026-11-25T15:32:46.719Z",
  "total": 678,
- "pass": 224,
+ "pass": 266,
  "knownGap": 0,
- "retarget": 454,
+ "retarget": 412,
  "fail": 0,
  "results": [
   {
@@ -2511,60 +2511,60 @@
    "feature": "shortcut.movetostartline",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetostartdocument",
    "feature": "shortcut.movetostartdocument",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetoendline",
    "feature": "shortcut.movetoendline",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [22,22,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetoenddocument",
    "feature": "shortcut.movetoenddocument",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [22,22,\"epsilon zeta eta theta\",true,0]"
   },
   {
    "token": "shortcut.scrolldown",
    "feature": "shortcut.scrolldown",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [22,22,\"epsilon zeta eta theta\",true,0]"
   },
   {
    "token": "shortcut.scrollup",
    "feature": "shortcut.scrollup",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "ctrl+plus/=",
@@ -2591,40 +2591,40 @@
    "feature": "shortcut.movetorightchar",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [2,2,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetoleftchar",
    "feature": "shortcut.movetoleftchar",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetoupline",
    "feature": "shortcut.movetoupline",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetodownline",
    "feature": "shortcut.movetodownline",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,1,\"epsilon zeta eta theta\",true,0]"
   },
   {
    "token": "shortcut.nextmodalcontrol",
@@ -2641,60 +2641,60 @@
    "feature": "shortcut.previousmodalcontrol",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus INPUT -> CANVAS"
   },
   {
    "token": "shortcut.movetolowerheaderfooter",
    "feature": "shortcut.movetolowerheaderfooter",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-header-footer-region=\\\"footer\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.movetoupperheaderfooter",
    "feature": "shortcut.movetoupperheaderfooter",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\",\"containsDate\":true}",
+   "observed": "text contains today/yesterday (2026-11-25/2026-11-24)"
   },
   {
    "token": "shortcut.movetolowerheader",
    "feature": "shortcut.movetolowerheader",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-header-footer-region=\\\"footer\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.movetoupperheader",
    "feature": "shortcut.movetoupperheader",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\"}",
+   "observed": "found"
   },
   {
    "token": "shortcut.endparagraph",
    "feature": "shortcut.endparagraph",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [6,6,\"Footer\",true,0]"
   },
   {
    "token": "shortcut.insertlinebreak",
@@ -2901,100 +2901,100 @@
    "feature": "shortcut.selecttostartline",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,0,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "shortcut.selecttoendline",
    "feature": "shortcut.selecttoendline",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,6,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selecttostartdocument",
    "feature": "shortcut.selecttostartdocument",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,0,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selecttoenddocument",
    "feature": "shortcut.selecttoenddocument",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,6,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selectrightchar",
    "feature": "shortcut.selectrightchar",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,2,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selectleftchar",
    "feature": "shortcut.selectleftchar",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,0,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selectlineup",
    "feature": "shortcut.selectlineup",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [1,0,\"Footer\",false,0]"
   },
   {
    "token": "shortcut.selectlinedown",
    "feature": "shortcut.selectlinedown",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,1,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "shortcut.selectpageup",
    "feature": "shortcut.selectpageup",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,0,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "shortcut.selectpagedown",
    "feature": "shortcut.selectpagedown",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,22,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "shortcut.selecttobeginpreviouspage",
@@ -3281,60 +3281,60 @@
    "feature": "shortcut.bigmoveobjectleft",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [0,0,\"Footer\",true,0]"
   },
   {
    "token": "shortcut.bigmoveobjectright",
    "feature": "shortcut.bigmoveobjectright",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [2,2,\"Footer\",true,0]"
   },
   {
    "token": "shortcut.bigmoveobjectup",
    "feature": "shortcut.bigmoveobjectup",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [0,0,\"Footer\",true,0]"
   },
   {
    "token": "shortcut.bigmoveobjectdown",
    "feature": "shortcut.bigmoveobjectdown",
    "tab": "shortcut",
    "cls": "format",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"Footer\",true,0] -> [6,6,\"Footer\",true,0]"
   },
   {
    "token": "shortcut.movefocustonextobject",
    "feature": "shortcut.movefocustonextobject",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus DIV -> BUTTON"
   },
   {
    "token": "shortcut.movefocustopreviousobject",
    "feature": "shortcut.movefocustopreviousobject",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus DIV -> CANVAS"
   },
   {
    "token": "ctrl+alt+d",
@@ -3411,60 +3411,60 @@
    "feature": "shortcut.inserttablebreak",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"rev-bump\"}",
+   "observed": "rev 28 -> 29"
   },
   {
    "token": "shortcut.movetonextform",
    "feature": "shortcut.movetonextform",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus ff-1 -> ff-2"
   },
   {
    "token": "shortcut.movetopreviousform",
    "feature": "shortcut.movetopreviousform",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"focus-moved\"}",
+   "observed": "focus ff-2 -> ff-1"
   },
   {
    "token": "shortcut.choosenextcomboboxoption",
    "feature": "shortcut.choosenextcomboboxoption",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"select-value\",\"selector\":\"#ff-cb\",\"equals\":\"b\"}",
+   "observed": "#ff-cb.value=b"
   },
   {
    "token": "shortcut.choosepreviouscomboboxoption",
    "feature": "shortcut.choosepreviouscomboboxoption",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"select-value\",\"selector\":\"#ff-cb\",\"equals\":\"b\"}",
+   "observed": "#ff-cb.value=b"
   },
   {
    "token": "shortcut.insertlinebreakmultilineform",
    "feature": "shortcut.insertlinebreakmultilineform",
    "tab": "shortcut",
    "cls": "structure",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"text-mutation\",\"selector\":\"#ff-ml\",\"html\":true,\"contains\":\"<br>\"}",
+   "observed": "text matches \"<br>\""
   },
   {
    "token": "ctrl+alt+g",
@@ -3571,20 +3571,20 @@
    "feature": "shortcut.movetostartword",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [0,0,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "shortcut.movetoendword",
    "feature": "shortcut.movetoendword",
    "tab": "shortcut",
    "cls": "view",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [5,5,\"alpha beta gamma delta\",true,0]"
   },
   {
    "token": "alt+backspace",
@@ -3661,20 +3661,20 @@
    "feature": "shortcut.selectrightword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,5,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "shortcut.selectleftword",
    "feature": "shortcut.selectleftword",
    "tab": "shortcut",
    "cls": "op",
-   "xfail": true,
-   "ok": false,
-   "retarget": true,
-   "observed": "retarget: react canvas editor has no legacy parity DOM (#status/.dialog-overlay/data-cmd vocabulary) — row needs a react-port spec (manifest \"contract\") before it can be verified again"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"selection-moved\"}",
+   "observed": "selection [1,1,\"alpha beta gamma delta\",true,0] -> [1,0,\"alpha beta gamma delta\",false,0]"
   },
   {
    "token": "ctrl+alt+1",
