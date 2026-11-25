@@ -488,6 +488,15 @@ async function subFeatureAudit(page, ov, dialogSel) {
 // Main -----------------------------------------------------------------------
 (async () => {
   const server = await ensureServer();
+  // Kill an owned server on EVERY exit path. The kill at the end of main() is
+  // skipped when a step throws (e.g. '#editor' never appears): the server then
+  // outlives the runner, squats on its port and poisons later gates, because
+  // _boot.cjs reuses whatever answers on WO_PORT.
+  if (server.owned && server.child) {
+    const child = server.child;
+    process.on('exit', () => { try { child.kill('SIGKILL'); } catch {} });
+    for (const sig of ['SIGINT', 'SIGHUP', 'SIGTERM']) process.on(sig, () => process.exit(130));
+  }
   const browser = await launchBrowser();
   const { ctx, page } = await openEditor(browser, server.base);
   // Fresh-document guarantee: contracts that SAVE (save/save-as flows) or
