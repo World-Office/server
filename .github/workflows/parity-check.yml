@@ -60,6 +60,19 @@ jobs:
           # heavy bundlers and keep node heaps modest
           TURBO_CONCURRENCY: "2"
           NODE_OPTIONS: --max-old-space-size=3072
+      # inputs for the advisory layout-vs-oo job below (a later job starts from
+      # a fresh runner); stripped binary 38 MB + dist 15 MB, kept one day
+      - name: Keep editor dist + docserver binary for the layout report
+        run: |-
+          mkdir -p layout-inputs
+          cp -r apps/web/apps/documenteditor-react/dist layout-inputs/dist
+          cp target/debug/wo-docserver layout-inputs/wo-docserver
+          strip layout-inputs/wo-docserver
+      - uses: actions/upload-artifact@v4
+        with:
+          name: layout-inputs
+          path: layout-inputs/
+          retention-days: 1
 
   test-core:
     name: Core Tests
@@ -136,6 +149,56 @@ jobs:
         run: |
           cd wo-test-harness/census/visual
           node diff.js --self-test
+
+  layout-vs-oo:
+    name: Ribbon Layout vs OO (advisory)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: inputs.full_test == 'true' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: World-Office/wo-test-harness
+          path: wo-test-harness
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: layout-inputs
+          path: layout-inputs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # pinned to the playwright the committed WO golden was captured with
+      - name: Install Playwright
+        run: |-
+          npm install --prefix "$RUNNER_TEMP/pw" playwright@1.59.1
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+      # The contract gate asks "does this control exist?"; this asks "is it on
+      # the right row, in the right group, in order?". 2026-11-25: 266
+      # contracts green while 6 of 9 scorable tabs regressed on layout. The
+      # script always exits 0 once it wrote a report; continue-on-error covers
+      # a failed capture, so this job can never fail the run.
+      - name: Layout report
+        continue-on-error: true
+        run: |-
+          chmod +x layout-inputs/wo-docserver
+          cd server
+          NODE_PATH="$RUNNER_TEMP/pw/node_modules" \
+          WO_DOCSERVER_BIN="$GITHUB_WORKSPACE/layout-inputs/wo-docserver" \
+          LAYOUT_OUT="$RUNNER_TEMP/layout" \
+          bash tests/parity/layout-vs-oo.sh "$GITHUB_WORKSPACE/wo-test-harness" \
+            "$GITHUB_WORKSPACE/layout-inputs/dist"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: layout-census
+          path: ${{ runner.temp }}/layout/
+          retention-days: 14
+          if-no-files-found: ignore
 
   performance:
     name: Performance Benchmark
