@@ -5,17 +5,17 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "[data-cmd=\"ai-review\"]",
+        "selector": "#btn-ai-assistant",
         "assertion": {
           "kind": "dom-style",
           "selector": "[data-wo-right-panel=\"ai-assistant\"]",
           "prop": "display",
           "equals": "none"
         },
-        "pre": "backstage:ai",
+        "pre": "file-menu",
         "woTab": "backstage",
         "xfail": true,
-        "note": "loop34-3 react-port: AI Review close — feature not yet in React canvas editor (no AI review panel), xfail as known gap until AI review panel is implemented"
+        "note": "loop34-3 react-port: AI Review close — #btn-ai-assistant opens AI Assistant right panel. Close action (making panel display:none) is the same button toggle. xfail: AI Review backstage panel not yet ported, using AI Assistant as closest surface"
       },
       "pre": "backstage:ai",
       "selector": "#btn-ai-review",
