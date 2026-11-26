@@ -1,0 +1,924 @@
+{
+  "$comment": "zz-wo037-1.json — inline hand-promotion (no agent loop) of parked tokens whose real react-port effect was probed on the served build (2026-11-26). Keying mirrors generate-manifest precedence (overrides[token] || overrides[feature]): token keys where the base keys by token (or has no key), feature keys where the base keys by feature — so no legacy entry is orphaned as an override-only row. Replaced entries keep their legacy fields; the contract block carries the react truth. Acceptance: contract-runner.cjs --only <tokens> + af-gate.sh (the token-only loop-gate cannot count feature keys).",
+  "entries": {
+    "tab:home": {
+      "effektClass": "view",
+      "selector": ".ribbon-tabs button[data-tab=\"home\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-page[data-tab=\"home\"]",
+        "hasClass": "active"
+      },
+      "contract": {
+        "selector": ".ribbon-tab[data-tab=\"home\"]",
+        "woTab": "layout",
+        "assertion": {
+          "kind": "dom-attr",
+          "selector": ".ribbon-tab[data-tab=\"home\"]",
+          "attr": "aria-selected",
+          "equals": "true"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Home is the boot tab, so the runner pre-activates Layout (lazy page => real tab click) and Home must take aria-selected back."
+      }
+    },
+    "tab:layout": {
+      "effektClass": "view",
+      "selector": ".ribbon-tabs button[data-tab=\"layout\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-page[data-tab=\"layout\"]",
+        "hasClass": "active"
+      },
+      "contract": {
+        "selector": ".ribbon-tab[data-tab=\"layout\"]",
+        "assertion": {
+          "kind": "dom-attr",
+          "selector": ".ribbon-tab[data-tab=\"layout\"]",
+          "attr": "aria-selected",
+          "equals": "true"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: tab strip flips aria-selected=true on the clicked tab."
+      }
+    },
+    "tab:references": {
+      "effektClass": "view",
+      "selector": ".ribbon-tabs button[data-tab=\"references\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-page[data-tab=\"references\"]",
+        "hasClass": "active"
+      },
+      "contract": {
+        "selector": ".ribbon-tab[data-tab=\"references\"]",
+        "assertion": {
+          "kind": "dom-attr",
+          "selector": ".ribbon-tab[data-tab=\"references\"]",
+          "attr": "aria-selected",
+          "equals": "true"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: tab strip flips aria-selected=true on the clicked tab."
+      }
+    },
+    "tab:collaboration": {
+      "effektClass": "view",
+      "selector": ".ribbon-tabs button[data-tab=\"collaboration\"]",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-page[data-tab=\"collaboration\"]",
+        "hasClass": "active"
+      },
+      "contract": {
+        "selector": ".ribbon-tab[data-tab=\"collaboration\"]",
+        "assertion": {
+          "kind": "dom-attr",
+          "selector": ".ribbon-tab[data-tab=\"collaboration\"]",
+          "attr": "aria-selected",
+          "equals": "true"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: tab strip flips aria-selected=true on the clicked tab."
+      }
+    },
+    "headerfooter.header-footer": {
+      "effektClass": "dialog",
+      "selector": "#btn-headerfooter-combined",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#headerfooter-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "header radio",
+          "selector": "#hf-type-header"
+        },
+        {
+          "name": "footer radio",
+          "selector": "#hf-type-footer"
+        },
+        {
+          "name": "different first page",
+          "selector": "#hf-different-first"
+        },
+        {
+          "name": "distance input",
+          "selector": "#hf-distance"
+        },
+        {
+          "name": "close action",
+          "selector": "#btn-headerfooter-close"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-headerfooter-ok"
+        }
+      ],
+      "note": "ledger row: headerfooter.header-footer — btn-headerfooter-combined data-cmd=insertHeaderFooter (index.html:448) → openOverlayDialog(\"headerfooter-dialog\") (editor.js:1270-1273, 8848-8854); the L3 hf structure surfaces as this overlay dialog with type radios + distance",
+      "contract": {
+        "selector": "#btn-insert-header-footer",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-header-footer-region=\"header\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Header & Footer opens the header region (data-header-footer-region=header, 794px wide) plus the header-footer-contextual tab. No OO options dialog — retarget.",
+        "subFeatures": []
+      }
+    },
+    "insert.date-time": {
+      "effektClass": "structure",
+      "selector": "#btn-datetime",
+      "post": "#btn-datetime-ok",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "containsDate": true
+      },
+      "note": "ledger row: insert.date-time — #btn-datetime now opens #datetime-dialog (L2M-06, openDatetimeDialog); post clicks OK whose confirmDatetimeDialog inserts the default (iso) local YYYY-MM-DD text run at the caret (editor.js); text-mutation observer asserts today appears in #editor text",
+      "contract": {
+        "selector": "#btn-insert-date-time",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": "[data-header-footer-region=\"header\"]",
+          "containsDate": true
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Date & Time opens the header and stamps today's date into it. Cosmetic bug: the stamp is a raw ISO string (2026-11-26T17:00:04.796Z), not a formatted date.",
+        "post": ""
+      }
+    },
+    "headerfooter.date-time": {
+      "effektClass": "structure",
+      "selector": "#btn-datetime",
+      "post": "#btn-datetime-ok",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "containsDate": true
+      },
+      "note": "ledger row: headerfooter.date-time — same bound trigger #btn-datetime as insert.date-time (wo.match btn-datetime, where tab:insert); dialog opens, post clicks OK, confirmDatetimeDialog inserts the iso local date text run; text-mutation observer asserts today appears in #editor text",
+      "contract": {
+        "selector": "#btn-insert-date-time",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": "[data-header-footer-region=\"header\"]",
+          "containsDate": true
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Date & Time opens the header and stamps today's date into it (raw ISO string — cosmetic bug).",
+        "post": ""
+      }
+    },
+    "headerfooter.dlg-date-time": {
+      "effektClass": "dialog",
+      "selector": "#btn-datetime",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#datetime-format",
+            "value": "de"
+          },
+          {
+            "selector": "#datetime-update-auto",
+            "value": true
+          }
+        ],
+        "click": "#btn-datetime-ok",
+        "expect": {
+          "selector": "#editor span.field[data-field=\"DATE\"]"
+        }
+      },
+      "note": "ledger row: headerfooter.dlg-date-time PROMOTED 2026-11-07 (L2M-06) — same WO binding as insert.dlg-date-time (wo.match btn-datetime, where tab:insert): one dialog surface, two census rows, identical executable contract; each entry runs on a fresh page",
+      "contract": {
+        "selector": "#btn-insert-date-time",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": "[data-header-footer-region=\"header\"]",
+          "containsDate": true
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: no Date & Time format dialog exists — the button inserts directly into the header (retarget for this dialog row)."
+      }
+    },
+    "headerfooter.close": {
+      "effektClass": "view",
+      "woTab": "header-footer",
+      "pre": "hf-editing",
+      "selector": "#btn-hf-close",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": ".ribbon-tab[data-tab=\"header-footer\"]",
+        "attr": "hidden",
+        "equals": ""
+      },
+      "note": "ledger row: headerfooter.close — PROMOTED 2026-11-07: the hf-editing pre (contract-runner.cjs) plants a .page-header fixture and dblclicks it, running enterHFMode (editor.js:9661) which reveals the contextual tab; #btn-hf-close (editor.js:9681-9682) then runs exitHFMode(false), which exits directly (hfHasUnsavedChanges is false after a fresh enter, so no confirm dialog) and re-hides the tab (hfTab.hidden=true, editor.js:9648-9660); viewport-flag reads the restored hidden content attribute (getAttribute -> \"\") because the runner's hasClass path has no negative form",
+      "contract": {
+        "selector": "#btn-edit-header",
+        "woTab": "layout",
+        "post": "#btn-close-header-footer",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-header-footer-region]",
+          "absent": true
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: two-step on the Layout page — Header (#btn-edit-header) opens the header region, Close (#btn-close-header-footer) removes every header/footer region and the contextual tab. Same vacuity ceiling as the promoted back row (a no-op opener would pass).",
+        "pre": ""
+      }
+    },
+    "file.insert": {
+      "effektClass": "structure",
+      "selector": "[data-cmd=\"insertBlankPage\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor div.page-break"
+      },
+      "note": "ledger row: file.insert — Insert-tab Blank page button dispatches insertBlankPage, which reuses the page-break contract: execCommand insertHTML plants <div class=\"page-break\"><br></div> plus a trailing empty <p> into #editor (editor.js:1174-1194), the fresh page's first block",
+      "contract": {
+        "selector": "#btn-blank-page",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "#editor > div:nth-child(2) canvas"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Blank Page mounts a second page sheet (#editor > div per page: 1 -> 2 canvases, rev 0 -> 1)."
+      }
+    },
+    "dialog.hr-settings-dialog.l4": {
+      "effektClass": "dialog",
+      "selector": "[data-ctx=\"HorizontalLineSettings\"]",
+      "pre": "ctx-menu",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#hr-settings-dialog"
+      },
+      "subFeatures": [],
+      "note": "l4 census route -> #hr-settings-dialog",
+      "contract": {
+        "selector": "#btn-horizontal-rule",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Horizontal Rule inserts directly (data-wo-rev 0 -> 1); no settings dialog exists — retarget.",
+        "pre": ""
+      }
+    },
+    "table.table": {
+      "effektClass": "structure",
+      "woTab": "insert",
+      "selector": "#btn-table",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor table"
+      },
+      "post": "#btn-table-ok",
+      "contract": {
+        "selector": "#btn-insert-table",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"table\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Table opens the right-hand Table panel (data-wo-right-panel=table) instead of a modal grid picker.",
+        "post": ""
+      }
+    },
+    "dialog.comment-dialog.l4": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#comment-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "comment body",
+          "selector": "#comment-body"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-comment-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-comment-ok"
+        }
+      ],
+      "note": "ledger row: dialog.comment-dialog.l4 (L4 pinned, evidence: 'opened via real route: click #btn-comment (tab collaboration)') — commentBtn click -> openCommentDialog -> #comment-dialog (editor.js:8730)",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"comments\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Comment opens the right-hand Comments panel instead of #comment-dialog.",
+        "subFeatures": []
+      }
+    },
+    "insert.shape": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"insert\"] [data-cmd=\"insertObject\"][data-value=\"shape\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#shape-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "rectangle option",
+          "selector": "[data-shape-type=\"rectangle\"]"
+        },
+        {
+          "name": "circle option",
+          "selector": "[data-shape-type=\"circle\"]"
+        },
+        {
+          "name": "triangle option",
+          "selector": "[data-shape-type=\"triangle\"]"
+        },
+        {
+          "name": "rounded rectangle option",
+          "selector": "[data-shape-type=\"rounded-rectangle\"]"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-shape-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-shape-ok"
+        }
+      ],
+      "note": "ledger row: insert.shape — data-cmd=insertObject (data-value=shape) opens the shape picker #shape-dialog (WO-10-shape); scoped selector because insertobject is shared with chart.chart",
+      "contract": {
+        "selector": "#btn-insert-shape",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"shape\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Shape opens the right-hand Shape panel (feature key: token insertobject is shared with the Chart row).",
+        "subFeatures": []
+      }
+    },
+    "chart.chart": {
+      "effektClass": "dialog",
+      "selector": ".ribbon-page[data-tab=\"insert\"] [data-cmd=\"insertObject\"][data-value=\"chart\"]",
+      "woTab": "insert",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#object-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "type select",
+          "selector": "#object-type"
+        },
+        {
+          "name": "label input",
+          "selector": "#object-label"
+        },
+        {
+          "name": "content textarea",
+          "selector": "#object-content"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-object-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-object-ok"
+        }
+      ],
+      "note": "ledger row: chart.chart — data-cmd=insertObject (data-value=chart) opens the generic object dialog #object-dialog with chart preset (not #chart-dialog); shares token insertobject with insert.shape, hence keyed by feature id",
+      "contract": {
+        "selector": "#btn-insert-chart",
+        "woTab": "insert",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"chart\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Chart opens the right-hand Chart panel (feature key: token insertobject is shared with the Shape row).",
+        "subFeatures": []
+      }
+    },
+    "btn-find": {
+      "effektClass": "dialog",
+      "selector": "#btn-find",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "find query input",
+          "selector": "#find-query"
+        },
+        {
+          "name": "find next",
+          "selector": "#btn-find-next"
+        },
+        {
+          "name": "find prev",
+          "selector": "#btn-find-prev"
+        },
+        {
+          "name": "find close",
+          "selector": "#btn-find-close"
+        },
+        {
+          "name": "replace input",
+          "selector": "#find-replace"
+        },
+        {
+          "name": "replace action",
+          "selector": "#btn-find-replace"
+        },
+        {
+          "name": "replace all action",
+          "selector": "#btn-find-replace-all"
+        },
+        {
+          "name": "match case toggle",
+          "selector": "#find-match-case"
+        },
+        {
+          "name": "match count",
+          "selector": "#find-count"
+        }
+      ],
+      "note": "ledger row: file.find-ctrl-f — toolbar Find (Ctrl+F) opens #find-dialog",
+      "contract": {
+        "selector": "#btn-find",
+        "woTab": "home",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": ".de-findreplace-panel"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Find opens the FindReplacePanel (same surface as the promoted ctrl+f row).",
+        "subFeatures": []
+      }
+    },
+    "dialog.find-dialog.l4": {
+      "effektClass": "dialog",
+      "selector": "#btn-find",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [],
+      "note": "l4 census route -> #find-dialog",
+      "contract": {
+        "selector": "#btn-find",
+        "woTab": "home",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": ".de-findreplace-panel"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: l4 census route -> FindReplacePanel (no #find-dialog in the react editor)."
+      }
+    },
+    "btn-replace": {
+      "effektClass": "dialog",
+      "selector": "#btn-replace",
+      "woTab": "home",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#find-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "replace input",
+          "selector": "#find-replace"
+        },
+        {
+          "name": "replace action",
+          "selector": "#btn-find-replace"
+        },
+        {
+          "name": "replace all action",
+          "selector": "#btn-find-replace-all"
+        }
+      ],
+      "note": "ledger row: formatting.replace-ctrl-h — toolbar Replace (Ctrl+H) opens the same #find-dialog with replace focus (editor.js openFindDialog(true))",
+      "contract": {
+        "selector": "#btn-replace",
+        "woTab": "home",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": ".de-findreplace-panel"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Replace opens the FindReplacePanel (same surface as the promoted ctrl+h row).",
+        "subFeatures": []
+      }
+    },
+    "formatting.highlight-color": {
+      "effektClass": "format",
+      "selector": "#highlight-color",
+      "woTab": "home",
+      "setValue": "#ffe0b2",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "background-color",
+        "equals": "rgb(255, 224, 178)"
+      },
+      "note": "ledger row: formatting.highlight-color — #highlight-color is <input type=\"color\"> wired to its change event (emitCommand(\"hiliteColor\")); same setValue change-dispatch as formatting.font-color — hiliteColor runs with styleWithCSS on and the selection's span carrier reads background-color rgb(255, 224, 178)",
+      "contract": {
+        "selector": "#btn-highlight-color",
+        "woTab": "home",
+        "pre": "canvas-type",
+        "post": ".fui-MenuPopover [role=\"menuitem\"][title=\"#CC0000\"]",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: two-step — Text Highlight Color opens the 40-swatch palette (.fui-MenuPopover), the #CC0000 swatch applies to the typed+selected text (data-wo-rev bumps). The trigger alone mutates nothing.",
+        "setValue": null
+      }
+    },
+    "formatting.font-color": {
+      "effektClass": "format",
+      "selector": "#text-color",
+      "woTab": "home",
+      "setValue": "#ff0000",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "color",
+        "equals": "rgb(255, 0, 0)"
+      },
+      "note": "ledger row: formatting.font-color — #text-color is <input type=\"color\"> wired to its change event (editor.js:10623 emitCommand(\"foreColor\")); the runner's setValue step sets the value and dispatches 'change' instead of clicking (a real click opens the native picker), foreColor runs with styleWithCSS on and wraps the placeCaret 'Will' selection in <span style=\"color:#ff0000\">, which the runner's closest b,i,u,span,p reader reaches",
+      "contract": {
+        "selector": "#btn-text-color",
+        "woTab": "home",
+        "pre": "canvas-type",
+        "post": ".fui-MenuPopover [role=\"menuitem\"][title=\"#CC0000\"]",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: two-step — Font Color opens the 40-swatch palette, the #CC0000 swatch applies to the typed+selected text (data-wo-rev bumps).",
+        "setValue": null
+      }
+    },
+    "file.copy-style-ctrl-alt-c": {
+      "effektClass": "op",
+      "selector": "#qat-format-paint",
+      "woTab": "home",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "Willkommen bei World Office"
+      },
+      "reason": "OO's Copy style (Ctrl+Alt+C) is a format painter; WO ships no copy-style control anywhere in editor.js (no copyStyle/formatPainter wiring — census fuzzy-matched #btn-copy), and clicking #btn-copy executes a plain clipboard copy with no style-state observable",
+      "note": "ledger row: file.copy-style-ctrl-alt-c — real gap: no WO format-painter control exists; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
+      "contract": {
+        "xfail": true,
+        "selector": "#qat-format-paint, #btn-copy-style, [data-cmd=\"copyStyle\"]",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "#editor"
+        },
+        "note": "2026-11-26 inline hand-promotion: still a real gap — the react editor ships no format-painter control; explicit xfail so the token-keyed contract carry-over cannot promote this sibling of Copy."
+      }
+    },
+    "file.copy-ctrl-insert": {
+      "effektClass": "op",
+      "selector": "#qat-copy",
+      "woTab": "home",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "Willkommen bei World Office"
+      },
+      "reason": "#btn-copy runs document.execCommand(\"copy\") (editor.js:9747) — it writes the OS clipboard only; no DOM mutation, status change or wo:* event is emitted, and the runner's assertion vocabulary cannot read the clipboard (headless clipboard-read is permission-denied), so Copy has no observable contract effect",
+      "note": "ledger row: file.copy-ctrl-insert — real gap: clipboard write is invisible to DOM-observer assertions; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
+      "contract": {
+        "selector": "#btn-copy",
+        "woTab": "home",
+        "pre": "canvas-type",
+        "assertion": {
+          "kind": "clipboard",
+          "contains": "Hello canvas paragraph text."
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Copy puts the typed+selected text on the system clipboard (no DOM/rev effect). Feature key: token btn-copy is shared with the copy-style row, which stays unpromoted."
+      }
+    },
+    "file.cut-ctrl-x": {
+      "effektClass": "op",
+      "selector": "#qat-cut",
+      "woTab": "home",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen bei World Office"
+      },
+      "note": "ledger row: file.cut-ctrl-x — toolbar Cut button runs document.execCommand(\"cut\") (editor.js:9745-9748); the runner's placed selection is \"Will\" (first 4 chars of the demo h1 \"Willkommen bei World Office\"), so the h1 reads \"kommen bei World Office\" afterwards | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
+      "contract": {
+        "selector": "#btn-cut",
+        "woTab": "home",
+        "pre": "canvas-type",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Cut removes the typed+selected text (data-wo-rev bumps) and writes the clipboard."
+      }
+    },
+    "file.paste-ctrl-v": {
+      "effektClass": "op",
+      "woTab": "home",
+      "selector": "#qat-paste",
+      "seedClipboard": "PASTE-MARKER seeded text",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor",
+        "contains": "PASTE-MARKER"
+      },
+      "note": "btn-paste reads navigator.clipboard.readText — browser context has clipboard permissions (_boot) and seedClipboard writes the headless system clipboard | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
+      "contract": {
+        "selector": "#btn-copy",
+        "woTab": "home",
+        "pre": "canvas-type",
+        "post": "#btn-paste",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": ".de-statusbar",
+          "contains": "Pasted"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: two-step — Copy fills the clipboard, Paste inserts it and the status bar reports \"Pasted — Keep source formatting\".",
+        "seedClipboard": null
+      }
+    },
+    "view.interface-theme": {
+      "effektClass": "dialog",
+      "selector": "#view-theme-select",
+      "woTab": "view",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#view-theme-select",
+            "value": "dark"
+          }
+        ],
+        "expect": {
+          "selector": "#btn-theme[aria-pressed=\"true\"]"
+        }
+      },
+      "note": "PROMOTED 2026-11-06: dialog-input selectOption fires change (synthetic click could not) -> localStorage wo-theme + applyTheme -> btn-theme aria-pressed=true; html.light drops. End state stays dark for the rest of the run (theme colors don't affect any other contract's DOM assertions)",
+      "contract": {
+        "selector": "#sel-interface-theme",
+        "woTab": "view",
+        "setValue": "dark",
+        "assertion": {
+          "kind": "dom-attr",
+          "selector": "html",
+          "attr": "data-theme",
+          "equals": "dark"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Interface Theme -> Dark flips html[data-theme] to dark (in-memory only: no localStorage key, a reload reverts it)."
+      }
+    },
+    "btn-zoom-in": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-in",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1"
+      },
+      "note": "ledger row: statusbar.btn-zoom-up — runs after btn-zoom-out in manifest order, so zoom starts at the persisted 0.9; 0.9 + 0.1 lands exactly on 1 (IEEE754), proving the click handler ran (a broken handler would stay at 0.9) and ending with the clean default zoom for later contracts",
+      "contract": {
+        "selector": "#btn-zoom-in",
+        "woTab": "view",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": ".de-statusbar-zoom-label",
+          "contains": "150"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: status-bar Zoom In steps 100% -> 150%. Zoom is not persisted, each row starts from a fresh page."
+      }
+    },
+    "btn-zoom-out": {
+      "effektClass": "view",
+      "selector": "#btn-zoom-out",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "0.9"
+      },
+      "note": "ledger row: statusbar.btn-zoom-down — applyZoom sets #editor style zoom 1 -> 0.9 and persists wo-zoom; no post because the runner clicks post BEFORE asserting (a reset post would zero the assertion). The next contract (btn-zoom-in, manifest order 238 > 237) continues from the persisted 0.9",
+      "contract": {
+        "selector": "#btn-zoom-out",
+        "woTab": "view",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": ".de-statusbar-zoom-label",
+          "contains": "75"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: status-bar Zoom Out steps 100% -> 75%."
+      }
+    },
+    "shortcut.zoomin": {
+      "effektClass": "view",
+      "pre": "list",
+      "key": "Control+=",
+      "assertion": {
+        "kind": "viewport-flag",
+        "rootSelector": "#editor",
+        "prop": "zoom",
+        "equals": "1.1"
+      },
+      "note": "ledger feature shortcut.zoomin — Ctrl+= (ev.code Equal, editor.js:11206) adds 0.1 through applyZoom from the clean persisted zoom 1; no post: the runner clicks post BEFORE asserting, so a reset post would zero the observation. The next contract (shortcut.zoomout) carries the #btn-zoom-reset post that restores zoom 1",
+      "contract": {
+        "key": "Control+Equal",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": ".de-statusbar-zoom-label",
+          "contains": "150"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Ctrl+= zooms in (100% -> 150%) on the react status bar (the legacy row tested css zoom on #editor).",
+        "pre": ""
+      }
+    },
+    "shortcut.zoomout": {
+      "effektClass": "view",
+      "pre": "list",
+      "key": "Control+-",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#sb-zoom-label",
+        "contains": "100%"
+      },
+      "note": "PROMOTED 2026-11-07 (L2M-05): the plain-ctrl en-dash intercept moved off the main-row hyphen key (en-dash now lives on the keypad variant, Ctrl+NumpadSubtract), so the physical Control+- reaches the guarded zoom-out arm (editor.js ~11205). Runs right after shortcut.zoomin, which leaves persisted zoom 1.1 — one zoom-out step writes Math.round(1.1-0.1)*100 = 100% into #sb-zoom-label (1.1-0.1 = 1.0000000000000002; a broken arm would keep 110%). No post: the runner clicks post BEFORE asserting, so the old #btn-zoom-reset post erased the observation (that, not the intercept alone, is what the old xfail diagnosis saw)",
+      "contract": {
+        "key": "Control+Minus",
+        "assertion": {
+          "kind": "text-mutation",
+          "selector": ".de-statusbar-zoom-label",
+          "contains": "75"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Ctrl+- zooms out (100% -> 75%).",
+        "pre": ""
+      }
+    },
+    "shortcut.deleteleftchar": {
+      "key": "Backspace",
+      "effektClass": "op",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen",
+        "lacks": "Will"
+      },
+      "note": "PROMOTED 2026-11-06: the interception only handles strokes/objects; plain text falls to native deletion of the placeCaret 4-char selection ('Will' from the fixture h1) — text-mutation now has a lacks assertion to pin the shrink",
+      "contract": {
+        "key": "Backspace",
+        "pre": "canvas-type",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Backspace deletes the typed+selected text (data-wo-rev bumps)."
+      }
+    },
+    "shortcut.deleterightchar": {
+      "key": "Delete",
+      "effektClass": "op",
+      "assertion": {
+        "kind": "text-mutation",
+        "selector": "#editor h1",
+        "contains": "kommen",
+        "lacks": "Will"
+      },
+      "note": "PROMOTED 2026-11-06: same native-selection deletion path as Backspace, now observable via text-mutation lacks",
+      "contract": {
+        "key": "Delete",
+        "pre": "canvas-type",
+        "assertion": {
+          "kind": "rev-bump"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Delete removes the typed+selected text (data-wo-rev bumps)."
+      }
+    },
+    "mailmerge": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"mailMerge\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#mailmerge-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "merge field select",
+          "selector": "#mailmerge-fields"
+        },
+        {
+          "name": "csv source picker",
+          "selector": "#btn-mailmerge-csv"
+        },
+        {
+          "name": "merge preview",
+          "selector": "#mailmerge-preview"
+        },
+        {
+          "name": "insert field action",
+          "selector": "#btn-mailmerge-field"
+        },
+        {
+          "name": "preview merged action",
+          "selector": "#btn-mailmerge-preview"
+        }
+      ],
+      "woTab": "collaboration",
+      "note": "ledger row: file.mail-merge",
+      "contract": {
+        "selector": "#btn-mail-merge",
+        "woTab": "collaboration",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"mailmerge\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Mail Merge opens the right-hand Mail Merge panel (Reset Data / Upload CSV) instead of #mailmerge-dialog.",
+        "subFeatures": []
+      }
+    },
+    "crossref-dialog": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "woTab": "references",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#crossref-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "target bookmark select",
+          "selector": "#crossref-target"
+        },
+        {
+          "name": "display text input",
+          "selector": "#crossref-text"
+        },
+        {
+          "name": "cancel action",
+          "selector": "#btn-crossref-cancel"
+        },
+        {
+          "name": "insert action",
+          "selector": "#btn-crossref-ok"
+        }
+      ],
+      "note": "ledger rows: references.cross-reference + references.dlg-cross-reference — both bind token crossref-dialog with no distinct opener (data-cmd=openCrossref -> openCrossrefDialog -> #crossref-dialog), so one contract covers both rows",
+      "contract": {
+        "selector": "#btn-insert-cross-reference",
+        "woTab": "references",
+        "assertion": {
+          "kind": "dialog-visible",
+          "dialogSelector": "[data-wo-right-panel=\"crossreference\"]"
+        },
+        "xfail": false,
+        "note": "2026-11-26 inline hand-promotion: Cross-reference opens the right-hand Cross-Reference panel instead of #crossref-dialog.",
+        "subFeatures": []
+      }
+    }
+  }
+}
