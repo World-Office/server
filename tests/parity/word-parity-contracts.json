@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T09:15:58.021Z",
+ "generatedAt": "2026-11-26T09:22:50.638Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 534
@@ -15788,14 +15788,14 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu settings (opts) panel close action [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.settings-cancel - FileMenu settings (opts) panel close [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filesettings",
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-file-menu-panel"
     },
-    "pre": "",
+    "pre": "file-menu",
     "woTab": "backstage",
     "xfail": false,
     "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings"
@@ -15816,14 +15816,14 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu help panel open [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.help-open - FileMenu help panel open [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filehelp",
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-file-menu-panel"
     },
-    "pre": "",
+    "pre": "file-menu",
     "woTab": "backstage",
     "xfail": false,
     "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp"
@@ -15844,9 +15844,9 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu help panel close action [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.help-close - FileMenu help panel close [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "[data-wo-file-menu-action=\"help\"]",
+    "selector": "#filehelp",
     "assertion": {
      "kind": "dom-style",
      "selector": ".de-file-menu-panel",
@@ -15856,7 +15856,7 @@
     "pre": "backstage:help",
     "woTab": "backstage",
     "xfail": false,
-    "note": "loop34-2 react-port: FileMenu help panel close — click Close button"
+    "note": "loop34-2 react-port: FileMenu help panel close - same selector toggles closed"
    }
   },
   {
@@ -15874,14 +15874,14 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu version history panel open [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.history-open - FileMenu history panel [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filehistory",
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-file-menu-panel"
     },
-    "pre": "",
+    "pre": "file-menu",
     "woTab": "backstage",
     "xfail": false,
     "note": "loop34-2 react-port: FileMenu version history panel via #filehistory"
@@ -15902,9 +15902,9 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu version history panel close action [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.history-close - FileMenu history close [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "[data-wo-file-menu-action=\"history\"]",
+    "selector": "#filehistory",
     "assertion": {
      "kind": "dom-style",
      "selector": ".de-file-menu-panel",
@@ -15914,7 +15914,7 @@
     "pre": "backstage:history",
     "woTab": "backstage",
     "xfail": false,
-    "note": "loop34-2 react-port: FileMenu version history panel close — click Close button"
+    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed"
    }
   },
   {
@@ -15932,17 +15932,17 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — AI review dialog open (xfail: feature not in React editor) [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote backstage.ai-review-open - AI review (xfail feature gap) [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "#fileai-review",
+    "selector": "#btn-ai-review",
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-file-menu-panel"
     },
-    "pre": "",
+    "pre": "file-menu",
     "woTab": "backstage",
     "xfail": true,
-    "note": "loop34-2 react-port: AI Review panel via #fileai-review — xfail feature not yet implemented"
+    "note": "loop34-2 react-port: AI Review - feature not yet in React canvas editor, xfail as known gap"
    }
   },
   {
