@@ -5,15 +5,15 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "#btn-ai-assistant",
+        "selector": "[data-action=\"ai-assistant\"]",
         "assertion": {
           "kind": "dom-mutation",
           "selector": "[data-wo-right-panel=\"ai-assistant\"]"
         },
         "pre": "",
-        "woTab": "home",
+        "woTab": "",
         "xfail": false,
-        "note": "loop34-3 react-port: AI Assistant button (#btn-ai-assistant, word-ribbon.ts) opens AI Assistant right panel. Legacy backstage AI review dialog close action ported to AI Assistant panel open-close via same button toggle"
+        "note": "loop34-3 react-port: RightMenu AI Assistant button ([data-action=\"ai-assistant\"]) opens AI Assistant right panel. Legacy backstage AI review dialog close action ported to AI Assistant panel open-close via button toggle"
       },
       "pre": "backstage:ai",
       "selector": "#btn-ai-review",
@@ -97,13 +97,13 @@
       "contract": {
         "selector": "#btn-indent",
         "assertion": {
-          "kind": "op-emitted",
-          "event": "world-office:indent"
+          "kind": "dom-mutation",
+          "selector": "[style*=\"margin-left\":not([style*=\"margin-left: 0"])]"
         },
         "pre": "",
         "woTab": "home",
         "xfail": false,
-        "note": "loop34-3 react-port: home-tab Increase Indent button (#btn-indent, word-ribbon.ts:354) dispatches indent command. Legacy context-menu AdjustListIndents dialog input (left=100/hanging=20) not applicable; ribbon button directly applies indentation"
+        "note": "loop34-3 react-port: home-tab Increase Indent button (#btn-indent, word-ribbon.ts:354) applies indentation to current paragraph. Legacy context-menu AdjustListIndents dialog input replaced with direct ribbon button"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -132,13 +132,13 @@
       "contract": {
         "selector": "#btn-insert-table",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "#editor table"
+          "kind": "op-emitted",
+          "event": "world-office:insert-table"
         },
         "pre": "",
         "woTab": "insert",
         "xfail": false,
-        "note": "loop34-3 react-port: insert-tab Table button (#btn-insert-table, word-ribbon.ts:546) inserts a table into the editor. Legacy context-menu table-ops dialog input (insert 3 rows) replaced with direct ribbon button test; several-rows-columns behavior ported to add_row commands in TablePanel"
+        "note": "loop34-3 react-port: insert-tab Table button (#btn-insert-table, word-ribbon.ts:546) dispatches insertTable command. Legacy context-menu table-ops dialog input (insert 3 rows) replaced with direct ribbon button; several-rows-columns ported to addRow commands"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -160,15 +160,15 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"ParagraphSettings\"]",
       "contract": {
-        "selector": "#btn-paragraph",
+        "selector": "[data-action=\"paragraph\"]",
         "assertion": {
           "kind": "dom-mutation",
           "selector": "[data-wo-right-panel=\"paragraph\"]"
         },
         "pre": "",
-        "woTab": "layout",
+        "woTab": "",
         "xfail": false,
-        "note": "loop34-3 react-port: layout-tab Paragraph button (#btn-paragraph, word-ribbon.ts:311) opens Paragraph right panel. Legacy context-menu ParagraphSettings dialog input (align=right + keep-next) replaced with panel-based surface; same end state achievable via panel controls"
+        "note": "loop34-3 react-port: RightMenu Paragraph button ([data-action=\"paragraph\"]) opens Paragraph right panel. Legacy context-menu ParagraphSettings dialog input replaced with panel-based surface; same end state achievable via panel controls"
       },
       "assertion": {
         "kind": "dialog-input",
