@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T09:10:35.283Z",
+ "generatedAt": "2026-11-26T09:15:58.021Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 534
@@ -15793,7 +15793,7 @@
     "selector": "#filesettings",
     "assertion": {
      "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "selector": ".de-file-menu-panel"
     },
     "pre": "",
     "woTab": "backstage",
@@ -15821,7 +15821,7 @@
     "selector": "#filehelp",
     "assertion": {
      "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "selector": ".de-file-menu-panel"
     },
     "pre": "",
     "woTab": "backstage",
@@ -15844,17 +15844,19 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu help panel close [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote — FileMenu help panel close action [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "#filehelp",
+    "selector": "[data-wo-file-menu-action=\"help\"]",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "kind": "dom-style",
+     "selector": ".de-file-menu-panel",
+     "prop": "display",
+     "equals": "none"
     },
-    "pre": "",
+    "pre": "backstage:help",
     "woTab": "backstage",
     "xfail": false,
-    "note": "loop34-2 react-port: FileMenu help panel — same selector toggles closed"
+    "note": "loop34-2 react-port: FileMenu help panel close — click Close button"
    }
   },
   {
@@ -15874,15 +15876,15 @@
    "subFeatures": null,
    "note": "loop34-2: promote — FileMenu version history panel open [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "[data-cmd=\"history\"]",
+    "selector": "#filehistory",
     "assertion": {
      "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "selector": ".de-file-menu-panel"
     },
     "pre": "",
     "woTab": "backstage",
     "xfail": false,
-    "note": "loop34-2 react-port: FileMenu version history panel via [data-cmd=\"history\"]"
+    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory"
    }
   },
   {
@@ -15900,17 +15902,19 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — FileMenu version history panel close [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote — FileMenu version history panel close action [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "[data-cmd=\"history\"]",
+    "selector": "[data-wo-file-menu-action=\"history\"]",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "kind": "dom-style",
+     "selector": ".de-file-menu-panel",
+     "prop": "display",
+     "equals": "none"
     },
-    "pre": "",
+    "pre": "backstage:history",
     "woTab": "backstage",
     "xfail": false,
-    "note": "loop34-2 react-port: same selector toggles closed"
+    "note": "loop34-2 react-port: FileMenu version history panel close — click Close button"
    }
   },
   {
@@ -15928,17 +15932,17 @@
     "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "loop34-2: promote — AI review dialog open (xfail: feature gap) [override-only: no ledger row matched this key]",
+   "note": "loop34-2: promote — AI review dialog open (xfail: feature not in React editor) [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "[data-cmd=\"ai-review\"]",
+    "selector": "#fileai-review",
     "assertion": {
      "kind": "dom-mutation",
-     "selector": ".de-file-menu-content-box"
+     "selector": ".de-file-menu-panel"
     },
     "pre": "",
     "woTab": "backstage",
     "xfail": true,
-    "note": "loop34-2 react-port: AI Review panel not yet in React canvas editor — xfail as known gap"
+    "note": "loop34-2 react-port: AI Review panel via #fileai-review — xfail feature not yet implemented"
    }
   },
   {
