@@ -1,0 +1,81 @@
+{
+  "entries": {
+    "dialoginput.find-replace-all": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "selector": "#btn-find",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {"selector": "#find-query", "value": "Willkommen"},
+          {"selector": "#find-replace", "value": "Ersetzt"}
+        ],
+        "click": "#btn-find-replace-all",
+        "expect": {
+          "selector": "#editor h1",
+          "contains": "Ersetzt",
+          "lacks": "Willkommen"
+        }
+      },
+      "note": "PROMOTED 2026-11-06: dom-mutation expect with Playwright :has-text() observes the replaced fixture h1 ('Willkommen' -> 'Ersetzt', doReplaceAll bulk edit); 'lorem' had 0 matches in the fixture so the replace no-oped — the query must be a real fixture word"
+    },
+    "dialogdepth-fr.textfromfile-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-cancel",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "depth (ledger file.file cancel action): #textfromfile-dialog opened by #btn-textfile (proven by insert-b btn-textfile row) is closed by #btn-textfromfile-cancel (closeDlg, editor.js:12918)"
+    },
+    "dialogdepth-fr.textfromfile-insert": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "assertion": {
+        "kind": "dialog-action",
+        "files": [
+          {"selector": "#textfromfile-input", "fixture": "1x1.gif"}
+        ],
+        "button": "#btn-textfromfile-insert",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "#btn-textfromfile-insert arms only after a file lands in #textfromfile-input — assertion.files setInputFiles fires the change handler (no type check on the input)"
+    },
+    "dialogdepth-fr.plugins-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "[data-cmd=\"managePlugins\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-plugins-close",
+        "dialog": "#plugins-dialog"
+      },
+      "note": "depth (ledger file.plugins): #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins.json plugins-dialog row) is closed by #btn-plugins-close (index.html:2930; same shape as L2I-04 dialogdepth.plugins-close)"
+    },
+    "dialogdepth-fr.protect-apply": {
+      "effektClass": "dialog",
+      "woTab": "protection",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-protect-apply",
+        "dialog": "#protect-dialog"
+      },
+      "note": "PROMOTED from xfail 2026-11-06: passes driven — confirmProtectDialog now closes the dialog on apply (earlier 404-error-path premise no longer holds in the parity environment); protection-tab opener proven by L2I-04 dialogdepth.protect-cancel"
+    },
+    "dialogdepth-fr.downloadas-pdf": {
+      "effektClass": "dialog",
+      "pre": "backstage:export",
+      "selector": "#btn-export",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "[data-export=\"pdf\"]",
+        "dialog": "#export-sub"
+      },
+      "note": "depth (ledger file.download-as, opener proven by stragglers file.download-as row): clicking the [data-export=pdf] format item runs closeAllMenus (editor.js:10744-10748) which hides the #export-sub format menu before doExport fires — menu-close is the assertable effect; the download itself (blob + a.click, editor.js:741-745) is not observable headless"
+    }
+  }
+}
