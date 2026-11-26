@@ -1,0 +1,53 @@
+{
+  "$comment": "WO036-2: promote 4 retargeted rows (cls dialog) — react-port contract specs for dialog-level entries. These 4 cls-dialog tokens (dialogdepth.plugins-close, dialogdepth.ocr-cancel, dialogdepth.ai-propose-cancel, dialogdepth.speech-close) were override-only with legacy dialog-action assertions in dlg-plugins-other.json for the retired vanilla bundle. In the React canvas editor: plugin buttons (ocr/speech/ai-*) open rails [data-wo-right-panel=\"plugins\" or \"ai-assistant\"]; the legacy #btn-plugins-close/#btn-ocr-cancel/#btn-ai-propose-cancel/#btn-speech-close DOM does not exist. Promotion replaces the legacy assertion with a React contract (dom-mutation on the right panel), making these rows non-retarget.",
+  "entries": {
+    "dialogdepth.plugins-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "contract": {
+        "selector": "#btn-plugin-manager",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop36-2 react-port: plugins-tab Plugin Manager button (#btn-plugin-manager, command: pluginManager) opens the plugins right panel [data-wo-right-panel=\"plugins\"] . Legacy dialog-action used #plugins-dialog/#btn-plugins-close DOM."
+      },
+      "note": "depth (ledger file.plugins): plugins right panel in React canvas editor. Legacy: #plugins-dialog opened via Plugins > Manage plugins is closed by #btn-plugins-close."
+    },
+    "dialogdepth.ocr-cancel": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "contract": {
+        "selector": "#btn-ocr",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop36-2 react-port: plugins-tab OCR button (#btn-ocr, command: ocr) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (OCR is a plugin). Legacy dialog-action used #ocr-dialog/#btn-ocr-cancel DOM."
+      },
+      "note": "depth (ledger scan.ocr): OCR dialog depth. Legacy: #ocr-dialog is closed by #btn-ocr-cancel."
+    },
+    "dialogdepth.ai-propose-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "contract": {
+        "selector": "#btn-ai-assistant-panel",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"ai-assistant\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop36-2 react-port: ai-tab Create AI Assistant button (#btn-ai-assistant-panel, command: ai-assistant) opens the ai-assistant right panel [data-wo-right-panel=\"ai-assistant\"] . Legacy dialog-action used #ai-propose-dialog/#btn-ai-propose-cancel DOM."
+      },
+      "note": "depth (ledger review.grammar-spelling): AI propose dialog depth. Legacy: #ai-propose-dialog is closed by #btn-ai-propose-cancel."
+    },
+    "dialogdepth.speech-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "contract": {
+        "selector": "#btn-speech",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]" },
+        "pre": "",
+        "xfail": false,
+        "note": "loop36-2 react-port: plugins-tab Speech button (#btn-speech, command: speech) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (speech is a plugin). Legacy dialog-action used #speech-dialog/#btn-speech-close DOM."
+      },
+      "note": "depth (ledger other.speech): speech dialog depth. Legacy: #speech-dialog is closed by #btn-speech-close."
+    }
+  }
+}
