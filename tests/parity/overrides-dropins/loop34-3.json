@@ -35,10 +35,10 @@
           "kind": "dom-mutation",
           "selector": "[data-wo-right-panel=\"chart\"]"
         },
-        "pre": "file-menu",
+        "pre": "chart-selection",
         "woTab": "chart-design",
-        "xfail": false,
-        "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings in ribbon spec word-ribbon.ts:1809) opens Chart right panel"
+        "xfail": true,
+        "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings, word-ribbon.ts:1809) requires chart selection to reveal the contextual chart-design tab. The legacy chart-dialog surface (chartSettings -> openVectorEditor) is not yet in React editor. xfail until contextual chart-design tab + advanced settings panel are ported"
       },
       "pre": "chart-selection",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
