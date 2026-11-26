@@ -1,0 +1,97 @@
+{
+  "$comment": "WO035-2: promote 6 retargeted rows (cls dialog) — react-port contract specs for dialoginput entries extracted from di-ref-review.json. cls = context-level + legacy DOM surface. All 6 are dialog-level contracts promoted for the React canvas editor lane.",
+  "entries": {
+    "dialoginput.insert-field": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "selector": "#btn-field",
+      "contract": {
+        "selector": "#btn-insert-cross-reference",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"crossreference\"]"},
+        "pre": "",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop35-2 react-port: #btn-insert-cross-reference opens Cross-Reference panel (field dialog mapped to cross-ref in react canvas editor)."
+      },
+      "assertion": {"kind": "dialog-input", "set": [{"selector": "#field-type", "value": "PAGE"}], "click": "#btn-field-ok", "expect": {"selector": "#editor span.field[data-field=\"PAGE\"]"}},
+      "note": "dialog-input depth: #field-type select + Insert -> btnFieldOk handler builds <span class=field data-field=PAGE> and insertHTMLs it at the caret, then closes #field-dialog; opener #btn-field lives in the references ribbon."
+    },
+    "dialoginput.comment": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-2 react-port: #btn-add-comment opens the comments right panel."
+      },
+      "assertion": {"kind": "dialog-input", "set": [{"selector": "#comment-body", "value": "dialog-input comment body"}], "click": "#btn-comment-ok", "expect": {"selector": "#editor span.comment"}},
+      "note": "dialog-input depth: review-tab #btn-comment opens #comment-dialog capturing the placeCaret range as commentRange; #comment-body + Comment -> confirmCommentDialog surroundContents <span class=comment data-comment=...> over the selected word."
+    },
+    "dialoginput.insert-comment": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "[data-cmd=\"insertComment\"]",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]"},
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop35-2 react-port: insert-tab Comment button opens the comments right panel."
+      },
+      "assertion": {"kind": "dialog-input", "set": [{"selector": "#comment-body", "value": "insert-tab comment body"}], "click": "#btn-comment-ok", "expect": {"selector": "#editor span.comment"}},
+      "note": "dialog-input depth: insert-tab Comment button routes cmd insertComment -> openCommentDialog; same #comment-body + #btn-comment-ok flow writes span.comment into #editor."
+    },
+    "dialoginput.ctx-add-comment": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"AddComment\"]",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-2 react-port: #btn-add-comment opens the comments right panel."
+      },
+      "assertion": {"kind": "dialog-input", "set": [{"selector": "#comment-body", "value": "ctx comment body"}], "click": "#btn-comment-ok", "expect": {"selector": "#editor span.comment"}},
+      "note": "dialog-input depth: ctx-menu AddComment item opens #comment-dialog over the ctx-menu pre's preserved word selection; #comment-body + Comment -> confirmCommentDialog wraps it in span.comment."
+    },
+    "dialoginput.cross-reference": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "pre": "bookmark-at-caret",
+      "selector": "[data-cmd=\"openCrossref\"]",
+      "contract": {
+        "selector": "#btn-insert-cross-reference",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"crossreference\"]"},
+        "pre": "bookmark-at-caret",
+        "woTab": "references",
+        "xfail": false,
+        "note": "loop35-2 react-port: #btn-insert-cross-reference opens the Cross-Reference right rail (crossref panel in react canvas editor)."
+      },
+      "assertion": {"kind": "dialog-input", "set": [{"selector": "#crossref-target", "value": "bm1"}, {"selector": "#crossref-text", "value": "see bm1"}], "click": "#btn-crossref-ok", "expect": {"selector": "#editor a[href=\"#bm1\"]"}},
+      "note": "PROMOTED 2026-11-07 (L2L-05): the bookmark-at-caret pre seeds span.bookmark[data-name=bm1], so openCrossrefDialog repopulates #crossref-target with a real 'bm1' option; confirmCrossrefDialog passes the non-empty-name guard and insertHTMLs <a href='#bm1'>see bm1</a> at the caret — asserted via the anchor."
+    },
+    "dialoginput.headerfooter-field": {
+      "effektClass": "dialog",
+      "woTab": "header-footer",
+      "pre": "hf-editing",
+      "selector": "#btn-hf-field",
+      "contract": {
+        "selector": "#btn-insert-page-number",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-header-footer-region=\"footer\"]"},
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop35-2 react-port: #btn-insert-page-number opens footer edit mode (headerfooter field functionality mapped to page number for React)."
+      },
+      "assertion": {"kind": "dialog-input", "event": "wo:header-field"},
+      "note": "dialog-input depth, hf variant — PROMOTED 2026-11-07: the hf-editing pre dblclicks a planted .page-header fixture, running enterHFMode which reveals the contextual header-footer ribbon tab where #btn-hf-field lives; the handler fires CustomEvent wo:header-field + status message."
+    }
+  }
+}
