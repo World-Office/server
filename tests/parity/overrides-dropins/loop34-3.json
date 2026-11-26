@@ -1,9 +1,22 @@
 {
-  "$comment": "WO034-3: Promoted cls dialog rows - 6 retargeted rows from backstage.json, chart-tab2.json, and di-ctx-list.json. These are dialog-level contracts that have been validated and promoted to the loop34-3 batch.",
+  "$comment": "WO034-3: Promote 6 cls dialog rows (retargeted) with react-port contract specs. cls = context-level + legacy DOM surface (dialog-input + dialog-action + dialog-visible assertions). All 6 are dialog-level contracts extracted from backstage.json, chart-tab2.json, and di-ctx-list.json and promoted to loop34-3 for the React canvas editor lane.",
   "entries": {
     "backstage.ai-review-close": {
       "effektClass": "dialog",
       "woTab": "backstage",
+      "contract": {
+        "selector": "[data-cmd=\"ai-review\"]",
+        "assertion": {
+          "kind": "dom-style",
+          "selector": "[data-wo-right-panel=\"ai-assistant\"]",
+          "prop": "display",
+          "equals": "none"
+        },
+        "pre": "backstage:ai",
+        "woTab": "backstage",
+        "xfail": true,
+        "note": "loop34-3 react-port: AI Review close — feature not yet in React canvas editor (no AI review panel), xfail as known gap until AI review panel is implemented"
+      },
       "pre": "backstage:ai",
       "selector": "#btn-ai-review",
       "assertion": {
@@ -16,6 +29,17 @@
     "chart.advanced-settings": {
       "effektClass": "dialog",
       "woTab": "chart-design",
+      "contract": {
+        "selector": "#chart-advanced-settings",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"chart\"]"
+        },
+        "pre": "chart-selection",
+        "woTab": "chart-design",
+        "xfail": false,
+        "note": "loop34-3 react-port: chart-design tab Advanced settings button opens Chart right panel"
+      },
       "pre": "chart-selection",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
       "assertion": {
@@ -42,6 +66,26 @@
       "effektClass": "dialog",
       "pre": "ctx-menu-in-list",
       "selector": "[data-ctx=\"SetNumberingValue\"]",
+      "contract": {
+        "selector": "[data-ctx=\"SetNumberingValue\"]",
+        "assertion": {
+          "kind": "dialog-input",
+          "set": [
+            {
+              "selector": "#numbering-value",
+              "value": "5"
+            }
+          ],
+          "click": "#btn-numbering-ok",
+          "expect": {
+            "selector": "#editor ol[start=\"5\"]"
+          }
+        },
+        "pre": "ctx-menu-in-list",
+        "woTab": "",
+        "xfail": true,
+        "note": "loop34-3 react-port: context menu SetNumberingValue -> dialog input not yet implemented in React canvas editor, xfail as known gap"
+      },
       "assertion": {
         "kind": "dialog-input",
         "set": [
@@ -61,6 +105,30 @@
       "effektClass": "dialog",
       "pre": "ctx-menu-in-list",
       "selector": "[data-ctx=\"AdjustListIndents\"]",
+      "contract": {
+        "selector": "[data-ctx=\"AdjustListIndents\"]",
+        "assertion": {
+          "kind": "dialog-input",
+          "set": [
+            {
+              "selector": "#list-indent-left",
+              "value": "100"
+            },
+            {
+              "selector": "#list-indent-hanging",
+              "value": "20"
+            }
+          ],
+          "click": "#btn-list-indents-ok",
+          "expect": {
+            "selector": "#editor ol[style*=\"margin-left: 100px\"]"
+          }
+        },
+        "pre": "ctx-menu-in-list",
+        "woTab": "",
+        "xfail": true,
+        "note": "loop34-3 react-port: context menu AdjustListIndents -> dialog input not yet implemented in React canvas editor, xfail as known gap"
+      },
       "assertion": {
         "kind": "dialog-input",
         "set": [
@@ -85,6 +153,17 @@
       "woTab": "insert",
       "pre": "ctx-menu-in-table",
       "selector": "#btn-table-ops",
+      "contract": {
+        "selector": "[data-wo-right-panel=\"table\"] [data-cmd=\"addRowAfter\"]",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "#editor table tr:nth-child(5)"
+        },
+        "pre": "ctx-menu-in-table",
+        "woTab": "insert",
+        "xfail": true,
+        "note": "loop34-3 react-port: table context menu insert rows not yet wired to table ops dialog in React canvas editor, xfail as known gap"
+      },
       "assertion": {
         "kind": "dialog-input",
         "set": [
@@ -104,6 +183,17 @@
       "effektClass": "dialog",
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"ParagraphSettings\"]",
+      "contract": {
+        "selector": "[data-ctx=\"ParagraphSettings\"]",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
+        },
+        "pre": "ctx-menu",
+        "woTab": "",
+        "xfail": true,
+        "note": "loop34-3 react-port: context menu ParagraphSettings opens Paragraph right panel, but dialog-input (set align_right + keep-next) not yet wired, xfail as known gap"
+      },
       "assertion": {
         "kind": "dialog-input",
         "set": [
