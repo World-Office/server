@@ -70,6 +70,18 @@ jobs:
       # (turbo run build, unfiltered) on Node 20 runners and intermittently
       # exits 1 with an empty task name after all tasks pass — unreproducible
       # locally on Node 22. turbo's own --filter is what this step means.
+      # The self-hosted runner's workspace persists between runs and
+      # actions/checkout's clean step does not remove gitignored files:
+      # stale apps/*-react/dist and frontend-dist/ output from earlier Deploy
+      # runs accumulated into the 2026-11-25 frontend-dist artifact (dead
+      # index-*.js chunks from older builds, word.bak-*/word-stale-* dirs
+      # from manual staging). Wipe build output so the artifact carries
+      # exactly one build's output. (2026-11-25: five-apps artifact had two
+      # index-*.js per app and junk dirs at the artifact root.)
+      - name: Wipe stale build output (persistent workspace accumulates gitignored dist/)
+        run: |
+          rm -rf frontend-dist apps/web/apps/*-react/dist
+
       - run: pnpm exec turbo run build --filter='!@world-office/tauri-poc'
         timeout-minutes: 20
         env:
