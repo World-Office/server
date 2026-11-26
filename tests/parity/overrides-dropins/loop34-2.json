@@ -13,7 +13,7 @@
         "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings"
       },
       "pre": "backstage:settings",
-      "note": "loop34-2: promote — FileMenu settings (opts) panel"/>close action"
+      "note": "loop34-2: promote — FileMenu settings (opts) panel close action"
     },
     "backstage.help-open": {
       "effektClass": "dialog",
