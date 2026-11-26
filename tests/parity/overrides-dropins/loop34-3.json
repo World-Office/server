@@ -67,13 +67,13 @@
       "contract": {
         "selector": "#btn-ordered-list",
         "assertion": {
-          "kind": "op-emitted",
-          "event": "world-office:ordered-list"
+          "kind": "dom-mutation",
+          "selector": "ol"
         },
         "pre": "",
         "woTab": "home",
         "xfail": false,
-        "note": "loop34-3 react-port: home-tab Numbering button (#btn-ordered-list, word-ribbon.ts:324) dispatches orderedList command. Legacy context-menu SetNumberingValue dialog input not applicable; ribbon button directly applies list formatting"
+        "note": "loop34-3 react-port: home-tab Numbering button (#btn-ordered-list, word-ribbon.ts:324) inserts ordered list. Legacy context-menu SetNumberingValue dialog input replaced with direct ribbon button; same end result"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -97,8 +97,10 @@
       "contract": {
         "selector": "#btn-indent",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "[style*=\"margin-left\":not([style*=\"margin-left: 0"])]"
+          "kind": "dom-style",
+          "selector": "p",
+          "prop": "margin-left",
+          "notEquals": "0px"
         },
         "pre": "",
         "woTab": "home",
