@@ -1,0 +1,127 @@
+{
+  "$comment": "WO034-3: Promoted cls dialog rows - 6 retargeted rows from backstage.json, chart-tab2.json, and di-ctx-list.json. These are dialog-level contracts that have been validated and promoted to the loop34-3 batch.",
+  "entries": {
+    "backstage.ai-review-close": {
+      "effektClass": "dialog",
+      "woTab": "backstage",
+      "pre": "backstage:ai",
+      "selector": "#btn-ai-review",
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-ai-review-close",
+        "dialog": "#ai-review-dialog"
+      },
+      "note": "option row: AI-changes close path — #btn-ai-review-close closes the dialog (editor.js:8708)"
+    },
+    "chart.advanced-settings": {
+      "effektClass": "dialog",
+      "woTab": "chart-design",
+      "pre": "chart-selection",
+      "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#chart-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "chart type select",
+          "selector": "#chart-type-select"
+        },
+        {
+          "name": "chart title input",
+          "selector": "#chart-title"
+        },
+        {
+          "name": "chart data grid",
+          "selector": "#chart-data input"
+        }
+      ],
+      "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523)"
+    },
+    "dialoginput.set-numbering-value": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"SetNumberingValue\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#numbering-value",
+            "value": "5"
+          }
+        ],
+        "click": "#btn-numbering-ok",
+        "expect": {
+          "selector": "#editor ol[start=\"5\"]"
+        }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.set-numbering-value open row): fill #numbering-value=5 (fixture beta is item 2, dialog prefills 2), OK -> applyNumberingValue(5) splits at beta and appends <ol start=\"5\"> as a sibling — start attribute only exists after the apply"
+    },
+    "dialoginput.adjust-list-indents": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu-in-list",
+      "selector": "[data-ctx=\"AdjustListIndents\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#list-indent-left",
+            "value": "100"
+          },
+          {
+            "selector": "#list-indent-hanging",
+            "value": "20"
+          }
+        ],
+        "click": "#btn-list-indents-ok",
+        "expect": {
+          "selector": "#editor ol[style*=\"margin-left: 100px\"]"
+        }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.adjust-list-indents open row): left=100/hanging=20 -> applyListIndents writes ol.style.marginLeft=100px + text-indent=-20px; the pristine fixture <ol> carries no inline style, so [style*=margin-left: 100px] only matches once the apply ran"
+    },
+    "dialoginput.several-rows-columns": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "pre": "ctx-menu-in-table",
+      "selector": "#btn-table-ops",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#op-insert-count",
+            "value": "3"
+          }
+        ],
+        "click": "#op-apply-rows",
+        "expect": {
+          "selector": "#editor table tr:nth-child(5)"
+        }
+      },
+      "note": "PROMOTED 2026-11-06 after PRODUCT FIX: currentTableCell() now falls back to lastTableCell when a dialog field steals focus (same pattern as lastObjectPick) — fill() no longer destroys the cell context, insertTableRow(false, severalCount()) applies to the remembered fixture cell and the 2x2 table grows to 5 rows"
+    },
+    "dialoginput.paragraph-advanced-settings": {
+      "effektClass": "dialog",
+      "pre": "ctx-menu",
+      "selector": "[data-ctx=\"ParagraphSettings\"]",
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {
+            "selector": "#ps-align",
+            "value": "right"
+          },
+          {
+            "selector": "#ps-keep-next",
+            "value": true
+          }
+        ],
+        "click": "#btn-ps-ok",
+        "expect": {
+          "selector": "#editor .keep-with-next"
+        }
+      },
+      "note": "dialoginput depth row (override-only sibling of the green ctx.paragraph-advanced-settings open row): set the alignment select to right + check #ps-keep-next, OK -> applyParagraphSettings writes text-align and toggles the keep-with-next class on the caret block; no block in the pristine document carries that class, so the expect anchors on the op's own class write (tag-agnostic: caret block may be p/li/h*)"
+    }
+  }
+}
