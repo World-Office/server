@@ -6,21 +6,21 @@
       "woTab": "backstage",
       "contract": {
         "selector": "#filesettings",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
+        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-panel" },
         "pre": "",
         "woTab": "backstage",
         "xfail": false,
         "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings"
       },
       "pre": "backstage:settings",
-      "note": "loop34-2: promote — FileMenu settings (opts) panel close action"
+      "note": "loop34-2: promote — FileMenu settings (opts) panel"/>close action"
     },
     "backstage.help-open": {
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
         "selector": "#filehelp",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
+        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-panel" },
         "pre": "",
         "woTab": "backstage",
         "xfail": false,
@@ -33,26 +33,25 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "#filehelp",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
-        "pre": "",
+        "selector": "[data-wo-file-menu-action=\"help\"]",
+        "assertion": { "kind": "dom-style", "selector": ".de-file-menu-panel", "prop": "display", "equals": "none" },
+        "pre": "backstage:help",
         "woTab": "backstage",
         "xfail": false,
-        "note": "loop34-2 react-port: FileMenu help panel — same selector toggles closed"
+        "note": "loop34-2 react-port: FileMenu help panel close — click Close button"
       },
-      "pre": "backstage:help",
-      "note": "loop34-2: promote — FileMenu help panel close"
+      "note": "loop34-2: promote — FileMenu help panel close action"
     },
     "backstage.history-open": {
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "[data-cmd=\"history\"]",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
+        "selector": "#filehistory",
+        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-panel" },
         "pre": "",
         "woTab": "backstage",
         "xfail": false,
-        "note": "loop34-2 react-port: FileMenu version history panel via [data-cmd=\"history\"]"
+        "note": "loop34-2 react-port: FileMenu version history panel via #filehistory"
       },
       "pre": "backstage:history",
       "note": "loop34-2: promote — FileMenu version history panel open"
@@ -61,29 +60,28 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "[data-cmd=\"history\"]",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
-        "pre": "",
+        "selector": "[data-wo-file-menu-action=\"history\"]",
+        "assertion": { "kind": "dom-style", "selector": ".de-file-menu-panel", "prop": "display", "equals": "none" },
+        "pre": "backstage:history",
         "woTab": "backstage",
         "xfail": false,
-        "note": "loop34-2 react-port: same selector toggles closed"
+        "note": "loop34-2 react-port: FileMenu version history panel close — click Close button"
       },
-      "pre": "backstage:history",
-      "note": "loop34-2: promote — FileMenu version history panel close"
+      "note": "loop34-2: promote — FileMenu version history panel close action"
     },
     "backstage.ai-review-open": {
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "[data-cmd=\"ai-review\"]",
-        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-content-box" },
+        "selector": "#fileai-review",
+        "assertion": { "kind": "dom-mutation", "selector": ".de-file-menu-panel" },
         "pre": "",
         "woTab": "backstage",
         "xfail": true,
-        "note": "loop34-2 react-port: AI Review panel not yet in React canvas editor — xfail as known gap"
+        "note": "loop34-2 react-port: AI Review panel via #fileai-review — xfail feature not yet implemented"
       },
       "pre": "backstage:ai",
-      "note": "loop34-2: promote — AI review dialog open (xfail: feature gap)"
+      "note": "loop34-2: promote — AI review dialog open (xfail: feature not in React editor)"
     }
   }
 }
