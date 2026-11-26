@@ -1,0 +1,133 @@
+{
+  "$comment": "WO035-4: promote 6 retargeted rows (cls dialog) — react-port contract specs for dialog-action entries extracted from dlg-file-review.json. cls = context-level + legacy DOM surface. All 6 are dialog-level contracts promoted for the React canvas editor lane, carrying legacy dialog-action assertions alongside React canvas editor contract blocks.",
+  "entries": {
+    "dialogdepth-fr.suggest-cancel": {
+      "effektClass": "dialog",
+      "pre": "backstage:suggest",
+      "selector": "#btn-filesuggest",
+      "contract": {
+        "selector": "[data-tab=\"file\"]",
+        "assertion": {"kind": "dom-mutation", "selector": ".de-file-menu-panel"},
+        "pre": "",
+        "woTab": "home",
+        "xfail": false,
+        "note": "loop35-4 react-port: File tab button [data-tab=\"file\"] opens the File menu (de-file-menu-panel). Legacy dialog-action spec uses #suggest-dialog/#btn-suggest-cancel DOM. Map: backstage:suggest -> file menu suggest panel."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-suggest-cancel",
+        "dialog": "#suggest-dialog"
+      },
+      "note": "depth (ledger file.suggest-a-feature, opener proven by stragglers file.suggest-a-feature row): #suggest-dialog (openDlg via #btn-filesuggest) is closed by #btn-suggest-cancel (closeDlg, editor.js:12731-12732)"
+    },
+    "dialogdepth-fr.comment-cancel-insertcomment": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "[data-cmd=\"insertComment\"]",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]"},
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop35-4 react-port: insert-tab Comment button opens the comments right panel (toggleRightPanel('comments') in word-commands.ts). Legacy dialog-action spec uses #comment-dialog/#btn-comment-cancel DOM."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-cancel",
+        "dialog": "#comment-dialog"
+      },
+      "note": "depth (ledger review.comment, opener proven by review-statusbar review.comment row): #comment-dialog opened by insertComment is closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741)"
+    },
+    "dialogdepth-fr.comment-cancel-collab": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-comment",
+      "contract": {
+        "selector": "#btn-add-comment",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"comments\"]"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-4 react-port: collaboration-tab Comment button opens the comments right panel (word-commands.ts:8730). Legacy dialog-action spec uses #comment-dialog/#btn-comment-cancel DOM."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-comment-cancel",
+        "dialog": "#comment-dialog"
+      },
+      "note": "depth (ledger review.add-comment, opener proven by review-statusbar review.add-comment row): the collaboration-tab #btn-comment opens the same #comment-dialog, closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741)"
+    },
+    "dialogdepth-fr.trackchanges-close": {
+      "effektClass": "dialog",
+      "woTab": "collaboration",
+      "selector": "#btn-track-changes",
+      "contract": {
+        "selector": "#btn-track-changes",
+        "assertion": {"kind": "dom-mutation", "selector": ".de-file-menu-panel"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-4 react-port: collaboration-tab Track Changes button opens the File menu with track-changes panel. Legacy dialog-action spec uses #trackchanges-dialog/#btn-trackchanges-close DOM."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-trackchanges-close",
+        "dialog": "#trackchanges-dialog"
+      },
+      "note": "depth (ledger review.track-changes, opener proven by review-statusbar review.track-changes row): #trackchanges-dialog opened by #btn-track-changes is closed by #btn-trackchanges-close (wired close loop editor.js:8964; the runner's own ctx-menu-trackchanges pre uses the same button to dismiss the dialog)"
+    },
+    "dialogdepth-fr.compare-apply": {
+      "effektClass": "dialog",
+      "pre": "peer-doc",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"compareVersion\"]",
+      "contract": {
+        "selector": "#btn-compare-documents",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"review\"]"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-4 react-port: collaboration-tab Compare button opens the review right panel (openCompareView). Legacy dialog-action spec uses #compare-dialog/#btn-compare-apply DOM; the React panel handles document selection."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "set": [
+          {
+            "selector": "#compare-document-select",
+            "pickFirstOption": true
+          }
+        ],
+        "button": "#btn-compare-apply",
+        "dialog": "#compare-dialog"
+      },
+      "note": "depth (ledger review.compare, opener proven by review.json review.compare row): #compare-dialog opened via [data-cmd=compareVersion] is closed by #btn-compare-apply after peer document selection"
+    },
+    "dialogdepth-fr.combine-apply": {
+      "effektClass": "dialog",
+      "pre": "peer-doc",
+      "woTab": "collaboration",
+      "selector": "[data-cmd=\"combineRevisions\"]",
+      "contract": {
+        "selector": "#btn-combine-documents",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"review\"]"},
+        "pre": "",
+        "woTab": "collaboration",
+        "xfail": false,
+        "note": "loop35-4 react-port: collaboration-tab Combine button opens the review right panel (openCombineView). Legacy dialog-action spec uses #combine-dialog/#btn-combine-apply DOM; the React panel handles document selection."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "set": [
+          {
+            "selector": "#combine-document-select",
+            "pickFirstOption": true
+          }
+        ],
+        "button": "#btn-combine-apply",
+        "dialog": "#combine-dialog"
+      },
+      "note": "depth (ledger review.combine, opener proven by review.json review.combine row): #combine-dialog opened via [data-cmd=combineRevisions] is closed by #btn-combine-apply after peer document selection"
+    }
+  }
+}
