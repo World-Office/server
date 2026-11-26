@@ -37,8 +37,8 @@
         },
         "pre": "chart-selection",
         "woTab": "chart-design",
-        "xfail": true,
-        "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings, word-ribbon.ts:1809) requires chart selection to reveal the contextual chart-design tab. The legacy chart-dialog surface (chartSettings -> openVectorEditor) is not yet in React editor. xfail until contextual chart-design tab + advanced settings panel are ported"
+        "xfail": false,
+        "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings, word-ribbon.ts:1809). In React canvas editor, clicking this button (when chart-design tab is active via chart selection) opens the Chart right panel."
       },
       "pre": "chart-selection",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
