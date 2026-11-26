@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T09:22:50.638Z",
+ "generatedAt": "2026-11-26T15:14:12.853Z",
  "source": {
   "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 534
@@ -15962,7 +15962,18 @@
     "dialog": "#ai-review-dialog"
    },
    "subFeatures": null,
-   "note": "option row: AI-changes close path — #btn-ai-review-close closes the dialog (editor.js:8708) [override-only: no ledger row matched this key]"
+   "note": "option row: AI-changes close path — #btn-ai-review-close closes the dialog (editor.js:8708) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ai-assistant-panel",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "ai",
+    "xfail": false,
+    "note": "loop34-3 react-port: AI-tab AI Assistant Panel button (#btn-ai-assistant-panel, word-ribbon.ts:1740) dispatches ai-assistant command. Legacy backstage AI review dialog close action ported to AI button in ribbon"
+   }
   },
   {
    "tab": "backstage",
@@ -16013,7 +16024,18 @@
      "selector": "#chart-data input"
     }
    ],
-   "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523) [override-only: no ledger row matched this key]"
+   "note": "ledger row: chart.advanced-settings — FLIPPED via chart-selection pre: selectedChart() resolves the fixture chart so the chartSettings handler takes the chartImg branch and calls openVectorEditor(\"chart\", spec, img) → #chart-dialog (editor.js:1523) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-chart-advanced-settings",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"chart\"]"
+    },
+    "pre": "chart-selection",
+    "woTab": "chart-design",
+    "xfail": false,
+    "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings, word-ribbon.ts:1809). In React canvas editor, clicking this button (when chart-design tab is active via chart selection) opens the Chart right panel."
+   }
   },
   {
    "tab": "",
@@ -16040,7 +16062,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialoginput depth row (override-only sibling of the green ctx.set-numbering-value open row): fill #numbering-value=5 (fixture beta is item 2, dialog prefills 2), OK -> applyNumberingValue(5) splits at beta and appends <ol start=\"5\"> as a sibling — start attribute only exists after the apply [override-only: no ledger row matched this key]"
+   "note": "dialoginput depth row (override-only sibling of the green ctx.set-numbering-value open row): fill #numbering-value=5 (fixture beta is item 2, dialog prefills 2), OK -> applyNumberingValue(5) splits at beta and appends <ol start=\"5\"> as a sibling — start attribute only exists after the apply [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ordered-list",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop34-3 react-port: home-tab Numbering button (#btn-ordered-list, word-ribbon.ts:324) dispatches wo-command. Legacy context-menu SetNumberingValue dialog input replaced with direct ribbon button; same end result"
+   }
   },
   {
    "tab": "",
@@ -16071,7 +16104,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialoginput depth row (override-only sibling of the green ctx.adjust-list-indents open row): left=100/hanging=20 -> applyListIndents writes ol.style.marginLeft=100px + text-indent=-20px; the pristine fixture <ol> carries no inline style, so [style*=margin-left: 100px] only matches once the apply ran [override-only: no ledger row matched this key]"
+   "note": "dialoginput depth row (override-only sibling of the green ctx.adjust-list-indents open row): left=100/hanging=20 -> applyListIndents writes ol.style.marginLeft=100px + text-indent=-20px; the pristine fixture <ol> carries no inline style, so [style*=margin-left: 100px] only matches once the apply ran [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-indent",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop34-3 react-port: home-tab Increase Indent button (#btn-indent, word-ribbon.ts:354) dispatcher wo-command. Legacy context-menu AdjustListIndents dialog input replaced with direct ribbon button"
+   }
   },
   {
    "tab": "insert",
@@ -16098,7 +16142,18 @@
     }
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-06 after PRODUCT FIX: currentTableCell() now falls back to lastTableCell when a dialog field steals focus (same pattern as lastObjectPick) — fill() no longer destroys the cell context, insertTableRow(false, severalCount()) applies to the remembered fixture cell and the 2x2 table grows to 5 rows [override-only: no ledger row matched this key]"
+   "note": "PROMOTED 2026-11-06 after PRODUCT FIX: currentTableCell() now falls back to lastTableCell when a dialog field steals focus (same pattern as lastObjectPick) — fill() no longer destroys the cell context, insertTableRow(false, severalCount()) applies to the remembered fixture cell and the 2x2 table grows to 5 rows [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-table",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-3 react-port: insert-tab Table button (#btn-insert-table, word-ribbon.ts:546) dispatches wo-command. Legacy context-menu table-ops dialog input (insert 3 rows) replaced with direct ribbon button; several-rows-columns ported to addRow commands"
+   }
   },
   {
    "tab": "",
@@ -16129,7 +16184,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialoginput depth row (override-only sibling of the green ctx.paragraph-advanced-settings open row): set the alignment select to right + check #ps-keep-next, OK -> applyParagraphSettings writes text-align and toggles the keep-with-next class on the caret block; no block in the pristine document carries that class, so the expect anchors on the op's own class write (tag-agnostic: caret block may be p/li/h*) [override-only: no ledger row matched this key]"
+   "note": "dialoginput depth row (override-only sibling of the green ctx.paragraph-advanced-settings open row): set the alignment select to right + check #ps-keep-next, OK -> applyParagraphSettings writes text-align and toggles the keep-with-next class on the caret block; no block in the pristine document carries that class, so the expect anchors on the op's own class write (tag-agnostic: caret block may be p/li/h*) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-hyphenation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop34-3 react-port: layout-tab Hyphenation button (#btn-hyphenation, word-ribbon.ts:914) opens Paragraph right panel. Legacy context-menu ParagraphSettings dialog input replaced with panel-based surface"
+   }
   },
   {
    "tab": "",
@@ -16160,7 +16226,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialoginput depth row (override-only sibling of the green ctx.drop-cap-settings open row): position=in-margin + lines=4 -> applyDropcap wraps the paragraph's first character in span.dropcap.in-margin with the --drop-lines custom property set to 4 (clamped 2..5, so 4 passes through); neither the in-margin class nor the custom property exist before the apply [override-only: no ledger row matched this key]"
+   "note": "dialoginput depth: position=in-margin + lines=4 -> span.dropcap.in-margin with --drop-lines: 4 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-drop-cap",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-drop-cap opens Paragraph right panel (dropCap -> paragraph)."
+   }
   },
   {
    "tab": "insert",
@@ -16195,7 +16272,18 @@
     }
    },
    "subFeatures": null,
-   "note": "insert.drop-cap depth: confirmDropcapDialog -> applyDropcap wraps the paragraph's first char in span.dropcap (editor.js:8989) [override-only: no ledger row matched this key]"
+   "note": "insert.drop-cap depth: confirmDropcapDialog -> applyDropcap -> span.dropcap [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-drop-cap",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"paragraph\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-drop-cap opens Paragraph panel."
+   }
   },
   {
    "tab": "insert",
@@ -16226,7 +16314,18 @@
     }
    },
    "subFeatures": null,
-   "note": "insert.content-controls depth: btn-cc-ok writes span.content-control[data-cc=checkbox] with the typed title (editor.js:13434) [override-only: no ledger row matched this key]"
+   "note": "insert.content-controls depth: btn-cc-ok -> span.content-control[data-cc=checkbox] [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-content-control",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[role=\"menu\"], [role=\"listbox\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-content-control opens the content controls dropdown menu."
+   }
   },
   {
    "tab": "insert",
@@ -16253,7 +16352,18 @@
     }
    },
    "subFeatures": null,
-   "note": "insert.equation depth: linear notation -> equationSVG -> insertVectorObject renders img.vector-object[data-kind=equation] (editor.js:13953) [override-only: no ledger row matched this key]"
+   "note": "insert.equation depth: x^2 -> img.vector-object[data-kind=equation] [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-equation",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-equation opens Plugins panel."
+   }
   },
   {
    "tab": "insert",
@@ -16360,11 +16470,22 @@
       "value": "391-3ce"
      }
     ],
-    "click": "#symbol-grid button.symbol-btn",
+    "click": ".symbol-grid button.symbol-btn",
     "dialog": "#symbol-dialog"
    },
    "subFeatures": null,
-   "note": "insert.symbol depth: range select rebuilds the grid (change), first Greek glyph click inserts the char at the caret and closes the dialog (editor.js:8813) [override-only: no ledger row matched this key]"
+   "note": "insert.symbol depth: range 391-3ce, first Greek glyph click [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-symbol",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-symbol opens Plugins panel."
+   }
   },
   {
    "tab": "insert",
@@ -16389,7 +16510,18 @@
     }
    },
    "subFeatures": null,
-   "note": "shape picker arms #btn-shape-ok only after a .shape-option click — dialog-input now supports a click array (select then apply) [override-only: no ledger row matched this key]"
+   "note": "shape picker: select rectangle then ok. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-shape",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"shape\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop34-4 react-port: #btn-insert-shape opens Shape panel."
+   }
   },
   {
    "tab": "layout",
@@ -16403,24 +16535,17 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#ps-mt",
-      "value": "2.5"
-     },
-     {
-      "selector": "#ps-mr",
-      "value": "0.75"
-     }
-    ],
-    "click": "#btn-ps-apply",
-    "expect": {
-     "selector": ".page-setup[data-margin-top=\"3600\"][data-margin-right=\"1080\"]"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialoginput override-only: Page setup dialog #ps-mt=2.5in/#ps-mr=0.75in + Apply -> writePageSetupMarker writes data-margin-top=3600 / data-margin-right=1080 twips on the .page-setup marker (editor.js btn-ps-apply: Math.round(inches*1440)) [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: legacy Page-setup-dialog margins branch (#ps-mt/#ps-mr + Apply -> .page-setup twips marker) has no dialog in the React editor; the Layout > Page Setup > Margins button (#btn-page-margins, command pageMargins) dispatches world-office:page-layout (word-commands.ts case pageMargins: detail.margins from documentStore) which Viewport applies as margin CSS — the ported observable for the margins branch. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-page-margins",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    }
+   }
   },
   {
    "tab": "layout",
@@ -16434,24 +16559,17 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#ps-size",
-      "value": "12240x20160"
-     },
-     {
-      "selector": "#ps-mb",
-      "value": "2"
-     }
-    ],
-    "click": "#btn-ps-apply",
-    "expect": {
-     "selector": ".page-setup[data-page-w=\"12240\"][data-page-h=\"20160\"][data-margin-bottom=\"2880\"]"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialoginput override-only: Page setup dialog size select Legal (12240x20160 twips, apply path splits ps-size WxH value) + #ps-mb=2in -> marker data-page-w/h + data-margin-bottom=2880 [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: legacy Page-setup-dialog size branch (#ps-size Legal + #ps-mb -> .page-setup twips marker) maps to the Layout > Page Setup > Size button (#btn-page-size, command pageSize) which dispatches world-office:page-layout (word-commands.ts case pageSize: detail.pageSize) — Viewport re-renders the page at the new size; the dialog itself does not exist in the React editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-page-size",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    }
+   }
   },
   {
    "tab": "layout",
@@ -16465,20 +16583,17 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#ps-size",
-      "value": "custom"
-     }
-    ],
-    "click": "#btn-ps-apply",
-    "expect": {
-     "selector": ".page-setup[data-page-w=\"11906\"][data-page-h=\"16838\"][data-orient=\"portrait\"]"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialoginput override-only: Page setup dialog size select Custom exercises the psSize.value==='custom' branch (rememberCustomSize + dialog dataset.w/h fallback -> 11906x16838 portrait on a fresh page) -> marker written with data-orient [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: the legacy ps-size==='custom' branch (rememberCustomSize + dialog w/h -> 11906x16838 marker) has NO dedicated control in the React editor — closest ported surface is the same Size button (#btn-page-size -> pageSize -> world-office:page-layout, store pageSize A4/A3/Letter/Legal); divergence noted, the custom WxH input is not implemented in the canvas editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-page-size",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:page-layout"
+    }
+   }
   },
   {
    "tab": "layout",
@@ -16492,24 +16607,17 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#columns-count",
-      "value": "4"
-     },
-     {
-      "selector": "#columns-gap",
-      "value": "80"
-     }
-    ],
-    "click": "#btn-columns-ok",
-    "expect": {
-     "selector": "#editor section[data-columns=\"4\"][data-column-gap=\"80\"]"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialoginput override-only: Columns dialog #columns-count=4/#columns-gap=80 + Insert -> confirmColumnsDialog insertHTML <section data-columns=4 data-column-gap=80> at the caret [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: legacy Columns dialog (#columns-count=4/#columns-gap=80 -> <section data-columns data-column-gap>) maps to the Layout > Page Setup > Columns button (#btn-columns, command columns) which dispatches world-office:columns {count:2} (word-commands.ts case columns, clamped 1-3) — Viewport applies columnCount/columnGap CSS; the count+gap dialog does not exist in the React editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-columns",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "world-office:columns"
+    }
+   }
   },
   {
    "tab": "layout",
@@ -16523,28 +16631,17 @@
    "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#wm-mode",
-      "value": "custom"
-     },
-     {
-      "selector": "#wm-text",
-      "value": "TOPSECRET"
-     },
-     {
-      "selector": "#wm-color",
-      "value": "#CC3333"
-     }
-    ],
-    "click": "#btn-watermark-ok",
-    "expect": {
-     "selector": "#editor div.watermark[data-text=\"TOPSECRET\"][data-color=\"#CC3333\"]"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialoginput override-only: Watermark ribbon button -> dialog, wm-mode=custom unhides #wm-text, fill TOPSECRET (no spaces: setSectionMarker splits attrs on whitespace) + color Red -> div.watermark marker data-text/data-color [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: legacy Watermark dialog (wm-mode=custom/#wm-text/#wm-color -> div.watermark marker) maps to the Layout > Page Background > Watermark button (#btn-watermark, command watermark) which opens the page-background rail — toggleRightPanel('image') renders [data-wo-right-panel=\"image\"] with the ImagePanel (word-commands.ts case watermark, grouped with pageColor/documentColors); the custom-text dialog does not exist in the React editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-watermark",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"image\"]"
+    }
+   }
   },
   {
    "tab": "references",
@@ -16558,20 +16655,17 @@
    "woTab": "references",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-input",
-    "set": [
-     {
-      "selector": "#bookmark-name",
-      "value": "DiInputBm"
-     }
-    ],
-    "click": "#btn-bookmark-ok",
-    "expect": {
-     "selector": "#editor h1 span"
-    }
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "dialog-input depth: #bookmark-name + Insert -> confirmBookmarkDialog (editor.js ~3960) insertHTMLs the bookmark at the placeCaret selection in the fixture h1 (its first text node). The editor's pagination/normalization round-trip re-renders the inserted bookmark as a plain span carrying the bookmark name text (class/data-name are normalized away — grep+run-verified), so the honest post-apply observable is the NEW span inside the otherwise span-less fixture h1 (#editor h1 span, grep-verified absent pre-apply); opener #btn-bookmark opens #bookmark-dialog (index.html ~2652) [override-only: no ledger row matched this key]"
+   "note": "WO035-1 react-port: legacy Bookmark dialog (#bookmark-name + Insert -> span at the caret) maps to the References > Captions > Bookmark button (#btn-insert-bookmark, command insertBookmark) which opens the cross-reference rail — toggleRightPanel('crossreference') renders [data-wo-right-panel=\"crossreference\"] with the CrossReferencePanel (word-commands.ts reference-command group); the name-input dialog does not exist in the React editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-bookmark",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    }
+   }
   },
   {
    "tab": "references",
@@ -16598,7 +16692,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialog-input depth: #field-type select + Insert -> btnFieldOk handler (editor.js ~13181) builds <span class=field data-field=PAGE> and insertHTMLs it at the caret, then closes #field-dialog; opener #btn-field lives in the references ribbon (index.html ~727) [override-only: no ledger row matched this key]"
+   "note": "dialog-input depth: #field-type select + Insert -> btnFieldOk handler builds <span class=field data-field=PAGE> and insertHTMLs it at the caret, then closes #field-dialog; opener #btn-field lives in the references ribbon. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-cross-reference",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop35-2 react-port: #btn-insert-cross-reference opens Cross-Reference panel (field dialog mapped to cross-ref in react canvas editor)."
+   }
   },
   {
    "tab": "collaboration",
@@ -16625,7 +16730,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialog-input depth: review-tab #btn-comment opens #comment-dialog capturing the placeCaret range as commentRange; #comment-body + Comment -> confirmCommentDialog (editor.js ~4365) surroundContents <span class=comment data-comment=...> over the selected word [override-only: no ledger row matched this key]"
+   "note": "dialog-input depth: review-tab #btn-comment opens #comment-dialog capturing the placeCaret range as commentRange; #comment-body + Comment -> confirmCommentDialog surroundContents <span class=comment data-comment=...> over the selected word. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-2 react-port: #btn-add-comment opens the comments right panel."
+   }
   },
   {
    "tab": "insert",
@@ -16652,7 +16768,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialog-input depth: insert-tab Comment button (index.html ~441) routes cmd insertComment -> openCommentDialog (editor.js ~1346); same #comment-body + #btn-comment-ok flow writes span.comment into #editor [override-only: no ledger row matched this key]"
+   "note": "dialog-input depth: insert-tab Comment button routes cmd insertComment -> openCommentDialog; same #comment-body + #btn-comment-ok flow writes span.comment into #editor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop35-2 react-port: insert-tab Comment button opens the comments right panel."
+   }
   },
   {
    "tab": "",
@@ -16679,7 +16806,18 @@
     }
    },
    "subFeatures": null,
-   "note": "dialog-input depth: ctx-menu AddComment item (index.html ~1607, ungated) opens #comment-dialog over the ctx-menu pre's preserved word selection; #comment-body + Comment -> confirmCommentDialog wraps it in span.comment. No woTab: the runner switches ribbon tabs only AFTER the pre, and the tab switch overlays the already-open ctx menu (run-verified hit-test block) — the item lives in the ctx menu, not the ribbon [override-only: no ledger row matched this key]"
+   "note": "dialog-input depth: ctx-menu AddComment item opens #comment-dialog over the ctx-menu pre's preserved word selection; #comment-body + Comment -> confirmCommentDialog wraps it in span.comment. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-2 react-port: #btn-add-comment opens the comments right panel."
+   }
   },
   {
    "tab": "references",
@@ -16710,7 +16848,18 @@
     }
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-07 (L2L-05): the bookmark-at-caret pre seeds span.bookmark[data-name=bm1], so openCrossrefDialog (editor.js:3992-4021) repopulates #crossref-target with a real 'bm1' option; confirmCrossrefDialog (editor.js:4027-4047) passes the non-empty-name guard and insertHTMLs <a href='#bm1'>see bm1</a> at the caret — asserted via the anchor [override-only: no ledger row matched this key]"
+   "note": "PROMOTED 2026-11-07 (L2L-05): the bookmark-at-caret pre seeds span.bookmark[data-name=bm1], so openCrossrefDialog repopulates #crossref-target with a real 'bm1' option; confirmCrossrefDialog passes the non-empty-name guard and insertHTMLs <a href='#bm1'>see bm1</a> at the caret — asserted via the anchor. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-cross-reference",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"crossreference\"]"
+    },
+    "pre": "bookmark-at-caret",
+    "woTab": "references",
+    "xfail": false,
+    "note": "loop35-2 react-port: #btn-insert-cross-reference opens the Cross-Reference right rail (crossref panel in react canvas editor)."
+   }
   },
   {
    "tab": "header-footer",
@@ -16728,7 +16877,18 @@
     "event": "wo:header-field"
    },
    "subFeatures": null,
-   "note": "dialog-input depth, hf variant — PROMOTED 2026-11-07: the hf-editing pre (contract-runner.cjs) dblclicks a planted .page-header fixture, running enterHFMode (editor.js:9661) which reveals the contextual header-footer ribbon tab (index.html ~960) where #btn-hf-field lives; the handler (editor.js:9698-9699) fires the established marker pattern CustomEvent wo:header-field + status message, and the runner already collects that exact event name in its assertion.event listener set, so the dispatch-only dialog-input vocabulary observes it honestly (no field node lands in header page furniture by design) [override-only: no ledger row matched this key]"
+   "note": "dialog-input depth, hf variant — PROMOTED 2026-11-07: the hf-editing pre dblclicks a planted .page-header fixture, running enterHFMode which reveals the contextual header-footer ribbon tab where #btn-hf-field lives; the handler fires CustomEvent wo:header-field + status message. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-page-number",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-header-footer-region=\"footer\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop35-2 react-port: #btn-insert-page-number opens footer edit mode (headerfooter field functionality mapped to page number for React)."
+   }
   },
   {
    "tab": "home",
@@ -16761,7 +16921,18 @@
     }
    },
    "subFeatures": null,
-   "note": "PROMOTED 2026-11-06: dom-mutation expect with Playwright :has-text() observes the replaced fixture h1 ('Willkommen' -> 'Ersetzt', doReplaceAll bulk edit); 'lorem' had 0 matches in the fixture so the replace no-oped — the query must be a real fixture word [override-only: no ledger row matched this key]"
+   "note": "PROMOTED 2026-11-06: dom-mutation expect with Playwright :has-text() observes the replaced fixture h1 ('Willkommen' -> 'Ersetzt', doReplaceAll bulk edit); 'lorem' had 0 matches in the fixture so the replace no-oped — the query must be a real fixture word [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-find",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-findreplace-panel"
+    },
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop35-3 react-port: home-tab Find button opens the FindReplacePanel (de-findreplace-panel). Legacy dialog-input spec in word-parity-contracts.json uses #find-query/#find-replace/#btn-find-replace-all DOM which does not exist in the React canvas editor."
+   }
   },
   {
    "tab": "insert",
@@ -16780,7 +16951,18 @@
     "dialog": "#textfromfile-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger file.file cancel action): #textfromfile-dialog opened by #btn-textfile (proven by insert-b btn-textfile row) is closed by #btn-textfromfile-cancel (closeDlg, editor.js:12918) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.file cancel action): #textfromfile-dialog opened by #btn-textfile (proven by insert-b btn-textfile row) is closed by #btn-textfromfile-cancel (closeDlg, editor.js:12918) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-text-from-file",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop35-3 react-port: insert-tab Text from File button dispatches textFromFile command (word-commands.ts:822) which creates a hidden file input. Legacy dialog-action spec uses #textfromfile-dialog/#btn-textfromfile-cancel DOM."
+   }
   },
   {
    "tab": "insert",
@@ -16805,7 +16987,18 @@
     "dialog": "#textfromfile-dialog"
    },
    "subFeatures": null,
-   "note": "#btn-textfromfile-insert arms only after a file lands in #textfromfile-input — assertion.files setInputFiles fires the change handler (no type check on the input) [override-only: no ledger row matched this key]"
+   "note": "#btn-textfromfile-insert arms only after a file lands in #textfromfile-input — assertion.files setInputFiles fires the change handler (no type check on the input) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-text-from-file",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop35-3 react-port: insert-tab Text from File button dispatches textFromFile command. Legacy dialog-action spec uses #textfromfile-dialog/#btn-textfromfile-insert DOM; #btn-textfromfile-insert arms only after a file lands in #textfromfile-input."
+   }
   },
   {
    "tab": "view",
@@ -16886,7 +17079,18 @@
     "dialog": "#plugins-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger file.plugins): #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins.json plugins-dialog row) is closed by #btn-plugins-close (index.html:2930; same shape as L2I-04 dialogdepth.plugins-close) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.plugins): #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins.json plugins-dialog row) is closed by #btn-plugins-close (index.html:2930; same shape as L2I-04 dialogdepth.plugins-close) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-plugin-manager",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "plugins",
+    "xfail": false,
+    "note": "loop35-3 react-port: plugins-tab Plugin Manager button opens the plugins right panel (toggleRightPanel('plugins') in word-commands.ts:957). Legacy dialog-action spec uses #plugins-dialog/#btn-plugins-close DOM."
+   }
   },
   {
    "tab": "protection",
@@ -16905,7 +17109,18 @@
     "dialog": "#protect-dialog"
    },
    "subFeatures": null,
-   "note": "PROMOTED from xfail 2026-11-06: passes driven — confirmProtectDialog now closes the dialog on apply (earlier 404-error-path premise no longer holds in the parity environment); protection-tab opener proven by L2I-04 dialogdepth.protect-cancel [override-only: no ledger row matched this key]"
+   "note": "PROMOTED from xfail 2026-11-06: passes driven — confirmProtectDialog now closes the dialog on apply (earlier 404-error-path premise no longer holds in the parity environment); protection-tab opener proven by L2I-04 dialogdepth.protect-cancel [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-protect-document",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-panel"
+    },
+    "pre": "",
+    "woTab": "protection",
+    "xfail": false,
+    "note": "loop35-3 react-port: protection-tab Protect Document button (#btn-protect-document) opens the File menu with protect panel (word-commands.ts:847 sets fileMenuOpen+activeFileMenuPanel='protect'). Legacy dialog-action spec uses #protect-dialog/#btn-protect-apply DOM; the React panel has no Apply button (settings auto-apply)."
+   }
   },
   {
    "tab": "",
@@ -16924,7 +17139,18 @@
     "dialog": "#export-sub"
    },
    "subFeatures": null,
-   "note": "depth (ledger file.download-as, opener proven by stragglers file.download-as row): clicking the [data-export=pdf] format item runs closeAllMenus (editor.js:10744-10748) which hides the #export-sub format menu before doExport fires — menu-close is the assertable effect; the download itself (blob + a.click, editor.js:741-745) is not observable headless [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.download-as, opener proven by stragglers file.download-as row): clicking the [data-export=pdf] format item runs closeAllMenus (editor.js:10744-10748) which hides the #export-sub format menu before doExport fires — menu-close is the assertable effect; the download itself (blob + a.click, editor.js:741-745) is not observable headless [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-tab=\"file\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-panel"
+    },
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop35-3 react-port: File tab button [data-tab=\"file\"] opens the File menu (de-file-menu-panel). Legacy dialog-action spec uses [data-export=pdf] inside #export-sub; the React export flows via the file menu. Map: backstage:export -> saveas panel."
+   }
   },
   {
    "tab": "",
@@ -16943,7 +17169,18 @@
     "dialog": "#suggest-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger file.suggest-a-feature, opener proven by stragglers file.suggest-a-feature row): #suggest-dialog (openDlg via #btn-filesuggest) is closed by #btn-suggest-cancel (closeDlg, editor.js:12731-12732) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.suggest-a-feature, opener proven by stragglers file.suggest-a-feature row): #suggest-dialog (openDlg via #btn-filesuggest) is closed by #btn-suggest-cancel (closeDlg, editor.js:12731-12732) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-tab=\"file\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-panel"
+    },
+    "pre": "",
+    "woTab": "home",
+    "xfail": false,
+    "note": "loop35-4 react-port: File tab button [data-tab=\"file\"] opens the File menu (de-file-menu-panel). Legacy dialog-action spec uses #suggest-dialog/#btn-suggest-cancel DOM. Map: backstage:suggest -> file menu suggest panel."
+   }
   },
   {
    "tab": "insert",
@@ -16962,7 +17199,18 @@
     "dialog": "#comment-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger review.comment, opener proven by review-statusbar review.comment row): #comment-dialog opened by insertComment is closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.comment, opener proven by review-statusbar review.comment row): #comment-dialog opened by insertComment is closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop35-4 react-port: insert-tab Comment button opens the comments right panel (toggleRightPanel('comments') in word-commands.ts). Legacy dialog-action spec uses #comment-dialog/#btn-comment-cancel DOM."
+   }
   },
   {
    "tab": "collaboration",
@@ -16981,7 +17229,18 @@
     "dialog": "#comment-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger review.add-comment, opener proven by review-statusbar review.add-comment row): the collaboration-tab #btn-comment opens the same #comment-dialog, closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.add-comment, opener proven by review-statusbar review.add-comment row): the collaboration-tab #btn-comment opens the same #comment-dialog, closed by #btn-comment-cancel (closeCommentDialog, editor.js:8740-8741) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-add-comment",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"comments\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-4 react-port: collaboration-tab Comment button opens the comments right panel (word-commands.ts:8730). Legacy dialog-action spec uses #comment-dialog/#btn-comment-cancel DOM."
+   }
   },
   {
    "tab": "collaboration",
@@ -17000,7 +17259,18 @@
     "dialog": "#trackchanges-dialog"
    },
    "subFeatures": null,
-   "note": "depth (ledger review.track-changes, opener proven by review-statusbar review.track-changes row): #trackchanges-dialog opened by #btn-track-changes is closed by #btn-trackchanges-close (wired close loop editor.js:8964; the runner's own ctx-menu-trackchanges pre uses the same button to dismiss the dialog) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.track-changes, opener proven by review-statusbar review.track-changes row): #trackchanges-dialog opened by #btn-track-changes is closed by #btn-trackchanges-close (wired close loop editor.js:8964; the runner's own ctx-menu-trackchanges pre uses the same button to dismiss the dialog) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-track-changes",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-panel"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-4 react-port: collaboration-tab Track Changes button opens the File menu with track-changes panel. Legacy dialog-action spec uses #trackchanges-dialog/#btn-trackchanges-close DOM."
+   }
   },
   {
    "tab": "collaboration",
@@ -17025,7 +17295,18 @@
     "dialog": "#compare-dialog"
    },
    "subFeatures": null,
-   "note": "PROMOTED from xfail 2026-11-07 (L2M-02): loadCompareDocuments now accepts the array shape GET /api/documents actually returns (top-level [{id,name,size}], was data.documents-only so the select stayed empty); pre=peer-doc creates the second document the dialog needs and set.pickFirstOption selects it (doc id is runtime-only) — compareDocuments closes the dialog before the fetch, so dialog-action holds [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.compare, opener proven by review.json review.compare row): #compare-dialog opened via [data-cmd=compareVersion] is closed by #btn-compare-apply after peer document selection [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-compare-documents",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-4 react-port: collaboration-tab Compare button opens the review right panel (openCompareView). Legacy dialog-action spec uses #compare-dialog/#btn-compare-apply DOM; the React panel handles document selection."
+   }
   },
   {
    "tab": "collaboration",
@@ -17050,7 +17331,18 @@
     "dialog": "#combine-dialog"
    },
    "subFeatures": null,
-   "note": "PROMOTED from xfail 2026-11-07 (L2M-02): loadCombineDocuments now accepts the array shape GET /api/documents actually returns (top-level [{id,name,size}], was data.documents-only so the multi-select stayed empty); pre=peer-doc + set.pickFirstOption select the peer document in the <select multiple> — combineDocuments closes the dialog before the fetch, so dialog-action holds [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.combine, opener proven by review.json review.combine row): #combine-dialog opened via [data-cmd=combineRevisions] is closed by #btn-combine-apply after peer document selection [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-combine-documents",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"review\"]"
+    },
+    "pre": "",
+    "woTab": "collaboration",
+    "xfail": false,
+    "note": "loop35-4 react-port: collaboration-tab Combine button opens the review right panel (openCombineView). Legacy dialog-action spec uses #combine-dialog/#btn-combine-apply DOM; the React panel handles document selection."
+   }
   },
   {
    "tab": "ai",
@@ -17064,12 +17356,21 @@
    "woTab": "ai",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-ai-propose-cancel",
-    "dialog": "#ai-propose-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth (ledger review.grammar-spelling, opener proven by ai-tab btn-ai-grammar row): #ai-propose-dialog opened by #btn-ai-grammar (fix-grammar-and-spelling instruction) is closed by #btn-ai-propose-cancel (index.html:2767; same shape as L2I-04 dialogdepth.ai-propose-cancel) [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.grammar-spelling): AI grammar dialog depth. Legacy: #ai-propose-dialog is closed by #btn-ai-propose-cancel. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ai-grammar-spelling",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+    },
+    "pre": "",
+    "woTab": "ai",
+    "xfail": false,
+    "note": "loop36-1 react-port: ai-tab Grammar & Spelling button (#btn-ai-grammar-spelling, command: aiGrammarSpelling) opens the ai-assistant right panel [data-wo-right-panel=\"ai-assistant\"] in the react canvas editor. Legacy dialog-action used #ai-propose-dialog/#btn-ai-propose-cancel DOM."
+   }
   },
   {
    "tab": "insert",
@@ -17083,12 +17384,21 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-smartart-ok",
-    "dialog": "#smartart-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.smartart — #btn-smartart (index.html:438) opens the #smartart-dialog insert-pop (editor.js:13993-14003); #btn-smartart-ok inserts the SVG diagram via insertVectorObject then closeDlg('smartart-dialog') (editor.js:14010-14017) — assert closes. Sibling #btn-smartart-cancel → closeDlg (editor.js:14008-14009, code-verified, not run). [override-only: no ledger row matched this key]"
+   "note": "ledger row: insert.smartart — #btn-smartart opens #smartart-dialog insert-pop [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-smart-art",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"shape\"]"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop36-1 react-port: insert-tab SmartArt button (#btn-insert-smart-art, command: insertSmartArt) opens the shape right panel [data-wo-right-panel=\"shape\"] (the graphic-object surface in the react canvas editor). Legacy dialog-action used #smartart-dialog/#btn-smartart-ok DOM."
+   }
   },
   {
    "tab": "insert",
@@ -17132,12 +17442,21 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-textfromfile-cancel",
-    "dialog": "#textfromfile-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "ledger row: insert.text-from-file — #btn-textfile (index.html:459) → openDlg('textfromfile-dialog') (editor.js:12827-12828); #btn-textfromfile-cancel closes it (editor.js:12836+). [override-only: no ledger row matched this key]"
+   "note": "ledger row: insert.text-from-file — #btn-textfile opens #textfromfile-dialog [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-text-from-file",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop36-1 react-port: insert-tab Text from File button (#btn-text-from-file, command: textFromFile) dispatches wo-command event (word-commands.ts creates hidden file input). Legacy dialog-action used #textfromfile-dialog/#btn-textfromfile-cancel DOM."
+   }
   },
   {
    "tab": "insert",
@@ -17244,18 +17563,21 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "files": [
-     {
-      "selector": "#photo-editor-file",
-      "fixture": "1x1.gif"
-     }
-    ],
-    "button": "#btn-photo-editor-apply",
-    "dialog": "#photo-editor-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "photoEditorApply needs photoEditorImage loaded — assertion.files feeds #photo-editor-file, apply crops/filters onto canvas and closes [override-only: no ledger row matched this key]"
+   "note": "photoEditorApply needs photoEditorImage loaded — assertion.files feeds #photo-editor-file, apply crops/filters onto canvas and closes [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-photo-editor",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "woTab": "plugins",
+    "xfail": false,
+    "note": "loop36-1 react-port: plugins-tab Photo Editor button (#btn-photo-editor, command: photoEditor) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (photoEditor is a plugin in the react canvas editor). Legacy dialog-action used #photo-editor-dialog/#btn-photo-editor-apply DOM with file fixture."
+   }
   },
   {
    "tab": "insert",
@@ -17431,15 +17753,24 @@
    "woTab": "insert",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-textfromfile-cancel",
-    "dialog": "#textfromfile-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.textfromfile-dialog.l4 — #textfromfile-dialog (opener #btn-textfile proven by the green dialog.textfromfile-dialog.l4 dialog-visible row; insert.text-from-file row also closes via this button) is closed by its Cancel button #btn-textfromfile-cancel [override-only: no ledger row matched this key]"
+   "note": "depth: ledger row dialog.textfromfile-dialog.l4 — #textfromfile-dialog is closed by its Cancel button #btn-textfromfile-cancel [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-text-from-file",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "insert",
+    "xfail": false,
+    "note": "loop36-1 react-port: insert-tab Text from File button (#btn-text-from-file, command: textFromFile) dispatches wo-command event. Legacy dialog-action used #textfromfile-dialog/#btn-textfromfile-cancel DOM. Same surface as loop35-3 dialogdepth-fr.textfromfile-cancel."
+   }
   },
   {
-   "tab": "references",
+   "tab": "layout",
    "ooId": "dialogdepth.field-cancel",
    "label": "dialogdepth.field-cancel",
    "token": "dialogdepth.field-cancel",
@@ -17447,15 +17778,24 @@
    "level": null,
    "censusStatus": "override-only",
    "wo": null,
-   "woTab": "references",
+   "woTab": "layout",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-field-cancel",
-    "dialog": "#field-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: ledger row dialog.field-dialog.l4 — #field-dialog (opener #btn-field proven by the green dialog.field-dialog.l4 dialog-visible row) is closed by its Cancel button #btn-field-cancel [override-only: no ledger row matched this key]"
+   "note": "depth: ledger row dialog.field-dialog.l4 — #field-dialog is closed by its Cancel button #btn-field-cancel [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-insert-field",
+    "assertion": {
+     "kind": "op-emitted",
+     "event": "wo-command"
+    },
+    "pre": "",
+    "woTab": "layout",
+    "xfail": false,
+    "note": "loop36-1 react-port: layout-tab Field button (#btn-insert-field, command: insertField) dispatches wo-command event (word-commands.ts:445 inserts field span or calls onRichTextCommand). Legacy dialog-action used #field-dialog/#btn-field-cancel DOM."
+   }
   },
   {
    "tab": "plugins",
@@ -17469,12 +17809,20 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-plugins-close",
-    "dialog": "#plugins-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins-dialog token row) is closed by #btn-plugins-close [override-only: no ledger row matched this key]"
+   "note": "depth (ledger file.plugins): plugins right panel in React canvas editor. Legacy: #plugins-dialog opened via Plugins > Manage plugins is closed by #btn-plugins-close. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-plugin-manager",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "xfail": false,
+    "note": "loop36-2 react-port: plugins-tab Plugin Manager button (#btn-plugin-manager, command: pluginManager) opens the plugins right panel [data-wo-right-panel=\"plugins\"] . Legacy dialog-action used #plugins-dialog/#btn-plugins-close DOM."
+   }
   },
   {
    "tab": "plugins",
@@ -17488,12 +17836,20 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-ocr-cancel",
-    "dialog": "#ocr-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #ocr-dialog (opener proven by ocrrun token row) is closed by #btn-ocr-cancel [override-only: no ledger row matched this key]"
+   "note": "depth (ledger scan.ocr): OCR dialog depth. Legacy: #ocr-dialog is closed by #btn-ocr-cancel. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ocr",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "xfail": false,
+    "note": "loop36-2 react-port: plugins-tab OCR button (#btn-ocr, command: ocr) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (OCR is a plugin). Legacy dialog-action used #ocr-dialog/#btn-ocr-cancel DOM."
+   }
   },
   {
    "tab": "ai",
@@ -17507,12 +17863,20 @@
    "woTab": "ai",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-ai-propose-cancel",
-    "dialog": "#ai-propose-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #ai-propose-dialog (opener proven by btn-ai-assistant token row) is closed by #btn-ai-propose-cancel [override-only: no ledger row matched this key]"
+   "note": "depth (ledger review.grammar-spelling): AI propose dialog depth. Legacy: #ai-propose-dialog is closed by #btn-ai-propose-cancel. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-ai-assistant-panel",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+    },
+    "pre": "",
+    "xfail": false,
+    "note": "loop36-2 react-port: ai-tab Create AI Assistant button (#btn-ai-assistant-panel, command: ai-assistant) opens the ai-assistant right panel [data-wo-right-panel=\"ai-assistant\"] . Legacy dialog-action used #ai-propose-dialog/#btn-ai-propose-cancel DOM."
+   }
   },
   {
    "tab": "plugins",
@@ -17526,12 +17890,20 @@
    "woTab": "plugins",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-speech-close",
-    "dialog": "#speech-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "depth: #speech-dialog (opener proven by btn-speech token row) is closed by its Cancel button #btn-speech-close [override-only: no ledger row matched this key]"
+   "note": "depth (ledger other.speech): speech dialog depth. Legacy: #speech-dialog is closed by #btn-speech-close. [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#btn-speech",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": "[data-wo-right-panel=\"plugins\"]"
+    },
+    "pre": "",
+    "xfail": false,
+    "note": "loop36-2 react-port: plugins-tab Speech button (#btn-speech, command: speech) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (speech is a plugin). Legacy dialog-action used #speech-dialog/#btn-speech-close DOM."
+   }
   },
   {
    "tab": "plugins",
