@@ -5,15 +5,15 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "#btn-ai-assistant",
+        "selector": "[data-action=\"ai-assistant\"]",
         "assertion": {
-          "kind": "op-emitted",
-          "event": "wo-command"
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"ai-assistant\"]"
         },
         "pre": "",
-        "woTab": "ai",
+        "woTab": "",
         "xfail": false,
-        "note": "loop34-3 react-port: ribbon AI Assistant button (#btn-ai-assistant, word-ribbon.ts:1701) dispatches wo-command. Legacy backstage AI review dialog close action ported to AI Assistant button"
+        "note": "loop34-3 react-port: RightMenu AI Assistant button ([data-action=\"ai-assistant\"]) opens AI Assistant right panel. Legacy backstage AI review dialog close action ported to AI Assistant button"
       },
       "pre": "backstage:ai",
       "selector": "#btn-ai-review",
