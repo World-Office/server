@@ -502,7 +502,18 @@
     "contains": "fixture-chart"
    },
    "woTab": "chart-design",
-   "pre": "chart-selection"
+   "pre": "chart-selection",
+   "contract": {
+    "selector": "#filesettings",
+    "pre": "file-menu",
+    "woTab": "backstage",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-settings-table"
+    },
+    "xfail": true,
+    "note": "2026-11-26: xfail. This override-only row (no ledger row behind it) has been passing on a loop19 contract that only survived via the generator's prior-manifest carry-over, and that contract asserted nothing but 'file-menu panel visible' after #filesettings. FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so the Advanced Settings pane never renders; the contract now asserts the settings table being visible. The runner does not drive xfail rows by default"
+   }
   },
   "insert.eraser": {
    "effektClass": "op",

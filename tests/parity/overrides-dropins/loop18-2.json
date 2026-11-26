@@ -81,10 +81,10 @@
         "post": "#fileinfo",
         "assertion": {
           "kind": "dialog-visible",
-          "dialogSelector": ".de-file-menu-panel"
+          "dialogSelector": ".de-file-menu-info-table"
         },
-        "xfail": false,
-        "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry"
+        "xfail": true,
+        "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry | 2026-11-26: xfail — a pass on 'file-menu panel visible' proves nothing about Document Info (FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so no pane ever renders); the contract now asserts the info table (.de-file-menu-info-table) being visible. The runner does not drive xfail rows by default"
       },
       "note": "loop18"
     },

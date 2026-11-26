@@ -1,8 +1,8 @@
 {
- "ranAt": "2026-11-26T19:03:25.198Z",
+ "ranAt": "2026-11-26T20:40:50.652Z",
  "total": 678,
- "pass": 347,
- "knownGap": 5,
+ "pass": 343,
+ "knownGap": 9,
  "retarget": 326,
  "fail": 0,
  "results": [
@@ -5350,10 +5350,9 @@
    "feature": "info",
    "tab": "",
    "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-panel\"} +2 subFeatures",
-   "observed": "dialog visible (de-file-menu-panel)"
+   "xfail": true,
+   "ok": false,
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "backstage.overlay",
@@ -5530,20 +5529,18 @@
    "feature": "backstage.settings-cancel",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-file-menu-panel\"}",
-   "observed": "found"
+   "xfail": true,
+   "ok": false,
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "backstage.help-open",
    "feature": "backstage.help-open",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dom-mutation\",\"selector\":\".de-file-menu-panel\"}",
-   "observed": "found"
+   "xfail": true,
+   "ok": false,
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "backstage.help-close",
@@ -6526,10 +6523,9 @@
    "feature": "file.advanced-settings",
    "tab": "chart-design",
    "cls": "dialog",
-   "xfail": false,
-   "ok": true,
-   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-panel\"}",
-   "observed": "dialog visible (de-file-menu-panel)"
+   "xfail": true,
+   "ok": false,
+   "observed": "known-gap (fast-path: not driven)"
   },
   {
    "token": "ctx.edit-alt-text",
