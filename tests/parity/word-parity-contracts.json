@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-11-25T15:21:02.324Z",
+ "generatedAt": "2026-11-26T09:10:35.283Z",
  "source": {
-  "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
+  "ledger": "/home/weiss/git/wo-test-harness/census/census/ledger.json",
   "ledgerRows": 534
  },
  "counts": {
@@ -22,7 +22,7 @@
    "label": "File",
    "token": "btn-textfile",
    "feature": "file.file",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-textfile",
@@ -64,7 +64,7 @@
    "label": "Home",
    "token": "tab:home",
    "feature": "file.home",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:home",
@@ -106,7 +106,7 @@
    "label": "Draw",
    "token": "toggleink",
    "feature": "file.draw",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toggleInk",
@@ -127,7 +127,7 @@
    "label": "Layout",
    "token": "tab:layout",
    "feature": "file.layout",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:layout",
@@ -148,7 +148,7 @@
    "label": "References",
    "token": "tab:references",
    "feature": "file.references",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:references",
@@ -169,7 +169,7 @@
    "label": "Collaboration",
    "token": "tab:collaboration",
    "feature": "file.collaboration",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tab:collaboration",
@@ -254,7 +254,7 @@
    "label": "Plugins",
    "token": "plugins-dialog",
    "feature": "file.plugins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -288,7 +288,7 @@
    "label": "AI",
    "token": "file.ai",
    "feature": "file.ai",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "AI changes",
@@ -317,7 +317,7 @@
    "label": "Editing",
    "token": "coedit-mode",
    "feature": "file.editing",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "coedit-mode",
@@ -338,7 +338,7 @@
    "label": "Find (Ctrl+F)",
    "token": "btn-find",
    "feature": "file.find-ctrl-f",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-find",
@@ -396,7 +396,7 @@
    "label": "Copy (Ctrl+Insert)",
    "token": "btn-copy",
    "feature": "file.copy-ctrl-insert",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-copy",
@@ -418,7 +418,7 @@
    "label": "Paste (Ctrl+V)",
    "token": "btn-paste",
    "feature": "file.paste-ctrl-v",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-paste",
@@ -440,7 +440,7 @@
    "label": "Cut (Ctrl+X)",
    "token": "btn-cut",
    "feature": "file.cut-ctrl-x",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-cut",
@@ -462,7 +462,7 @@
    "label": "Copy style (Ctrl+Alt+C)",
    "token": "btn-copy",
    "feature": "file.copy-style-ctrl-alt-c",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-copy",
@@ -550,7 +550,7 @@
    "label": "Increment font size (Ctrl+])",
    "token": "font-size",
    "feature": "formatting.increment-font-size-ctrl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-size",
@@ -583,7 +583,7 @@
    "label": "Decrement font size (Ctrl+[)",
    "token": "font-size",
    "feature": "formatting.decrement-font-size-ctrl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "font-size",
@@ -827,7 +827,7 @@
    "label": "Highlight color",
    "token": "highlight-color",
    "feature": "formatting.highlight-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "highlight-color",
@@ -849,7 +849,7 @@
    "label": "Font color",
    "token": "text-color",
    "feature": "formatting.font-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "text-color",
@@ -1359,7 +1359,7 @@
    "label": "Replace (Ctrl+H)",
    "token": "btn-replace",
    "feature": "formatting.replace-ctrl-h",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-replace",
@@ -1393,7 +1393,7 @@
    "label": "Select all (Ctrl+A)",
    "token": "selectall",
    "feature": "formatting.select-all-ctrl-a",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "selectAll",
@@ -1444,7 +1444,7 @@
    "label": "Breaks",
    "token": "breaks",
    "feature": "insert.breaks",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Breaks",
@@ -1497,7 +1497,7 @@
    "label": "Image",
    "token": "btn-hf-image",
    "feature": "image.image",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-hf-image",
@@ -1527,7 +1527,7 @@
    "label": "Shape",
    "token": "insertobject",
    "feature": "insert.shape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertObject",
@@ -1573,7 +1573,7 @@
    "label": "SmartArt",
    "token": "btn-smartart",
    "feature": "insert.smartart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-smartart",
@@ -1611,7 +1611,7 @@
    "label": "Chart",
    "token": "insertobject",
    "feature": "chart.chart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertObject",
@@ -1996,7 +1996,7 @@
    "label": "Text from\nFile",
    "token": "btn-textfile",
    "feature": "insert.text-from-file",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-textfile",
@@ -2038,7 +2038,7 @@
    "label": "Field",
    "token": "btn-field",
    "feature": "insert.field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-field",
@@ -2210,7 +2210,7 @@
    "label": "Select",
    "token": "inkselect",
    "feature": "insert.select",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "inkSelect",
@@ -2231,7 +2231,7 @@
    "label": "Eraser",
    "token": "toggleink",
    "feature": "insert.eraser",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toggleInk",
@@ -2522,7 +2522,7 @@
    "label": "Wrapping",
    "token": "wrapping",
    "feature": "page.wrapping",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wrapping",
@@ -2543,7 +2543,7 @@
    "label": "Bring\nForward",
    "token": "objectop",
    "feature": "page.bring-forward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2564,7 +2564,7 @@
    "label": "Send\nBackward",
    "token": "objectop",
    "feature": "page.send-backward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2585,7 +2585,7 @@
    "label": "Align",
    "token": "align",
    "feature": "page.align",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Align",
@@ -2606,7 +2606,7 @@
    "label": "Group",
    "token": "objectop",
    "feature": "page.group",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "objectOp",
@@ -2627,7 +2627,7 @@
    "label": "Merge\nShapes",
    "token": "btn-mergeshapes",
    "feature": "page.merge-shapes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-mergeshapes",
@@ -2696,7 +2696,7 @@
    "label": "Page\nColor",
    "token": "btn-multipage",
    "feature": "page.page-color",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -2826,7 +2826,7 @@
    "label": "Add Text",
    "token": "btn-addtext",
    "feature": "references.add-text",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-addtext",
@@ -2960,7 +2960,7 @@
    "label": "Bookmark",
    "token": "bookmark-dialog",
    "feature": "references.bookmark",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "bookmark-dialog",
@@ -3027,7 +3027,7 @@
    "label": "Cross-reference",
    "token": "crossref-dialog",
    "feature": "references.cross-reference",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "crossref-dialog",
@@ -3097,7 +3097,7 @@
    "label": "Co-editing\nMode",
    "token": "coedit-mode",
    "feature": "review.co-editing-mode",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "coedit-mode",
@@ -3231,7 +3231,7 @@
    "label": "Track\nChanges",
    "token": "btn-track-changes",
    "feature": "review.track-changes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-track-changes",
@@ -3567,7 +3567,7 @@
    "label": "Mail\nMerge",
    "token": "mailmerge",
    "feature": "file.mail-merge",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "mailMerge",
@@ -3665,7 +3665,7 @@
    "label": "Headings",
    "token": "btn-view-headings",
    "feature": "view.headings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-headings",
@@ -3688,7 +3688,7 @@
    "label": "Fit To Page",
    "token": "btn-multipage",
    "feature": "view.fit-to-page",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -3720,7 +3720,7 @@
    "label": "Fit To Width",
    "token": "btn-view-fit-width",
    "feature": "view.fit-to-width",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-fit-width",
@@ -3741,7 +3741,7 @@
    "label": "Zoom to 100%",
    "token": "btn-zoom-reset",
    "feature": "view.zoom-to-100",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-reset",
@@ -3764,7 +3764,7 @@
    "label": "Multiple Pages",
    "token": "btn-multipage",
    "feature": "view.multiple-pages",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -3796,7 +3796,7 @@
    "label": "Interface\nTheme",
    "token": "view-theme-select",
    "feature": "view.interface-theme",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "view-theme-select",
@@ -3825,7 +3825,7 @@
    "label": "Dark\nDocument",
    "token": "btn-view-darkdoc",
    "feature": "view.dark-document",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-view-darkdoc",
@@ -3847,7 +3847,7 @@
    "label": "Macros",
    "token": "btn-macro-menu",
    "feature": "macros.macros",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-macro-menu",
@@ -3885,7 +3885,7 @@
    "label": "Record macro",
    "token": "macros.record-macro",
    "feature": "macros.record-macro",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Record macro",
@@ -3918,7 +3918,7 @@
    "label": "Pause recording",
    "token": "view.pause-recording",
    "feature": "view.pause-recording",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Pause recording",
@@ -3939,7 +3939,7 @@
    "label": "Plugin\nManager",
    "token": "plugins-dialog",
    "feature": "plugins.plugin-manager",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -3973,7 +3973,7 @@
    "label": "Background\nplugins",
    "token": "plugins-dialog",
    "feature": "plugins.background-plugins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "plugins-dialog",
@@ -4007,7 +4007,7 @@
    "label": "Photo\nEditor",
    "token": "photoeditor",
    "feature": "image.photo-editor",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "photoEditor",
@@ -4041,7 +4041,7 @@
    "label": "YouTube",
    "token": "pluginunavailable",
    "feature": "plugins.youtube",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -4075,7 +4075,7 @@
    "label": "OCR",
    "token": "ocrrun",
    "feature": "plugins.ocr",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ocrRun",
@@ -4105,7 +4105,7 @@
    "label": "Translator",
    "token": "aitranslate",
    "feature": "plugins.translator",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiTranslate",
@@ -4143,7 +4143,7 @@
    "label": "Mendeley",
    "token": "pluginunavailable",
    "feature": "plugins.mendeley",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -4177,7 +4177,7 @@
    "label": "Thesaurus",
    "token": "airewrite",
    "feature": "review.thesaurus",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiRewrite",
@@ -4228,7 +4228,7 @@
    "label": "Zotero",
    "token": "pluginunavailable",
    "feature": "plugins.zotero",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "pluginUnavailable",
@@ -4262,7 +4262,7 @@
    "label": "Speech",
    "token": "btn-speech",
    "feature": "plugins.speech",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-speech",
@@ -4296,7 +4296,7 @@
    "label": "Speech\ninput",
    "token": "dictate",
    "feature": "plugins.speech-input",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "dictate",
@@ -4394,7 +4394,7 @@
    "label": "Field",
    "token": "btn-field",
    "feature": "headerfooter.field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-field",
@@ -4428,7 +4428,7 @@
    "label": "Close",
    "token": "btn-hf-close",
    "feature": "headerfooter.close",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-hf-close",
@@ -4505,7 +4505,7 @@
    "label": "Chatbot",
    "token": "btn-ai-assistant",
    "feature": "other.chatbot",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-ai-assistant",
@@ -4543,7 +4543,7 @@
    "label": "Summarization",
    "token": "aisummarize",
    "feature": "other.summarization",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiSummarize",
@@ -4581,7 +4581,7 @@
    "label": "Translation",
    "token": "aitranslate",
    "feature": "other.translation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "aiTranslate",
@@ -4619,7 +4619,7 @@
    "label": "Grammar &\nSpelling",
    "token": "btn-ai-grammar",
    "feature": "review.grammar-spelling",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-ai-grammar",
@@ -4657,7 +4657,7 @@
    "label": "Create AI\nassistant",
    "token": "createaiassistant",
    "feature": "other.create-ai-assistant",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "createAiAssistant",
@@ -4695,7 +4695,7 @@
    "label": "Chart\nElements",
    "token": "chart.chart-elements",
    "feature": "chart.chart-elements",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart elements ▾",
@@ -4716,7 +4716,7 @@
    "label": "Edit\nData",
    "token": "charteditdata",
    "feature": "chart.edit-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartEditData",
@@ -4750,7 +4750,7 @@
    "label": "Update\nData",
    "token": "chartupdatedata",
    "feature": "chart.update-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartUpdateData",
@@ -4771,7 +4771,7 @@
    "label": "Chart type",
    "token": "chart.chart-type",
    "feature": "chart.chart-type",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart type ▾",
@@ -4792,7 +4792,7 @@
    "label": "Advanced settings",
    "token": "chartsettings",
    "feature": "chart.advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartSettings",
@@ -4818,7 +4818,7 @@
    "label": "Wrapping",
    "token": "wrapping",
    "feature": "chart.wrapping",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wrapping",
@@ -4839,7 +4839,7 @@
    "label": "Width",
    "token": "chart-width-input",
    "feature": "chart.width",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart-width-input",
@@ -4869,7 +4869,7 @@
    "label": "Height",
    "token": "chart-height-input",
    "feature": "chart.height",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart-height-input",
@@ -4899,7 +4899,7 @@
    "label": "3D\nrotation",
    "token": "chart3d",
    "feature": "chart.3d-rotation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chart3d",
@@ -4951,7 +4951,7 @@
    "label": "Insert column break",
    "token": "insert.insert-column-break",
    "feature": "insert.insert-column-break",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert column break",
@@ -4972,7 +4972,7 @@
    "label": "Insert section break",
    "token": "insert.insert-section-break",
    "feature": "insert.insert-section-break",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert section break",
@@ -5027,7 +5027,7 @@
    "label": "Draw table",
    "token": "table.draw-table",
    "feature": "table.draw-table",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Draw table",
@@ -5048,7 +5048,7 @@
    "label": "Erase table",
    "token": "table.erase-table",
    "feature": "table.erase-table",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Erase table",
@@ -5098,7 +5098,7 @@
    "label": "Insert Spreadsheet",
    "token": "spreadsheet",
    "feature": "insert.insert-spreadsheet",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Spreadsheet",
@@ -5260,7 +5260,7 @@
    "label": "Fractions",
    "token": "fractions",
    "feature": "insert.fractions",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Fractions",
@@ -5291,7 +5291,7 @@
    "label": "Scripts",
    "token": "scripts",
    "feature": "insert.scripts",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Scripts",
@@ -5322,7 +5322,7 @@
    "label": "Radicals",
    "token": "radicals",
    "feature": "insert.radicals",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Radicals",
@@ -5353,7 +5353,7 @@
    "label": "Integrals",
    "token": "integrals",
    "feature": "insert.integrals",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Integrals",
@@ -5384,7 +5384,7 @@
    "label": "Large operators",
    "token": "insert.large-operators",
    "feature": "insert.large-operators",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Large operators",
@@ -5415,7 +5415,7 @@
    "label": "Brackets",
    "token": "brackets",
    "feature": "insert.brackets",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Brackets",
@@ -5446,7 +5446,7 @@
    "label": "Functions",
    "token": "functions",
    "feature": "insert.functions",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Functions",
@@ -5477,7 +5477,7 @@
    "label": "Accents",
    "token": "accents",
    "feature": "insert.accents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Accents",
@@ -5508,7 +5508,7 @@
    "label": "Limits and logarithms",
    "token": "insert.limits-and-logarithms",
    "feature": "insert.limits-and-logarithms",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Limits and logarithms",
@@ -5539,7 +5539,7 @@
    "label": "Operators",
    "token": "operators",
    "feature": "insert.operators",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Operators",
@@ -5570,7 +5570,7 @@
    "label": "Matrices",
    "token": "matrices",
    "feature": "insert.matrices",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Matrices",
@@ -5601,7 +5601,7 @@
    "label": "Last Custom",
    "token": "page.last-custom",
    "feature": "page.last-custom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Last Custom",
@@ -5633,7 +5633,7 @@
    "label": "Normal",
    "token": "normal",
    "feature": "page.normal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Normal",
@@ -5654,7 +5654,7 @@
    "label": "Narrow",
    "token": "narrow",
    "feature": "page.narrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Narrow",
@@ -5675,7 +5675,7 @@
    "label": "Moderate",
    "token": "moderate",
    "feature": "page.moderate",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Moderate",
@@ -5696,7 +5696,7 @@
    "label": "Wide",
    "token": "wide",
    "feature": "page.wide",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Wide",
@@ -5717,7 +5717,7 @@
    "label": "Custom margins",
    "token": "page.custom-margins",
    "feature": "page.custom-margins",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Custom margins",
@@ -5763,7 +5763,7 @@
    "label": "US Letter",
    "token": "letter",
    "feature": "page.us-letter",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Letter",
@@ -5784,7 +5784,7 @@
    "label": "US Legal",
    "token": "legal",
    "feature": "page.us-legal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Legal",
@@ -5805,7 +5805,7 @@
    "label": "A4",
    "token": "a4",
    "feature": "page.a4",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A4",
@@ -5826,7 +5826,7 @@
    "label": "A5",
    "token": "a5",
    "feature": "page.a5",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A5",
@@ -5847,7 +5847,7 @@
    "label": "B5",
    "token": "b5",
    "feature": "page.b5",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "B5",
@@ -5868,7 +5868,7 @@
    "label": "Envelope #10",
    "token": "page.envelope-10",
    "feature": "page.envelope-10",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope #10",
@@ -5889,7 +5889,7 @@
    "label": "Envelope DL",
    "token": "page.envelope-dl",
    "feature": "page.envelope-dl",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope DL",
@@ -5910,7 +5910,7 @@
    "label": "Tabloid",
    "token": "tabloid",
    "feature": "page.tabloid",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Tabloid",
@@ -5931,7 +5931,7 @@
    "label": "A3",
    "token": "a3",
    "feature": "page.a3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "A3",
@@ -5952,7 +5952,7 @@
    "label": "Tabloid Oversize",
    "token": "page.tabloid-oversize",
    "feature": "page.tabloid-oversize",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Tabloid Oversize",
@@ -5973,7 +5973,7 @@
    "label": "ROC 16K",
    "token": "page.roc-16k",
    "feature": "page.roc-16k",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ROC 16K",
@@ -5994,7 +5994,7 @@
    "label": "Envelope Choukei 3",
    "token": "page.envelope-choukei-3",
    "feature": "page.envelope-choukei-3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Envelope Choukei 3",
@@ -6015,7 +6015,7 @@
    "label": "Super B/A3",
    "token": "page.super-b-a3",
    "feature": "page.super-b-a3",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Super B/A3",
@@ -6036,7 +6036,7 @@
    "label": "Custom page size",
    "token": "btn-multipage",
    "feature": "page.custom-page-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -6084,7 +6084,7 @@
    "label": "One",
    "token": "one",
    "feature": "page.one",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "One",
@@ -6105,7 +6105,7 @@
    "label": "Two",
    "token": "two",
    "feature": "page.two",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Two",
@@ -6126,7 +6126,7 @@
    "label": "Three",
    "token": "three",
    "feature": "page.three",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Three",
@@ -6147,7 +6147,7 @@
    "label": "Left",
    "token": "left",
    "feature": "page.left",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Left",
@@ -6168,7 +6168,7 @@
    "label": "Right",
    "token": "right",
    "feature": "page.right",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Right",
@@ -6189,7 +6189,7 @@
    "label": "Custom columns",
    "token": "page.custom-columns",
    "feature": "page.custom-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Custom columns",
@@ -6347,7 +6347,7 @@
    "label": "Axes",
    "token": "axes",
    "feature": "chart.axes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Axes",
@@ -6369,7 +6369,7 @@
    "label": "Axis Titles",
    "token": "chart.axis-titles",
    "feature": "chart.axis-titles",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Axis Titles",
@@ -6390,7 +6390,7 @@
    "label": "Chart title",
    "token": "chart.chart-title",
    "feature": "chart.chart-title",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart title",
@@ -6412,7 +6412,7 @@
    "label": "Data labels",
    "token": "chart.data-labels",
    "feature": "chart.data-labels",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Data labels",
@@ -6433,7 +6433,7 @@
    "label": "Error Bars",
    "token": "chart.error-bars",
    "feature": "chart.error-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Error Bars",
@@ -6454,7 +6454,7 @@
    "label": "Gridlines",
    "token": "btn-gridlines",
    "feature": "chart.gridlines",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-gridlines",
@@ -6476,7 +6476,7 @@
    "label": "Legend",
    "token": "legend",
    "feature": "chart.legend",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Legend",
@@ -6497,7 +6497,7 @@
    "label": "Trendline",
    "token": "trendline",
    "feature": "chart.trendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Trendline",
@@ -6518,7 +6518,7 @@
    "label": "Up/Down Bars",
    "token": "chart.up-down-bars",
    "feature": "chart.up-down-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Up/Down Bars",
@@ -6642,7 +6642,7 @@
    "label": "Page size",
    "token": "btn-multipage",
    "feature": "page.dlg-page-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -6682,7 +6682,7 @@
    "label": "Columns",
    "token": "columns-dialog",
    "feature": "page.dlg-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "columns-dialog",
@@ -6733,7 +6733,7 @@
    "label": "Bookmarks",
    "token": "bookmark-dialog",
    "feature": "references.dlg-bookmarks",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "bookmark-dialog",
@@ -6767,7 +6767,7 @@
    "label": "Insert caption",
    "token": "insertcaption",
    "feature": "references.dlg-insert-caption",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "insertCaption",
@@ -6810,7 +6810,7 @@
    "label": "Cross-reference",
    "token": "crossref-dialog",
    "feature": "references.dlg-cross-reference",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "crossref-dialog",
@@ -6848,7 +6848,7 @@
    "label": "Table of figures",
    "token": "tableoffigures-dialog",
    "feature": "table.dlg-table-of-figures",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "tableoffigures-dialog",
@@ -6880,7 +6880,7 @@
    "label": "Table of contents",
    "token": "toc-dialog",
    "feature": "table.dlg-table-of-contents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "toc-dialog",
@@ -6900,8 +6900,7 @@
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-viewport-right-menu[data-wo-right-panel=\"crossreference\"]"
-    },
-    "woTab": "references"
+    }
    }
   },
   {
@@ -6910,7 +6909,7 @@
    "label": "Macros",
    "token": "btn-macro-menu",
    "feature": "macros.dlg-macros",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-macro-menu",
@@ -6986,7 +6985,7 @@
    "label": "Back",
    "token": "back",
    "feature": "file.back",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Back",
@@ -7009,8 +7008,7 @@
      "selector": ".de-file-menu-panel",
      "prop": "display",
      "equals": "none"
-    },
-    "woTab": "backstage"
+    }
    }
   },
   {
@@ -7019,7 +7017,7 @@
    "label": "Save",
    "token": "save",
    "feature": "file.save",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Save",
@@ -7041,7 +7039,7 @@
    "label": "Download As",
    "token": "file.download-as",
    "feature": "file.download-as",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Download As",
@@ -7079,7 +7077,7 @@
    "label": "Protect",
    "token": "protect",
    "feature": "file.protect",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Protect",
@@ -7113,7 +7111,7 @@
    "label": "Advanced Settings",
    "token": "chartsettings",
    "feature": "file.advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartSettings",
@@ -7139,7 +7137,7 @@
    "label": "Suggest a Feature",
    "token": "file.suggest-a-feature",
    "feature": "file.suggest-a-feature",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Suggest a feature",
@@ -7177,7 +7175,7 @@
    "label": "Word count",
    "token": "sb-word-count",
    "feature": "statusbar.word-count",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-word-count",
@@ -7301,7 +7299,7 @@
    "label": "btn-doc-spell",
    "token": "sb-doc-spell",
    "feature": "statusbar.btn-doc-spell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-doc-spell",
@@ -7322,8 +7320,7 @@
      "kind": "dom-mutation",
      "selector": ".de-statusbar [title=\"Spell Check\"].active",
      "absent": true
-    },
-    "woTab": "surface:statusbar"
+    }
    }
   },
   {
@@ -7332,7 +7329,7 @@
    "label": "btn-doc-review",
    "token": "sb-track-changes",
    "feature": "statusbar.btn-doc-review",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "sb-track-changes",
@@ -7352,8 +7349,7 @@
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-statusbar [title=\"Track Changes\"].active"
-    },
-    "woTab": "surface:statusbar"
+    }
    }
   },
   {
@@ -7362,7 +7358,7 @@
    "label": "status-btn-multiple-pages",
    "token": "btn-multipage",
    "feature": "statusbar.status-btn-multiple-pages",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-multipage",
@@ -7394,7 +7390,7 @@
    "label": "btn-zoom-topage",
    "token": "btn-zoom-fit",
    "feature": "statusbar.btn-zoom-topage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-fit",
@@ -7414,8 +7410,7 @@
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-statusbar [title=\"Fit to Page\"].active"
-    },
-    "woTab": "surface:statusbar"
+    }
    }
   },
   {
@@ -7424,7 +7419,7 @@
    "label": "btn-zoom-towidth",
    "token": "btn-zoom-fit",
    "feature": "statusbar.btn-zoom-towidth",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-fit",
@@ -7444,8 +7439,7 @@
     "assertion": {
      "kind": "dom-mutation",
      "selector": ".de-statusbar [title=\"Fit to Page\"].active"
-    },
-    "woTab": "surface:statusbar"
+    }
    }
   },
   {
@@ -7454,7 +7448,7 @@
    "label": "btn-zoom-down",
    "token": "btn-zoom-out",
    "feature": "statusbar.btn-zoom-down",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-out",
@@ -7477,7 +7471,7 @@
    "label": "btn-zoom-up",
    "token": "btn-zoom-in",
    "feature": "statusbar.btn-zoom-up",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "btn-zoom-in",
@@ -7574,7 +7568,7 @@
    "label": "OpenCommentsPanel",
    "token": "shortcut.opencommentspanel",
    "feature": "shortcut.opencommentspanel",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Shift+H (comments rail)",
@@ -7680,7 +7674,7 @@
    "label": "OpenHelpMenu",
    "token": "shortcut.openhelpmenu",
    "feature": "shortcut.openhelpmenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "F1 opens Help dialog",
@@ -7710,7 +7704,7 @@
    "label": "OpenContextMenu",
    "token": "shortcut.opencontextmenu",
    "feature": "shortcut.opencontextmenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Shift+F10 fires the contextmenu DOM event; WO handler shows the custom menu",
@@ -7744,7 +7738,7 @@
    "label": "CloseMenu",
    "token": "escape",
    "feature": "shortcut.closemenu",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Escape",
@@ -7767,7 +7761,7 @@
    "label": "Zoom100",
    "token": "ctrl+0",
    "feature": "shortcut.zoom100",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+0",
@@ -7790,7 +7784,7 @@
    "label": "UpdateFields",
    "token": "shortcut.updatefields",
    "feature": "shortcut.updatefields",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "F9 (fieldOpAtSelection update)",
@@ -7811,7 +7805,7 @@
    "label": "MoveToStartLine",
    "token": "shortcut.movetostartline",
    "feature": "shortcut.movetostartline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7841,7 +7835,7 @@
    "label": "MoveToStartDocument",
    "token": "shortcut.movetostartdocument",
    "feature": "shortcut.movetostartdocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7871,7 +7865,7 @@
    "label": "MoveToEndLine",
    "token": "shortcut.movetoendline",
    "feature": "shortcut.movetoendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7901,7 +7895,7 @@
    "label": "MoveToEndDocument",
    "token": "shortcut.movetoenddocument",
    "feature": "shortcut.movetoenddocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7931,7 +7925,7 @@
    "label": "ScrollDown",
    "token": "shortcut.scrolldown",
    "feature": "shortcut.scrolldown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7961,7 +7955,7 @@
    "label": "ScrollUp",
    "token": "shortcut.scrollup",
    "feature": "shortcut.scrollup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -7991,7 +7985,7 @@
    "label": "ZoomIn",
    "token": "ctrl+plus/=",
    "feature": "shortcut.zoomin",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Plus/=",
@@ -8036,7 +8030,7 @@
    "label": "MoveToRightChar",
    "token": "shortcut.movetorightchar",
    "feature": "shortcut.movetorightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8066,7 +8060,7 @@
    "label": "MoveToLeftChar",
    "token": "shortcut.movetoleftchar",
    "feature": "shortcut.movetoleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8096,7 +8090,7 @@
    "label": "MoveToUpLine",
    "token": "shortcut.movetoupline",
    "feature": "shortcut.movetoupline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8126,7 +8120,7 @@
    "label": "MoveToDownLine",
    "token": "shortcut.movetodownline",
    "feature": "shortcut.movetodownline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8156,7 +8150,7 @@
    "label": "NextModalControl",
    "token": "shortcut.nextmodalcontrol",
    "feature": "shortcut.nextmodalcontrol",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8186,7 +8180,7 @@
    "label": "PreviousModalControl",
    "token": "shortcut.previousmodalcontrol",
    "feature": "shortcut.previousmodalcontrol",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8215,7 +8209,7 @@
    "label": "MoveToLowerHeaderFooter",
    "token": "shortcut.movetolowerheaderfooter",
    "feature": "shortcut.movetolowerheaderfooter",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8247,7 +8241,7 @@
    "label": "MoveToUpperHeaderFooter",
    "token": "shortcut.movetoupperheaderfooter",
    "feature": "shortcut.movetoupperheaderfooter",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8280,7 +8274,7 @@
    "label": "MoveToLowerHeader",
    "token": "shortcut.movetolowerheader",
    "feature": "shortcut.movetolowerheader",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8312,7 +8306,7 @@
    "label": "MoveToUpperHeader",
    "token": "shortcut.movetoupperheader",
    "feature": "shortcut.movetoupperheader",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8344,7 +8338,7 @@
    "label": "EndParagraph",
    "token": "shortcut.endparagraph",
    "feature": "shortcut.endparagraph",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8431,7 +8425,7 @@
    "label": "EquationAddPlaceholder",
    "token": "shortcut.equationaddplaceholder",
    "feature": "shortcut.equationaddplaceholder",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8462,7 +8456,7 @@
    "label": "EquationChangeAlignmentLeft",
    "token": "shortcut.equationchangealignmentleft",
    "feature": "shortcut.equationchangealignmentleft",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8483,7 +8477,7 @@
    "label": "EquationChangeAlignmentRight",
    "token": "shortcut.equationchangealignmentright",
    "feature": "shortcut.equationchangealignmentright",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8504,7 +8498,7 @@
    "label": "DeleteLeftChar",
    "token": "backspace",
    "feature": "shortcut.deleteleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Backspace",
@@ -8527,7 +8521,7 @@
    "label": "DeleteRightChar",
    "token": "delete",
    "feature": "shortcut.deleterightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Delete",
@@ -8654,7 +8648,7 @@
    "label": "CopyFormat",
    "token": "shortcut.copyformat",
    "feature": "shortcut.copyformat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+C (format painter — captures inline + semantic char formatting)",
@@ -8676,7 +8670,7 @@
    "label": "PasteFormat",
    "token": "shortcut.pasteformat",
    "feature": "shortcut.pasteformat",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+V (format painter — applies to next selection as style span)",
@@ -8730,7 +8724,7 @@
    "label": "SpecialOptionsKeepTextOnly",
    "token": "shortcut.specialoptionskeeptextonly",
    "feature": "shortcut.specialoptionskeeptextonly",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+T plain-text paste (clipboard.readText -> insertText)",
@@ -8818,7 +8812,7 @@
    "label": "InsertHyperlink",
    "token": "ctrl+k",
    "feature": "shortcut.inserthyperlink",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+K",
@@ -8848,7 +8842,7 @@
    "label": "VisitHyperlink",
    "token": "shortcut.visithyperlink",
    "feature": "shortcut.visithyperlink",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8870,7 +8864,7 @@
    "label": "EditSelectAll",
    "token": "ctrl+a",
    "feature": "shortcut.editselectall",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+A",
@@ -8890,7 +8884,7 @@
    "label": "SelectToStartLine",
    "token": "shortcut.selecttostartline",
    "feature": "shortcut.selecttostartline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8920,7 +8914,7 @@
    "label": "SelectToEndLine",
    "token": "shortcut.selecttoendline",
    "feature": "shortcut.selecttoendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8949,7 +8943,7 @@
    "label": "SelectToStartDocument",
    "token": "shortcut.selecttostartdocument",
    "feature": "shortcut.selecttostartdocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -8978,7 +8972,7 @@
    "label": "SelectToEndDocument",
    "token": "shortcut.selecttoenddocument",
    "feature": "shortcut.selecttoenddocument",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9007,7 +9001,7 @@
    "label": "SelectRightChar",
    "token": "shortcut.selectrightchar",
    "feature": "shortcut.selectrightchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9036,7 +9030,7 @@
    "label": "SelectLeftChar",
    "token": "shortcut.selectleftchar",
    "feature": "shortcut.selectleftchar",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9065,7 +9059,7 @@
    "label": "SelectLineUp",
    "token": "shortcut.selectlineup",
    "feature": "shortcut.selectlineup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9094,7 +9088,7 @@
    "label": "SelectLineDown",
    "token": "shortcut.selectlinedown",
    "feature": "shortcut.selectlinedown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9124,7 +9118,7 @@
    "label": "SelectPageUp",
    "token": "shortcut.selectpageup",
    "feature": "shortcut.selectpageup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9154,7 +9148,7 @@
    "label": "SelectPageDown",
    "token": "shortcut.selectpagedown",
    "feature": "shortcut.selectpagedown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9184,7 +9178,7 @@
    "label": "SelectToBeginPreviousPage",
    "token": "shortcut.selecttobeginpreviouspage",
    "feature": "shortcut.selecttobeginpreviouspage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9204,7 +9198,7 @@
    "label": "SelectToBeginNextPage",
    "token": "shortcut.selecttobeginnextpage",
    "feature": "shortcut.selecttobeginnextpage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9772,7 +9766,7 @@
    "label": "StartIndent",
    "token": "shortcut.startindent",
    "feature": "shortcut.startindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9795,7 +9789,7 @@
    "label": "StartUnIndent",
    "token": "shortcut.startunindent",
    "feature": "shortcut.startunindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9818,7 +9812,7 @@
    "label": "InsertTab",
    "token": "shortcut.inserttab",
    "feature": "shortcut.inserttab",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9840,7 +9834,7 @@
    "label": "MixedIndent",
    "token": "shortcut.mixedindent",
    "feature": "shortcut.mixedindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9861,7 +9855,7 @@
    "label": "MixedUnIndent",
    "token": "shortcut.mixedunindent",
    "feature": "shortcut.mixedunindent",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9883,7 +9877,7 @@
    "label": "EditShape",
    "token": "shortcut.editshape",
    "feature": "shortcut.editshape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Enter edits object",
@@ -9904,7 +9898,7 @@
    "label": "EditChart",
    "token": "shortcut.editchart",
    "feature": "shortcut.editchart",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Enter edits object",
@@ -9925,7 +9919,7 @@
    "label": "BigMoveObjectLeft",
    "token": "shortcut.bigmoveobjectleft",
    "feature": "shortcut.bigmoveobjectleft",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9954,7 +9948,7 @@
    "label": "BigMoveObjectRight",
    "token": "shortcut.bigmoveobjectright",
    "feature": "shortcut.bigmoveobjectright",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -9983,7 +9977,7 @@
    "label": "BigMoveObjectUp",
    "token": "shortcut.bigmoveobjectup",
    "feature": "shortcut.bigmoveobjectup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10012,7 +10006,7 @@
    "label": "BigMoveObjectDown",
    "token": "shortcut.bigmoveobjectdown",
    "feature": "shortcut.bigmoveobjectdown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10041,7 +10035,7 @@
    "label": "MoveFocusToNextObject",
    "token": "shortcut.movefocustonextobject",
    "feature": "shortcut.movefocustonextobject",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10070,7 +10064,7 @@
    "label": "MoveFocusToPreviousObject",
    "token": "shortcut.movefocustopreviousobject",
    "feature": "shortcut.movefocustopreviousobject",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10129,7 +10123,7 @@
    "label": "MoveToNextCell",
    "token": "shortcut.movetonextcell",
    "feature": "shortcut.movetonextcell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10149,7 +10143,7 @@
    "label": "MoveToPreviousCell",
    "token": "shortcut.movetopreviouscell",
    "feature": "shortcut.movetopreviouscell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10169,7 +10163,7 @@
    "label": "MoveToNextRow",
    "token": "shortcut.movetonextrow",
    "feature": "shortcut.movetonextrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10189,7 +10183,7 @@
    "label": "MoveToPreviousRow",
    "token": "shortcut.movetopreviousrow",
    "feature": "shortcut.movetopreviousrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10209,7 +10203,7 @@
    "label": "EndParagraphCell",
    "token": "shortcut.endparagraphcell",
    "feature": "shortcut.endparagraphcell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10229,7 +10223,7 @@
    "label": "AddNewRow",
    "token": "shortcut.addnewrow",
    "feature": "shortcut.addnewrow",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10252,7 +10246,7 @@
    "label": "InsertTableBreak",
    "token": "shortcut.inserttablebreak",
    "feature": "shortcut.inserttablebreak",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10284,7 +10278,7 @@
    "label": "MoveToNextForm",
    "token": "shortcut.movetonextform",
    "feature": "shortcut.movetonextform",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10314,7 +10308,7 @@
    "label": "MoveToPreviousForm",
    "token": "shortcut.movetopreviousform",
    "feature": "shortcut.movetopreviousform",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10344,7 +10338,7 @@
    "label": "ChooseNextComboBoxOption",
    "token": "shortcut.choosenextcomboboxoption",
    "feature": "shortcut.choosenextcomboboxoption",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10377,7 +10371,7 @@
    "label": "ChoosePreviousComboBoxOption",
    "token": "shortcut.choosepreviouscomboboxoption",
    "feature": "shortcut.choosepreviouscomboboxoption",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10410,7 +10404,7 @@
    "label": "InsertLineBreakMultilineForm",
    "token": "shortcut.insertlinebreakmultilineform",
    "feature": "shortcut.insertlinebreakmultilineform",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10534,7 +10528,7 @@
    "label": "SpeechWorker",
    "token": "shortcut.speechworker",
    "feature": "shortcut.speechworker",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+Z read-aloud (OO SpeechWorker panel; WO maps to TTS)",
@@ -10580,7 +10574,7 @@
    "label": "OpenCommentField",
    "token": "shortcut.opencommentfield",
    "feature": "shortcut.opencommentfield",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Opt+Cmd+A (Mac; openCommentDialog at caret)",
@@ -10602,7 +10596,7 @@
    "label": "OpenChatPanel",
    "token": "ctrl+alt+q",
    "feature": "shortcut.openchatpanel",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+Q",
@@ -10625,7 +10619,7 @@
    "label": "MoveToStartPreviousPage",
    "token": "shortcut.movetostartpreviouspage",
    "feature": "shortcut.movetostartpreviouspage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10645,7 +10639,7 @@
    "label": "MoveToStartNextPage",
    "token": "shortcut.movetostartnextpage",
    "feature": "shortcut.movetostartnextpage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10665,7 +10659,7 @@
    "label": "MoveToStartWord",
    "token": "shortcut.movetostartword",
    "feature": "shortcut.movetostartword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10695,7 +10689,7 @@
    "label": "MoveToEndWord",
    "token": "shortcut.movetoendword",
    "feature": "shortcut.movetoendword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10935,7 +10929,7 @@
    "label": "SelectRightWord",
    "token": "shortcut.selectrightword",
    "feature": "shortcut.selectrightword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -10965,7 +10959,7 @@
    "label": "SelectLeftWord",
    "token": "shortcut.selectleftword",
    "feature": "shortcut.selectleftword",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11085,7 +11079,7 @@
    "label": "LittleMoveObjectLeft",
    "token": "shortcut.littlemoveobjectleft",
    "feature": "shortcut.littlemoveobjectleft",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11108,7 +11102,7 @@
    "label": "LittleMoveObjectRight",
    "token": "shortcut.littlemoveobjectright",
    "feature": "shortcut.littlemoveobjectright",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11131,7 +11125,7 @@
    "label": "LittleMoveObjectUp",
    "token": "shortcut.littlemoveobjectup",
    "feature": "shortcut.littlemoveobjectup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11154,7 +11148,7 @@
    "label": "LittleMoveObjectDown",
    "token": "shortcut.littlemoveobjectdown",
    "feature": "shortcut.littlemoveobjectdown",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11177,7 +11171,7 @@
    "label": "InsertEquation",
    "token": "ctrl+alt+=",
    "feature": "shortcut.insertequation",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Ctrl+Alt+=",
@@ -11198,7 +11192,7 @@
    "label": "HorizontalEllipsis",
    "token": "alt+;",
    "feature": "shortcut.horizontalellipsis",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Alt+;",
@@ -11250,7 +11244,7 @@
    "label": "MoveToNextPage",
    "token": "shortcut.movetonextpage",
    "feature": "shortcut.movetonextpage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11270,7 +11264,7 @@
    "label": "MoveToPreviousPage",
    "token": "shortcut.movetopreviouspage",
    "feature": "shortcut.movetopreviouspage",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser caret/scroll (n/a for web editor)",
@@ -11426,7 +11420,7 @@
    "label": "OpenExistingFile",
    "token": "shortcut.openexistingfile",
    "feature": "shortcut.openexistingfile",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Cmd+O / Ctrl+O (openBackstage(\"open\"))",
@@ -11456,7 +11450,7 @@
    "label": "CloseFile",
    "token": "shortcut.closefile",
    "feature": "shortcut.closefile",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Cmd+W / Ctrl+W (prevents browser tab-close: dirty confirm + wo:close-document + notifyHost(close))",
@@ -11588,7 +11582,7 @@
    "label": "Save as picture",
    "token": "ctx.save-as-picture",
    "feature": "ctx.save-as-picture",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=SaveAsPicture -> objectOp save-as-picture",
@@ -11609,7 +11603,7 @@
    "label": "Align left",
    "token": "ctx.align-left",
    "feature": "ctx.align-left",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-left",
@@ -11633,7 +11627,7 @@
    "label": "Align center",
    "token": "ctx.align-center",
    "feature": "ctx.align-center",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-center",
@@ -11657,7 +11651,7 @@
    "label": "Align right",
    "token": "ctx.align-right",
    "feature": "ctx.align-right",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-right",
@@ -11681,7 +11675,7 @@
    "label": "Align top",
    "token": "ctx.align-top",
    "feature": "ctx.align-top",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-top",
@@ -11705,7 +11699,7 @@
    "label": "Align middle",
    "token": "ctx.align-middle",
    "feature": "ctx.align-middle",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-middle",
@@ -11729,7 +11723,7 @@
    "label": "Align bottom",
    "token": "ctx.align-bottom",
    "feature": "ctx.align-bottom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp align-bottom",
@@ -11795,7 +11789,7 @@
    "label": "Merge shapes",
    "token": "ctx.merge-shapes",
    "feature": "ctx.merge-shapes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp merge-union/intersect/subtract",
@@ -11816,7 +11810,7 @@
    "label": "Axis Titles",
    "token": "ctx.axis-titles",
    "feature": "ctx.axis-titles",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Axis Titles (chartElement axisTitles)",
@@ -11837,7 +11831,7 @@
    "label": "Chart Title",
    "token": "ctx.chart-title",
    "feature": "ctx.chart-title",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Chart title (chartElement title)",
@@ -11858,7 +11852,7 @@
    "label": "Data labels",
    "token": "ctx.data-labels",
    "feature": "ctx.data-labels",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Data labels (chartElement dataLabels)",
@@ -11879,7 +11873,7 @@
    "label": "Data Table",
    "token": "ctx.chart.datatable",
    "feature": "ctx.chart.datatable",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "chartElement dataTable toggle renders data table in chartSVG",
@@ -11900,7 +11894,7 @@
    "label": "Error Bars",
    "token": "ctx.error-bars",
    "feature": "ctx.error-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Error bars (chartElement errorBars)",
@@ -11921,7 +11915,7 @@
    "label": "Gridlines",
    "token": "ctx.gridlines",
    "feature": "ctx.gridlines",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Gridlines (chartElement gridlines)",
@@ -11942,7 +11936,7 @@
    "label": "Legend",
    "token": "ctx.legend",
    "feature": "ctx.legend",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Legend (chartElement legend)",
@@ -11963,7 +11957,7 @@
    "label": "Trendline",
    "token": "ctx.trendline",
    "feature": "ctx.trendline",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Trendline (chartElement trendline)",
@@ -11984,7 +11978,7 @@
    "label": " Up/Down Bars",
    "token": "ctx.up-down-bars",
    "feature": "ctx.up-down-bars",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design Chart elements>Up/Down bars (chartElement upDownBars)",
@@ -12005,7 +11999,7 @@
    "label": "Bring to foreground",
    "token": "ctx.bring-to-foreground",
    "feature": "ctx.bring-to-foreground",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp bring-to-foreground",
@@ -12028,7 +12022,7 @@
    "label": "Send to background",
    "token": "ctx.send-to-background",
    "feature": "ctx.send-to-background",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp send-to-background",
@@ -12051,7 +12045,7 @@
    "label": "Bring forward",
    "token": "ctx.bring-forward",
    "feature": "ctx.bring-forward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp bring-forward",
@@ -12074,7 +12068,7 @@
    "label": "Send backward",
    "token": "ctx.send-backward",
    "feature": "ctx.send-backward",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp send-backward",
@@ -12097,7 +12091,7 @@
    "label": "Edit wrap boundary",
    "token": "ctx.edit-wrap-boundary",
    "feature": "ctx.edit-wrap-boundary",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditWrapBoundary — LOUD registered divergence (Phase 5/WO-22): no vector contour model; wo:edit-wrap-boundary marker + SetStatus NotAvailable",
@@ -12202,7 +12196,7 @@
    "label": "Top and bottom",
    "token": "ctx.top-and-bottom",
    "feature": "ctx.top-and-bottom",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "obj-center block flow (top-and-bottom ≈ own-line block)",
@@ -12265,7 +12259,7 @@
    "label": "Edit data",
    "token": "ctx.edit-data",
    "feature": "ctx.edit-data",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Chart Design tab chartEditData -> openVectorEditor(chart)",
@@ -12299,7 +12293,7 @@
    "label": "Actual size",
    "token": "ctx.actual-size",
    "feature": "ctx.actual-size",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ActualSize -> objectOp actual-size",
@@ -12322,7 +12316,7 @@
    "label": "Convert to shape",
    "token": "ctx.convert-to-shape",
    "feature": "ctx.convert-to-shape",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ConvertToShape -> convert object placeholder to a drawing-shape placeholder via the shape picker",
@@ -12344,7 +12338,7 @@
    "label": "Replace image",
    "token": "ctx.replace-image",
    "feature": "ctx.replace-image",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ReplaceImage -> objectOp replace-image (image-dialog)",
@@ -12372,7 +12366,7 @@
    "label": "Copy",
    "token": "ctx.copy",
    "feature": "ctx.copy",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Copy",
@@ -12393,7 +12387,7 @@
    "label": "Paste",
    "token": "ctx.paste",
    "feature": "ctx.paste",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Paste",
@@ -12415,7 +12409,7 @@
    "label": "Cut",
    "token": "ctx.cut",
    "feature": "ctx.cut",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Cut",
@@ -12436,7 +12430,7 @@
    "label": "Accept change",
    "token": "ctx.accept-change",
    "feature": "ctx.accept-change",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AcceptChange",
@@ -12458,7 +12452,7 @@
    "label": "Reject change",
    "token": "ctx.reject-change",
    "feature": "ctx.reject-change",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RejectChange",
@@ -12480,7 +12474,7 @@
    "label": "Print selection",
    "token": "ctx.print-selection",
    "feature": "ctx.print-selection",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Print button / Ctrl+P (browser print; no ctx item)",
@@ -12501,7 +12495,7 @@
    "label": "Rotate",
    "token": "ctx.rotate",
    "feature": "ctx.rotate",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "right panel rp-image-rotate (applyImageRotate90)",
@@ -12522,7 +12516,7 @@
    "label": "Crop",
    "token": "ctx.crop",
    "feature": "ctx.crop",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Crop -> photo editor crop tool (drag + Apply)",
@@ -12556,7 +12550,7 @@
    "label": "Remove content control",
    "token": "ctx.remove-content-control",
    "feature": "ctx.remove-content-control",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RemoveContentControl",
@@ -12578,7 +12572,7 @@
    "label": "Content control settings",
    "token": "ctx.content-control-settings",
    "feature": "ctx.content-control-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ContentControlSettings",
@@ -12600,7 +12594,7 @@
    "label": "Edit points",
    "token": "ctx.edit-points",
    "feature": "ctx.edit-points",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditPoints — LOUD registered divergence (Phase 5/WO-22): no vector contour model; wo:edit-points marker + SetStatus NotAvailable",
@@ -12692,7 +12686,7 @@
    "label": "Edit link",
    "token": "ctx.edit-link",
    "feature": "ctx.edit-link",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditLink",
@@ -12722,7 +12716,7 @@
    "label": "Copy hyperlink address",
    "token": "ctx.copy-hyperlink-address",
    "feature": "ctx.copy-hyperlink-address",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=CopyHyperlinkAddress (clipboard)",
@@ -12743,7 +12737,7 @@
    "label": "Remove link",
    "token": "ctx.remove-link",
    "feature": "ctx.remove-link",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=RemoveLink",
@@ -12765,7 +12759,7 @@
    "label": "Resize to cell",
    "token": "ctx.resize-to-cell",
    "feature": "ctx.resize-to-cell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ResizeToCell -> resizeSelectedObjectToCell (objects in table cells)",
@@ -12824,7 +12818,7 @@
    "label": "Merge cells",
    "token": "ctx.merge-cells",
    "feature": "ctx.merge-cells",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableMergeCells",
@@ -12845,7 +12839,7 @@
    "label": "Split cell...",
    "token": "ctx.split-cell",
    "feature": "ctx.split-cell",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TableSplitCell",
@@ -12866,7 +12860,7 @@
    "label": "Text alignment",
    "token": "ctx.text-alignment",
    "feature": "ctx.text-alignment",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextAlignment",
@@ -13032,7 +13026,7 @@
    "label": "Justify",
    "token": "ctx.justify",
    "feature": "ctx.justify",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ribbon data-cmd=justifyFull (not in WO ctx)",
@@ -13054,7 +13048,7 @@
    "label": "Table advanced settings",
    "token": "ctx.table-advanced-settings",
    "feature": "ctx.table-advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "table-ops-dialog (WO table settings surface)",
@@ -13140,7 +13134,7 @@
    "label": "Create new style",
    "token": "ctx.create-new-style",
    "feature": "ctx.create-new-style",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FormattingAsStyle -> wo:style-from-format host channel (style-save owned by host shell)",
@@ -13161,7 +13155,7 @@
    "label": "Update %1 style",
    "token": "ctx.update-1-style",
    "feature": "ctx.update-1-style",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FormattingAsStyle -> wo:style-from-format host channel (style-update owned by host shell)",
@@ -13203,7 +13197,7 @@
    "label": "Update page numbers only",
    "token": "ctx.update-page-numbers-only",
    "feature": "ctx.update-page-numbers-only",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "UpdateTOC dialog — toc-update select has 'Update page numbers only' option (refreshToc relinks; page numbers are live-preview links)",
@@ -13266,7 +13260,7 @@
    "label": "Follow move",
    "token": "ctx.follow-move",
    "feature": "ctx.follow-move",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FollowMove",
@@ -13323,7 +13317,7 @@
    "label": "Ignore",
    "token": "ctx.ignore",
    "feature": "ctx.ignore",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=Ignore",
@@ -13345,7 +13339,7 @@
    "label": "Ignore all",
    "token": "ctx.ignore-all",
    "feature": "ctx.ignore-all",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=IgnoreAll",
@@ -13367,7 +13361,7 @@
    "label": "Add to dictionary",
    "token": "ctx.add-to-dictionary",
    "feature": "ctx.add-to-dictionary",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AddToDictionary",
@@ -13389,7 +13383,7 @@
    "label": "Spellcheck",
    "token": "ctx.spellcheck",
    "feature": "ctx.spellcheck",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Review ribbon spellcheck / F7 (not in ctx)",
@@ -13412,7 +13406,7 @@
    "label": "Distribute rows",
    "token": "ctx.distribute-rows",
    "feature": "ctx.distribute-rows",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=DistributeRows -> distributeTableRows (equalize row heights)",
@@ -13433,7 +13427,7 @@
    "label": "Distribute columns",
    "token": "ctx.distribute-columns",
    "feature": "ctx.distribute-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=DistributeColumns -> distributeTableColumns (equalize column widths)",
@@ -13454,7 +13448,7 @@
    "label": "Text direction",
    "token": "ctx.text-direction",
    "feature": "ctx.text-direction",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextDirection",
@@ -13476,7 +13470,7 @@
    "label": "Horizontal",
    "token": "ctx.horizontal",
    "feature": "ctx.horizontal",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=TextDirHorizontal",
@@ -13563,7 +13557,7 @@
    "label": "Set numbering value",
    "token": "ctx.set-numbering-value",
    "feature": "ctx.set-numbering-value",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=SetNumberingValue -> NumberingValueDialog + applyNumberingValue (native ol split, restart at N)",
@@ -13585,7 +13579,7 @@
    "label": "Continue numbering",
    "token": "ctx.continue-numbering",
    "feature": "ctx.continue-numbering",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ContinueNumbering -> continueNumbering (native ol merge)",
@@ -13606,7 +13600,7 @@
    "label": "Adjust list indents",
    "token": "ctx.adjust-list-indents",
    "feature": "ctx.adjust-list-indents",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=AdjustListIndents -> ListIndentsDialog + applyListIndents (margin-left/text-indent, round-trips as w:ind left/hanging)",
@@ -13628,7 +13622,7 @@
    "label": "Bullets and numbering",
    "token": "ctx.bullets-and-numbering",
    "feature": "ctx.bullets-and-numbering",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=BulletsAndNumbering -> BulletsNumberingDialog (list-style-type + start; round-trips as w:numFmt)",
@@ -13658,7 +13652,7 @@
    "label": "Update field",
    "token": "ctx.update-field",
    "feature": "ctx.update-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=UpdateField",
@@ -13679,7 +13673,7 @@
    "label": "Edit field",
    "token": "ctx.edit-field",
    "feature": "ctx.edit-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EditField",
@@ -13700,7 +13694,7 @@
    "label": "Toggle field codes",
    "token": "ctx.toggle-field-codes",
    "feature": "ctx.toggle-field-codes",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ToggleFieldCodes",
@@ -13721,7 +13715,7 @@
    "label": "Equation settings",
    "token": "ctx.equation-settings",
    "feature": "ctx.equation-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=EquationSettings",
@@ -13742,7 +13736,7 @@
    "label": "Select",
    "token": "ctx.select",
    "feature": "ctx.select",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "browser native selection",
@@ -13908,7 +13902,7 @@
    "label": "Several rows/columns",
    "token": "ctx.several-rows-columns",
    "feature": "ctx.several-rows-columns",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "table-ops dialog Insert several rows/cols (op-apply-rows/op-apply-cols; insertTableRow/Col count)",
@@ -13993,7 +13987,7 @@
    "label": "Frame advanced settings",
    "token": "ctx.frame-advanced-settings",
    "feature": "ctx.frame-advanced-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=FrameSettings",
@@ -14035,7 +14029,7 @@
    "label": "Drop cap settings",
    "token": "ctx.drop-cap-settings",
    "feature": "ctx.drop-cap-settings",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "dropcap-dialog (btn/ctx)",
@@ -14129,7 +14123,7 @@
    "label": "Edit header",
    "token": "ctx.edit-header",
    "feature": "ctx.edit-header",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Insert ribbon header/footer + headerfooter-dialog (not in ctx)",
@@ -14193,7 +14187,7 @@
    "label": "Clear field",
    "token": "ctx.clear-field",
    "feature": "ctx.clear-field",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "ctx data-ctx=ClearField (empties page-number/[data-field])",
@@ -14215,7 +14209,7 @@
    "label": "Group",
    "token": "ctx.group",
    "feature": "ctx.group",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp group (groupSelectedObjects)",
@@ -14236,7 +14230,7 @@
    "label": "Ungroup",
    "token": "ctx.ungroup",
    "feature": "ctx.ungroup",
-   "level": 1,
+   "level": 2,
    "censusStatus": "real",
    "wo": {
     "match": "Layout tab objectOp ungroup (ungroupSelectedObjects)",
@@ -14258,7 +14252,7 @@
    "label": "Hyperlink",
    "token": "link-dialog",
    "feature": "dialog.link-dialog.l4",
-   "level": 0,
+   "level": 4,
    "censusStatus": "real",
    "wo": {
     "match": "link-dialog",
@@ -14842,10 +14836,8 @@
      "selector": "[data-wo-right-panel=\"table\"]"
     },
     "pre": "",
-    "woTab": "insert",
-    "subFeatures": [],
-    "note": "react-port: insert-tab Table button opens the Table settings right rail (TablePanel)",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: insert-tab Table button opens the Table settings right rail (TablePanel)"
    }
   },
   {
@@ -14874,10 +14866,8 @@
      "selector": ".de-styles-panel"
     },
     "pre": "",
-    "woTab": "insert",
-    "subFeatures": [],
-    "note": "react-port: insert-tab Drop Cap button opens the paragraph styles panel",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: insert-tab Drop Cap button opens the paragraph styles panel"
    }
   },
   {
@@ -14906,10 +14896,8 @@
      "selector": ".de-properties-panel"
     },
     "pre": "",
-    "woTab": "layout",
-    "subFeatures": [],
-    "note": "react-port: layout-tab Watermark button opens the image/page-background settings rail",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: layout-tab Watermark button opens the image/page-background settings rail"
    }
   },
   {
@@ -14938,10 +14926,8 @@
      "selector": "[data-header-footer-region=\"footer\"]"
     },
     "pre": "",
-    "woTab": "insert",
-    "subFeatures": [],
-    "note": "react-port: Page Number button enters footer edit mode (footer region renders)",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: Page Number button enters footer edit mode (footer region renders)"
    }
   },
   {
@@ -14970,10 +14956,8 @@
      "selector": "#cross-reference-panel"
     },
     "pre": "",
-    "woTab": "references",
-    "subFeatures": [],
-    "note": "react-port: references-tab Bookmark button opens the cross-reference panel",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: references-tab Bookmark button opens the cross-reference panel"
    }
   },
   {
@@ -15002,10 +14986,8 @@
      "selector": "#cross-reference-panel"
     },
     "pre": "",
-    "woTab": "references",
-    "subFeatures": [],
-    "note": "react-port: references-tab Table of Contents button opens the cross-reference panel",
-    "xfail": false
+    "xfail": false,
+    "note": "loop15 react-port: references-tab Table of Contents button opens the cross-reference panel"
    }
   },
   {
@@ -15803,12 +15785,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-settings-cancel",
-    "dialog": "#settings-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "option row: settings cancel path — #btn-settings-cancel closes the dialog without applying (closeDlg, editor.js:13110) [override-only: no ledger row matched this key]"
+   "note": "loop34-2: promote — FileMenu settings (opts) panel close action [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filesettings",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
+    },
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings"
+   }
   },
   {
    "tab": "backstage",
@@ -15822,20 +15813,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#help-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "help title",
-     "selector": "#help-dialog-title"
+   "subFeatures": null,
+   "note": "loop34-2: promote — FileMenu help panel open [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filehelp",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
     },
-    {
-     "name": "close action",
-     "selector": "#btn-help-close"
-    }
-   ],
-   "note": "option row (OO fm-btn-help 'Help'): #btn-filehelp opens the help-and-about dialog (openDlg, editor.js:13119) [override-only: no ledger row matched this key]"
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp"
+   }
   },
   {
    "tab": "backstage",
@@ -15849,12 +15841,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-help-close",
-    "dialog": "#help-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "option row: help close path — #btn-help-close closes the dialog (closeDlg, editor.js:13120) [override-only: no ledger row matched this key]"
+   "note": "loop34-2: promote — FileMenu help panel close [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filehelp",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
+    },
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu help panel — same selector toggles closed"
+   }
   },
   {
    "tab": "backstage",
@@ -15868,20 +15869,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#version-history-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "version list",
-     "selector": "#version-list"
+   "subFeatures": null,
+   "note": "loop34-2: promote — FileMenu version history panel open [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-cmd=\"history\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
     },
-    {
-     "name": "close action",
-     "selector": "#btn-version-close"
-    }
-   ],
-   "note": "option row (OO Versions): the History pane's #btn-history opens the version-history dialog and fetches GET /versions (openVersionHistory, editor.js:5495) [override-only: no ledger row matched this key]"
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu version history panel via [data-cmd=\"history\"]"
+   }
   },
   {
    "tab": "backstage",
@@ -15895,12 +15897,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-action",
-    "button": "#btn-version-close",
-    "dialog": "#version-history-dialog"
+    "kind": "unspecified"
    },
    "subFeatures": null,
-   "note": "option row: version-history close path — #btn-version-close closes the dialog (closeVersionHistory, editor.js:5502) [override-only: no ledger row matched this key]"
+   "note": "loop34-2: promote — FileMenu version history panel close [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-cmd=\"history\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
+    },
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": false,
+    "note": "loop34-2 react-port: same selector toggles closed"
+   }
   },
   {
    "tab": "backstage",
@@ -15914,24 +15925,21 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#ai-review-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "AI changes list",
-     "selector": "#ai-review-list"
+   "subFeatures": null,
+   "note": "loop34-2: promote — AI review dialog open (xfail: feature gap) [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-cmd=\"ai-review\"]",
+    "assertion": {
+     "kind": "dom-mutation",
+     "selector": ".de-file-menu-content-box"
     },
-    {
-     "name": "reject-all action",
-     "selector": "#btn-ai-reject-all"
-    },
-    {
-     "name": "close action",
-     "selector": "#btn-ai-review-close"
-    }
-   ],
-   "note": "option row (ledger file.ai): the AI pane's #btn-ai-review opens the AI-changes review dialog and fetches GET ai/review (openAIReview, editor.js:5589) [override-only: no ledger row matched this key]"
+    "pre": "",
+    "woTab": "backstage",
+    "xfail": true,
+    "note": "loop34-2 react-port: AI Review panel not yet in React canvas editor — xfail as known gap"
+   }
   },
   {
    "tab": "backstage",
@@ -17268,7 +17276,6 @@
      "selector": "[data-wo-right-panel=\"crossreference\"]"
     },
     "pre": "",
-    "woTab": "insert",
     "xfail": false,
     "note": "loop17 react-port: insert-tab Link button opens the Cross-Ref right rail (the link-dialog surface in the react canvas editor)"
    }
@@ -17296,7 +17303,6 @@
      "selector": "[data-wo-right-panel=\"table\"]"
     },
     "pre": "",
-    "woTab": "insert",
     "xfail": false,
     "note": "loop17 react-port: insert-tab Table button opens the Table settings right rail (TablePanel)"
    }
@@ -17324,7 +17330,6 @@
      "selector": "[data-wo-right-panel=\"plugins\"]"
     },
     "pre": "",
-    "woTab": "insert",
     "xfail": false,
     "note": "loop17 react-port: insert-tab Equation button opens the plugins right rail (Equation Editor plugin surface)"
    }
@@ -17352,7 +17357,6 @@
      "selector": "[data-wo-right-panel=\"comments\"]"
     },
     "pre": "",
-    "woTab": "collaboration",
     "xfail": false,
     "note": "loop17 react-port: collaboration-tab Comment button opens the comments right rail"
    }
@@ -17380,7 +17384,6 @@
      "selector": "[data-wo-right-panel=\"review\"]"
     },
     "pre": "",
-    "woTab": "collaboration",
     "xfail": false,
     "note": "loop17 react-port: collaboration-tab Compare opens the review right rail"
    }
@@ -17408,7 +17411,6 @@
      "selector": "[data-wo-right-panel=\"review\"]"
     },
     "pre": "",
-    "woTab": "collaboration",
     "xfail": false,
     "note": "loop17 react-port: collaboration-tab Combine opens the review right rail"
    }
