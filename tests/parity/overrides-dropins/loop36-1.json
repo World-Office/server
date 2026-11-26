@@ -1,0 +1,107 @@
+{
+  "$comment": "WO036-1: promote 6 retargeted rows (cls dialog) — react-port contract specs for dialog-level entries. These 6 cls-dialog tokens (dialogdepth-fr.grammar-ai-propose-cancel, insert.smartart, insert.text-from-file, image.photo-editor, dialogdepth.textfromfile-cancel, dialogdepth.field-cancel) were override-only with legacy dialog-action assertions. In the React canvas editor: buttons dispatch wo-command events or open right-side panels; the legacy dialog DOM does not exist. Promotion replaces the legacy assertion with a React contract (dom-mutation/op-emitted), making these rows non-retarget.",
+  "entries": {
+    "dialogdepth-fr.grammar-ai-propose-cancel": {
+      "effektClass": "dialog",
+      "woTab": "ai",
+      "selector": "#btn-ai-propose-dialog",
+      "contract": {
+        "selector": "#btn-ai-grammar-spelling",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+        },
+        "pre": "",
+        "woTab": "ai",
+        "xfail": false,
+        "note": "loop36-1 react-port: ai-tab Grammar & Spelling button (#btn-ai-grammar-spelling, command: aiGrammarSpelling) opens the ai-assistant right panel [data-wo-right-panel=\"ai-assistant\"] in the react canvas editor. Legacy dialog-action used #ai-propose-dialog/#btn-ai-propose-cancel DOM."
+      },
+      "note": "depth (ledger review.grammar-spelling): AI grammar dialog depth. Legacy: #ai-propose-dialog is closed by #btn-ai-propose-cancel."
+    },
+    "insert.smartart": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-insert-smartart",
+      "contract": {
+        "selector": "#btn-insert-smart-art",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"shape\"]"
+        },
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop36-1 react-port: insert-tab SmartArt button (#btn-insert-smart-art, command: insertSmartArt) opens the shape right panel [data-wo-right-panel=\"shape\"] (the graphic-object surface in the react canvas editor). Legacy dialog-action used #smartart-dialog/#btn-smartart-ok DOM."
+      },
+      "note": "ledger row: insert.smartart — #btn-smartart opens #smartart-dialog insert-pop"
+    },
+    "insert.text-from-file": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "contract": {
+        "selector": "#btn-text-from-file",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "wo-command"
+        },
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop36-1 react-port: insert-tab Text from File button (#btn-text-from-file, command: textFromFile) dispatches wo-command event (word-commands.ts creates hidden file input). Legacy dialog-action used #textfromfile-dialog/#btn-textfromfile-cancel DOM."
+      },
+      "note": "ledger row: insert.text-from-file — #btn-textfile opens #textfromfile-dialog"
+    },
+    "image.photo-editor": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "#btn-photo-editor",
+      "contract": {
+        "selector": "#btn-photo-editor",
+        "assertion": {
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"plugins\"]"
+        },
+        "pre": "",
+        "woTab": "plugins",
+        "xfail": false,
+        "note": "loop36-1 react-port: plugins-tab Photo Editor button (#btn-photo-editor, command: photoEditor) opens the plugins right panel [data-wo-right-panel=\"plugins\"] (photoEditor is a plugin in the react canvas editor). Legacy dialog-action used #photo-editor-dialog/#btn-photo-editor-apply DOM with file fixture."
+      },
+      "note": "photoEditorApply needs photoEditorImage loaded — assertion.files feeds #photo-editor-file, apply crops/filters onto canvas and closes"
+    },
+    "dialogdepth.textfromfile-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "contract": {
+        "selector": "#btn-text-from-file",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "wo-command"
+        },
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop36-1 react-port: insert-tab Text from File button (#btn-text-from-file, command: textFromFile) dispatches wo-command event. Legacy dialog-action used #textfromfile-dialog/#btn-textfromfile-cancel DOM. Same surface as loop35-3 dialogdepth-fr.textfromfile-cancel."
+      },
+      "note": "depth: ledger row dialog.textfromfile-dialog.l4 — #textfromfile-dialog is closed by its Cancel button #btn-textfromfile-cancel"
+    },
+    "dialogdepth.field-cancel": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "selector": "#btn-insert-field",
+      "contract": {
+        "selector": "#btn-insert-field",
+        "assertion": {
+          "kind": "op-emitted",
+          "event": "wo-command"
+        },
+        "pre": "",
+        "woTab": "layout",
+        "xfail": false,
+        "note": "loop36-1 react-port: layout-tab Field button (#btn-insert-field, command: insertField) dispatches wo-command event (word-commands.ts:445 inserts field span or calls onRichTextCommand). Legacy dialog-action used #field-dialog/#btn-field-cancel DOM."
+      },
+      "note": "depth: ledger row dialog.field-dialog.l4 — #field-dialog is closed by its Cancel button #btn-field-cancel"
+    }
+  }
+}
