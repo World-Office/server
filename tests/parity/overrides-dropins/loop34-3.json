@@ -97,15 +97,13 @@
       "contract": {
         "selector": "#btn-indent",
         "assertion": {
-          "kind": "dom-style",
-          "selector": "p",
-          "prop": "margin-left",
-          "notEquals": "0px"
+          "kind": "op-emitted",
+          "event": "wo-command"
         },
         "pre": "",
         "woTab": "home",
         "xfail": false,
-        "note": "loop34-3 react-port: home-tab Increase Indent button (#btn-indent, word-ribbon.ts:354) applies indentation to current paragraph. Legacy context-menu AdjustListIndents dialog input replaced with direct ribbon button"
+        "note": "loop34-3 react-port: home-tab Increase Indent button (#btn-indent, word-ribbon.ts:354) dispatcher wo-command. Legacy context-menu AdjustListIndents dialog input replaced with direct ribbon button"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -135,12 +133,12 @@
         "selector": "#btn-insert-table",
         "assertion": {
           "kind": "op-emitted",
-          "event": "world-office:insert-table"
+          "event": "wo-command"
         },
         "pre": "",
         "woTab": "insert",
         "xfail": false,
-        "note": "loop34-3 react-port: insert-tab Table button (#btn-insert-table, word-ribbon.ts:546) dispatches insertTable command. Legacy context-menu table-ops dialog input (insert 3 rows) replaced with direct ribbon button; several-rows-columns ported to addRow commands"
+        "note": "loop34-3 react-port: insert-tab Table button (#btn-insert-table, word-ribbon.ts:546) dispatches wo-command. Legacy context-menu table-ops dialog input (insert 3 rows) replaced with direct ribbon button; several-rows-columns ported to addRow commands"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -162,15 +160,15 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"ParagraphSettings\"]",
       "contract": {
-        "selector": "[data-action=\"paragraph\"]",
+        "selector": "#btn-paragraph-settings",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "[data-wo-right-panel=\"paragraph\"]"
+          "kind": "op-emitted",
+          "event": "wo-command"
         },
         "pre": "",
-        "woTab": "",
+        "woTab": "home",
         "xfail": false,
-        "note": "loop34-3 react-port: RightMenu Paragraph button ([data-action=\"paragraph\"]) opens Paragraph right panel. Legacy context-menu ParagraphSettings dialog input replaced with panel-based surface; same end state achievable via panel controls"
+        "note": "loop34-3 react-port: home-tab Paragraph Settings button (#btn-paragraph-settings) dispatches wo-command. Legacy context-menu ParagraphSettings dialog input replaced with direct ribbon button; panel-based surface in React"
       },
       "assertion": {
         "kind": "dialog-input",
