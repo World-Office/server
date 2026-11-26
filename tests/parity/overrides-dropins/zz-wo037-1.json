@@ -600,12 +600,14 @@
       "note": "ledger row: file.copy-style-ctrl-alt-c — real gap: no WO format-painter control exists; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
       "contract": {
         "xfail": true,
-        "selector": "#qat-format-paint, #btn-copy-style, [data-cmd=\"copyStyle\"]",
+        "selector": "#btn-copy-style",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "#editor"
+          "kind": "dom-attr",
+          "selector": "#btn-copy-style",
+          "attr": "aria-pressed",
+          "equals": "true"
         },
-        "note": "2026-11-26 inline hand-promotion: still a real gap — the react editor ships no format-painter control; explicit xfail so the token-keyed contract carry-over cannot promote this sibling of Copy."
+        "note": "2026-11-26 inline hand-promotion: still a real gap. The react editor has the control (#btn-copy-style, command copyStyle, Ctrl+Alt+C), but the command only writes documentStore.formatPainterFormat, which nothing reads: no apply path and no armed/painter state is visible, so the command has no feature-specific effect (probed 2026-11-26: no attr, status or revision change). Explicit xfail so the token-keyed contract carry-over cannot promote this sibling of Copy; the contract asserts the missing armed state. The runner does not drive xfail rows by default (WO_RUN_XFAILS=1 does)."
       }
     },
     "file.copy-ctrl-insert": {

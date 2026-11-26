@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T18:49:05.815Z",
+ "generatedAt": "2026-11-26T20:25:42.901Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -580,12 +580,14 @@
    "note": "ledger row: file.copy-style-ctrl-alt-c — real gap: no WO format-painter control exists; honest xfail | selector re-pointed to QAT strip id (CHROME-A) 2026-11-11",
    "contract": {
     "xfail": true,
-    "selector": "#qat-format-paint, #btn-copy-style, [data-cmd=\"copyStyle\"]",
+    "selector": "#btn-copy-style",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": "#editor"
+     "kind": "dom-attr",
+     "selector": "#btn-copy-style",
+     "attr": "aria-pressed",
+     "equals": "true"
     },
-    "note": "2026-11-26 inline hand-promotion: still a real gap — the react editor ships no format-painter control; explicit xfail so the token-keyed contract carry-over cannot promote this sibling of Copy."
+    "note": "2026-11-26 inline hand-promotion: still a real gap. The react editor has the control (#btn-copy-style, command copyStyle, Ctrl+Alt+C), but the command only writes documentStore.formatPainterFormat, which nothing reads: no apply path and no armed/painter state is visible, so the command has no feature-specific effect (probed 2026-11-26: no attr, status or revision change). Explicit xfail so the token-keyed contract carry-over cannot promote this sibling of Copy; the contract asserts the missing armed state. The runner does not drive xfail rows by default (WO_RUN_XFAILS=1 does)."
    }
   },
   {
@@ -16163,18 +16165,18 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null,
+   "subFeatures": [],
    "note": "loop34-2: promote backstage.settings-cancel - FileMenu settings (opts) panel close [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filesettings",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": ".de-file-menu-panel"
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-settings-table"
     },
     "pre": "file-menu",
     "woTab": "backstage",
-    "xfail": false,
-    "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings"
+    "xfail": true,
+    "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings | 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes. Known gap. The runner does not drive xfail rows (fast-path), so this contract is only checked once xfail is removed — and it then proves the pane renders, not a Cancel (the react pane has none)"
    }
   },
   {
@@ -16191,18 +16193,18 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null,
+   "subFeatures": [],
    "note": "loop34-2: promote backstage.help-open - FileMenu help panel open [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filehelp",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": ".de-file-menu-panel"
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-help-content"
     },
     "pre": "file-menu",
     "woTab": "backstage",
-    "xfail": false,
-    "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp"
+    "xfail": true,
+    "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp | 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes (known gap, not parity; the runner does not drive xfail rows — drop xfail once the app renders panes, the contract already asserts the Help content being visible)"
    }
   },
   {
@@ -16260,7 +16262,7 @@
     "pre": "file-menu",
     "woTab": "backstage",
     "xfail": true,
-    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory | 2026-11-26: xfail again — the react FileMenu ships no History rail entry (#filehistory absent; known gap, not parity)"
+    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory | 2026-11-26: xfail — a 'Version History…' rail item exists but has no id (ACTION_ID in FileMenuItems.tsx lacks `history`), so #filehistory matches nothing, and its pane never renders visibly (known gap, not parity)"
    }
   },
   {
@@ -16290,7 +16292,7 @@
     "pre": "backstage:history",
     "woTab": "backstage",
     "xfail": true,
-    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed | 2026-11-26: xfail again — no History rail entry and no [data-pane] rows in the react FileMenu (known gap, not parity)"
+    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed | 2026-11-26: xfail — the react FileMenu has no [data-pane] rows (the 'Version History…' rail item has no id either), so the backstage:history pre cannot reach the pane (known gap, not parity)"
    }
   },
   {
