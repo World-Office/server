@@ -16,6 +16,18 @@ cleanup() { [ -z "$STAGE" ] || rm -rf "$STAGE"; [ -z "$MF" ] || rm -f "$MF"; tru
 trap cleanup EXIT
 fail() { echo "loop-gate: $*" >&2; exit 1; }
 
+# 2026-11-26: a refusal that states the violation but not the fix pushed a
+# worker into "repairing" the problem with `sudo rm -rf` — erasing the whole
+# workspace. Every refusal below carries the remedy inline now.
+REMEDY="REMEDY — a loop task may ONLY add/modify its single drop-in
+tests/parity/overrides-dropins/<batch>-<n>.json. To fix: revert everything
+else (git checkout -- . && git clean -fd), commit just the drop-in, rerun
+the gate. NEVER override WO_LEDGER (the gate pins it to the canonical
+ledger). The harness and repos under /home/weiss/git/World-Office are
+read-only infrastructure: NEVER delete, move, rebuild, or git-reset them.
+If your row still FAILs, the promotion content itself is wrong — report
+the failure; do not modify the gate, ledger, harness, or repo."
+
 # A loop task promises exactly one thing: its own drop-in file. Until that is
 # true, main's prebuilt bundle proves nothing about the worktree — so check it
 # before anything is booted, and refuse to judge when it fails (2026-11-25:
@@ -33,10 +45,14 @@ hygiene() {
 $dirty"
   base="$(git merge-base HEAD main)"
   own="$( { git diff --name-only "$base"; git ls-files --others --exclude-standard; } | sed '/^$/d')"
-  [ -n "$own" ] || fail "no drop-in committed: this worktree does not differ from its base ($base)"
+  [ -n "$own" ] || fail "no drop-in committed: this worktree does not differ from its base ($base)
+
+$REMEDY"
   { [ "$(printf '%s\n' "$own" | wc -l)" -eq 1 ] && case "$own" in tests/parity/overrides-dropins/*.json) true ;; *) false ;; esac; } \
     || fail "a loop task changes exactly its own drop-in file; this worktree differs from its base ($base) by:
-$own"
+$own
+
+$REMEDY"
   extra="$(/usr/bin/node -e '
     const [f, csv] = process.argv.slice(1);
     const d = JSON.parse(require("fs").readFileSync(f, "utf8"));
