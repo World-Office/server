@@ -30,15 +30,15 @@
       "effektClass": "dialog",
       "woTab": "chart-design",
       "contract": {
-        "selector": "#chart-advanced-settings",
+        "selector": "#btn-chart-advanced-settings",
         "assertion": {
           "kind": "dom-mutation",
           "selector": "[data-wo-right-panel=\"chart\"]"
         },
-        "pre": "chart-selection",
+        "pre": "file-menu",
         "woTab": "chart-design",
         "xfail": false,
-        "note": "loop34-3 react-port: chart-design tab Advanced settings button opens Chart right panel"
+        "note": "loop34-3 react-port: chart-design tab Advanced settings button (#btn-chart-advanced-settings in ribbon spec word-ribbon.ts:1809) opens Chart right panel"
       },
       "pre": "chart-selection",
       "selector": ".ribbon-page[data-tab=\"chart-design\"] [data-cmd=\"chartSettings\"]",
