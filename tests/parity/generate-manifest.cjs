@@ -170,7 +170,8 @@ for (const row of ledger) {
     subFeatures: (override && override.subFeatures) || null,
   };
   if (override && override.note) entry.note = override.note;
-  if (priorContracts.has(entry.token)) entry.contract = priorContracts.get(entry.token);
+  if (override && override.contract) entry.contract = override.contract;
+  else if (priorContracts.has(entry.token)) entry.contract = priorContracts.get(entry.token);
   entries.push(entry);
 }
 
@@ -186,7 +187,8 @@ for (const [key, ov] of Object.entries(overrides)) {
     assertion: ov.assertion || { kind: 'unspecified' },
     subFeatures: ov.subFeatures || null, note: (ov.note || '') + ' [override-only: no ledger row matched this key]',
   });
-  if (priorContracts.has(key)) entries[entries.length - 1].contract = priorContracts.get(key);
+  if (ov.contract) entries[entries.length - 1].contract = ov.contract;
+  else if (priorContracts.has(key)) entries[entries.length - 1].contract = priorContracts.get(key);
   console.warn(`WARN override "${key}" matched no ledger row — emitted as override-only entry`);
 }
 
