@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T17:58:13.177Z",
+ "generatedAt": "2026-11-26T18:49:05.815Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -16231,8 +16231,8 @@
     },
     "pre": "backstage:help",
     "woTab": "backstage",
-    "xfail": false,
-    "note": "loop34-2 react-port: FileMenu help panel close - same selector toggles closed"
+    "xfail": true,
+    "note": "loop34-2 react-port: FileMenu help panel close - same selector toggles closed | 2026-11-26: xfail again — the react FileMenu has no [data-pane] rows, so the backstage:help pre cannot reach the pane (known gap, not parity)"
    }
   },
   {
@@ -16259,8 +16259,8 @@
     },
     "pre": "file-menu",
     "woTab": "backstage",
-    "xfail": false,
-    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory"
+    "xfail": true,
+    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory | 2026-11-26: xfail again — the react FileMenu ships no History rail entry (#filehistory absent; known gap, not parity)"
    }
   },
   {
@@ -16289,8 +16289,8 @@
     },
     "pre": "backstage:history",
     "woTab": "backstage",
-    "xfail": false,
-    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed"
+    "xfail": true,
+    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed | 2026-11-26: xfail again — no History rail entry and no [data-pane] rows in the react FileMenu (known gap, not parity)"
    }
   },
   {

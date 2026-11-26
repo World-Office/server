@@ -201,10 +201,12 @@ async function poll(page, fn, ms = 3000, step = 150) {
 // Prerequisites -------------------------------------------------------------
 async function openFileMenu(page) {
   const visible = await page.evaluate(() => {
-    const m = document.querySelector('#file-menu');
-    return m && getComputedStyle(m).display !== 'none' && !m.hidden;
+    // react FileMenu has no #file-menu — its panel is .de-file-menu-panel
+    const m = document.querySelector('#file-menu, .de-file-menu-panel');
+    return !!m && getComputedStyle(m).display !== 'none' && !m.hidden;
   });
-  if (!visible) await page.click('#btn-file');
+  // react entry is button[data-tab="file"] and TOGGLES — only click when closed
+  if (!visible) await page.click('#btn-file, button[data-tab="file"]');
   await page.waitForTimeout(200);
 }
 
