@@ -5,15 +5,15 @@
       "effektClass": "dialog",
       "woTab": "backstage",
       "contract": {
-        "selector": "[data-action=\"ai-assistant\"]",
+        "selector": "#btn-ai-assistant",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "[data-wo-right-panel=\"ai-assistant\"]"
+          "kind": "op-emitted",
+          "event": "wo-command"
         },
         "pre": "",
-        "woTab": "",
+        "woTab": "ai",
         "xfail": false,
-        "note": "loop34-3 react-port: RightMenu AI Assistant button ([data-action=\"ai-assistant\"]) opens AI Assistant right panel. Legacy backstage AI review dialog close action ported to AI Assistant panel open-close via button toggle"
+        "note": "loop34-3 react-port: ribbon AI Assistant button (#btn-ai-assistant, word-ribbon.ts:1701) dispatches wo-command. Legacy backstage AI review dialog close action ported to AI Assistant button"
       },
       "pre": "backstage:ai",
       "selector": "#btn-ai-review",
@@ -67,13 +67,13 @@
       "contract": {
         "selector": "#btn-ordered-list",
         "assertion": {
-          "kind": "dom-mutation",
-          "selector": "ol"
+          "kind": "op-emitted",
+          "event": "wo-command"
         },
         "pre": "",
         "woTab": "home",
         "xfail": false,
-        "note": "loop34-3 react-port: home-tab Numbering button (#btn-ordered-list, word-ribbon.ts:324) inserts ordered list. Legacy context-menu SetNumberingValue dialog input replaced with direct ribbon button; same end result"
+        "note": "loop34-3 react-port: home-tab Numbering button (#btn-ordered-list, word-ribbon.ts:324) dispatches wo-command. Legacy context-menu SetNumberingValue dialog input replaced with direct ribbon button; same end result"
       },
       "assertion": {
         "kind": "dialog-input",
@@ -160,15 +160,15 @@
       "pre": "ctx-menu",
       "selector": "[data-ctx=\"ParagraphSettings\"]",
       "contract": {
-        "selector": "#btn-paragraph-settings",
+        "selector": "#btn-hyphenation",
         "assertion": {
-          "kind": "op-emitted",
-          "event": "wo-command"
+          "kind": "dom-mutation",
+          "selector": "[data-wo-right-panel=\"paragraph\"]"
         },
         "pre": "",
-        "woTab": "home",
+        "woTab": "layout",
         "xfail": false,
-        "note": "loop34-3 react-port: home-tab Paragraph Settings button (#btn-paragraph-settings) dispatches wo-command. Legacy context-menu ParagraphSettings dialog input replaced with direct ribbon button; panel-based surface in React"
+        "note": "loop34-3 react-port: layout-tab Hyphenation button (#btn-hyphenation, word-ribbon.ts:914) opens Paragraph right panel. Legacy context-menu ParagraphSettings dialog input replaced with panel-based surface"
       },
       "assertion": {
         "kind": "dialog-input",
