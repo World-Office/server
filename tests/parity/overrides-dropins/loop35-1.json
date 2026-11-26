@@ -1,0 +1,59 @@
+{
+  "$comment": "WO035-1 — promote 6 retargeted cls-dialog rows to the React canvas editor: page-setup margins/size/custom-size (Layout Page Setup buttons -> world-office:page-layout), columns (Layout Columns -> world-office:columns), watermark (Layout Watermark -> image right rail), bookmark (References Captions Bookmark -> crossreference right rail). Legacy dialog-input specs in di-page.json/di-ref-review.json targeted the retired vanilla bundle (#ps-mt/#columns-count/#wm-text/#bookmark-name DOM); the React editor has no dialogs for these — the ported surfaces are the ribbon buttons' world-office:* engine events and the right-panel rails they open.",
+  "entries": {
+    "dialoginput.page-setup-margins": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "note": "WO035-1 react-port: legacy Page-setup-dialog margins branch (#ps-mt/#ps-mr + Apply -> .page-setup twips marker) has no dialog in the React editor; the Layout > Page Setup > Margins button (#btn-page-margins, command pageMargins) dispatches world-office:page-layout (word-commands.ts case pageMargins: detail.margins from documentStore) which Viewport applies as margin CSS — the ported observable for the margins branch.",
+      "contract": {
+        "selector": "#btn-page-margins",
+        "assertion": { "kind": "op-emitted", "event": "world-office:page-layout" }
+      }
+    },
+    "dialoginput.page-setup-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "note": "WO035-1 react-port: legacy Page-setup-dialog size branch (#ps-size Legal + #ps-mb -> .page-setup twips marker) maps to the Layout > Page Setup > Size button (#btn-page-size, command pageSize) which dispatches world-office:page-layout (word-commands.ts case pageSize: detail.pageSize) — Viewport re-renders the page at the new size; the dialog itself does not exist in the React editor.",
+      "contract": {
+        "selector": "#btn-page-size",
+        "assertion": { "kind": "op-emitted", "event": "world-office:page-layout" }
+      }
+    },
+    "dialoginput.page-setup-custom-size": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "note": "WO035-1 react-port: the legacy ps-size==='custom' branch (rememberCustomSize + dialog w/h -> 11906x16838 marker) has NO dedicated control in the React editor — closest ported surface is the same Size button (#btn-page-size -> pageSize -> world-office:page-layout, store pageSize A4/A3/Letter/Legal); divergence noted, the custom WxH input is not implemented in the canvas editor.",
+      "contract": {
+        "selector": "#btn-page-size",
+        "assertion": { "kind": "op-emitted", "event": "world-office:page-layout" }
+      }
+    },
+    "dialoginput.columns-count-gap": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "note": "WO035-1 react-port: legacy Columns dialog (#columns-count=4/#columns-gap=80 -> <section data-columns data-column-gap>) maps to the Layout > Page Setup > Columns button (#btn-columns, command columns) which dispatches world-office:columns {count:2} (word-commands.ts case columns, clamped 1-3) — Viewport applies columnCount/columnGap CSS; the count+gap dialog does not exist in the React editor.",
+      "contract": {
+        "selector": "#btn-columns",
+        "assertion": { "kind": "op-emitted", "event": "world-office:columns" }
+      }
+    },
+    "dialoginput.watermark-custom-text": {
+      "effektClass": "dialog",
+      "woTab": "layout",
+      "note": "WO035-1 react-port: legacy Watermark dialog (wm-mode=custom/#wm-text/#wm-color -> div.watermark marker) maps to the Layout > Page Background > Watermark button (#btn-watermark, command watermark) which opens the page-background rail — toggleRightPanel('image') renders [data-wo-right-panel=\"image\"] with the ImagePanel (word-commands.ts case watermark, grouped with pageColor/documentColors); the custom-text dialog does not exist in the React editor.",
+      "contract": {
+        "selector": "#btn-watermark",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"image\"]" }
+      }
+    },
+    "dialoginput.bookmark": {
+      "effektClass": "dialog",
+      "woTab": "references",
+      "note": "WO035-1 react-port: legacy Bookmark dialog (#bookmark-name + Insert -> span at the caret) maps to the References > Captions > Bookmark button (#btn-insert-bookmark, command insertBookmark) which opens the cross-reference rail — toggleRightPanel('crossreference') renders [data-wo-right-panel=\"crossreference\"] with the CrossReferencePanel (word-commands.ts reference-command group); the name-input dialog does not exist in the React editor.",
+      "contract": {
+        "selector": "#btn-insert-bookmark",
+        "assertion": { "kind": "dom-mutation", "selector": "[data-wo-right-panel=\"crossreference\"]" }
+      }
+    }
+  }
+}
