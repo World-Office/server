@@ -1,0 +1,130 @@
+{
+  "$comment": "WO035-3: promote 6 retargeted rows (cls dialog) — react-port contract specs for dialog-level entries (1 dialog-input + 5 dialog-action). cls = context-level + legacy DOM surface (dialog-input + dialog-action assertions embedded in di-ref-review.json+ dlg-file-review.json). All 6 entries carry legacy assertions for the retired vanilla bundle alongside React canvas editor contract blocks: FindReplacePanel dom-mutation (find-replace-all), wo-command op-emitted (text-from-file cancel/insert), plugins right-panel dom-mutation (plugins-close), File-menu dom-mutation via #btn-protect-document (protect-apply) and [data-tab=file] (downloadas-pdf).",
+  "entries": {
+    "dialoginput.find-replace-all": {
+      "effektClass": "dialog",
+      "woTab": "home",
+      "selector": "#btn-find",
+      "contract": {
+        "selector": "#btn-find",
+        "assertion": {"kind": "dom-mutation", "selector": ".de-findreplace-panel"},
+        "pre": "",
+        "woTab": "home",
+        "xfail": false,
+        "note": "loop35-3 react-port: home-tab Find button opens the FindReplacePanel (de-findreplace-panel). Legacy dialog-input spec in word-parity-contracts.json uses #find-query/#find-replace/#btn-find-replace-all DOM which does not exist in the React canvas editor."
+      },
+      "assertion": {
+        "kind": "dialog-input",
+        "set": [
+          {"selector": "#find-query", "value": "Willkommen"},
+          {"selector": "#find-replace", "value": "Ersetzt"}
+        ],
+        "click": "#btn-find-replace-all",
+        "expect": {
+          "selector": "#editor h1",
+          "contains": "Ersetzt",
+          "lacks": "Willkommen"
+        }
+      },
+      "note": "PROMOTED 2026-11-06: dom-mutation expect with Playwright :has-text() observes the replaced fixture h1 ('Willkommen' -> 'Ersetzt', doReplaceAll bulk edit); 'lorem' had 0 matches in the fixture so the replace no-oped — the query must be a real fixture word"
+    },
+    "dialogdepth-fr.textfromfile-cancel": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "contract": {
+        "selector": "#btn-text-from-file",
+        "assertion": {"kind": "op-emitted", "event": "wo-command"},
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop35-3 react-port: insert-tab Text from File button dispatches textFromFile command (word-commands.ts:822) which creates a hidden file input. Legacy dialog-action spec uses #textfromfile-dialog/#btn-textfromfile-cancel DOM."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-textfromfile-cancel",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "depth (ledger file.file cancel action): #textfromfile-dialog opened by #btn-textfile (proven by insert-b btn-textfile row) is closed by #btn-textfromfile-cancel (closeDlg, editor.js:12918)"
+    },
+    "dialogdepth-fr.textfromfile-insert": {
+      "effektClass": "dialog",
+      "woTab": "insert",
+      "selector": "#btn-textfile",
+      "contract": {
+        "selector": "#btn-text-from-file",
+        "assertion": {"kind": "op-emitted", "event": "wo-command"},
+        "pre": "",
+        "woTab": "insert",
+        "xfail": false,
+        "note": "loop35-3 react-port: insert-tab Text from File button dispatches textFromFile command. Legacy dialog-action spec uses #textfromfile-dialog/#btn-textfromfile-insert DOM; #btn-textfromfile-insert arms only after a file lands in #textfromfile-input."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "files": [
+          {"selector": "#textfromfile-input", "fixture": "1x1.gif"}
+        ],
+        "button": "#btn-textfromfile-insert",
+        "dialog": "#textfromfile-dialog"
+      },
+      "note": "#btn-textfromfile-insert arms only after a file lands in #textfromfile-input — assertion.files setInputFiles fires the change handler (no type check on the input)"
+    },
+    "dialogdepth-fr.plugins-close": {
+      "effektClass": "dialog",
+      "woTab": "plugins",
+      "selector": "[data-cmd=\"managePlugins\"]",
+      "contract": {
+        "selector": "#btn-plugin-manager",
+        "assertion": {"kind": "dom-mutation", "selector": "[data-wo-right-panel=\"plugins\"]"},
+        "pre": "",
+        "woTab": "plugins",
+        "xfail": false,
+        "note": "loop35-3 react-port: plugins-tab Plugin Manager button opens the plugins right panel (toggleRightPanel('plugins') in word-commands.ts:957). Legacy dialog-action spec uses #plugins-dialog/#btn-plugins-close DOM."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-plugins-close",
+        "dialog": "#plugins-dialog"
+      },
+      "note": "depth (ledger file.plugins): #plugins-dialog opened via Plugins > Manage plugins (opener proven by plugins.json plugins-dialog row) is closed by #btn-plugins-close (index.html:2930; same shape as L2I-04 dialogdepth.plugins-close)"
+    },
+    "dialogdepth-fr.protect-apply": {
+      "effektClass": "dialog",
+      "woTab": "protection",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "contract": {
+        "selector": "#btn-protect-document",
+        "assertion": {"kind": "dom-mutation", "selector": ".de-file-menu-panel"},
+        "pre": "",
+        "woTab": "protection",
+        "xfail": false,
+        "note": "loop35-3 react-port: protection-tab Protect Document button (#btn-protect-document) opens the File menu with protect panel (word-commands.ts:847 sets fileMenuOpen+activeFileMenuPanel='protect'). Legacy dialog-action spec uses #protect-dialog/#btn-protect-apply DOM; the React panel has no Apply button (settings auto-apply)."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "#btn-protect-apply",
+        "dialog": "#protect-dialog"
+      },
+      "note": "PROMOTED from xfail 2026-11-06: passes driven — confirmProtectDialog now closes the dialog on apply (earlier 404-error-path premise no longer holds in the parity environment); protection-tab opener proven by L2I-04 dialogdepth.protect-cancel"
+    },
+    "dialogdepth-fr.downloadas-pdf": {
+      "effektClass": "dialog",
+      "pre": "backstage:export",
+      "selector": "#btn-export",
+      "contract": {
+        "selector": "[data-tab=\"file\"]",
+        "assertion": {"kind": "dom-mutation", "selector": ".de-file-menu-panel"},
+        "pre": "",
+        "woTab": "home",
+        "xfail": false,
+        "note": "loop35-3 react-port: File tab button [data-tab=\"file\"] opens the File menu (de-file-menu-panel). Legacy dialog-action spec uses [data-export=pdf] inside #export-sub; the React export flows via the file menu. Map: backstage:export -> saveas panel."
+      },
+      "assertion": {
+        "kind": "dialog-action",
+        "button": "[data-export=\"pdf\"]",
+        "dialog": "#export-sub"
+      },
+      "note": "depth (ledger file.download-as, opener proven by stragglers file.download-as row): clicking the [data-export=pdf] format item runs closeAllMenus (editor.js:10744-10748) which hides the #export-sub format menu before doExport fires — menu-close is the assertable effect; the download itself (blob + a.click, editor.js:741-745) is not observable headless"
+    }
+  }
+}
