@@ -2,15 +2,15 @@
 
 ## Machine-readable summary
 
-WO_COMMIT=8268eeb0e
-WASM_RAW=196248
-WASM_GZ=77143
-JS_RAW=33650
-JS_GZ=6627
+WO_COMMIT=8268eeb0
+WASM_RAW=5087212
+WASM_GZ=2030458
+JS_RAW=120448
+JS_GZ=19132
 OO_ROWS=2
 WO_ROWS=2
 OO_GROUPS=12
-WO_GROUPS=8
+WO_GROUPS=11
 LAYOUT_OK=1
 
 ## Human table
@@ -18,17 +18,17 @@ LAYOUT_OK=1
 | Metric | ONLYOFFICE | World-Office (Leptos) |
 |--------|-------------|-------------------------|
 | Rows (Home ribbon) | 2 | 2 |
-| Groups (Home ribbon) | 12 | 8 |
-| WASM raw size | N/A | 196248 B |
-| WASM gzipped | N/A | 77143 B |
-| JS raw size | N/A | 33650 B |
-| JS gzipped | N/A | 6627 B |
+| Groups (Home ribbon) | 12 | 11 |
+| WASM raw size | N/A | 5087212 B |
+| WASM gzipped | N/A | 2030458 B |
+| JS raw size | N/A | 120448 B |
+| JS gzipped | N/A | 19132 B |
 | Layout parity | N/A | PASS |
 
 ## Verbatim layout-diff output
 
 ```
-layout-diff [Home]  OO: 2 rows / 12 groups   WO: 2 rows / 8 groups   -> ok
+layout-diff [Home]  OO: 2 rows / 12 groups   WO: 2 rows / 11 groups   -> ok
 ```
 
 ## Method

@@ -1,36 +1,58 @@
-//! RibbonGroup: renders a group with .elset > .row-top/.row-bottom + .group-label
-use crate::ribbon::control::render_control;
-use crate::types::{Group, Size};
+//! RibbonGroup: `.group > .elset > .row-top/.row-bottom + .group-label`, filtered by `when`.
+use crate::ribbon::control::{render_control, RibbonState};
+use crate::types::{Group, Kind};
 use leptos::prelude::*;
 
+/// Controls ONLYOFFICE places on the ribbon's top row (Home tab). Verified against the golden
+/// census; layout-diff.py fails if any of these renders on the bottom row.
+const TOP_ROW_COMMANDS: &[&str] = &[
+    "bulletList",
+    "orderedList",
+    "multilevelList",
+    "changeCase",
+    "indent",
+    "outdent",
+    "increaseFontSize",
+    "decreaseFontSize",
+    "lineSpacing",
+    "setTextDirection",
+    "replace",
+];
+
 #[component]
-pub fn RibbonGroup(group: Group, pressed: RwSignal<&'static str>) -> impl IntoView {
-    // Partition controls into small and large
-    let (small, large): (Vec<_>, Vec<_>) = group.controls.iter().cloned().partition(|c| c.size == Size::Small);
-    let large = RwSignal::new(large);
-    let small = RwSignal::new(small);
-    
+pub fn RibbonGroup(group: Group, st: RibbonState) -> impl IntoView {
+    // Two rows like OO. The spec has no size/placement field, so OO's convention is explicit data
+    // here: pickers, menus and steppers go on TOP, plain toggle/action buttons BELOW. The set
+    // below is read off the ONLYOFFICE golden (census-oo-deep.json, Home top row) and is exactly
+    // what layout-diff.py's "first content row" check enforces.
+    let (top, bottom): (Vec<_>, Vec<_>) = group
+        .controls
+        .into_iter()
+        .filter(|c| c.when.is_none_or(|w| w.eval(&st.ctx.get())))
+        .partition(|c| match &c.kind {
+            Kind::Button { command, .. } => TOP_ROW_COMMANDS.contains(command),
+            Kind::Separator => false,
+            _ => true,
+        });
+    let top = RwSignal::new(top);
+    let bottom = RwSignal::new(bottom);
+    let label = group.label;
+    let gid = group.id;
     view! {
-        <div class="group" data-group=group.id>
+        <div class="group" data-group=gid>
             <div class="elset">
-                <Show when=move || !large.get().is_empty()>
+                <Show when=move || !top.with(|v| v.is_empty())>
                     <div class="row row-top">
-                        <For each=move || large.get() key=|c| c.id.to_string() children=move |c| {
-                            let p = pressed;
-                            view! { {render_control(c, p)} }
-                        } />
+                        <For each=move || top.get() key=|c| c.id.to_string() children=move |c| view! { {render_control(c, st)} } />
                     </div>
                 </Show>
-                <Show when=move || !small.get().is_empty()>
+                <Show when=move || !bottom.with(|v| v.is_empty())>
                     <div class="row row-bottom">
-                        <For each=move || small.get() key=|c| c.id.to_string() children=move |c| {
-                            let p = pressed;
-                            view! { {render_control(c, p)} }
-                        } />
+                        <For each=move || bottom.get() key=|c| c.id.to_string() children=move |c| view! { {render_control(c, st)} } />
                     </div>
                 </Show>
             </div>
-            <span class="group-label">{group.label}</span>
+            <span class="group-label">{label}</span>
         </div>
     }
 }

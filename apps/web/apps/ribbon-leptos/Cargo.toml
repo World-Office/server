@@ -3,7 +3,7 @@ name = "wo-ribbon-leptos"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "PoC: ONLYOFFICE-style ribbon UI in Rust compiled to wasm (Leptos 0.8 + trunk). See ADR-F1."
+description = "World-Office ribbon UI in Rust compiled to wasm (Leptos 0.8 + trunk), linked directly against the engine. See ADR-F1."
 
 # Standalone crate inside the server/ workspace tree (same trick as desktop/tauri-poc/src-tauri).
 # NOT a workspace member: own Cargo.lock, own wasm-bindgen version (trunk auto-matches its CLI to it),
@@ -18,14 +18,25 @@ crate-type = ["cdylib", "rlib"]
 # Leptos 0.8 (csr = client-side rendering). 0.9 is still an RC — do not upgrade for a measurement.
 leptos = { version = "0.8", features = ["csr"] }
 wasm-bindgen = "0.2"
+js-sys = "0.3"
+serde_json = "1"
 console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = [
   "CompositionEvent", "InputEvent", "KeyboardEvent", "Event", "EventTarget",
   "Element", "HtmlElement", "DomRect", "Window", "Document",
 ] }
 
+# The engine, linked straight into the UI crate: ONE wasm module, no JS glue, no dynamic import.
+# Calls like wo_renderer_wasm::apply_formatting(..) are ordinary Rust function calls.
+# Keep default features on — the engine's code requires its console_error_panic_hook feature.
+wo-renderer-wasm = { path = "../../../../core/crates/wo-renderer-wasm" }
+
+# Engine-first profile. The engine crate is linked in, so its needs dominate: `opt-level = "z"`
+# (right for the 196 KB ribbon-only PoC) blows the layout engine's stack frames past the
+# browser's 1 MB wasm stack — the tab crashes on the first apply_formatting. These are the
+# workspace's wasm release settings (root Cargo.toml), under which the engine has always shipped.
 [profile.release]
-opt-level = "z"     # size: ribbon chrome is cold UI, not a hot loop
-lto = true
+opt-level = 3
+lto = "thin"
 codegen-units = 1
-panic = "abort"
+# panic = "abort" is NOT set: the engine relies on unwinding (catch_unwind in its bindings).

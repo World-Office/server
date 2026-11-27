@@ -1,288 +1,3238 @@
-//! Tab list + Home tab spec. Port of the Home tab from
-//! `packages/editor-common/src/ribbon/specs/word-ribbon.ts`.
+//! GENERATED FILE — do not edit. Source of truth: packages/editor-common/src/ribbon/specs/word-ribbon.ts
+//! Regenerate: `node tools/gen-ribbon-spec.mjs` (CI: `--check`). 11 tabs, 52 groups, 196 controls.
 use crate::types::*;
-use ControlKind::*;
-use Size::*;
+use Cond::*;
 
 pub fn tabs() -> Vec<Tab> {
-    let empty = |id: &'static str, label: &'static str| Tab { id, label, groups: vec![] };
     vec![
         Tab {
             id: "home",
             label: "Home",
+            when: None,
             groups: vec![
-                // <ts group id> clipboard
                 Group {
                     id: "clipboard",
                     label: "Clipboard",
+                    when: None,
                     controls: vec![
-                        Control::new("cut", Button, Small, "Scissors", "Cut", "cut", Some("Ctrl+X")),
-                        Control::new("copy", Button, Small, "Copy", "Copy", "copy", Some("Ctrl+C")),
-                        Control::new("paste", Button, Small, "ClipboardPaste", "Paste", "paste", Some("Ctrl+V")),
-                        Control::new("undo", Button, Small, "Undo2", "Undo", "undo", Some("Ctrl+Z")),
-                        Control::new("redo", Button, Small, "Redo2", "Redo", "redo", Some("Ctrl+Y")),
-                        Control::new("copy-style", Button, Small, "CopyText", "Copy style", "copyStyle", Some("Ctrl+Alt+C")),
+                        Control {
+                            id: "cut",
+                            label: Some("Cut"),
+                            tooltip: Some("Cut"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "cut",
+                                icon: "Scissors",
+                                shortcut: Some("Ctrl+X"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "copy",
+                            label: Some("Copy"),
+                            tooltip: Some("Copy"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copy",
+                                icon: "Copy",
+                                shortcut: Some("Ctrl+C"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "paste",
+                            label: Some("Paste"),
+                            tooltip: Some("Paste"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "paste",
+                                icon: "ClipboardPaste",
+                                shortcut: Some("Ctrl+V"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "undo",
+                            label: Some("Undo"),
+                            tooltip: Some("Undo"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "undo",
+                                icon: "Undo2",
+                                shortcut: Some("Ctrl+Z"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "redo",
+                            label: Some("Redo"),
+                            tooltip: Some("Redo"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "redo",
+                                icon: "Redo2",
+                                shortcut: Some("Ctrl+Y"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "copy-style",
+                            label: Some("Copy style"),
+                            tooltip: Some("Copy style"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copyStyle",
+                                icon: "CopyText",
+                                shortcut: Some("Ctrl+Alt+C"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
                     ],
                 },
-                // <ts group id> font
                 Group {
                     id: "font",
                     label: "Font",
+                    when: None,
                     controls: vec![
-                        Control::new("increase-font-size", Button, Large, "Type", "Increment font size", "increaseFontSize", Some("Ctrl+]")),
-                        Control::new("decrease-font-size", Button, Large, "Type", "Decrement font size", "decreaseFontSize", Some("Ctrl+[")),
-                        Control::new("change-case", Button, Large, "Edit3", "Change case", "changeCase", None),
-                        Control::new("bold", Button, Small, "Bold", "Bold", "bold", Some("Ctrl+B")).toggled(),
-                        Control::new("italic", Button, Small, "Italic", "Italic", "italic", Some("Ctrl+I")).toggled(),
-                        Control::new("underline", Button, Small, "Underline", "Underline", "underline", Some("Ctrl+U")).toggled(),
-                        Control::new("strikethrough", Button, Small, "Strikethrough", "Strikethrough", "strike", Some("Ctrl+5")).toggled(),
-                        Control::new("superscript", Button, Small, "Superscript", "Superscript", "superscript", Some("Ctrl+, ")).toggled(),
-                        Control::new("subscript", Button, Small, "Subscript", "Subscript", "subscript", Some("Ctrl+.")).toggled(),
-                        Control::new("font-family", Select, Large, "", "Font", "fontFamily", None),
-                        Control::new("font-size", Select, Large, "", "Font size", "fontSize", None),
-                        Control::new("text-color", ColorPicker, Small, "", "Font color", "textColor", None),
-                        Control::new("highlight-color", ColorPicker, Small, "", "Highlight color", "highlight", None),
-                        Control::new("clear-formatting", Button, Small, "RemoveFormatting", "Clear style", "clearFormatting", None),
+                        Control {
+                            id: "increase-font-size",
+                            label: Some("Increment font size"),
+                            tooltip: Some("Increment font size"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "increaseFontSize",
+                                icon: "Type",
+                                shortcut: Some("Ctrl+]"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "decrease-font-size",
+                            label: Some("Decrement font size"),
+                            tooltip: Some("Decrement font size"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "decreaseFontSize",
+                                icon: "Type",
+                                shortcut: Some("Ctrl+["),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "change-case",
+                            label: Some("Change case"),
+                            tooltip: Some("Change case"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "changeCase",
+                                icon: "Edit3",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "bold",
+                            label: Some("Bold"),
+                            tooltip: Some("Bold"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "bold",
+                                icon: "Bold",
+                                shortcut: Some("Ctrl+B"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "italic",
+                            label: Some("Italic"),
+                            tooltip: Some("Italic"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "italic",
+                                icon: "Italic",
+                                shortcut: Some("Ctrl+I"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "underline",
+                            label: Some("Underline"),
+                            tooltip: Some("Underline"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "underline",
+                                icon: "Underline",
+                                shortcut: Some("Ctrl+U"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "strikethrough",
+                            label: Some("Strikethrough"),
+                            tooltip: Some("Strikethrough"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "strike",
+                                icon: "Strikethrough",
+                                shortcut: Some("Ctrl+5"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "superscript",
+                            label: Some("Superscript"),
+                            tooltip: Some("Superscript"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "superscript",
+                                icon: "Superscript",
+                                shortcut: Some("Ctrl+,"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "subscript",
+                            label: Some("Subscript"),
+                            tooltip: Some("Subscript"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "subscript",
+                                icon: "Subscript",
+                                shortcut: Some("Ctrl+."),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "font-family",
+                            label: Some("Font"),
+                            tooltip: Some("Font"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "",
+                                        label: "Font",
+                                    },
+                                    SelectOption {
+                                        value: "Aptos",
+                                        label: "Aptos",
+                                    },
+                                    SelectOption {
+                                        value: "Calibri",
+                                        label: "Calibri",
+                                    },
+                                    SelectOption {
+                                        value: "Arial",
+                                        label: "Arial",
+                                    },
+                                    SelectOption {
+                                        value: "Times New Roman",
+                                        label: "Times New Roman",
+                                    },
+                                    SelectOption {
+                                        value: "Courier New",
+                                        label: "Courier New",
+                                    },
+                                    SelectOption {
+                                        value: "Georgia",
+                                        label: "Georgia",
+                                    },
+                                    SelectOption {
+                                        value: "Verdana",
+                                        label: "Verdana",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("font-family"),
+                            },
+                        },
+                        Control {
+                            id: "font-size",
+                            label: Some("Font size"),
+                            tooltip: Some("Font size"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "",
+                                        label: "Size",
+                                    },
+                                    SelectOption {
+                                        value: "8pt",
+                                        label: "8",
+                                    },
+                                    SelectOption {
+                                        value: "9pt",
+                                        label: "9",
+                                    },
+                                    SelectOption {
+                                        value: "10pt",
+                                        label: "10",
+                                    },
+                                    SelectOption {
+                                        value: "11pt",
+                                        label: "11",
+                                    },
+                                    SelectOption {
+                                        value: "12pt",
+                                        label: "12",
+                                    },
+                                    SelectOption {
+                                        value: "14pt",
+                                        label: "14",
+                                    },
+                                    SelectOption {
+                                        value: "16pt",
+                                        label: "16",
+                                    },
+                                    SelectOption {
+                                        value: "18pt",
+                                        label: "18",
+                                    },
+                                    SelectOption {
+                                        value: "20pt",
+                                        label: "20",
+                                    },
+                                    SelectOption {
+                                        value: "24pt",
+                                        label: "24",
+                                    },
+                                    SelectOption {
+                                        value: "28pt",
+                                        label: "28",
+                                    },
+                                    SelectOption {
+                                        value: "36pt",
+                                        label: "36",
+                                    },
+                                    SelectOption {
+                                        value: "48pt",
+                                        label: "48",
+                                    },
+                                    SelectOption {
+                                        value: "72pt",
+                                        label: "72",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("font-size"),
+                            },
+                        },
+                        Control {
+                            id: "text-color",
+                            label: Some("Font color"),
+                            tooltip: Some("Font color"),
+                            when: None,
+                            kind: Kind::ColorPicker {
+                                color: "#000000",
+                                command: "text-color",
+                            },
+                        },
+                        Control {
+                            id: "highlight-color",
+                            label: Some("Highlight color"),
+                            tooltip: Some("Highlight color"),
+                            when: None,
+                            kind: Kind::ColorPicker {
+                                color: "#ffff00",
+                                command: "highlight-color",
+                            },
+                        },
+                        Control {
+                            id: "clear-formatting",
+                            label: Some("Clear style"),
+                            tooltip: Some("Clear style"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "clearFormatting",
+                                icon: "RemoveFormatting",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
                     ],
                 },
-                // <ts group id> paragraph
                 Group {
                     id: "paragraph",
                     label: "Paragraph",
+                    when: None,
                     controls: vec![
-                        Control::new("bullet-list", Button, Large, "List", "Bullets", "bulletList", None).toggled(),
-                        Control::new("ordered-list", Button, Large, "ListOrdered", "Numbering", "orderedList", None).toggled(),
-                        Control::new("task-list", Button, Small, "ListChecks", "Tasks", "taskList", None).toggled(),
-                        Control::new("multilevel-list", Button, Large, "ListOrdered", "Multilevel list", "multilevelList", None),
-                        Control::new("outdent", Button, Large, "IndentDecrease", "Decrease indent", "outdent", Some("Ctrl+Shift+M")),
-                        Control::new("indent", Button, Large, "IndentIncrease", "Increase indent", "indent", Some("Ctrl+M")),
-                        Control::new("line-spacing", Select, Large, "", "Paragraph line spacing", "lineSpacing", None),
-                        Control::new("text-direction", Select, Large, "", "Text direction", "setTextDirection", None),
-                        Control::new("align-left", Button, Small, "AlignLeft", "Align left", "alignLeft", Some("Ctrl+L")).toggled(),
-                        Control::new("align-center", Button, Small, "AlignCenter", "Align center", "alignCenter", Some("Ctrl+E")).toggled(),
-                        Control::new("align-right", Button, Small, "AlignRight", "Align right", "alignRight", Some("Ctrl+R")).toggled(),
-                        Control::new("align-justify", Button, Small, "AlignJustify", "Justified", "alignJustify", Some("Ctrl+J")).toggled(),
-                        Control::new("nonprinting", Button, Small, "Eye", "Nonprinting characters", "toggleNonprinting", Some("Ctrl+Shift+8")),
-                        Control::new("shading", Button, Small, "PaintBucket", "Shading", "shading", None),
-                        Control::new("borders", Button, Small, "Square", "Borders", "borders", None),
+                        Control {
+                            id: "bullet-list",
+                            label: Some("Bullets"),
+                            tooltip: Some("Bullets"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "bulletList",
+                                icon: "List",
+                                shortcut: None,
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "ordered-list",
+                            label: Some("Numbering"),
+                            tooltip: Some("Numbering"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "orderedList",
+                                icon: "ListOrdered",
+                                shortcut: None,
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "task-list",
+                            label: Some("Tasks"),
+                            tooltip: Some("Tasks"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "taskList",
+                                icon: "ListChecks",
+                                shortcut: None,
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "multilevel-list",
+                            label: Some("Multilevel list"),
+                            tooltip: Some("Multilevel list"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "multilevelList",
+                                icon: "ListOrdered",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "outdent",
+                            label: Some("Decrease indent"),
+                            tooltip: Some("Decrease indent"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "outdent",
+                                icon: "IndentDecrease",
+                                shortcut: Some("Ctrl+Shift+M"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "indent",
+                            label: Some("Increase indent"),
+                            tooltip: Some("Increase indent"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "indent",
+                                icon: "IndentIncrease",
+                                shortcut: Some("Ctrl+M"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "line-spacing",
+                            label: Some("Paragraph line spacing"),
+                            tooltip: Some("Paragraph line spacing"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "1",
+                                        label: "1.0",
+                                    },
+                                    SelectOption {
+                                        value: "1.15",
+                                        label: "1.15",
+                                    },
+                                    SelectOption {
+                                        value: "1.5",
+                                        label: "1.5",
+                                    },
+                                    SelectOption {
+                                        value: "2",
+                                        label: "2.0",
+                                    },
+                                    SelectOption {
+                                        value: "2.5",
+                                        label: "2.5",
+                                    },
+                                    SelectOption {
+                                        value: "3",
+                                        label: "3.0",
+                                    },
+                                ],
+                                value: "1.15",
+                                command: Some("line-spacing"),
+                            },
+                        },
+                        Control {
+                            id: "text-direction",
+                            label: Some("Text direction"),
+                            tooltip: Some("Text direction"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "",
+                                        label: "Text direction",
+                                    },
+                                    SelectOption {
+                                        value: "ltr",
+                                        label: "Left-to-right",
+                                    },
+                                    SelectOption {
+                                        value: "rtl",
+                                        label: "Right-to-left",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("text-direction"),
+                            },
+                        },
+                        Control {
+                            id: "align-left",
+                            label: Some("Align left"),
+                            tooltip: Some("Align left"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "alignLeft",
+                                icon: "AlignLeft",
+                                shortcut: Some("Ctrl+L"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "align-center",
+                            label: Some("Align center"),
+                            tooltip: Some("Align center"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "alignCenter",
+                                icon: "AlignCenter",
+                                shortcut: Some("Ctrl+E"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "align-right",
+                            label: Some("Align right"),
+                            tooltip: Some("Align right"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "alignRight",
+                                icon: "AlignRight",
+                                shortcut: Some("Ctrl+R"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "align-justify",
+                            label: Some("Justified"),
+                            tooltip: Some("Justified"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "alignJustify",
+                                icon: "AlignJustify",
+                                shortcut: Some("Ctrl+J"),
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "nonprinting",
+                            label: Some("Nonprinting characters"),
+                            tooltip: Some("Nonprinting characters"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleNonprinting",
+                                icon: "Eye",
+                                shortcut: Some("Ctrl+Shift+8"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "shading",
+                            label: Some("Shading"),
+                            tooltip: Some("Shading"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "shading",
+                                icon: "PaintBucket",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "borders",
+                            label: Some("Borders"),
+                            tooltip: Some("Borders"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "borders",
+                                icon: "Square",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
                     ],
                 },
-                // <ts group id> styles
                 Group {
                     id: "styles",
                     label: "Styles",
+                    when: None,
                     controls: vec![
-                        Control::new("blockquote", Button, Small, "TextQuote", "Quote", "blockquote", None),
-                        Control::new("code-block", Button, Small, "Code2", "Code", "codeBlock", None),
+                        Control {
+                            id: "heading1",
+                            label: Some("H1"),
+                            tooltip: Some("H1"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "heading1",
+                                icon: "Heading1",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "heading2",
+                            label: Some("H2"),
+                            tooltip: Some("H2"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "heading2",
+                                icon: "Heading2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "heading3",
+                            label: Some("H3"),
+                            tooltip: Some("H3"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "heading3",
+                                icon: "Heading3",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "blockquote",
+                            label: Some("Quote"),
+                            tooltip: Some("Quote"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "blockquote",
+                                icon: "TextQuote",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "code-block",
+                            label: Some("Code"),
+                            tooltip: Some("Code"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "codeBlock",
+                                icon: "Code2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
                     ],
                 },
-                // <ts group id> editing
                 Group {
                     id: "editing",
                     label: "Editing",
+                    when: None,
                     controls: vec![
-                        Control::new("find", Button, Small, "Search", "Find", "find", Some("Ctrl+F")),
-                        Control::new("replace", Button, Large, "Replace", "Replace", "replace", Some("Ctrl+H")),
-                        Control::new("select-all", Button, Small, "MousePointer", "Select all", "selectAll", Some("Ctrl+A")),
+                        Control {
+                            id: "find",
+                            label: Some("Find"),
+                            tooltip: Some("Find"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "find",
+                                icon: "Search",
+                                shortcut: Some("Ctrl+F"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "replace",
+                            label: Some("Replace"),
+                            tooltip: Some("Replace"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "replace",
+                                icon: "Replace",
+                                shortcut: Some("Ctrl+H"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "select-all",
+                            label: Some("Select all"),
+                            tooltip: Some("Select all"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "selectAll",
+                                icon: "MousePointer",
+                                shortcut: Some("Ctrl+A"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "language",
+                    label: "Language",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "word-count",
+                            label: Some("Word count"),
+                            tooltip: Some("Word count"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "wordCount",
+                                icon: "FileText",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "set-document-language",
+                            label: Some("English – United States"),
+                            tooltip: Some("English – United States"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "setDocumentLanguage",
+                                icon: "Globe",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "spell-checking",
+                            label: Some("Spell checking"),
+                            tooltip: Some("Spell checking"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleSpellCheck"),
+                                checked_when: Ctx {
+                                    field: "spellcheckEnabled",
+                                    default: true,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "track-changes",
+                            label: Some("Track changes"),
+                            tooltip: Some("Track changes"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleTrackChanges",
+                                icon: "Eye",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "view",
+                    label: "View",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "multiple-pages",
+                            label: Some("Multiple pages"),
+                            tooltip: Some("Multiple pages"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "multiplePages",
+                                icon: "Layout",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "fit-to-page",
+                            label: Some("Fit to page"),
+                            tooltip: Some("Fit to page"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToPage",
+                                icon: "Maximize",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "fit-to-width",
+                            label: Some("Fit to width"),
+                            tooltip: Some("Fit to width"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToWidth",
+                                icon: "Maximize2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-out",
+                            label: Some("Zoom out"),
+                            tooltip: Some("Zoom out"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomOut",
+                                icon: "ZoomOut",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-in",
+                            label: Some("Zoom in"),
+                            tooltip: Some("Zoom in"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomIn",
+                                icon: "ZoomIn",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
                     ],
                 },
             ],
         },
-        empty("insert", "Insert"),
-        empty("draw", "Draw"),
-        empty("layout", "Layout"),
-        empty("references", "References"),
-        empty("collaboration", "Collaboration"),
-        empty("protection", "Protection"),
-        empty("view", "View"),
-        empty("plugins", "Plugins"),
-        empty("ai", "AI"),
+        Tab {
+            id: "insert",
+            label: "Insert",
+            when: Some(Ctx {
+                field: "isEditMode",
+                default: false,
+            }),
+            groups: vec![
+                Group {
+                    id: "pages",
+                    label: "Pages",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "blank-page",
+                            label: Some("Blank Page"),
+                            tooltip: Some("Blank Page"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "blankPage",
+                                icon: "SquarePlus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "page-break",
+                            label: Some("Breaks"),
+                            tooltip: Some("Breaks"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pageBreak",
+                                icon: "Minus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "table",
+                    label: "Table",
+                    when: None,
+                    controls: vec![Control {
+                        id: "insert-table",
+                        label: Some("Table"),
+                        tooltip: Some("Table"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "insertTable",
+                            icon: "Table2",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "media",
+                    label: "Media",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "insert-image",
+                            label: Some("Image"),
+                            tooltip: Some("Image"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "image",
+                                icon: "Image",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-shape",
+                            label: Some("Shape"),
+                            tooltip: Some("Shape"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertShape",
+                                icon: "Shapes",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-smart-art",
+                            label: Some("SmartArt"),
+                            tooltip: Some("SmartArt"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertSmartArt",
+                                icon: "Layers",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-chart",
+                            label: Some("Chart"),
+                            tooltip: Some("Chart"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertChart",
+                                icon: "BarChart3",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "links",
+                    label: "Links",
+                    when: None,
+                    controls: vec![Control {
+                        id: "insert-link",
+                        label: Some("Link"),
+                        tooltip: Some("Link"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "link",
+                            icon: "Globe",
+                            shortcut: Some("Ctrl+K"),
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "text",
+                    label: "Text",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "horizontal-rule",
+                            label: Some("HR"),
+                            tooltip: Some("HR"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "horizontalRule",
+                                icon: "Minus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-text-box",
+                            label: Some("Text Box"),
+                            tooltip: Some("Text Box"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "textBox",
+                                icon: "TextCursorInput",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-text-art",
+                            label: Some("Text Art"),
+                            tooltip: Some("Text Art"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "textArt",
+                                icon: "Type",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-drop-cap",
+                            label: Some("Drop Cap"),
+                            tooltip: Some("Drop Cap"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "dropCap",
+                                icon: "Text",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "text-from-file",
+                            label: Some("Text from File"),
+                            tooltip: Some("Text from File"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "textFromFile",
+                                icon: "FileText",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "objects",
+                    label: "Objects",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "insert-equation",
+                            label: Some("Equation"),
+                            tooltip: Some("Equation"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "equation",
+                                icon: "Sigma",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-symbol",
+                            label: Some("Symbol"),
+                            tooltip: Some("Symbol"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "symbol",
+                                icon: "Omega",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "content-controls",
+                    label: "Content Controls",
+                    when: None,
+                    controls: vec![Control {
+                        id: "insert-content-control",
+                        label: Some("Content Controls"),
+                        tooltip: Some("Content Controls"),
+                        when: None,
+                        kind: Kind::Dropdown {
+                            icon: Some("CheckSquare"),
+                            items: vec![
+                                DropdownItem {
+                                    id: "cc-rich",
+                                    label: "Rich Text Content Control",
+                                    command: Some("insertContentControl"),
+                                },
+                                DropdownItem {
+                                    id: "cc-plain",
+                                    label: "Plain Text Content Control",
+                                    command: Some("insertPlainTextControl"),
+                                },
+                                DropdownItem {
+                                    id: "cc-checkbox",
+                                    label: "Checkbox Content Control",
+                                    command: Some("insertCheckboxControl"),
+                                },
+                                DropdownItem {
+                                    id: "cc-dropdown",
+                                    label: "Drop-Down List Content Control",
+                                    command: Some("insertDropdownControl"),
+                                },
+                                DropdownItem {
+                                    id: "cc-datepicker",
+                                    label: "Date Picker Content Control",
+                                    command: Some("insertDatePickerControl"),
+                                },
+                            ],
+                        },
+                    }],
+                },
+            ],
+        },
+        Tab {
+            id: "draw",
+            label: "Draw",
+            when: Some(Ctx {
+                field: "isEditMode",
+                default: false,
+            }),
+            groups: vec![
+                Group {
+                    id: "draw-clipboard",
+                    label: "Clipboard",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "draw-cut",
+                            label: Some("Cut"),
+                            tooltip: Some("Cut"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "cut",
+                                icon: "Scissors",
+                                shortcut: Some("Ctrl+X"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-copy",
+                            label: Some("Copy"),
+                            tooltip: Some("Copy"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copy",
+                                icon: "Copy",
+                                shortcut: Some("Ctrl+C"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-paste",
+                            label: Some("Paste"),
+                            tooltip: Some("Paste"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "paste",
+                                icon: "ClipboardPaste",
+                                shortcut: Some("Ctrl+V"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-copy-style",
+                            label: Some("Copy style"),
+                            tooltip: Some("Copy style"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copyStyle",
+                                icon: "Copy",
+                                shortcut: Some("Ctrl+Alt+C"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "draw-tools",
+                    label: "Tools",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "draw-select",
+                            label: Some("Select"),
+                            tooltip: Some("Select"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "drawSelect",
+                                icon: "MousePointer2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-eraser",
+                            label: Some("Eraser"),
+                            tooltip: Some("Eraser"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "drawEraser",
+                                icon: "Eraser",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "draw-info",
+                    label: "Info",
+                    when: None,
+                    controls: vec![Control {
+                        id: "draw-word-count",
+                        label: Some("Word count"),
+                        tooltip: Some("Word count"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "wordCount",
+                            icon: "FileText",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "draw-language",
+                    label: "Language",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "draw-language-select",
+                            label: Some("English – United States"),
+                            tooltip: Some("English – United States"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "en-US",
+                                        label: "English – United States",
+                                    },
+                                    SelectOption {
+                                        value: "en-GB",
+                                        label: "English – United Kingdom",
+                                    },
+                                    SelectOption {
+                                        value: "de-DE",
+                                        label: "German",
+                                    },
+                                    SelectOption {
+                                        value: "fr-FR",
+                                        label: "French",
+                                    },
+                                ],
+                                value: "en-US",
+                                command: Some("draw-language-select"),
+                            },
+                        },
+                        Control {
+                            id: "draw-set-language",
+                            label: Some("Set document language"),
+                            tooltip: Some("Set document language"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "setDocumentLanguage",
+                                icon: "Globe",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-spell-checking",
+                            label: Some("Spell checking"),
+                            tooltip: Some("Spell checking"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleSpellCheck"),
+                                checked_when: Ctx {
+                                    field: "spellcheckEnabled",
+                                    default: true,
+                                },
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "draw-review",
+                    label: "Review",
+                    when: None,
+                    controls: vec![Control {
+                        id: "draw-track-changes",
+                        label: Some("Track changes"),
+                        tooltip: Some("Track changes"),
+                        when: None,
+                        kind: Kind::Checkbox {
+                            command: Some("toggleTrackChanges"),
+                            checked_when: Ctx {
+                                field: "trackChangesEnabled",
+                                default: false,
+                            },
+                        },
+                    }],
+                },
+                Group {
+                    id: "draw-view",
+                    label: "View",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "draw-multiple-pages",
+                            label: Some("Multiple pages"),
+                            tooltip: Some("Multiple pages"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleMultiplePages",
+                                icon: "Layout",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-fit-to-page",
+                            label: Some("Fit to page"),
+                            tooltip: Some("Fit to page"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToPage",
+                                icon: "Maximize",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-fit-to-width",
+                            label: Some("Fit to width"),
+                            tooltip: Some("Fit to width"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToWidth",
+                                icon: "Maximize",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-zoom-out",
+                            label: Some("Zoom out"),
+                            tooltip: Some("Zoom out"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomOut",
+                                icon: "ZoomOut",
+                                shortcut: Some("Ctrl+-"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "draw-zoom-in",
+                            label: Some("Zoom in"),
+                            tooltip: Some("Zoom in"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomIn",
+                                icon: "ZoomIn",
+                                shortcut: Some("Ctrl+Num +"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        Tab {
+            id: "layout",
+            label: "Layout",
+            when: Some(Ctx {
+                field: "isEditMode",
+                default: false,
+            }),
+            groups: vec![
+                Group {
+                    id: "page-setup",
+                    label: "Page Setup",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "page-orientation",
+                            label: Some("Orientation"),
+                            tooltip: Some("Orientation"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pageOrientation",
+                                icon: "File",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "page-size",
+                            label: Some("Size"),
+                            tooltip: Some("Size"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pageSize",
+                                icon: "File",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "page-margins",
+                            label: Some("Margins"),
+                            tooltip: Some("Margins"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pageMargins",
+                                icon: "File",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "columns",
+                            label: Some("Columns"),
+                            tooltip: Some("Columns"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "columns",
+                                icon: "AlignJustify",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "line-numbers",
+                            label: Some("Line Numbers"),
+                            tooltip: Some("Line Numbers"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "lineNumbers",
+                                icon: "ListOrdered",
+                                shortcut: None,
+                                value: None,
+                                toggleable: true,
+                            },
+                        },
+                        Control {
+                            id: "hyphenation",
+                            label: Some("Hyphenation"),
+                            tooltip: Some("Hyphenation"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "hyphenation",
+                                icon: "Minus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "wrapping",
+                            label: Some("Wrapping"),
+                            tooltip: Some("Wrapping"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "wrapping",
+                                icon: "AlignJustify",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "arrange",
+                    label: "Arrange",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "bring-forward",
+                            label: Some("Bring Forward"),
+                            tooltip: Some("Bring Forward"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "bringForward",
+                                icon: "ChevronUp",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "send-backward",
+                            label: Some("Send Backward"),
+                            tooltip: Some("Send Backward"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "sendBackward",
+                                icon: "ChevronDown",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "align",
+                            label: Some("Align"),
+                            tooltip: Some("Align"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "alignObjects",
+                                icon: "AlignCenter",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "group",
+                            label: Some("Group"),
+                            tooltip: Some("Group"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "groupObjects",
+                                icon: "Layers",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "merge-shapes",
+                            label: Some("Merge Shapes"),
+                            tooltip: Some("Merge Shapes"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "mergeShapes",
+                                icon: "Combine",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "page-background",
+                    label: "Page Background",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "watermark",
+                            label: Some("Watermark"),
+                            tooltip: Some("Watermark"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "watermark",
+                                icon: "Image",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "page-color",
+                            label: Some("Page Color"),
+                            tooltip: Some("Page Color"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pageColor",
+                                icon: "StopCircle",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "colors",
+                            label: Some("Colors"),
+                            tooltip: Some("Colors"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "documentColors",
+                                icon: "Palette",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "breaks",
+                    label: "Breaks",
+                    when: None,
+                    controls: vec![Control {
+                        id: "breaks",
+                        label: Some("Breaks"),
+                        tooltip: Some("Breaks"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "openBreaksPanel",
+                            icon: "Remove",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "theme",
+                    label: "Theme",
+                    when: None,
+                    controls: vec![Control {
+                        id: "document-theme",
+                        label: Some("Theme"),
+                        tooltip: Some("Theme"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "openTheme",
+                            icon: "StopCircle",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "header-footer",
+                    label: "Header & Footer",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "edit-header",
+                            label: Some("Header"),
+                            tooltip: Some("Header"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "editHeader",
+                                icon: "AlignJustify",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "edit-footer",
+                            label: Some("Footer"),
+                            tooltip: Some("Footer"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "editFooter",
+                                icon: "AlignJustify",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-page-number",
+                            label: Some("Page Number"),
+                            tooltip: Some("Page Number"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertPageNumber",
+                                icon: "Hash",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-date-time",
+                            label: Some("Date & Time"),
+                            tooltip: Some("Date & Time"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertDateTime",
+                                icon: "CalendarDays",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-field",
+                            label: Some("Field"),
+                            tooltip: Some("Field"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertField",
+                                icon: "Braces",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "close-header-footer",
+                            label: Some("Close"),
+                            tooltip: Some("Close"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "closeHeaderFooter",
+                                icon: "X",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "different-first-page",
+                            label: Some("Different First Page"),
+                            tooltip: Some("Different First Page"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("differentFirstPage"),
+                                checked_when: Ctx {
+                                    field: "differentFirstPage",
+                                    default: false,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "different-odd-even",
+                            label: Some("Different Odd & Even"),
+                            tooltip: Some("Different Odd & Even"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("differentOddEven"),
+                                checked_when: Ctx {
+                                    field: "differentOddEven",
+                                    default: false,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "remove-header",
+                            label: Some("Remove Header"),
+                            tooltip: Some("Remove Header"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "removeHeader",
+                                icon: "Trash2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "remove-footer",
+                            label: Some("Remove Footer"),
+                            tooltip: Some("Remove Footer"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "removeFooter",
+                                icon: "Trash2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        Tab {
+            id: "references",
+            label: "References",
+            when: None,
+            groups: vec![
+                Group {
+                    id: "toc",
+                    label: "Table of Contents",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "insert-toc",
+                            label: Some("Table of Contents"),
+                            tooltip: Some("Table of Contents"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertToc",
+                                icon: "List",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "add-toc-text",
+                            label: Some("Add Text"),
+                            tooltip: Some("Add Text"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "addTocText",
+                                icon: "Type",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "update-toc",
+                            label: Some("Update Table"),
+                            tooltip: Some("Update Table"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "updateToc",
+                                icon: "Replace",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "footnotes",
+                    label: "Footnotes",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "insert-footnote",
+                            label: Some("Footnote"),
+                            tooltip: Some("Footnote"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertFootnote",
+                                icon: "Plus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-endnote",
+                            label: Some("Endnote"),
+                            tooltip: Some("Endnote"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertEndnote",
+                                icon: "Plus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "captions",
+                    label: "Captions",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "insert-bookmark",
+                            label: Some("Bookmark"),
+                            tooltip: Some("Bookmark"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertBookmark",
+                                icon: "MapPin",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-caption",
+                            label: Some("Caption"),
+                            tooltip: Some("Caption"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertCaption",
+                                icon: "MessageSquare",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-cross-reference",
+                            label: Some("Cross-reference"),
+                            tooltip: Some("Cross-reference"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertCrossReference",
+                                icon: "ArrowLeftRight",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-table-of-figures",
+                            label: Some("Table of Figures"),
+                            tooltip: Some("Table of Figures"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertTableOfFigures",
+                                icon: "Table2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "comments",
+                    label: "Comments",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "add-comment",
+                            label: Some("Comment"),
+                            tooltip: Some("Comment"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "addComment",
+                                icon: "TextQuote",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "toggle-comment",
+                            label: Some("Remove"),
+                            tooltip: Some("Remove"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleComment",
+                                icon: "X",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "index",
+                    label: "Index",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "mark-index-entry",
+                            label: Some("Mark Entry"),
+                            tooltip: Some("Mark Entry"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertIndexEntry",
+                                icon: "Plus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "insert-index",
+                            label: Some("Insert Index"),
+                            tooltip: Some("Insert Index"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "insertIndex",
+                                icon: "List",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "update-index",
+                            label: Some("Update Index"),
+                            tooltip: Some("Update Index"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "updateIndex",
+                                icon: "Replace",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        Tab {
+            id: "collaboration",
+            label: "Collaboration",
+            when: None,
+            groups: vec![
+                Group {
+                    id: "tracking",
+                    label: "Tracking",
+                    when: None,
+                    controls: vec![Control {
+                        id: "track-changes",
+                        label: Some("Track Changes"),
+                        tooltip: Some("Track Changes"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "toggleTrackChanges",
+                            icon: "Eye",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "changes",
+                    label: "Changes",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "accept-change",
+                            label: Some("Accept"),
+                            tooltip: Some("Accept"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "acceptChange",
+                                icon: "Check",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "reject-change",
+                            label: Some("Reject"),
+                            tooltip: Some("Reject"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "rejectChange",
+                                icon: "X",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "accept-all",
+                            label: Some("Accept All"),
+                            tooltip: Some("Accept All"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "acceptAllChanges",
+                                icon: "CheckCheck",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "reject-all",
+                            label: Some("Reject All"),
+                            tooltip: Some("Reject All"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "rejectAllChanges",
+                                icon: "XCircle",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "previous-change",
+                            label: Some("Previous"),
+                            tooltip: Some("Previous"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "previousChange",
+                                icon: "ChevronLeft",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "next-change",
+                            label: Some("Next"),
+                            tooltip: Some("Next"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "nextChange",
+                                icon: "ChevronRight",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "comments",
+                    label: "Comments",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "add-comment",
+                            label: Some("Add Comment"),
+                            tooltip: Some("Add Comment"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "addComment",
+                                icon: "Plus",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "delete-comment",
+                            label: Some("Delete"),
+                            tooltip: Some("Delete"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "deleteComment",
+                                icon: "Trash2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "resolve-comment",
+                            label: Some("Resolve"),
+                            tooltip: Some("Resolve"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "resolveComment",
+                                icon: "Check",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "comments-panel",
+                            label: Some("Comments"),
+                            tooltip: Some("Comments"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleComment",
+                                icon: "MessageSquare",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "display",
+                    label: "Display",
+                    when: None,
+                    controls: vec![Control {
+                        id: "display-mode",
+                        label: Some("Display Mode"),
+                        tooltip: Some("Display Mode"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "displayMode",
+                            icon: "LayoutDashboard",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "compare",
+                    label: "Compare",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "compare-documents",
+                            label: Some("Compare"),
+                            tooltip: Some("Compare"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "compareDocuments",
+                                icon: "FileDiff",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "combine-documents",
+                            label: Some("Combine"),
+                            tooltip: Some("Combine"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "combineDocuments",
+                                icon: "Merge",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "mail-merge",
+                    label: "Mail Merge",
+                    when: None,
+                    controls: vec![Control {
+                        id: "mail-merge",
+                        label: Some("Mail Merge"),
+                        tooltip: Some("Mail Merge"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "mailMerge",
+                            icon: "Mail",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+                Group {
+                    id: "chat",
+                    label: "Chat",
+                    when: None,
+                    controls: vec![Control {
+                        id: "chat-panel",
+                        label: Some("Chat"),
+                        tooltip: Some("Chat"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "chat",
+                            icon: "Users",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    }],
+                },
+            ],
+        },
+        Tab {
+            id: "protection",
+            label: "Protection",
+            when: None,
+            groups: vec![Group {
+                id: "protect",
+                label: "Protect",
+                when: None,
+                controls: vec![
+                    Control {
+                        id: "protect-document",
+                        label: Some("Protect Document"),
+                        tooltip: Some("Protect Document"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "protect-document",
+                            icon: "Lock",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "encrypt",
+                        label: Some("Encrypt"),
+                        tooltip: Some("Encrypt"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "encrypt",
+                            icon: "LockKey",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                ],
+            }],
+        },
+        Tab {
+            id: "view",
+            label: "View",
+            when: None,
+            groups: vec![
+                Group {
+                    id: "zoom",
+                    label: "Zoom",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "zoom-in",
+                            label: Some("Zoom In"),
+                            tooltip: Some("Zoom In"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomIn",
+                                icon: "ZoomIn",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-out",
+                            label: Some("Zoom Out"),
+                            tooltip: Some("Zoom Out"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomOut",
+                                icon: "ZoomOut",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-100",
+                            label: Some("Zoom to 100%"),
+                            tooltip: Some("Zoom to 100%"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomTo100",
+                                icon: "Percent",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "show",
+                    label: "Show",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "spellcheck",
+                            label: Some("Spell Check"),
+                            tooltip: Some("Spell Check"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleSpellCheck"),
+                                checked_when: Ctx {
+                                    field: "spellcheckEnabled",
+                                    default: true,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "ruler",
+                            label: Some("Ruler"),
+                            tooltip: Some("Ruler"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleRuler"),
+                                checked_when: Ctx {
+                                    field: "rulerVisible",
+                                    default: true,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "gridlines",
+                            label: Some("Gridlines"),
+                            tooltip: Some("Gridlines"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleGridlines"),
+                                checked_when: Ctx {
+                                    field: "gridlinesVisible",
+                                    default: false,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "navigation",
+                            label: Some("Headings"),
+                            tooltip: Some("Headings"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleNavigation"),
+                                checked_when: Ctx {
+                                    field: "navigationVisible",
+                                    default: false,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "dark-document",
+                            label: Some("Dark Document"),
+                            tooltip: Some("Dark Document"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleDarkDocument"),
+                                checked_when: Ctx {
+                                    field: "darkDocument",
+                                    default: false,
+                                },
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "interface-theme",
+                    label: "Interface Theme",
+                    when: None,
+                    controls: vec![Control {
+                        id: "interface-theme",
+                        label: Some("Interface Theme"),
+                        tooltip: Some("Interface Theme"),
+                        when: None,
+                        kind: Kind::Select {
+                            options: vec![
+                                SelectOption {
+                                    value: "office",
+                                    label: "Light",
+                                },
+                                SelectOption {
+                                    value: "classic",
+                                    label: "Classic Light",
+                                },
+                                SelectOption {
+                                    value: "dark",
+                                    label: "Dark",
+                                },
+                                SelectOption {
+                                    value: "contrast",
+                                    label: "Contrast Black",
+                                },
+                            ],
+                            value: "office",
+                            command: Some("interface-theme"),
+                        },
+                    }],
+                },
+                Group {
+                    id: "macros",
+                    label: "Macros",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "macros",
+                            label: Some("Macros"),
+                            tooltip: Some("Macros"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "macros",
+                                icon: "Code2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "record-macro",
+                            label: Some("Record Macro"),
+                            tooltip: Some("Record Macro"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "recordMacro",
+                                icon: "Play",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "pause-recording",
+                            label: Some("Pause Recording"),
+                            tooltip: Some("Pause Recording"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pauseMacroRecording",
+                                icon: "Timer",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        Tab {
+            id: "plugins",
+            label: "Plugins",
+            when: None,
+            groups: vec![
+                Group {
+                    id: "clipboard",
+                    label: "Clipboard",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "plugins-cut",
+                            label: Some("Cut"),
+                            tooltip: Some("Cut"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "cut",
+                                icon: "Scissors",
+                                shortcut: Some("Ctrl+X"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "plugins-copy",
+                            label: Some("Copy"),
+                            tooltip: Some("Copy"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copy",
+                                icon: "Copy",
+                                shortcut: Some("Ctrl+C"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "plugins-paste",
+                            label: Some("Paste"),
+                            tooltip: Some("Paste"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "paste",
+                                icon: "ClipboardPaste",
+                                shortcut: Some("Ctrl+V"),
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "copy-style",
+                            label: Some("Copy style"),
+                            tooltip: Some("Copy style"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "copyStyle",
+                                icon: "CopyText",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "plugin-tools",
+                    label: "Tools",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "plugin-manager",
+                            label: Some("PluginManager"),
+                            tooltip: Some("PluginManager"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "pluginManager",
+                                icon: "Settings",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "background-plugins",
+                            label: Some("Backgroundplugins"),
+                            tooltip: Some("Backgroundplugins"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "backgroundPlugins",
+                                icon: "Layers",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "photo-editor",
+                            label: Some("PhotoEditor"),
+                            tooltip: Some("PhotoEditor"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "photoEditor",
+                                icon: "Image",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "youtube",
+                            label: Some("YouTube"),
+                            tooltip: Some("YouTube"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "youtube",
+                                icon: "Youtube",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "ocr",
+                            label: Some("OCR"),
+                            tooltip: Some("OCR"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "ocr",
+                                icon: "Text",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "translator",
+                            label: Some("Translator"),
+                            tooltip: Some("Translator"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "translator",
+                                icon: "Languages",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "mendeley",
+                            label: Some("Mendeley"),
+                            tooltip: Some("Mendeley"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "mendeley",
+                                icon: "Book",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "thesaurus",
+                            label: Some("Thesaurus"),
+                            tooltip: Some("Thesaurus"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "thesaurus",
+                                icon: "BookOpen",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "highlight-code",
+                            label: Some("Highlightcode"),
+                            tooltip: Some("Highlightcode"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "highlightCode",
+                                icon: "Code2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zotero",
+                            label: Some("Zotero"),
+                            tooltip: Some("Zotero"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zotero",
+                                icon: "Zap",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "speech",
+                            label: Some("Speech"),
+                            tooltip: Some("Speech"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "speech",
+                                icon: "Mic",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "speech-input",
+                            label: Some("Speechinput"),
+                            tooltip: Some("Speechinput"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "speechInput",
+                                icon: "Mic2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "language",
+                    label: "Language",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "word-count",
+                            label: Some("Word count"),
+                            tooltip: Some("Word count"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "wordCount",
+                                icon: "FileText",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "set-document-language",
+                            label: Some("English – United States"),
+                            tooltip: Some("English – United States"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "setDocumentLanguage",
+                                icon: "Globe",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "spell-checking",
+                            label: Some("Spell checking"),
+                            tooltip: Some("Spell checking"),
+                            when: None,
+                            kind: Kind::Checkbox {
+                                command: Some("toggleSpellCheck"),
+                                checked_when: Ctx {
+                                    field: "spellcheckEnabled",
+                                    default: true,
+                                },
+                            },
+                        },
+                        Control {
+                            id: "track-changes",
+                            label: Some("Track changes"),
+                            tooltip: Some("Track changes"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "toggleTrackChanges",
+                                icon: "Eye",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "view",
+                    label: "View",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "multiple-pages",
+                            label: Some("Multiple pages"),
+                            tooltip: Some("Multiple pages"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "multiplePages",
+                                icon: "Layout",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "fit-to-page",
+                            label: Some("Fit to page"),
+                            tooltip: Some("Fit to page"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToPage",
+                                icon: "Maximize",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "fit-to-width",
+                            label: Some("Fit to width"),
+                            tooltip: Some("Fit to width"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "fitToWidth",
+                                icon: "Maximize2",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-out",
+                            label: Some("Zoom out"),
+                            tooltip: Some("Zoom out"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomOut",
+                                icon: "ZoomOut",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "zoom-in",
+                            label: Some("Zoom in"),
+                            tooltip: Some("Zoom in"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "zoomIn",
+                                icon: "ZoomIn",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+        Tab {
+            id: "ai",
+            label: "AI",
+            when: None,
+            groups: vec![Group {
+                id: "ai-assistant",
+                label: "AI Assistant",
+                when: None,
+                controls: vec![
+                    Control {
+                        id: "ai-settings",
+                        label: Some("Settings"),
+                        tooltip: Some("Settings"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "aiSettings",
+                            icon: "Settings",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "ai-chatbot",
+                        label: Some("Chatbot"),
+                        tooltip: Some("Chatbot"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "aiChatbot",
+                            icon: "MessageSquare",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "ai-summarization",
+                        label: Some("Summarization"),
+                        tooltip: Some("Summarization"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "aiSummarization",
+                            icon: "FileText",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "ai-translation",
+                        label: Some("Translation"),
+                        tooltip: Some("Translation"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "aiTranslation",
+                            icon: "Globe",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "ai-grammar-spelling",
+                        label: Some("Grammar &Spelling"),
+                        tooltip: Some("Grammar &Spelling"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "aiGrammarSpelling",
+                            icon: "CheckCircle",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                    Control {
+                        id: "ai-assistant-panel",
+                        label: Some("Create AIassistant"),
+                        tooltip: Some("Create AIassistant"),
+                        when: None,
+                        kind: Kind::Button {
+                            command: "ai-assistant",
+                            icon: "Smile",
+                            shortcut: None,
+                            value: None,
+                            toggleable: false,
+                        },
+                    },
+                ],
+            }],
+        },
+        Tab {
+            id: "chart-design",
+            label: "Chart Design",
+            when: None,
+            groups: vec![
+                Group {
+                    id: "chart-elements",
+                    label: "Chart Elements",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "chart-elements",
+                            label: Some("ChartElements"),
+                            tooltip: Some("ChartElements"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "chartElements",
+                                icon: "BarChart3",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "edit-chart-data",
+                            label: Some("EditData"),
+                            tooltip: Some("EditData"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "editChartData",
+                                icon: "Table",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "update-chart-data",
+                            label: Some("UpdateData"),
+                            tooltip: Some("UpdateData"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "updateChartData",
+                                icon: "RefreshCw",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "chart-type",
+                    label: "Type",
+                    when: None,
+                    controls: vec![Control {
+                        id: "chart-type",
+                        label: Some("Chart type"),
+                        tooltip: Some("Chart type"),
+                        when: None,
+                        kind: Kind::Select {
+                            options: vec![
+                                SelectOption {
+                                    value: "bar",
+                                    label: "Bar",
+                                },
+                                SelectOption {
+                                    value: "line",
+                                    label: "Line",
+                                },
+                                SelectOption {
+                                    value: "pie",
+                                    label: "Pie",
+                                },
+                                SelectOption {
+                                    value: "area",
+                                    label: "Area",
+                                },
+                            ],
+                            value: "",
+                            command: Some("chart-type"),
+                        },
+                    }],
+                },
+                Group {
+                    id: "chart-arrange",
+                    label: "Arrange",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "chart-advanced-settings",
+                            label: Some("Advanced settings"),
+                            tooltip: Some("Advanced settings"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "chartAdvancedSettings",
+                                icon: "Settings",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "chart-wrapping",
+                            label: Some("Wrapping"),
+                            tooltip: Some("Wrapping"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "inline",
+                                        label: "Inline",
+                                    },
+                                    SelectOption {
+                                        value: "square",
+                                        label: "Square",
+                                    },
+                                    SelectOption {
+                                        value: "tight",
+                                        label: "Tight",
+                                    },
+                                    SelectOption {
+                                        value: "top-and-bottom",
+                                        label: "Top and bottom",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("chart-wrapping"),
+                            },
+                        },
+                        Control {
+                            id: "chart-3d-rotation",
+                            label: Some("3Drotation"),
+                            tooltip: Some("3Drotation"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "chart3DRotation",
+                                icon: "Rotate3d",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                    ],
+                },
+                Group {
+                    id: "chart-size-advanced",
+                    label: "Size",
+                    when: None,
+                    controls: vec![
+                        Control {
+                            id: "chart-advanced-settings",
+                            label: Some("Advanced settings"),
+                            tooltip: Some("Advanced settings"),
+                            when: None,
+                            kind: Kind::Button {
+                                command: "chartAdvancedSettings",
+                                icon: "Settings",
+                                shortcut: None,
+                                value: None,
+                                toggleable: false,
+                            },
+                        },
+                        Control {
+                            id: "chart-width",
+                            label: Some("Width"),
+                            tooltip: Some("Width"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "",
+                                        label: "Auto",
+                                    },
+                                    SelectOption {
+                                        value: "400",
+                                        label: "400",
+                                    },
+                                    SelectOption {
+                                        value: "600",
+                                        label: "600",
+                                    },
+                                    SelectOption {
+                                        value: "800",
+                                        label: "800",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("chart-width"),
+                            },
+                        },
+                        Control {
+                            id: "chart-height",
+                            label: Some("Height"),
+                            tooltip: Some("Height"),
+                            when: None,
+                            kind: Kind::Select {
+                                options: vec![
+                                    SelectOption {
+                                        value: "",
+                                        label: "Auto",
+                                    },
+                                    SelectOption {
+                                        value: "300",
+                                        label: "300",
+                                    },
+                                    SelectOption {
+                                        value: "500",
+                                        label: "500",
+                                    },
+                                    SelectOption {
+                                        value: "700",
+                                        label: "700",
+                                    },
+                                ],
+                                value: "",
+                                command: Some("chart-height"),
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
     ]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
 
     #[test]
-    fn test_tabs_structure() {
-        let tabs = tabs();
-        
-        // 10 tabs with correct ids and labels
-        assert_eq!(tabs.len(), 10);
-        let expected_tabs = vec![
-            ("home", "Home"),
-            ("insert", "Insert"),
-            ("draw", "Draw"),
-            ("layout", "Layout"),
-            ("references", "References"),
-            ("collaboration", "Collaboration"),
-            ("protection", "Protection"),
-            ("view", "View"),
-            ("plugins", "Plugins"),
-            ("ai", "AI"),
-        ];
-        for (i, (expected_id, expected_label)) in expected_tabs.iter().enumerate() {
-            assert_eq!(tabs[i].id, *expected_id, "Tab {} id mismatch", i);
-            assert_eq!(tabs[i].label, *expected_label, "Tab {} label mismatch", i);
-        }
-    }
-
-    #[test]
-    fn test_home_groups_and_controls() {
-        let tabs = tabs();
-        let home = tabs.iter().find(|t| t.id == "home").unwrap();
-        
-        // 5 groups with correct ids
-        assert_eq!(home.groups.len(), 5);
-        let expected_groups = vec!["clipboard", "font", "paragraph", "styles", "editing"];
-        for (i, expected_id) in expected_groups.iter().enumerate() {
-            assert_eq!(home.groups[i].id, *expected_id, "Group {} id mismatch", i);
-        }
-        
-        // Control counts per group
-        let expected_counts = vec![6, 14, 15, 2, 3];
-        for (i, &expected_count) in expected_counts.iter().enumerate() {
-            assert_eq!(home.groups[i].controls.len(), expected_count, "Group {} control count mismatch", home.groups[i].id);
-        }
-        
-        // Total controls in Home
-        let total_controls: usize = home.groups.iter().map(|g| g.controls.len()).sum();
-        assert_eq!(total_controls, 40, "Total Home controls should be 40");
-        
-        // Exact id sequences per group
-        let clipboard_ids = vec!["cut", "copy", "paste", "undo", "redo", "copy-style"];
-        assert_eq!(home.groups[0].controls.iter().map(|c| c.id).collect::<Vec<_>>(), clipboard_ids);
-        
-        let font_ids = vec![
-            "increase-font-size", "decrease-font-size", "change-case", "bold", "italic", 
-            "underline", "strikethrough", "superscript", "subscript", "font-family", 
-            "font-size", "text-color", "highlight-color", "clear-formatting",
-        ];
-        assert_eq!(home.groups[1].controls.iter().map(|c| c.id).collect::<Vec<_>>(), font_ids);
-        
-        let paragraph_ids = vec![
-            "bullet-list", "ordered-list", "task-list", "multilevel-list", "outdent", 
-            "indent", "line-spacing", "text-direction", "align-left", "align-center", 
-            "align-right", "align-justify", "nonprinting", "shading", "borders",
-        ];
-        assert_eq!(home.groups[2].controls.iter().map(|c| c.id).collect::<Vec<_>>(), paragraph_ids);
-        
-        let styles_ids = vec!["blockquote", "code-block"];
-        assert_eq!(home.groups[3].controls.iter().map(|c| c.id).collect::<Vec<_>>(), styles_ids);
-        
-        let editing_ids = vec!["find", "replace", "select-all"];
-        assert_eq!(home.groups[4].controls.iter().map(|c| c.id).collect::<Vec<_>>(), editing_ids);
-        
-        // No duplicate ids in Home
-        let mut all_ids = HashSet::new();
-        for group in &home.groups {
-            for control in &group.controls {
-                assert!(all_ids.insert(control.id), "Duplicate control id: {}", control.id);
+    fn matches_ts_source_of_truth() {
+        let t = tabs();
+        assert_eq!(t.len(), 11);
+        let groups: usize = t.iter().map(|x| x.groups.len()).sum();
+        assert_eq!(groups, 52);
+        let controls: usize = t
+            .iter()
+            .flat_map(|x| x.groups.iter())
+            .map(|g| g.controls.len())
+            .sum();
+        assert_eq!(controls, 196);
+        // ids are unique within a GROUP (React keyed per group). The spec reuses ids across
+        // groups (chart-design has chart-type in two groups), so DOM ids must be group-qualified.
+        for tab in &t {
+            for g in &tab.groups {
+                let mut ids: Vec<&str> = g.controls.iter().map(|c| c.id).collect();
+                ids.sort_unstable();
+                let n = ids.len();
+                ids.dedup();
+                assert_eq!(ids.len(), n, "duplicate control id in {}/{}", tab.id, g.id);
             }
         }
-        
-        // Every label and command non-empty
-        for group in &home.groups {
-            for control in &group.controls {
-                assert!(!control.label.is_empty(), "Empty label for control: {}", control.id);
-                assert!(!control.command.is_empty(), "Empty command for control: {}", control.id);
-            }
-        }
-    }
-
-    #[test]
-    fn test_large_and_toggled_sets() {
-        let tabs = tabs();
-        let home = tabs.iter().find(|t| t.id == "home").unwrap();
-        
-        // Collect large controls
-        let large_ids: Vec<&str> = home.groups.iter()
-            .flat_map(|g| g.controls.iter())
-            .filter(|c| matches!(c.size, Size::Large))
-            .map(|c| c.id)
-            .collect();
-        
-        let expected_large = vec![
-            "font-family", "font-size", "increase-font-size", "decrease-font-size", 
-            "change-case", "bullet-list", "ordered-list", "multilevel-list", 
-            "outdent", "indent", "line-spacing", "text-direction", "replace",
-        ];
-        
-        let mut large_ids_sorted = large_ids.clone();
-        large_ids_sorted.sort();
-        let mut expected_large_sorted = expected_large.clone();
-        expected_large_sorted.sort();
-        
-        assert_eq!(&large_ids_sorted, &expected_large_sorted, "Large set mismatch");
-        assert_eq!(large_ids.len(), 13, "Should have exactly 13 large controls");
-        
-        // Collect toggled controls
-        let toggled_ids: Vec<&str> = home.groups.iter()
-            .flat_map(|g| g.controls.iter())
-            .filter(|c| c.toggleable)
-            .map(|c| c.id)
-            .collect();
-        
-        let expected_toggled = vec![
-            "bold", "italic", "underline", "strikethrough", "superscript", "subscript",
-            "bullet-list", "ordered-list", "task-list", "align-left", "align-center", 
-            "align-right", "align-justify",
-        ];
-        
-        let mut toggled_ids_sorted = toggled_ids.clone();
-        toggled_ids_sorted.sort();
-        let mut expected_toggled_sorted = expected_toggled.clone();
-        expected_toggled_sorted.sort();
-        
-        assert_eq!(&toggled_ids_sorted, &expected_toggled_sorted, "Toggled set mismatch");
-        assert_eq!(toggled_ids.len(), 13, "Should have exactly 13 toggled controls");
-    }
-
-    #[test]
-    fn test_shortcuts() {
-        let tabs = tabs();
-        let home = tabs.iter().find(|t| t.id == "home").unwrap();
-        
-        // Every shortcut starts with Ctrl
-        for group in &home.groups {
-            for control in &group.controls {
-                if let Some(shortcut) = control.shortcut {
-                    assert!(shortcut.starts_with("Ctrl"), "Shortcut should start with Ctrl: {}", shortcut);
-                }
-            }
-        }
-        
-        // Count shortcuts (should be 24)
-        let shortcut_count = home.groups.iter()
-            .flat_map(|g| g.controls.iter())
-            .filter(|c| c.shortcut.is_some())
-            .count();
-        assert_eq!(shortcut_count, 24, "Should have exactly 24 controls with shortcuts");
-    }
-
-    #[test]
-    fn test_spec_summary() {
-        let tabs = tabs();
-        let home = tabs.iter().find(|t| t.id == "home").unwrap();
-        
-        let groups = home.groups.len();
-        let controls: usize = home.groups.iter().map(|g| g.controls.len()).sum();
-        let large = home.groups.iter()
-            .flat_map(|g| g.controls.iter())
-            .filter(|c| matches!(c.size, Size::Large))
-            .count();
-        let toggled = home.groups.iter()
-            .flat_map(|g| g.controls.iter())
-            .filter(|c| c.toggleable)
-            .count();
-        
-        eprintln!("HOME_SPEC groups={} controls={} large={} toggled={}", groups, controls, large, toggled);
-        
-        assert_eq!(groups, 5);
-        assert_eq!(controls, 40);
-        assert_eq!(large, 13);
-        assert_eq!(toggled, 13);
     }
 }

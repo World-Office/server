@@ -1,49 +1,79 @@
-# wo-ribbon-leptos — ribbon UI in Rust → wasm (PoC)
+# wo-ribbon-leptos — the World-Office ribbon UI in Rust → wasm
 
-Proof-of-concept for **ADR-F1** (`docs/arc42/09-architectural-decisions.md`): the ONLYOFFICE-style
-ribbon — today ~39k lines of React/TypeScript — rendered by Rust compiled to WebAssembly with
-[Leptos 0.8](https://leptos.dev), calling into the existing Rust document engine
-(`core/crates/wo-renderer-wasm`) unchanged. One tab (Home) is ported 1:1 from the TS ribbon spec
-(`packages/editor-common/src/ribbon/specs/word-ribbon.ts`) and scored against the ONLYOFFICE golden
-with the parity harness (`wo-test-harness/census/layout-diff.py`). Numbers: `MEASUREMENTS.md`.
+Implementation of **ADR-F1** (`docs/arc42/09-architectural-decisions.md`): the ONLYOFFICE-style
+ribbon — previously ~39k lines of React/TypeScript — rendered by Rust compiled to WebAssembly with
+[Leptos 0.8](https://leptos.dev), **linked directly against the document engine**
+(`core/crates/wo-renderer-wasm`) as a plain Rust dependency. One wasm module: ribbon, command
+router and document model. No JS glue, no dynamic import, no `getWasmApi()`.
 
-**Standalone crate** — not a workspace member, never built by `cargo build --workspace` or CI.
+The full ribbon spec is derived from the TypeScript source of truth by a generator, not
+hand-ported; the command router is a Rust port of the React app's `word-commands.ts`.
 
 ```sh
-trunk build --release                 # → dist/ (open dist/index.html via any static server)
-bash gate/scaffold.sh                 # build + Playwright smoke test (uses server/tests/node_modules playwright)
-cargo test                            # pure-data unit tests (spec port)
+node tools/gen-ribbon-spec.mjs         # regenerate src/ribbon/spec.rs from word-ribbon.ts
+node tools/gen-ribbon-spec.mjs --check # CI gate: fail if the generated file is stale
+trunk build --release                  # → dist/ (serve dist/ on any static server)
+cargo test --lib                       # 11 unit tests incl. a real-engine round-trip, no browser
+bash gate/ime.sh                       # build + IME bridge gate (Playwright)
+bash gate/port.sh                      # build + ribbon port gate (Playwright)
 ```
+
+## What is proven where
+
+| Claim | Proven by |
+|---|---|
+| Generated spec == `word-ribbon.ts` (11 tabs, 52 groups, 196 controls) | `spec::tests::matches_ts_source_of_truth`, `gen-ribbon-spec.mjs --check` |
+| Command → format JSON identical to the React app | `commands::tests::format_ops_emit_the_same_json_the_react_app_emitted` |
+| bold toggles through the REAL engine (host, no browser) | `engine::engine_roundtrip_tests::bold_toggles_through_the_real_engine` |
+| Click → engine → `aria-pressed` reflects the document, toggle round-trip | `gate/port.cjs` |
+| `ctx.isEditMode` predicates are live (11 tabs → 8 leaving edit mode) | `gate/port.cjs` |
+| Non-engine commands are reported honestly, never as fake success | `gate/port.cjs` |
+| IME composition reaches Rust via the hidden textarea | `gate/ime.sh` |
 
 ## Layout
 
 | file | role |
 |---|---|
-| `src/types.rs` | data-only mirror of `editor-common/src/ribbon/types.ts` (+ `Size::{Large,Small}` = OO top/bottom row) |
-| `src/ribbon/spec.rs` | `tabs()` — the tab list and the Home tab as data |
-| `src/ribbon/tabbar.rs` | `TabBar` component (`role=tablist/tab`, `aria-selected`, arrow keys) |
-| `src/ribbon/group.rs` | `RibbonGroup`: `.group[data-group] > .elset > .row-top/.row-bottom`, caption |
-| `src/ribbon/control.rs` | `render_control` — button kind, delegates Select/ColorPicker |
-| `src/ribbon/controls_extra.rs` | `render_extra` — Select and ColorPicker kinds |
+| `src/types.rs` | data-only mirror of `editor-common/src/ribbon/types.ts`: `Kind`, `Control`, `Group`, `Tab`, `Cond`, `RibbonContext` |
+| `src/ribbon/spec.rs` | **GENERATED** `tabs()` — the whole spec as data (`tools/gen-ribbon-spec.mjs`) |
+| `src/ribbon/commands.rs` | `command_to_format`, `structure_op_for_command`, `step_font_size` — ported from `word-commands.ts` |
+| `src/ribbon/engine.rs` | `Doc` (engine handle) → `exec(Cmd)`: apply_formatting / apply_structure_op / undo / redo; `pressed_from_formatting` |
+| `src/ribbon/control.rs` | `render_control` for all kinds; `Cmd`, `RibbonState`, `Pressed` |
+| `src/ribbon/group.rs` | `RibbonGroup`: `.group[data-group] > .elset > .row-top/.row-bottom`, caption, `when` filtering |
+| `src/ribbon/tabbar.rs` | `TabBar` (`role=tablist/tab`, `aria-selected`, arrow keys) |
 | `src/ime.rs` | `ImeProbe` — hidden `<textarea>` the browser composes into; Rust tracks composition |
-| `gate/` | `common.sh` (build + serve + probe) and one probe per task |
+| `gate/` | `common.sh` (build + serve + probe) and one probe per concern |
+
+## How the TS closures became data
+
+`word-ribbon.ts` has 13 predicates like `visible: (ctx) => ctx.isEditMode` and
+`checked: (ctx) => ctx.rulerVisible ?? true`. They all have the shape `ctx.<field> ?? <default>`,
+so the generator lowers the whole family to `Cond::Ctx { field, default }`, evaluated at render
+time against the live `RibbonContext`. A predicate outside that shape fails generation loudly.
+
+## Not yet (honest list)
+
+- **Icons are text** (`<span class="icon" data-icon="Bold">Bold</span>`): a real Lucide SVG renderer is the next slice; `data-icon` is the hydration hook.
+- **Layout JSON is discarded** after each command: the canvas page view (the editor itself) is the next slice.
+- **Store / panel / router commands** (cut, paste, dialogs, view toggles, plugins, ai) are reported as "not an engine op yet" — ~155 of 196 controls. `tools/ribbon-coverage.mjs` `WIRING.word` is the authoritative target map for wiring them.
+- Canvas selection → `pressed` is read from the engine only after a command, not on selection change.
 
 ## Leptos 0.8 idioms this crate relies on (verified — 0.6-style code does not compile)
 
 - `use leptos::prelude::*;` · `#[component] pub fn X(prop: T) -> impl IntoView` · `view! { <div class=.. on:click=move |_| ..> }` (no `cx`).
 - State: `let s = RwSignal::new(v);` → `s.get()`, `s.set(v)`, `s.update(|x| ..)`; `Memo::new(move |prev: Option<&T>| ..)` (0.8: the closure takes the previous value). Signals are `Copy`.
-- Reactive attributes: `class=("name", move || bool)`, `aria-selected=move || ..`, `data-x=move || ..`.
-- `<For each=move || items.clone() key=|x| .. children=move |x| view!{ .. } />`.
-- **A `<For>` inside another component's children must not `move` owned data into `each`** — the children closure
-  must be `Fn`; moving a `Vec` into the inner closure makes it `FnOnce` (E0525). Own the data in a `Memo`/`RwSignal`.
-- A `Vec<T>` captured by `move` in one closure is gone for the next one (E0382): clone it per owner
-  (`let tabs_key = tabs.clone();`). A `<For>` inside `<Show>` children must not `move` its `Vec` into `each`
-  (E0525): `let row = RwSignal::new(vec);` then `each=move || row.get()`.
-- ARIA state is a `String`: `aria-selected=move || (active.get() == id).to_string()`, same for `aria-pressed` and
-  `tabindex`. Keyboard: `on:keydown=move |ev| { match ev.key().as_str() { "ArrowRight" => .. } }`, `ev.prevent_default()`.
-- Focus from Rust: `window().document().and_then(|d| d.get_element_by_id("tab-home"))` →
-  `.dyn_into::<web_sys::HtmlElement>()` → `.focus()` (`use web_sys::wasm_bindgen::JsCast;`).
-- `event_target_value(&ev)` for input values; `web_sys::CompositionEvent::data()` for IME (fires during composition,
-  together with `input`, so a "committed" signal is non-empty mid-composition).
-- Mount: `leptos::mount::mount_to_body(App)` (there is no `mount_body` in 0.8).
+- **An `Effect` that reads signal A and writes signal B must not read B tracked** — it re-runs on its own write. With a stale trigger this loops forever → stack overflow → the tab **crashes with no panic message**. Consume the trigger first (`cmd.set(None)` right after reading it) and read other signals with `try_with` (untracked). `cargo test` on the host cannot catch this; a browser gate is mandatory for signal wiring.
+- `RwSignal<Option<T>>` needs `T: Copy + Send + Sync + 'static` for `try_get` — keep engine handles (`u32`) in signals, not the engine wrapper.
+- A `Vec<T>` captured by `move` in one closure is gone for the next one (E0382): call `spec::tabs()` inside each closure (the data is `&'static str`).
+- `<For each=move || memo.get() key=|x| .. children=move |x| view!{ .. } />`; a component prop typed `Memo<Vec<T>>` stays reactive where `Vec<T>` would freeze.
+- ARIA state is a `String`: `aria-selected=move || (active.get() == id).to_string()`, same for `aria-pressed`.
+- `#[wasm_bindgen] pub fn`s are module exports, NOT `window` properties — the trunk loader is an inline module a probe cannot `import()`. Attach gate/host hooks with `js_sys::Reflect::set(&window, "name", Closure::new(f).into_js_value())`.
+- Raw strings containing `"#` (e.g. `"#ff0000"`) need `r##"…"##`.
+- Mount: `leptos::mount::mount_to_body(App)`.
 - trunk 0.22: `<link data-trunk rel="rust" data-bin-pkg="wo-ribbon-leptos">` — do **not** pass `data-type="cdylib"`.
+
+## Build profile
+
+`opt-level = 3, lto = "thin"` — the workspace's wasm release settings. The ribbon-only PoC used
+`opt-level = "z"` for size; with the engine linked in its needs dominate. `panic = "abort"` is NOT
+set: the engine relies on unwinding.
