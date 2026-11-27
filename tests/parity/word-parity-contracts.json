@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-26T20:25:51.157Z",
+ "generatedAt": "2026-11-27T02:11:43.431Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -16168,15 +16168,17 @@
    "subFeatures": [],
    "note": "loop34-2: promote backstage.settings-cancel - FileMenu settings (opts) panel close [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "#filesettings",
+    "selector": ".de-file-menu-content-box:has(.de-file-menu-select) .de-file-menu-footer button",
     "assertion": {
-     "kind": "dialog-visible",
-     "dialogSelector": ".de-file-menu-settings-table"
+     "kind": "dom-style",
+     "selector": ".de-file-menu-panel",
+     "prop": "display",
+     "equals": "none"
     },
-    "pre": "file-menu",
+    "pre": "backstage:opts",
     "woTab": "backstage",
-    "xfail": true,
-    "note": "loop34-2 react-port: FileMenu opts panel surface via #filesettings | 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes. Known gap. The runner does not drive xfail rows (fast-path), so this contract is only checked once xfail is removed — and it then proves the pane renders, not a Cancel (the react pane has none)"
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu settings (opts) panel close | 2026-11-27: passes since the FileMenu pane fix — the trigger is the settings pane's own Close button (the runner hit-tests the trigger, so an unrendered pane fails this row) and Close closes the whole backstage; the open step is asserted by file.advanced-settings. History, 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes. Known gap. The runner does not drive xfail rows (fast-path), so this contract is only checked once xfail is removed — and it then proves the pane renders, not a Cancel (the react pane has none)"
    }
   },
   {
@@ -16203,8 +16205,8 @@
     },
     "pre": "file-menu",
     "woTab": "backstage",
-    "xfail": true,
-    "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp | 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes (known gap, not parity; the runner does not drive xfail rows — drop xfail once the app renders panes, the contract already asserts the Help content being visible)"
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu help panel surface via #filehelp | 2026-11-27: passes since the FileMenu pane fix (FileMenu is a mobx observer and the pane column is displayed). History, 2026-11-26: xfail — the old assertion (any mutation in .de-file-menu-panel) passed although nothing pane-specific is visible: FileMenu.tsx hides panelBox (display none) and FileMenu is not a mobx observer, so panes never render; only the rail item's active class changes (known gap, not parity; the runner does not drive xfail rows — drop xfail once the app renders panes, the contract already asserts the Help content being visible)"
    }
   },
   {
@@ -16227,14 +16229,14 @@
     "selector": "#filehelp",
     "assertion": {
      "kind": "dom-style",
-     "selector": ".de-file-menu-panel",
+     "selector": ".de-file-menu-content-box:has(.de-file-menu-help-content)",
      "prop": "display",
      "equals": "none"
     },
     "pre": "backstage:help",
     "woTab": "backstage",
-    "xfail": true,
-    "note": "loop34-2 react-port: FileMenu help panel close - same selector toggles closed | 2026-11-26: xfail again — the react FileMenu has no [data-pane] rows, so the backstage:help pre cannot reach the pane (known gap, not parity)"
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu help panel close - same selector toggles closed | 2026-11-27: passes since the FileMenu pane fix — rail rows carry data-pane (the backstage:help pre reaches the pane) and the assertion targets the Help pane's own box instead of the whole file-menu panel (a pane toggle never closes the panel). The Help pane has no control to hit-test, so this row relies on backstage.help-open for the open step. History, 2026-11-26: xfail again — the react FileMenu has no [data-pane] rows, so the backstage:help pre cannot reach the pane (known gap, not parity)"
    }
   },
   {
@@ -16251,18 +16253,23 @@
    "assertion": {
     "kind": "unspecified"
    },
-   "subFeatures": null,
+   "subFeatures": [
+    {
+     "name": "pane Close button (pane footer)",
+     "selector": ".de-file-menu-footer button"
+    }
+   ],
    "note": "loop34-2: promote backstage.history-open - FileMenu history panel [override-only: no ledger row matched this key]",
    "contract": {
     "selector": "#filehistory",
     "assertion": {
-     "kind": "dom-mutation",
-     "selector": ".de-file-menu-panel"
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-history"
     },
     "pre": "file-menu",
     "woTab": "backstage",
-    "xfail": true,
-    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory | 2026-11-26: xfail — a 'Version History…' rail item exists but has no id (ACTION_ID in FileMenuItems.tsx lacks `history`), so #filehistory matches nothing, and its pane never renders visibly (known gap, not parity)"
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu version history panel via #filehistory | 2026-11-27: passes since the FileMenu pane fix — the rail item has its filehistory id (ACTION_ID.history), the pane a .de-file-menu-history hook, and the assertion is the pane itself being visible rather than any mutation of the file-menu panel. History, 2026-11-26: xfail — a 'Version History…' rail item exists but has no id (ACTION_ID in FileMenuItems.tsx lacks `history`), so #filehistory matches nothing, and its pane never renders visibly (known gap, not parity)"
    }
   },
   {
@@ -16282,17 +16289,17 @@
    "subFeatures": null,
    "note": "loop34-2: promote backstage.history-close - FileMenu history close [override-only: no ledger row matched this key]",
    "contract": {
-    "selector": "#filehistory",
+    "selector": ".de-file-menu-history .de-file-menu-footer button",
     "assertion": {
      "kind": "dom-style",
-     "selector": ".de-file-menu-panel",
+     "selector": ".de-file-menu-history",
      "prop": "display",
      "equals": "none"
     },
     "pre": "backstage:history",
     "woTab": "backstage",
-    "xfail": true,
-    "note": "loop34-2 react-port: FileMenu history panel close - same selector toggles closed | 2026-11-26: xfail — the react FileMenu has no [data-pane] rows (the 'Version History…' rail item has no id either), so the backstage:history pre cannot reach the pane (known gap, not parity)"
+    "xfail": false,
+    "note": "loop34-2 react-port: FileMenu history panel close | 2026-11-27: passes since the FileMenu pane fix — the trigger is the pane's own Close button (hit-tested, so an unrendered pane fails this row); Close hides the pane and leaves the backstage open. The open step is asserted by backstage.history-open. History, 2026-11-26: xfail — the react FileMenu has no [data-pane] rows (the 'Version History…' rail item has no id either), so the backstage:history pre cannot reach the pane (known gap, not parity)"
    }
   },
   {
