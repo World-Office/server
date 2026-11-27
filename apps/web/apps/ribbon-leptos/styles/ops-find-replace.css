@@ -1,1 +1,86 @@
 /* ribbon/ops module "find-replace": its own stylesheet, so module tasks never share a file. */
+
+/* The bar FLOATS over the editor: the #ops-find-replace root stays zero-height, the bar is
+   absolutely positioned inside it. Opening find must NOT push the pages down — the gate proves
+   the caret keeps its exact pixel position while the bar is open (OnlyOffice's find widget
+   floats the same way). */
+#ops-find-replace {
+  position: relative;
+  height: 0;
+}
+
+.find-bar {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 24px;
+  z-index: 40;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.find-bar.open {
+  display: flex;
+}
+
+.find-bar #find-what,
+.find-bar #replace-with {
+  width: 180px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #b5b5b5;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 13px;
+}
+.find-bar #find-what:focus,
+.find-bar #replace-with:focus {
+  outline: 1px solid #2f6fed;
+}
+
+.find-bar .find-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+.find-bar #find-results {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The replace section exists only when the bar was opened via Replace. */
+.find-bar #replace-with,
+.find-bar #replace-go {
+  display: none;
+}
+.find-bar.with-replace #replace-with {
+  display: inline-block;
+}
+.find-bar.with-replace #replace-go {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid #b5b5b5;
+  border-radius: 3px;
+  background: #f6f6f6;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.find-bar.with-replace #replace-go:hover {
+  background: #ececec;
+}
