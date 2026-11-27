@@ -1,1 +1,6 @@
-/* ribbon/ops module "icons": its own stylesheet, so module tasks never share a file. */
+/* ribbon/ops module "icons": real Lucide SVG icons rendered inside .icon spans.
+   The SVGs are 16×16 (lucide's 24×24 viewBox scaled down); the button boxes stay 24×24
+   (index.html: .btn[data-kind=button]{width:24px;height:24px}). */
+.icon svg {
+  display: block;
+}
