@@ -69,13 +69,14 @@ export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
-# af worktrees cannot build the UI (no node_modules, dist/ gitignored), so the
-# docserver serves MAIN's prebuilt bundle. That is the worktree's build by
-# construction once `hygiene` has shown the worktree is main + one drop-in.
+# React editor removed (ADR-F1, 2026-11-27): documenteditor-react/dist is
+# gone. The gate needs a served UI; until the Leptos port ships one, fail
+# with a clear message instead of silently falling back to a stale bundle.
+# The caller must provide EDITOR_UI_DIR pointing at a pre-built editor.
 if [ -z "${EDITOR_UI_DIR:-}" ] || [ ! -f "$EDITOR_UI_DIR/word/index.html" ]; then
-  STAGE="$(mktemp -d /tmp/wo-parity-ui-XXXXXX)"
-  ln -s /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist "$STAGE/word"
-  export EDITOR_UI_DIR="$STAGE"
+  echo "loop-gate: no editor UI — EDITOR_UI_DIR not set or missing word/index.html." >&2
+  echo "loop-gate: the React editor was removed (ADR-F1); the Leptos port has not shipped a full UI yet." >&2
+  exit 1
 fi
 
 # The manifest is regenerated for every run (pure function of the ledger), but

@@ -1,10 +1,3 @@
-// World Office Design System
-
-// Tokens
+// World Office Design System — tokens only.
+// React components were removed 2026-11-27 (ADR-F1: chrome moves to Rust/Leptos).
 export * from "./tokens"
-
-// Theme
-export { ThemeProvider, useTheme } from "./theme"
-
-// Components
-export * from "./components"

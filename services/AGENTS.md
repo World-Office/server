@@ -16,11 +16,10 @@ services/
 ├── storage-service/      # File storage: SQLite metadata + disk blobs (4 rs files)
 ├── conversion-service/   # Format conversion (3 rs files)
 ├── coauthoring-service/  # Real-time collaboration (1 rs file)
-├── server/               # Node.js document builder server (189 JS files)
+└── server/               # Node.js document builder server (189 JS files)
 │   ├── DocBuilder/       # CLI document conversion tool
 │   ├── Common/           # Shared server modules
 │   └── AGENTS.md         # Has own knowledge base
-└── admin-panel/          # Admin dashboard (TypeScript, 10 files)
 ```
 
 ## WHERE TO LOOK
@@ -33,7 +32,6 @@ services/
 | Conversion | `conversion-service/` | Calls wo-x2t |
 | Co-editing | `coauthoring-service/` | Real-time collaboration |
 | DocBuilder CLI | `server/DocBuilder/` | Node.js, see server/AGENTS.md |
-| Admin UI | `admin-panel/` | TypeScript frontend |
 
 ## STORAGE SERVICE DETAILS
 

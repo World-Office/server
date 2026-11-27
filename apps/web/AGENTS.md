@@ -1,54 +1,42 @@
 # WEB EDITOR FRONTEND
 
-**Generated:** 2026-04-19 | **License:** AGPL-3.0
+**Updated:** 2026-11-27 | **License:** AGPL-3.0
 
 ## OVERVIEW
 
-Web-based document editing suite. Modern React editors in TypeScript. Part of pnpm workspace.
+No React lives here any more: the five `*-react` editor apps and
+`editor-shell` were removed 2026-11-27 (ADR-F1). This directory now holds the
+Leptos/WASM ribbon PoC and the unbuilt legacy vanilla tree. There is no
+buildable editor UI in the repo until the Leptos port lands.
 
 ## STRUCTURE
 
 ```
 apps/web/
 ├── apps/
-│   ├── common/                    # Shared editor code (217 JS files)
-│   ├── spreadsheeteditor-react/   # React editor (35 ts/tsx)
-│   ├── documenteditor-react/      # React editor (40 ts/tsx)
-│   ├── presentationeditor-react/  # React editor (35 ts/tsx)
-│   ├── pdfeditor-react/           # React editor (30 ts/tsx)
-│   ├── visioeditor-react/         # React editor (26 ts/tsx)
-│   ├── editor-shell/              # Shared shell (13 ts/tsx)
-│   └── api/                       # API layer (1 JS)
-├── theme/                         # Editor themes
-├── translation/                   # i18n translations
-└── test/                          # Web-level tests
+│   ├── ribbon-leptos/   # Leptos 0.8 + Trunk PoC, Home tab only (not a pnpm workspace member)
+│   ├── common/          # Legacy ONLYOFFICE vanilla JS tree — not built, no dependents
+│   └── api/             # API layer (1 JS)
+├── theme/               # Editor themes
+├── translation/         # i18n translations
+├── vendor/              # Legacy vendored JS libraries (no React)
+└── test/                # Web-level tests
 ```
 
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
 |------|----------|-------|
-| Document editing | `apps/documenteditor-react/` | React, TypeScript |
-| Spreadsheet editing | `apps/spreadsheeteditor-react/` | React, TypeScript |
-| Presentation editing | `apps/presentationeditor-react/` | React, TypeScript |
-| PDF editing | `apps/pdfeditor-react/` | React, TypeScript |
-| Visio editing | `apps/visioeditor-react/` | React, TypeScript |
-| Shared code | `apps/common/` | 217 JS files, shared by all editors |
-| Shared components | `apps/editor-shell/` | Shell, toolbar, menu |
+| Leptos ribbon UI | `apps/ribbon-leptos/` | Rust → wasm; build with `trunk build --release` |
+| Ribbon specs (source of truth) | `packages/editor-common/src/ribbon/specs/` | word, spreadsheet, presentation, pdf, visio |
+| Legacy vanilla code | `apps/common/` | Dead tree; deleting it is a pending decision |
 
 ## CONVENTIONS
 
-- React editors under `apps/*-react/` with TypeScript
-- Help resources (images, function docs) account for bulk of file count
-- Mobile stores in `apps/*/mobile/src/store/`
-
-## ANTI-PATTERNS
-
-- NEVER add editor-specific logic to `apps/common/` — shared only
-- Changes to `apps/common/` affect ALL editor apps
+- `ribbon-leptos` has no `Trunk.toml`; if it ever becomes a workspace member, add one pinning `[tools] wasm-bindgen = "0.2.118"` (the engine's pin)
+- Never reintroduce React here — the chrome moves to Leptos/WASM (ADR-F1)
 
 ## NOTES
 
-- `apps/web/` has NO `package.json` — workspace membership via root `pnpm-workspace.yaml`
-- Bulk of files are help resources (images, translated function docs), not code
-- Actual code: ~230 TS/TSX files across all editor apps
+- `apps/web/` has NO `package.json`; nothing under `apps/web/apps/` is a pnpm workspace member
+- Bulk of files in `apps/common/` are help resources (images, translated function docs), not code

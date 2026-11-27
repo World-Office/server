@@ -1,1 +1,0 @@
-export { SlideThumbnails } from "./SlideThumbnails";

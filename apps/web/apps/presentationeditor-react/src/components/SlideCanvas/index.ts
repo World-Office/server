@@ -1,1 +1,0 @@
-export { SlideCanvas } from "./SlideCanvas";

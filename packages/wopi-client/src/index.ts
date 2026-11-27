@@ -16,13 +16,3 @@ export {
   putFile,
   loadDocument,
 } from "./wopi-client"
-
-export {
-  useDocumentLoader,
-  type LoadState,
-} from "./use-document-loader"
-
-export {
-  useWoCommandListener,
-  type WoCommandHandlers,
-} from "./use-wo-command"

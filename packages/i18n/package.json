@@ -21,18 +21,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "i18next": "^24.0.0",
-    "react-i18next": "^15.0.0"
-  },
-  "peerDependencies": {
-    "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "i18next": "^24.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0"
   }

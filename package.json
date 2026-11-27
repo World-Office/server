@@ -29,10 +29,5 @@
   "packageManager": "pnpm@10.4.1",
   "engines": {
     "node": ">=20.0.0"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "tabster@8.8.0": "patches/tabster@8.8.0.patch"
-    }
   }
 }

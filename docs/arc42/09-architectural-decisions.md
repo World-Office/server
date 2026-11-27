@@ -10,7 +10,10 @@
 ## ADR-F1 · Editor chrome: Rust → wasm with Leptos
 
 - **Status:** ✅ decided 2026-11-25 for the PoC — 🔶 production migration not
-  started
+  started — ⚠️ 2026-11-27: the React chrome was **removed from the repo**
+  (the `*-react` apps, editor-shell, collaboration-react, admin-panel, the
+  tracked frontend-dist); prod/staging serve the last staged bundle until the
+  Leptos UI lands
 - **Context:** Editor chrome is ≈39 k LOC React/TypeScript (packages/editor-
   common/src/ribbon/* + apps/web/apps/documenteditor-react), inherited via
   OO-clone → Python rewrite → a 2026 react-port. React was *never* chosen by

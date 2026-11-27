@@ -25,24 +25,13 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@fluentui/react-components": "^9.74.0",
-    "i18next": "^24.0.0",
-    "react-i18next": "^15.0.0"
-  },
-  "peerDependencies": {
-    "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "i18next": "^24.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
     "@world-office/design-system": "workspace:*",
     "@world-office/wo-renderer-wasm": "workspace:*",
     "jsdom": "^25.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"

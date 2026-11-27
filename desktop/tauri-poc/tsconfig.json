@@ -1,7 +1,0 @@
-{
-  "extends": "@world-office/tsconfig/base.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": []
-}

@@ -2,7 +2,6 @@
 
 export { SdkBridge, sdkBridge } from "./bridge"
 export { SdkEventEmitter } from "./events"
-export { useSdk, useSdkReady, useSdkCallback } from "./hooks"
 export { SelectElementType } from "./enums"
 export type {
   SdkSelectionObject,

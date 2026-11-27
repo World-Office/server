@@ -11,13 +11,9 @@ MIN_PASS="${1:?usage: af-gate.sh <min-pass-count>}"
 ROOT="$(git rev-parse --show-toplevel)"
 BIN=/home/weiss/git/World-Office/server/target/debug/wo-docserver
 
-ui_stage() {
-  local stage
-  stage="$(mktemp -d /tmp/wo-parity-ui-XXXXXX)"
-  ln -s /home/weiss/git/World-Office/server/apps/web/apps/documenteditor-react/dist "$stage/word"
-  echo "$stage"
-}
-
+# React editor removed (ADR-F1, 2026-11-27): documenteditor-react/dist is
+# gone. The gate needs a served UI; until the Leptos port ships one, fail
+# with a clear message instead of silently falling back to a stale bundle.
 [ -x "$BIN" ] || { echo "gate: docserver binary missing: $BIN" >&2; exit 1; }
 
 # A gate run must not leave the shared merge target dirty: af parks every
@@ -42,11 +38,14 @@ export WO_PORT=$((19000 + RANDOM % 900))
 export WO_DOCSERVER_BIN="$BIN"
 export WO_LEDGER=/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json
 export NO_PROXY=127.0.0.1,localhost
-# af worktrees have no built UI (dist/ is gitignored). The docserver serves
-# /word/ from $EDITOR_UI_DIR/word/symlink to index.html, so stage a tmp root
-# with a word symlink to the MAIN checkout's prebuilt react bundle.
-export EDITOR_UI_DIR="${EDITOR_UI_DIR:-$(ui_stage)}"
-[ -f "$EDITOR_UI_DIR/word/index.html" ] || export EDITOR_UI_DIR="$(ui_stage)"
+# The docserver serves /word/ from $EDITOR_UI_DIR/word/index.html. af worktrees
+# have no built UI (dist/ is gitignored), so the caller must provide
+# EDITOR_UI_DIR pointing at a pre-built editor. No React bundle = no gate.
+if [ -z "${EDITOR_UI_DIR:-}" ] || [ ! -f "$EDITOR_UI_DIR/word/index.html" ]; then
+  echo "gate: no editor UI — EDITOR_UI_DIR not set or missing word/index.html." >&2
+  echo "gate: the React editor was removed (ADR-F1); the Leptos port has not shipped a full UI yet." >&2
+  exit 1
+fi
 
 # The gates must be able to vouch for what they judge before their verdict
 # counts (refuse on a dirty merge target / a worktree that is not exactly its

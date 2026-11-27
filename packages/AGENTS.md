@@ -10,10 +10,9 @@
 
 ```
 packages/
-├── editor-common/        # Shared React components + utilities (42 files, 40 ts/tsx)
-├── design-system/        # Design tokens, theme, primitives (38 files, 36 ts/tsx)
+├── editor-common/        # Controllers, ribbon specs, plugin loader, utils (no React)
+├── design-system/        # Design tokens only (no React)
 ├── collaboration-client/ # Collaboration protocol client (13 files, 11 ts/tsx)
-├── collaboration-react/  # React bindings for collaboration (14 files, 12 ts/tsx)
 ├── editor-stores/        # Editor state management (8 files, 6 ts/tsx)
 ├── sdk-bridge/           # SDK bridge layer (9 files, 7 ts/tsx)
 ├── i18n/                 # Internationalization (4 files, 2 ts/tsx)
@@ -26,11 +25,11 @@ packages/
 
 | Task | Location | Notes |
 |------|----------|-------|
-| Shared UI components | `editor-common/src/components/` | 14 components |
-| Design tokens | `design-system/src/` | Theme, primitives |
+| Ribbon specs (source for the Leptos port) | `editor-common/src/ribbon/specs/` | word, spreadsheet, presentation, pdf, visio |
+| Design tokens | `design-system/src/tokens/` | colors, spacing, radii, shadows, typography |
 | Editor state | `editor-stores/` | Zustand or similar |
-| Collaboration | `collaboration-client/`, `collaboration-react/` | Client + React bindings |
-| Lint rules | `eslint-config/` | Shared across all editor apps |
+| Collaboration | `collaboration-client/` | Protocol client |
+| Lint rules | `eslint-config/` | Shared across all TypeScript packages |
 | TS config | `tsconfig/` | Base configs for all packages |
 
 ## CONVENTIONS

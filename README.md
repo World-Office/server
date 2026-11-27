@@ -60,7 +60,7 @@ can be deployed independently or as a unified stack.
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           Client Browsers                               │
-│  (React-based Word, Sheets, Slides, PDF, Visio editors)                  │
+│  (editor UI: Leptos/WASM port in progress)                              │
 └──────────────────────────────────┬──────────────────────────────────────┘
                                        │
                                        ▼
@@ -96,7 +96,6 @@ can be deployed independently or as a unified stack.
 | `storage-service` | 8083 | File metadata + blob storage backend |
 | `conversion-service` | 8084 | Format-to-format conversion (27+ converters) |
 | `coauthoring-service` | 8085 | Real-time collaborative editing (CRDT-based) |
-| `admin-panel` | 8086 | Admin dashboard, monitoring, configuration |
 
 ### WOPI Integration
 
@@ -169,25 +168,16 @@ The Rust core provides the foundation for all document operations.
 
 ## 🌐 Web Editors
 
-React-based editors for all document types, served from the Rust backend.
+The React editors were removed 2026-11-27. Production serves the last staged
+bundle; the next editor UI is the Leptos/WASM port (ADR-F1, PoC in
+`apps/web/apps/ribbon-leptos/`).
 
-**Individual editors** (`apps/web/apps/`):
-- `documenteditor-react` - Word processing
-- `spreadsheeteditor-react` - Spreadsheets with formulas
-- `presentationeditor-react` - Slides with animations
-- `pdfeditor-react` - PDF viewing and annotation
-- `visioeditor-react` - Diagram and flowchart editing
-
-**Shared packages** (`packages/`):
-- `@world-office/editor-common` - Shared editor logic
+**Framework-agnostic packages** (`packages/`):
+- `@world-office/editor-common` - Controllers, ribbon specs, plugin loader, utilities
 - `@world-office/editor-stores` - State management (MobX)
-- `@world-office/design-system` - UI components
+- `@world-office/design-system` - Design tokens
 - `@world-office/collaboration-client` - Real-time sync
 - `@world-office/i18n` - Translations
-
-The presentation editor includes: shapes, text editing, undo/redo, clipboard,
-property panels, multi-select, grouping, images, tables, charts, connectors,
-slide backgrounds, animations, presenter view, and zoom.
 
 ---
 

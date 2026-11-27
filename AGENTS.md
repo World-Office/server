@@ -1,5 +1,7 @@
 # World-Office WORKSPACE
 
+> 🧨 **REACT REMOVED 2026-11-27.** The repo no longer contains React code: the five `apps/web/apps/*-react` apps, `editor-shell`, `collaboration-react`, `services/admin-panel`, the Tauri PoC, the ONLYOFFICE mobile React app (`apps/web/apps/common/mobile`) and the tracked `frontend-dist/` bundle are deleted. **There is no buildable editor UI in this tree** — prod and staging keep serving the last staged bundle from the `editor-ui` host mounts, and the next UI is the Leptos/WASM port (ADR-F1; PoC in `apps/web/apps/ribbon-leptos/`). Source for everything removed: git history at `1e3c65bb`. Untouched: Rust core, `wo-renderer-wasm`, `wo-x2t-wasm`, the docserver, and the framework-agnostic `packages/*`.
+>
 > ⚠️ **CANONICAL 2026-11-16 (updated: React canvas editor is /word).** The Rust docserver container (`docserver-1`, port `:8082`) is the production editor backend behind `editor.cloud.graphwiz.ai` (traefik route committed as `d363467` in `/opt/git/docker-traefik`). **The python-lineage WYSIWYG word editor was RETIRED from deployment 2026-11-16** and its directory moved off main to branch **`legacy/wysiwyg-python-editor`** (source + `wo-bridge.js` + 159-test gate suite; last main-tree state preserved there). `/word/` now serves the React canvas editor (`apps/web/apps/documenteditor-react`, wasm renderer + typed ops). The Python rewrite at `server/opencloud-docserver/` was REMOVED 2026-10-14 (history at `cf98bf78e`, repo mirror at github.com/World-Office/server-py). The staging OpenCloud stack also runs the Rust docserver (container `docserver`, `:8086`).
 
 **Updated:** 2026-07-21
@@ -10,17 +12,16 @@
 
 ## OVERVIEW
 
-World-Office is an independent, open-source document editing suite built in Rust + TypeScript. The Rust core implements format parsing, rendering, conversion, WOPI/WebDAV protocols, desktop (Tauri), and WASM/browser targets. The TypeScript monorepo (pnpm) provides React-based document, spreadsheet, presentation, PDF, and Visio editors.
+World-Office is an independent, open-source document editing suite built in Rust + TypeScript. The Rust core implements format parsing, rendering, conversion, WOPI/WebDAV protocols, and WASM/browser targets. The TypeScript monorepo (pnpm) holds framework-agnostic editor packages (controllers, ribbon specs, plugin SDK, stores, i18n); the React editor apps were removed 2026-11-27 and the editor UI is being ported to Leptos/WASM (ADR-F1).
 
 ## STRUCTURE
 
 ```
 server/
 +-- core/crates/                     26 Rust crates (format parsers, renderer, WASM, protocols)
-+-- desktop/tauri-poc/               Tauri 2.0 desktop shell (10 modules)
 +-- services/                        8 Rust microservices
-+-- apps/web/                        Web editor frontend (editors, themes, translations)
-+-- apps/web/apps/                   Individual editor apps (documenteditor-react, spreadsheeteditor-react, etc.)
++-- apps/web/                        Web editor frontend (Leptos ribbon PoC, themes, translations)
++-- apps/web/apps/                   ribbon-leptos (WASM UI PoC), legacy vanilla tree (common, api — not built)
 +-- packages/                        Shared TypeScript packages (design-system, editor-common, etc.)
 +-- integrations/                    Third-party integrations
 +-- tests/                           E2E test suite (Jest + Playwright + Docker Compose)
@@ -85,7 +86,6 @@ server/
 | identity-service | Auth (JWT, OAuth2, SAML 2.0, OIDC, LDAP) |
 | session-service | Session management |
 | server | Main document server |
-| admin-panel | Admin dashboard |
 
 ### Storage Service Details
 
@@ -103,35 +103,17 @@ server/
 | scim-service | SCIM provisioning (user/group sync, LDAP integration) |
 | webhook-service | Webhook dispatch for document events |
 
-## TAURI DESKTOP (desktop/tauri-poc/)
-
-10 Rust modules providing native desktop functionality:
-- commands.rs -- Document operations (new, open, save, zoom, fullscreen)
-- menu.rs -- Application menus (File/Edit/View/Help) using Tauri 2.0
-- tray.rs -- System tray with context menu
-- window.rs -- Multi-window management
-- state.rs -- AppState with recent files, window count
-- filesystem.rs -- 13 native filesystem commands (Rust to JS bridge)
-- print.rs -- Print support (render, preview, page sizes)
-- updater.rs -- Auto-updater (Tauri updater plugin)
-- keychain.rs -- Credential storage (keyring crate)
-
 ## WEB EDITORS (apps/web/)
 
-Editor apps in `apps/web/apps/`:
-- documenteditor, documenteditor-react
-- spreadsheeteditor, spreadsheeteditor-react
-- presentationeditor, presentationeditor-react
-- pdfeditor, pdfeditor-react
-- visioeditor, visioeditor-react
-- api, common, editor-shell
+The React editor apps were removed 2026-11-27 (see banner). What remains in `apps/web/apps/`:
+- ribbon-leptos -- Leptos 0.8 + Trunk WASM ribbon PoC (Home tab only, not a workspace member)
+- common, api -- legacy vanilla JS tree, not built, fate pending
 
-Shared packages in `packages/` under `@world-office` namespace:
-- editor-common -- Shared React components and utilities for editors
+Framework-agnostic packages in `packages/` under `@world-office` namespace:
+- editor-common -- Editor controllers, ribbon specs (Leptos port source), plugin loader, utils
 - editor-stores -- Editor state management
-- design-system -- Tokens, theme, and primitive components
+- design-system -- Design tokens only
 - collaboration-client -- Collaboration protocol client
-- collaboration-react -- React bindings for collaboration
 - sdk-bridge -- SDK bridge layer
 - plugin-sdk -- Plugin SDK (types, validator, scaffold CLI)
 - i18n -- Internationalization
@@ -163,7 +145,6 @@ Stack: Jest, Playwright, Docker Compose. Run with `npm test` or `npm run test:e2
 | Rust core | Cargo | `cargo build --workspace` |
 | Rust tests | Cargo | `cargo test --workspace --lib -- --test-threads=1` |
 | Rust lint | Clippy | `cargo clippy --workspace` |
-| Tauri desktop | Cargo + npm | `cd desktop/tauri-poc && cargo tauri dev` (excluded from CI — requires libwebkit2gtk-4.1-dev) |
 | Web frontend | pnpm | `pnpm install && pnpm dev` |
 | E2E tests | npm | `cd tests && npm test` |
 | CI | GitHub Actions | `.github/workflows/` (ci, deploy, docker, release, security, wasm) |

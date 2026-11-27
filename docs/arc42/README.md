@@ -26,7 +26,7 @@ canonical direction and lineage.
 | 02 | [Architecture Constraints](02-architecture-constraints.md) | Constraints | Rust 2024/axum+tokio, dedicated services, Node.js exception, WOPI/WebDAV standards, licensing. |
 | 03 | [Context & Scope](03-context-and-scope.md) | Context | Gateway-everything topology; MCP clients; OCIS/WOPI host; in/out of scope (cloud+AI focus). |
 | 04 | [Solution Strategy](04-solution-strategy.md) | Strategy | Microservice decomposition, format crates as libraries, CRDT collab, MCP via `rmcp`, AI passthrough proxy. |
-| 05 | [Building Block View](05-building-block-view.md) | Building blocks | api-gateway, identity, session, storage, conversion, coauthoring, mcp-server, Node docserver, admin-panel. |
+| 05 | [Building Block View](05-building-block-view.md) | Building blocks | api-gateway, identity, session, storage, conversion, coauthoring, mcp-server, Node docserver. |
 | 06 | [Runtime View](06-runtime-view.md) | Runtime | Scenarios: gateway routing+auth, storage CRUD, conversion, WebSocket collab, MCP agent call, AI chat proxy. |
 | 07 | [Deployment View](07-deployment-view.md) | Deployment | `docker-compose.services.yml` topology, ports, observability stack (Grafana/Prometheus/Loki/Tempo), CI. |
 | 08 | [Cross-cutting Concepts](08-cross-cutting-concepts.md) | Cross-cutting | JWT/OAuth2 auth, tower-http CORS, tracing, persistence patterns, AI provider config, security anti-patterns. |
