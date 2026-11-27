@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-27T02:14:21.971Z",
+ "generatedAt": "2026-11-27T03:29:41.454Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -15863,20 +15863,20 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "[data-pane-view=\"history\"]"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "pane title",
-     "selector": "h2"
+   "subFeatures": null,
+   "note": "loop37-2 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filehistory",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-history"
     },
-    {
-     "name": "History action",
-     "selector": "#btn-history"
-    }
-   ],
-   "note": "option row (OO Versions surface): the History pane's #btn-history opens the version-history dialog (openVersionHistory, editor.js:5495) [override-only: no ledger row matched this key]"
+    "pre": "file-menu",
+    "xfail": false,
+    "note": "loop37-2 react-port: FileMenu Version History panel via #filehistory - react FileMenu pane fix"
+   }
   },
   {
    "tab": "backstage",
@@ -15917,20 +15917,20 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "[data-pane-view=\"print\"]"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "pane title",
-     "selector": "h2"
+   "subFeatures": null,
+   "note": "loop37-2 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "[data-pane=\"printpreview\"]",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-content-box:has(.de-print-preview-container)"
     },
-    {
-     "name": "Print action",
-     "selector": "#btn-print"
-    }
-   ],
-   "note": "option row (OO fm-btn-print 'Print'): the Print pane carries the #btn-print primary action (doPrint -> window.print, editor.js:11134 — a native pipeline with no DOM-observable effect, so the contract pins the option surface, not the print call) [override-only: no ledger row matched this key]"
+    "pre": "file-menu",
+    "xfail": false,
+    "note": "loop37-2 react-port: FileMenu Print Preview panel via [data-pane=\"printpreview\"] - react FileMenu pane fix"
+   }
   },
   {
    "tab": "backstage",
@@ -15944,20 +15944,20 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "[data-pane-view=\"settings\"]"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "pane title",
-     "selector": "h2"
+   "subFeatures": null,
+   "note": "loop37-2 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filesettings",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-content-box:has(.de-file-menu-select)"
     },
-    {
-     "name": "Settings action",
-     "selector": "#btn-filesettings"
-    }
-   ],
-   "note": "option row (OO fm-btn-settings 'Advanced Settings'): WO's Settings pane — the ledger's file.advanced-settings row binds chartSettings (a mismatched fuzzy hit); this row pins the real WO surface, the #btn-filesettings settings-dialog opener [override-only: no ledger row matched this key]"
+    "pre": "file-menu",
+    "xfail": false,
+    "note": "loop37-2 react-port: FileMenu Advanced Settings panel via #filesettings - react FileMenu pane fix"
+   }
   },
   {
    "tab": "backstage",
@@ -15998,52 +15998,20 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "[data-pane-view=\"help\"]"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "pane title",
-     "selector": "h2"
+   "subFeatures": null,
+   "note": "loop37-2 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filehelp",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-help-content"
     },
-    {
-     "name": "shortcut row: save",
-     "selector": ".bs-shortcut-row[data-key=\"s\"]"
-    },
-    {
-     "name": "shortcut row: comment",
-     "selector": ".bs-shortcut-row[data-key=\"a\"]"
-    },
-    {
-     "name": "shortcut row: undo/redo",
-     "selector": ".bs-shortcut-row[data-key=\"z\"]"
-    },
-    {
-     "name": "shortcut row: format",
-     "selector": ".bs-shortcut-row[data-key=\"b\"]"
-    },
-    {
-     "name": "shortcut row: find",
-     "selector": ".bs-shortcut-row[data-key=\"f\"]"
-    },
-    {
-     "name": "shortcut row: replace",
-     "selector": ".bs-shortcut-row[data-key=\"h\"]"
-    },
-    {
-     "name": "shortcut row: zoom",
-     "selector": ".bs-shortcut-row[data-key=\"wheel\"]"
-    },
-    {
-     "name": "about line",
-     "selector": "#backstage-about"
-    },
-    {
-     "name": "Help dialog action",
-     "selector": "#btn-filehelp"
-    }
-   ],
-   "note": "option row (OO fm-btn-help 'Help'): the Help pane renders the shortcut table (pinned by backstage-deep-gate.test.mjs), the about line and the #btn-filehelp dialog opener [override-only: no ledger row matched this key]"
+    "pre": "file-menu",
+    "xfail": false,
+    "note": "loop37-2 react-port: FileMenu Help panel via #filehelp - react FileMenu pane fix"
+   }
   },
   {
    "tab": "backstage",
@@ -16120,40 +16088,20 @@
    "woTab": "backstage",
    "effektClass": "dialog",
    "assertion": {
-    "kind": "dialog-visible",
-    "dialogSelector": "#settings-dialog"
+    "kind": "unspecified"
    },
-   "subFeatures": [
-    {
-     "name": "interface theme select",
-     "selector": "#settings-theme"
+   "subFeatures": null,
+   "note": "loop37-2 [override-only: no ledger row matched this key]",
+   "contract": {
+    "selector": "#filesettings",
+    "assertion": {
+     "kind": "dialog-visible",
+     "dialogSelector": ".de-file-menu-content-box:has(.de-file-menu-select)"
     },
-    {
-     "name": "language select",
-     "selector": "#settings-lang"
-    },
-    {
-     "name": "spellcheck toggle",
-     "selector": "#settings-spellcheck"
-    },
-    {
-     "name": "zoom input",
-     "selector": "#settings-zoom"
-    },
-    {
-     "name": "autocorrect options action",
-     "selector": "#btn-settings-autocorrect"
-    },
-    {
-     "name": "apply action",
-     "selector": "#btn-settings-ok"
-    },
-    {
-     "name": "cancel action",
-     "selector": "#btn-settings-cancel"
-    }
-   ],
-   "note": "option row (OO fm-btn-settings 'Advanced Settings'): #btn-filesettings syncs live state and opens #settings-dialog with the theme/language/spellcheck/zoom options (editor.js:13089) [override-only: no ledger row matched this key]"
+    "pre": "backstage:opts",
+    "xfail": false,
+    "note": "loop37-2 react-port: FileMenu #filesettings opens settings panel (Advanced Settings) - react FileMenu pane fix"
+   }
   },
   {
    "tab": "backstage",
