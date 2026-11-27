@@ -69,6 +69,7 @@ const url = process.argv[2];
   console.log(`pitch at default: ${pitchDefault}px`);
 
   // Set line-spacing to 1 explicitly and measure again
+  await page.keyboard.press('Control+a'); // spacing is a PARAGRAPH property: apply to both paragraphs
   await page.selectOption('#line-spacing', '1');
   await page.waitForTimeout(200);
   let s = await status();
@@ -85,6 +86,7 @@ const url = process.argv[2];
   console.log(`pitch at line-spacing=1: ${pitch1}px`);
 
   // Set line-spacing to 3
+  await page.keyboard.press('Control+a'); // spacing is a PARAGRAPH property: apply to both paragraphs
   await page.selectOption('#line-spacing', '3');
   await page.waitForTimeout(200);
   s = await status();
@@ -109,6 +111,7 @@ const url = process.argv[2];
   );
 
   // Set back to 1 and verify pitch returns to approximately the same value
+  await page.keyboard.press('Control+a'); // spacing is a PARAGRAPH property: apply to both paragraphs
   await page.selectOption('#line-spacing', '1');
   await page.waitForTimeout(200);
   s = await status();
