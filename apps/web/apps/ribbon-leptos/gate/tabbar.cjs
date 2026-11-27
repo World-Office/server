@@ -10,13 +10,14 @@ const url = process.argv[2];
   await page.goto(url, { waitUntil: 'networkidle' });
   const count = (sel) => page.locator(sel).count();
   const get = async (sel, prop) => page.locator(sel).first().getAttribute(prop);
-  const check = async (name, ok, detail) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`); if (!ok) process.exitCode = 1; };
+  let failed = 0
+  const check = async (name, ok, detail) => { if (!ok) failed++; console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`); if (!ok) process.exitCode = 1; };
 
-  // 10 tabs with correct labels
+  // One tab per word-ribbon.ts tab, in order (11 — Chart Design is last and unconditional)
   const tabs = page.locator('#ribbon-tabs [role=tab]');
-  await check('10 tabs with role=tab', (await count('#ribbon-tabs [role=tab]')) === 10, `${await count('#ribbon-tabs [role=tab]')}`);
-  const expectedLabels = ['Home', 'Insert', 'Draw', 'Layout', 'References', 'Collaboration', 'Protection', 'View', 'Plugins', 'AI'];
-  for (let i = 0; i < 10; i++) {
+  const expectedLabels = ['Home', 'Insert', 'Draw', 'Layout', 'References', 'Collaboration', 'Protection', 'View', 'Plugins', 'AI', 'Chart Design'];
+  await check(`${expectedLabels.length} tabs with role=tab`, (await count('#ribbon-tabs [role=tab]')) === expectedLabels.length, `${await count('#ribbon-tabs [role=tab]')}`);
+  for (let i = 0; i < expectedLabels.length; i++) {
     const label = await tabs.nth(i).textContent();
     await check(`tab ${i} label is ${expectedLabels[i]}`, label === expectedLabels[i], `${label}`);
   }
@@ -59,22 +60,22 @@ const url = process.argv[2];
 
   // Test End key
   await page.keyboard.press('End');
-  await check('End: AI selected', (await tabs.filter({ hasText: 'AI' }).getAttribute('aria-selected')) === 'true');
-  await check('End: AI has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-ai');
+  await check('End: last tab (Chart Design) selected', (await tabs.filter({ hasText: 'Chart Design' }).getAttribute('aria-selected')) === 'true');
+  await check('End: last tab has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-chart-design');
 
   // Test Home key
   await page.keyboard.press('Home');
   await check('Home: Home selected', (await tabs.filter({ hasText: 'Home' }).getAttribute('aria-selected')) === 'true');
   await check('Home: Home has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-home');
 
-  // Test ArrowLeft from Home (should wrap to AI)
+  // Test ArrowLeft from Home (should wrap to the last tab)
   await page.keyboard.press('ArrowLeft');
-  await check('ArrowLeft from Home: AI selected', (await tabs.filter({ hasText: 'AI' }).getAttribute('aria-selected')) === 'true');
-  await check('ArrowLeft from Home: AI has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-ai');
+  await check('ArrowLeft from Home: last tab selected', (await tabs.filter({ hasText: 'Chart Design' }).getAttribute('aria-selected')) === 'true');
+  await check('ArrowLeft from Home: last tab has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-chart-design');
 
-  // Test ArrowRight from AI (should wrap to Home)
+  // Test ArrowRight from the last tab (should wrap to Home)
   await page.keyboard.press('ArrowRight');
-  await check('ArrowRight from AI: Home selected', (await tabs.filter({ hasText: 'Home' }).getAttribute('aria-selected')) === 'true');
+  await check('ArrowRight from last tab: Home selected', (await tabs.filter({ hasText: 'Home' }).getAttribute('aria-selected')) === 'true');
   await check('ArrowRight from AI: Home has focus', (await page.evaluate(() => document.activeElement.id)) === 'tab-home');
 
   // After all steps, exactly one aria-selected=true
@@ -85,5 +86,5 @@ const url = process.argv[2];
   await check('no page errors', errors.length === 0, errors.join(' | '));
 
   await browser.close();
-  console.log('TABBAR OK');
+  console.log(failed ? `TABBAR: ${failed} FAILED` : 'TABBAR OK');
 })().catch((e) => { console.error('PROBE CRASHED', e.message); process.exit(1); });

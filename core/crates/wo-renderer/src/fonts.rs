@@ -97,7 +97,15 @@ impl FontLibrary {
         if let Some(id) = self.db.query(&query_normal) {
             return Some(id);
         }
-        self.db.faces().next().map(|info| info.id)
+        // Last resort: the face whose weight is closest to the requested one. Taking the
+        // first-loaded face here rendered every bold run as regular under wasm, where only the
+        // embedded family exists and fontdb does not file it under the generic `SansSerif`.
+        self.db
+            .faces()
+            .filter(|i| i.style == fontdb::Style::Normal)
+            .min_by_key(|i| (i.weight.0 as i32 - weight.0 as i32).abs())
+            .or_else(|| self.db.faces().next())
+            .map(|info| info.id)
     }
 
     /// A default query with normal weight, stretch, and style.
@@ -199,6 +207,22 @@ impl FontLibrary {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bold_query_picks_the_bold_face_when_only_the_embedded_family_is_loaded() {
+        let dir = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../assets/fonts/liberation/"
+        );
+        let mut lib = FontLibrary::empty();
+        for face in ["Regular", "Bold", "Italic", "BoldItalic"] {
+            lib.load_font(&std::fs::read(format!("{dir}LiberationSans-{face}.ttf")).unwrap());
+        }
+        let (regular, _) = lib.query_face_weighted(false).unwrap();
+        let (bold, _) = lib.query_face_weighted(true).unwrap();
+        assert_ne!(regular, bold, "bold text must shape with a different face");
+        assert_eq!(lib.face_count(), 4);
+    }
 
     #[test]
     fn test_empty_library_fallbacks() {

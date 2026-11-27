@@ -31,7 +31,9 @@ impl Doc {
         Self(h, false)
     }
 
-    /// Initial layout. Must run before any edit so the engine has a cursor.
+    /// Initial layout of the PRISTINE file bytes (the engine's public `layout_document` reads
+    /// DOC_STORE, not the edited model). Init only: calling it after an edit re-lays out the
+    /// blank original and clobbers the engine's layout cache — the view goes white.
     pub fn layout(&self) -> Result<String, String> {
         let (s, o, m) = PAGE;
         wo_renderer_wasm::layout_document(self.0, s, o, m)
@@ -66,6 +68,119 @@ impl Doc {
         wo_renderer_wasm::get_run_formatting(self.0)
             .and_then(|j| serde_json::from_str(&j).map_err(|e| e.to_string()))
     }
+
+    // ── Editing: the canvas host's input path (same flow as the React CanvasEditor) ────────
+
+    /// A navigation/edit key: arrows, Home/End, Enter, Backspace, Delete — and Ctrl+A/Z/Y/B/I/U,
+    /// which the engine interprets itself. Typed TEXT goes through [`Self::insert_text`]:
+    /// `handle_key_event` only inserts single-BYTE keys, which silently drops "ü"/"é".
+    pub fn key(&self, key: &str, ctrl: bool, shift: bool) -> Result<String, String> {
+        let (s, o, m) = PAGE;
+        wo_renderer_wasm::handle_key_event(self.0, key, ctrl, shift, s, o, m)
+    }
+
+    /// Insert text at the cursor — the path for typed characters AND IME commits. '\n' breaks
+    /// the paragraph. Pushes undo history.
+    pub fn insert_text(&self, text: &str) -> Result<String, String> {
+        let (s, o, m) = PAGE;
+        wo_renderer_wasm::insert_text(self.0, text, s, o, m)
+    }
+
+    /// Click on a page (canvas px) → the caret goes there.
+    pub fn click(&self, page: u32, x: f32, y: f32) -> Result<Caret, String> {
+        wo_renderer_wasm::handle_mouse_event(self.0, page, x, y)
+            .and_then(|raw| serde_json::from_str::<Caret>(&raw).map_err(|e| e.to_string()))
+    }
+
+    /// Extend the selection to `x,y` on `page` (mouse drag).
+    pub fn drag(&self, page: u32, x: f32, y: f32) -> Result<(), String> {
+        wo_renderer_wasm::handle_mouse_drag(self.0, page, x, y).map(|_| ())
+    }
+
+    /// Caret position in canvas px, or None before the first edit/click. ponytail: the engine's
+    /// cursor JSON has no `page` field, so the host keeps the page of the last click; a
+    /// one-line engine addition (`"page": c.page`) would fix multi-page caret placement.
+    pub fn caret_xy(&self) -> Option<(f32, f32)> {
+        serde_json::from_str::<Caret>(&wo_renderer_wasm::get_cursor_position(self.0))
+            .ok()
+            .map(|c| (c.x, c.y))
+    }
+
+    /// Selection highlight rectangles, per page.
+    pub fn selection_rects(&self) -> Vec<Vec<Rect>> {
+        wo_renderer_wasm::get_selection_rects(self.0)
+            .ok()
+            .and_then(|j| serde_json::from_str(&j).ok())
+            .unwrap_or_default()
+    }
+
+    /// The selected text (clipboard). Empty when nothing is selected.
+    pub fn selected_text(&self) -> String {
+        wo_renderer_wasm::get_selected_text(self.0).unwrap_or_default()
+    }
+
+    /// Delete the selection (cut, without the clipboard part).
+    pub fn delete_selection(&self) -> Result<String, String> {
+        let (s, o, m) = PAGE;
+        wo_renderer_wasm::delete_selection(self.0, s, o, m)
+    }
+
+    /// Rasterize page `i` at `w×h` px as RGBA bytes. Runs on the host too (fonts only load
+    /// under wasm32), so the pixel path is unit-tested without a browser.
+    pub fn page_rgba(&self, i: u32, w: u32, h: u32) -> Result<Vec<u8>, String> {
+        let ch = wo_renderer_wasm::create_canvas(w, h);
+        if ch == 0 {
+            return Err(format!("create_canvas({w}, {h}) failed"));
+        }
+        let px = wo_renderer_wasm::render_laid_out_page(self.0, i, ch)
+            .and_then(|_| wo_renderer_wasm::get_pixel_data(ch));
+        let _ = wo_renderer_wasm::release_canvas(ch);
+        px
+    }
+}
+
+/// Caret as the engine reports it after a click: `{para, line, charIdx, x, y, found}`. Only the
+/// geometry and `found` matter to the host.
+#[derive(Clone, Copy, Debug, Default, serde::Deserialize)]
+pub struct Caret {
+    #[serde(default)]
+    pub x: f32,
+    #[serde(default)]
+    pub y: f32,
+    #[serde(default)]
+    pub found: bool,
+}
+
+/// A selection highlight rectangle on a page (canvas px).
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Deserialize)]
+pub struct Rect {
+    #[serde(default)]
+    pub x: f32,
+    #[serde(default)]
+    pub y: f32,
+    #[serde(default)]
+    pub w: f32,
+    #[serde(default)]
+    pub h: f32,
+}
+
+/** `(width, height)` in canvas px of every page, from the layout JSON every mutating engine
+/// call returns: a top-level array of `{width, height, marginPx, paragraphs, selection_rects}`.
+/// Empty on malformed input: an unparseable layout must not become a crash. */
+pub fn pages_of(layout: &str) -> Vec<(u32, u32)> {
+    let v: serde_json::Value = serde_json::from_str(layout).unwrap_or(serde_json::Value::Null);
+    v.as_array()
+        .map(|a| {
+            a.iter()
+                .map(|p| {
+                    (
+                        p["width"].as_f64().unwrap_or(0.0).round() as u32,
+                        p["height"].as_f64().unwrap_or(0.0).round() as u32,
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 impl Drop for Doc {
@@ -238,5 +353,87 @@ mod engine_roundtrip_tests {
             value: None,
         };
         assert!(d.exec(&heading, &pressed).expect("heading").is_some());
+    }
+}
+
+/// The canvas host's input path, on the real engine. `page_rgba` renders with no fonts on the
+/// host (they load under wasm32 only), so these prove geometry and state, not glyphs.
+#[cfg(test)]
+mod host_tests {
+    use super::*;
+
+    fn doc() -> Doc {
+        let d = Doc::open(crate::BLANK_DOCX).expect("open");
+        d.layout().expect("layout");
+        d
+    }
+
+    #[test]
+    fn layout_json_gives_page_geometry() {
+        let d = doc();
+        let pages = pages_of(&d.layout().expect("layout"));
+        assert_eq!(
+            pages,
+            vec![(793, 1123)],
+            "engine's A4 at 96 dpi (793, not 794), one page"
+        );
+        assert!(
+            pages_of("not json").is_empty(),
+            "garbage in → no pages, no panic"
+        );
+    }
+
+    #[test]
+    fn page_rasterizes_to_an_opaque_white_page() {
+        let d = doc();
+        let px = d.page_rgba(0, 794, 1123).expect("rasterize");
+        assert_eq!(px.len(), 794 * 1123 * 4, "RGBA, one page");
+        assert_eq!(
+            &px[..4],
+            &[255, 255, 255, 255],
+            "page corner is white, opaque"
+        );
+        assert!(
+            d.page_rgba(0, 0, 0).is_err(),
+            "a 0×0 canvas is an error, not a silent blank"
+        );
+    }
+
+    #[test]
+    fn typing_then_clicking_moves_the_caret() {
+        let d = doc();
+        assert!(d.caret_xy().is_none(), "no caret before the first edit");
+        d.insert_text("Hello").expect("insert");
+        assert!(d.caret_xy().is_some(), "caret exists after typing");
+        let c = d.click(0, 100.0, 100.0).expect("click is routed");
+        assert!(c.found, "a click on the first text line finds a position");
+        assert!(d.drag(0, 200.0, 100.0).is_ok());
+    }
+
+    #[test]
+    fn select_all_selects_the_typed_text() {
+        let d = doc();
+        d.insert_text("Hello").expect("insert");
+        d.key("a", true, false).expect("ctrl+a");
+        assert!(d.selected_text().contains("Hello"));
+        assert!(
+            !d.selection_rects().is_empty(),
+            "the engine reports highlight rects for the selection"
+        );
+        d.delete_selection().expect("delete selection");
+        assert!(!d.selected_text().contains("Hello"));
+    }
+
+    #[test]
+    fn undo_restores_deleted_text() {
+        let d = doc();
+        d.insert_text("Hello").expect("insert");
+        d.key("Backspace", false, false).expect("backspace");
+        d.key("z", true, false).expect("ctrl+z");
+        d.key("a", true, false).expect("select all");
+        assert!(
+            d.selected_text().contains("Hell"),
+            "undo brought the 'o' back"
+        );
     }
 }

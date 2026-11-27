@@ -1301,6 +1301,24 @@ pub fn create_document(doc_bytes: &[u8], format: &str) -> Result<u32, String> {
 ///
 /// Returns a JSON array with page dimensions and line positions.
 /// The layout is cached so subsequent calls are fast.
+/// A layout engine with the embedded font family loaded. wasm has no system fonts: an engine
+/// without them falls back to the regular face, so bold/italic never render (every edit path
+/// re-lays out through `layout_document_and_return_json`, not only this init layout).
+fn layout_engine_with_fonts() -> LayoutEngine {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        LayoutEngine::new() // host tests: system fonts
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut engine = LayoutEngine::new();
+        for font in crate::canvas_bridge::LIBERATION_FONTS {
+            engine.load_font(font);
+        }
+        engine
+    }
+}
+
 #[wasm_bindgen]
 pub fn layout_document(
     doc_handle: u32,
@@ -1323,13 +1341,7 @@ pub fn layout_document(
 
     let body = ooxml.docx_body.unwrap_or_else(DocxBody::default);
 
-    let mut engine = LayoutEngine::new();
-    // Load the Liberation font family so bold/italic text renders with real
-    // faces (previously the library was empty → everything drew regular).
-    #[cfg(target_arch = "wasm32")]
-    for font in crate::canvas_bridge::LIBERATION_FONTS {
-        engine.load_font(font);
-    }
+    let mut engine = layout_engine_with_fonts();
     let pages = engine.layout_document(&body, page_size, orientation, margin_pt);
 
     // Cache layout and engine
@@ -2976,7 +2988,7 @@ fn layout_document_and_return_json(
         .unwrap_or_else(DocxBody::default);
     drop(model_store);
 
-    let mut engine = LayoutEngine::new();
+    let mut engine = layout_engine_with_fonts();
     let pages = engine.layout_document(&body, page_size, orientation, margin_pt);
 
     // Update layout cache

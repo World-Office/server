@@ -9,6 +9,14 @@
   <style>
     html,body{margin:0;height:100%;background:#ececec;font:13px/1.2 "Segoe UI",Arial,sans-serif;user-select:none}
     #toolbar{background:#f4f4f4;border-bottom:1px solid #d1d1d1}
+    /* canvas host (src/editor.rs): app column = ribbon + pages; overlay nodes over each page */
+    .app{display:flex;flex-direction:column;height:100%}
+    .pages{flex:1;overflow:auto;background:#e6e6e6;padding:24px 0;display:flex;flex-direction:column;align-items:center;gap:24px}
+    .page{position:relative;flex:none;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.25);cursor:text}
+    .page canvas{display:block}
+    .sel{position:absolute;background:rgba(0,120,215,.3);pointer-events:none}
+    .caret{position:absolute;width:2px;height:18px;background:#333;pointer-events:none}
+    .caret.off{visibility:hidden}
     #ribbon-tabs{display:flex;gap:2px;padding:4px 8px 0 110px;height:28px;align-items:stretch}
     #ribbon-tabs .tab{border:1px solid transparent;border-bottom:0;background:transparent;padding:0 12px;cursor:pointer;font:inherit;color:#333}
     #ribbon-tabs .tab.active{background:#fff;border-color:#d1d1d1}
@@ -22,8 +30,8 @@
     .btn[aria-pressed="true"]{background:#cfe0f5;border-color:#9bc0e6}
     /* OO golden: EVERY control is 24px tall on both rows. data-size only decides the row
        (Large = top row, Small = bottom row); buttons are 24×24 icon-only, combos are wider. */
-    .btn[data-size]{width:24px;height:24px}
-    .btn[data-kind=select]{width:auto;min-width:90px;padding:0 5px;gap:4px;justify-content:space-between}
+    .btn[data-kind=button]{width:24px;height:24px}
+    .btn[data-kind=select]{width:auto;min-width:90px;height:24px;padding:0 5px;gap:4px;justify-content:space-between}
     .btn[data-kind=color-picker]{flex-direction:column;gap:1px}
     .btn .icon{font-size:12px;line-height:16px;height:16px}
     .btn .caret{font-size:10px;line-height:10px}

@@ -31,7 +31,8 @@ pub fn RibbonGroup(group: Group, st: RibbonState) -> impl IntoView {
         .filter(|c| c.when.is_none_or(|w| w.eval(&st.ctx.get())))
         .partition(|c| match &c.kind {
             Kind::Button { command, .. } => TOP_ROW_COMMANDS.contains(command),
-            Kind::Separator => false,
+            // Color pickers sit BELOW with the toggles in ONLYOffice (B I U S x₂ x² A ▾ ▾).
+            Kind::ColorPicker { .. } | Kind::Separator => false,
             _ => true,
         });
     let top = RwSignal::new(top);

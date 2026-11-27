@@ -44,15 +44,15 @@ const url = process.argv[2];
   await check('row-top no underline', (await rowTop.locator('#underline').count()) === 0);
   await check('row-top no text-color', (await rowTop.locator('#text-color').count()) === 0);
 
-  // All buttons in row-top have data-size=large
-  const topButtons = rowTop.locator('.btn');
+  // Top-row buttons (steppers, lists, indent…) are 24×24 too; selects/combos fill the row height
+  const topButtons = rowTop.locator('.btn[data-kind=button]');
   const topButtonCount = await topButtons.count();
-  let allLarge = true;
+  let topSquare = true;
   for (let i = 0; i < topButtonCount; i++) {
-    const size = await topButtons.nth(i).getAttribute('data-size');
-    if (size !== 'large') { allLarge = false; break; }
+    const box = await topButtons.nth(i).boundingBox();
+    if (box.width !== 24 || box.height !== 24) { topSquare = false; break; }
   }
-  await check('all row-top buttons have data-size=large', allLarge);
+  await check('all row-top buttons are 24×24', topSquare, `${topButtonCount} buttons`);
 
   // row-bottom should have bold, italic, underline, text-color
   await check('row-bottom has bold', (await rowBottom.locator('#bold').count()) === 1);
@@ -67,15 +67,15 @@ const url = process.argv[2];
   await check('bold before italic', boldBox.x < italicBox.x);
   await check('italic before underline', italicBox.x < underlineBox.x);
 
-  // All buttons in row-bottom have data-size=small
-  const bottomButtons = rowBottom.locator('.btn');
+  // ONLYOffice ribbon buttons are uniform 24×24 (CSS keys off data-kind; the spec has no size field)
+  const bottomButtons = rowBottom.locator('.btn[data-kind=button]');
   const bottomButtonCount = await bottomButtons.count();
-  let allSmall = true;
+  let bottomSquare = true;
   for (let i = 0; i < bottomButtonCount; i++) {
-    const size = await bottomButtons.nth(i).getAttribute('data-size');
-    if (size !== 'small') { allSmall = false; break; }
+    const box = await bottomButtons.nth(i).boundingBox();
+    if (box.width !== 24 || box.height !== 24) { bottomSquare = false; break; }
   }
-  await check('all row-bottom buttons have data-size=small', allSmall);
+  await check('all row-bottom buttons are 24×24', bottomSquare, `${bottomButtonCount} buttons`);
 
   // (2) Clipboard group
   await check('clipboard group exists', (await count('.group[data-group="clipboard"]')) === 1);
@@ -87,11 +87,11 @@ const url = process.argv[2];
   await check('clipboard group-label is last child', (await lastChild.getAttribute('class'))?.includes('group-label'));
   await check('clipboard label text', (await clipboardGroup.locator('.group-label').textContent()) === 'Clipboard');
 
-  // cut, copy, paste, copy-style all have data-size=small
-  await check('cut has data-size=small', (await page.locator('#cut').getAttribute('data-size')) === 'small');
-  await check('copy has data-size=small', (await page.locator('#copy').getAttribute('data-size')) === 'small');
-  await check('paste has data-size=small', (await page.locator('#paste').getAttribute('data-size')) === 'small');
-  await check('copy-style has data-size=small', (await page.locator('#copy-style').getAttribute('data-size')) === 'small');
+  // cut, copy, paste, copy-style are uniform 24×24 buttons
+  for (const id of ['cut', 'copy', 'paste', 'copy-style']) {
+    const box = await page.locator(`#${id}`).boundingBox();
+    await check(`${id} is 24×24`, box.width === 24 && box.height === 24, `${box.width}×${box.height}`);
+  }
 
   // Order: cut before copy before copy-style
   const cutX = (await page.locator('#cut').boundingBox()).x;
@@ -106,7 +106,6 @@ const url = process.argv[2];
   await check('#bold has data-command=bold', (await page.locator('#bold').getAttribute('data-command')) === 'bold');
   await check('#bold has aria-label=Bold', (await page.locator('#bold').getAttribute('aria-label')) === 'Bold');
   await check('#bold has title with shortcut', (await page.locator('#bold').getAttribute('title')) === 'Bold (Ctrl+B)');
-  await check('#bold has data-size=small', (await page.locator('#bold').getAttribute('data-size')) === 'small');
   await check('#bold has aria-pressed=false initially', (await page.locator('#bold').getAttribute('aria-pressed')) === 'false');
 
   // #cut has no aria-pressed
@@ -126,31 +125,40 @@ const url = process.argv[2];
   await check('#bold aria-pressed=false when italic clicked', (await page.locator('#bold').getAttribute('aria-pressed')) === 'false');
 
   // Check exactly one aria-pressed=true exists
-  const pressedCount = await page.locator('[aria-pressed="true"]').count();
-  await check('exactly one aria-pressed=true', pressedCount === 1);
+  // Counted among the two toggles under test only: other buttons (e.g. align-left) legitimately
+  // read pressed because they mirror the document's state.
+  const pressedCount = await page.locator('#bold[aria-pressed="true"], #italic[aria-pressed="true"]').count();
+  await check('exactly one of bold/italic pressed', pressedCount === 1);
 
-  // Click bold while italic is pressed - bold should be true, italic false
+  // Bold and italic are INDEPENDENT document toggles (pressed mirrors the engine's run
+  // formatting): with italic on, clicking bold presses both — the text is bold AND italic.
   await page.locator('#bold').click();
   await check('#bold aria-pressed=true when clicked', (await page.locator('#bold').getAttribute('aria-pressed')) === 'true');
-  await check('#italic aria-pressed=false when bold clicked', (await page.locator('#italic').getAttribute('aria-pressed')) === 'false');
+  await check('#italic stays pressed when bold clicked (document state)', (await page.locator('#italic').getAttribute('aria-pressed')) === 'true');
+  const pressedBoth = await page.locator('#bold[aria-pressed="true"], #italic[aria-pressed="true"]').count();
+  await check('exactly bold+italic pressed', pressedBoth === 2, `count=${pressedBoth}`);
+  await page.locator('#italic').click();
+  await check('#italic toggles off (second click) while bold stays', (await page.locator('#italic').getAttribute('aria-pressed')) === 'false'
+    && (await page.locator('#bold').getAttribute('aria-pressed')) === 'true');
 
   // (4) Select and ColorPicker
-  // #font-family is select with caption and caret
+  // #font-family is a NATIVE <select> (platform popup, keyboard, a11y for free) — the caption
+  // is its accessible name, the "caret" is the platform's own
   await check('#font-family has data-kind=select', (await page.locator('#font-family').getAttribute('data-kind')) === 'select');
   await check('#font-family in row-top', (await rowTop.locator('#font-family').count()) === 1);
-  await check('#font-family has .caption', (await page.locator('#font-family .caption').count()) === 1);
-  await check('#font-family .caption text is Font', (await page.locator('#font-family .caption').textContent()) === 'Font');
-  await check('#font-family has .caret', (await page.locator('#font-family .caret').count()) === 1);
+  await check('#font-family is a native <select>', await page.locator('#font-family').evaluate((el) => el.tagName) === 'SELECT');
+  await check('#font-family accessible name is Font', (await page.locator('#font-family').getAttribute('aria-label')) === 'Font');
+  await check('#font-family has options', await page.locator('#font-family option').count() > 1);
   
   const fontFamilyBox = await page.locator('#font-family').boundingBox();
   await check('#font-family height 22-26', fontFamilyBox.height >= 22 && fontFamilyBox.height <= 26, `height=${fontFamilyBox.height}`);
 
   // #font-size is select
   await check('#font-size has data-kind=select', (await page.locator('#font-size').getAttribute('data-kind')) === 'select');
-  await check('#font-size has .caption', (await page.locator('#font-size .caption').count()) === 1);
-  // The caption must be the word-ribbon.ts label verbatim: "Font size" (lowercase s).
-  await check('#font-size .caption text is "Font size" (TS label)', (await page.locator('#font-size .caption').textContent()) === 'Font size');
-  await check('#font-size has .caret', (await page.locator('#font-size .caret').count()) === 1);
+  await check('#font-size is a native <select>', await page.locator('#font-size').evaluate((el) => el.tagName) === 'SELECT');
+  // The accessible name must be the word-ribbon.ts label verbatim: "Font size" (lowercase s).
+  await check('#font-size accessible name is "Font size" (TS label)', (await page.locator('#font-size').getAttribute('aria-label')) === 'Font size');
+  await check('#font-size has options', await page.locator('#font-size option').count() > 1);
 
   // #text-color is color-picker with color-bar
   await check('#text-color has data-kind=color-picker', (await page.locator('#text-color').getAttribute('data-kind')) === 'color-picker');

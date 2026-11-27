@@ -57,10 +57,11 @@ const url = process.argv[2];
     await imeOut.getAttribute('data-committed') === '日本語x',
     `got: ${await imeOut.getAttribute('data-committed')}`);
 
-  // Verify the textarea value is correct
-  await check('textarea value is 日本語x', 
-    await bridge.evaluate(el => el.value) === '日本語x',
-    `got: ${await bridge.evaluate(el => el.value)}`);
+  // Since the canvas editor owns the text, the bridge is drained after every commit: the text
+  // lives in the document, the textarea only ferries events (its value would be re-inserted).
+  await check('textarea is drained — text lives in the document', 
+    await bridge.evaluate(el => el.value) === '',
+    `got: ${JSON.stringify(await bridge.evaluate(el => el.value))}`);
 
   await check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

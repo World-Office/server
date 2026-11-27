@@ -11,13 +11,9 @@ use wasm_bindgen::prelude::*;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 use wo_renderer::{Canvas, Color, FontLibrary};
 
-#[cfg(target_arch = "wasm32")]
-static FALLBACK_FONT_BYTES: &[u8] =
-    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Regular.ttf");
-
-/// Liberation Sans family — regular, bold, italic, bold-italic.
-/// These are loaded into the FontLibrary so bold/italic text renders with
-/// real font faces instead of falling back to the regular weight.
+/// Liberation Sans family — regular, bold, italic, bold-italic. Loaded into BOTH the layout
+/// engine (`layout_engine_with_fonts`) and every raster canvas (`create_canvas`): wasm has no
+/// system fonts, and a library with only the regular face renders bold/italic as regular.
 #[cfg(target_arch = "wasm32")]
 pub const LIBERATION_FONTS: &[&[u8]] = &[
     include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Regular.ttf"),
@@ -70,7 +66,9 @@ pub fn create_canvas(width: u32, height: u32) -> u32 {
     #[cfg(target_arch = "wasm32")]
     {
         let mut font_lib = FontLibrary::new();
-        font_lib.load_font(FALLBACK_FONT_BYTES);
+        for font in LIBERATION_FONTS {
+            font_lib.load_font(font);
+        }
         canvas.set_font_library(font_lib);
     }
     #[cfg(not(target_arch = "wasm32"))]

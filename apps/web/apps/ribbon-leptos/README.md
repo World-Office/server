@@ -13,9 +13,9 @@ hand-ported; the command router is a Rust port of the React app's `word-commands
 node tools/gen-ribbon-spec.mjs         # regenerate src/ribbon/spec.rs from word-ribbon.ts
 node tools/gen-ribbon-spec.mjs --check # CI gate: fail if the generated file is stale
 trunk build --release                  # → dist/ (serve dist/ on any static server)
-cargo test --lib                       # 11 unit tests incl. a real-engine round-trip, no browser
-bash gate/ime.sh                       # build + IME bridge gate (Playwright)
-bash gate/port.sh                      # build + ribbon port gate (Playwright)
+cargo test --lib                       # 16 unit tests incl. a real-engine round-trip, no browser
+for g in port editor ime group tabbar measure; do bash gate/$g.sh; done   # build + browser gates (Playwright)
+# Known gaps print `XFAIL`; WO_RUN_XFAILS=1 promotes them to failures so a fixed gap gets noticed.
 ```
 
 ## What is proven where
@@ -28,7 +28,12 @@ bash gate/port.sh                      # build + ribbon port gate (Playwright)
 | Click → engine → `aria-pressed` reflects the document, toggle round-trip | `gate/port.cjs` |
 | `ctx.isEditMode` predicates are live (11 tabs → 8 leaving edit mode) | `gate/port.cjs` |
 | Non-engine commands are reported honestly, never as fake success | `gate/port.cjs` |
-| IME composition reaches Rust via the hidden textarea | `gate/ime.sh` |
+| IME composition reaches Rust via the hidden textarea | `gate/ime.cjs` |
+| Typing, `insertText` (no keydown), paste, IME commit and deletes all land in the document; caret blinks, selection rects, focus kept after ribbon clicks | `gate/editor.cjs` (pixel counts + `#status`) |
+| Bold/italic RENDER with the real bold face under wasm (engine: edit-path layout, raster canvas and weight-aware face query) | `gate/editor.cjs` "bold face rendered", `wo-renderer fonts::tests` |
+| Two-row groups match the ONLYOffice golden (top row from `census-oo-deep.json`), uniform 24×24 buttons, native selects | `gate/group.cjs` |
+| 11 tabs in spec order, roving tabindex, arrow wrap, Home/End | `gate/tabbar.cjs` |
+| wasm/JS size budget | `gate/measure.sh` → `MEASUREMENTS.md` |
 
 ## Layout
 

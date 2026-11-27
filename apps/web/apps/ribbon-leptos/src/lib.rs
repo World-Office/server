@@ -1,12 +1,13 @@
 //! wo-ribbon-leptos — the World-Office ribbon UI in Rust → wasm, linked directly against the
 //! engine crate (ADR-F1). One wasm module: ribbon, command router and document model.
-mod ime;
+mod editor;
 mod ribbon;
 mod types;
 
+use editor::Editor;
 use leptos::prelude::*;
 use ribbon::control::RibbonState;
-use ribbon::engine::{pressed_from_formatting, Doc};
+use ribbon::engine::Doc;
 use ribbon::group::RibbonGroup;
 use ribbon::{spec, tabbar::TabBar};
 use types::RibbonContext;
@@ -46,6 +47,28 @@ pub fn woProbeBold(use_app_doc: bool) -> String {
 
 thread_local! {
     static APP_HANDLE: std::cell::RefCell<u32> = const { std::cell::RefCell::new(0) };
+}
+
+/// Gate hook: inspect the APP's document through the engine — `runfmt` (formatting at the caret,
+/// as the engine reports it), `selected` (selection text), `dark` (ink on page 0). What the
+/// pixels and the ribbon claim can then be checked against the engine's own state.
+/// camelCase on purpose: JS-facing name (gates call `window.woProbe`).
+#[allow(non_snake_case)]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn woProbe(what: String) -> String {
+    let d = APP_HANDLE.with(|h| Doc::from_handle(*h.borrow()));
+    match what.as_str() {
+        "runfmt" => d
+            .run_formatting()
+            .map(|f| f.to_string())
+            .unwrap_or_else(|e| e),
+        "selected" => d.selected_text(),
+        "dark" => d
+            .page_rgba(0, 793, 1123)
+            .map(|px| px.chunks(4).filter(|p| p[0] < 128).count().to_string())
+            .unwrap_or_else(|e| e),
+        _ => format!("unknown probe {what}"),
+    }
 }
 
 #[component]
@@ -91,12 +114,12 @@ pub fn App() -> impl IntoView {
     // The signal holds the engine's handle (a u32 is Copy); the engine owns the document.
     let doc = RwSignal::new(None::<u32>);
     let status = RwSignal::new("opening document…".to_string());
-    let opened = Doc::open(BLANK_DOCX).and_then(|d| d.layout().map(|_| d));
+    // The page view. Fed by the ribbon's Effect below and by the editor's own input handlers.
+    let view = editor::PageView::new();
+    let opened = Doc::open(BLANK_DOCX).and_then(|d| d.layout().map(|l| (d, l)));
     match opened {
-        Ok(d) => {
-            if let Ok(f) = d.run_formatting() {
-                pressed.set(pressed_from_formatting(&f));
-            }
+        Ok((d, l)) => {
+            view.refresh(&pressed, &d, &l);
             doc.set(Some(d.handle()));
             APP_HANDLE.with(|h| *h.borrow_mut() = d.handle());
             std::mem::forget(d); // the handle outlives this scope; released on page unload
@@ -123,11 +146,9 @@ pub fn App() -> impl IntoView {
             ribbon::control::Pressed::new(pressed.try_with(|p| p.clone()).unwrap_or_default());
         let d = Doc::from_handle(h);
         match d.exec(&c, &pressed_ro) {
-            Ok(Some(_layout)) => {
-                // ponytail: layout JSON is discarded — the canvas page view is the next slice.
-                if let Ok(f) = d.run_formatting() {
-                    pressed.set(pressed_from_formatting(&f));
-                }
+            Ok(Some(l)) => {
+                view.refresh(&pressed, &d, &l);
+                editor::focus_input(); // ribbon buttons steal focus on click
                 status.set(format!("{} ok", c.command));
             }
             Ok(None) => status.set(format!("{} (not an engine op yet)", c.command)),
@@ -136,15 +157,19 @@ pub fn App() -> impl IntoView {
     });
 
     view! {
+        <div class="app">
         <div id="toolbar">
             <TabBar tabs=visible_tabs active/>
             <section class="panel" role="tabpanel" data-tab=move || active.get()>
                 <For each=move || groups.get() key=|g| g.id.to_string() children=move |g| view! { <RibbonGroup group=g st/> } />
             </section>
             <p id="status" role="status">{status}</p>
-            // IME bridge: the hidden textarea composition events reach Rust through. Belongs to
-            // the editor canvas slice; mounted now so it stays compiled and its gate keeps running.
-            <ime::ImeProbe/>
+        </div>
+        // The canvas host, mounted once the document exists. Its hidden textarea is also the
+        // IME bridge (`#ime-bridge` / `#ime-out` — the IME gate's contract).
+        <Show when=move || doc.with(|d| d.is_some())>
+            {move || view! { <Editor doc=doc.try_get().flatten().unwrap_or(0) view pressed status/> }}
+        </Show>
         </div>
     }
 }
@@ -176,6 +201,12 @@ pub fn start() {
             &w,
             &"woProbeBold".into(),
             &wasm_bindgen::closure::Closure::<dyn Fn(bool) -> String>::new(woProbeBold)
+                .into_js_value(),
+        );
+        let _ = js_sys::Reflect::set(
+            &w,
+            &"woProbe".into(),
+            &wasm_bindgen::closure::Closure::<dyn Fn(String) -> String>::new(woProbe)
                 .into_js_value(),
         );
         let _ = js_sys::Reflect::set(
