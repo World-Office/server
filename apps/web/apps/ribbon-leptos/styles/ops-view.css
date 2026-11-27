@@ -1,1 +1,39 @@
-/* ribbon/ops module "view": its own stylesheet, so module tasks never share a file. */
+/* ribbon/ops module "view": host-side zoom (a CSS custom property on the document root) and the
+   dark document. Loaded after the base styles; equal specificity wins. */
+
+/* Zoom is HOST-SIDE: the engine's canvas bitmap never changes. `zoom` scales the whole page box —
+   the canvas, .caret and .sel live inside .page, so they scale with it, and the host maps clicks
+   through the canvas bounding rect (bitmap px = client px × bitmap / rect), which stays right.
+   --wo-zoom is written by src/ribbon/ops/view.rs (zoomIn / zoomOut / zoomTo100 / fitTo*). */
+.page {
+  zoom: var(--wo-zoom, 1);
+}
+
+/* Dark document: the paper the USER sees is inverted; the canvas bitmap is untouched. */
+.dark-document .pages {
+  background: #1b1b1f;
+}
+.dark-document .page canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* The zoom readout (Panel): Word's status-bar zoom, pinned to a corner of the document area.
+   Out of the layout flow (no room taken from the editor) and transparent to clicks. */
+#ops-view {
+  position: fixed;
+  right: 14px;
+  bottom: 10px;
+  z-index: 5;
+  pointer-events: none;
+  padding: 2px 8px;
+  font: 12px/16px "Segoe UI", Arial, sans-serif;
+  color: #333;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d1d1d1;
+  border-radius: 3px;
+}
+.dark-document #ops-view {
+  color: #ddd;
+  background: rgba(27, 27, 31, 0.9);
+  border-color: #444;
+}
