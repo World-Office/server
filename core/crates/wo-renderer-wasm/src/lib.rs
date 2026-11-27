@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::{Cursor, Read, Write};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
@@ -89,7 +90,10 @@ static ENGINE_STORE: OnceLock<Mutex<HashMap<u32, LayoutEngine>>> = OnceLock::new
 /// Cursor position per document (handle → (para_idx, run_idx, char_idx, x, y)).
 static CURSOR_STORE: OnceLock<Mutex<HashMap<u32, CursorPos>>> = OnceLock::new();
 
-static mut NEXT_DOC_HANDLE: u32 = 1000;
+/// Document handles. Atomic: `create_document` runs on every host thread (the ribbon's
+/// host tests run in parallel) and a raced `static mut` increment handed the same handle to
+/// two documents — one Drop then released the other's document.
+static NEXT_DOC_HANDLE: AtomicU32 = AtomicU32::new(1000);
 
 /// Cursor position within a document.
 #[derive(Debug, Clone, Copy, Default)]
@@ -102,10 +106,8 @@ struct CursorPos {
     pub y: f32,
 }
 
-unsafe fn next_doc_handle() -> u32 {
-    let h = NEXT_DOC_HANDLE;
-    NEXT_DOC_HANDLE += 1;
-    h
+fn next_doc_handle() -> u32 {
+    NEXT_DOC_HANDLE.fetch_add(1, Ordering::Relaxed)
 }
 
 // ── PDF Model (§2.3) ──────────────────────────────────────────────
@@ -1282,7 +1284,7 @@ pub fn create_document(doc_bytes: &[u8], format: &str) -> Result<u32, String> {
         .parse(doc_bytes)
         .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
 
-    let handle = unsafe { next_doc_handle() };
+    let handle = next_doc_handle();
 
     // Store raw bytes
     let store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -3777,7 +3779,7 @@ fn create_docx_model(bytes: &[u8]) -> Result<u32, String> {
         .parse(bytes)
         .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
 
-    let handle = unsafe { next_doc_handle() };
+    let handle = next_doc_handle();
 
     // Store the raw bytes
     let raw_store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));

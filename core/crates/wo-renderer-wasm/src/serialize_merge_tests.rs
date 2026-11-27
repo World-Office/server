@@ -91,7 +91,7 @@ mod tests {
         // open → edit one char, exactly like the browser does
         let parser = OoxmlParser::new();
         let ooxml = parser.parse(&original).expect("parse");
-        let handle = unsafe { next_doc_handle() };
+        let handle = next_doc_handle();
         DOC_STORE
             .get_or_init(|| Mutex::new(HashMap::new()))
             .lock()

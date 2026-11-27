@@ -411,6 +411,27 @@ mod host_tests {
     }
 
     #[test]
+    fn concurrent_create_document_never_hands_out_the_same_handle() {
+        // Two threads racing on the handle counter would share a DOC_STORE entry and one
+        // Drop would release the other's document ("Document handle 1004 not found").
+        let handles: std::collections::HashSet<u32> = std::thread::scope(|s| {
+            let docs: Vec<_> = (0..16)
+                .map(|_| {
+                    s.spawn(|| {
+                        wo_renderer_wasm::create_document(crate::BLANK_DOCX, "docx").expect("open")
+                    })
+                })
+                .collect();
+            docs.into_iter().map(|j| j.join().unwrap()).collect()
+        });
+        assert_eq!(
+            handles.len(),
+            16,
+            "every concurrent document gets its own handle"
+        );
+    }
+
+    #[test]
     fn the_caret_follows_typing_and_a_click_on_it_keeps_its_position() {
         let d = doc();
         d.insert_text("Hello").expect("insert");
