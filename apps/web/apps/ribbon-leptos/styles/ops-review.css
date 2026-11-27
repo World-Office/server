@@ -1,1 +1,7 @@
 /* ribbon/ops module "review": its own stylesheet, so module tasks never share a file. */
+/* The module has no visible DOM yet (every command but protect-document answers an honest
+   Err, and the protect toggle changes engine state, not pixels): an empty root must never
+   push the editor down. */
+.ops-panel#ops-review:empty {
+  display: none;
+}
