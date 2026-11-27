@@ -29,6 +29,10 @@ web-sys = { version = "0.3", features = [
   # and native clipboard events (copy/cut/paste — no permission prompt, unlike the async API)
   "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData", "MouseEvent",
   "HtmlTextAreaElement", "ClipboardEvent", "DataTransfer", "InputEvent",
+  # command modules (src/ribbon/ops/*.rs): ribbon-button clipboard (async API, needs a click),
+  # panel inputs/selects, and host-side view state (zoom via CSS custom properties, classes)
+  "Navigator", "Clipboard", "HtmlInputElement", "HtmlSelectElement", "HtmlButtonElement",
+  "CssStyleDeclaration", "DomTokenList", "Node", "Text",
 ] }
 
 # The engine, linked straight into the UI crate: ONE wasm module, no JS glue, no dynamic import.
