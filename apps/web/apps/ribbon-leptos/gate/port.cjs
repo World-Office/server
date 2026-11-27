@@ -57,10 +57,13 @@ const ok = (m) => console.log('port-gate ok: ' + m)
   ok('bulletList → engine structure op ok')
 
   // ── a non-engine command is reported honestly, not as success ──
-  await page.click('#toolbar [data-command="paste"]')
+  // (paste used to be the example; since the clipboard module it IS an engine op — the AI tab's
+  // settings button is owned by no module)
+  await page.click('[role=tab]#tab-ai')
+  await page.click('#toolbar [data-command="aiSettings"]')
   await page.waitForFunction(() => document.querySelector('#status').textContent.includes('not an engine op yet'), null, { timeout: 5000 })
-    .catch(async () => fail('paste should be reported as not-an-engine-op: ' + (await page.textContent('#status'))))
-  ok('paste → honestly reported as "not an engine op yet"')
+    .catch(async () => fail('aiSettings should be reported as not-an-engine-op: ' + (await page.textContent('#status'))))
+  ok('aiSettings → honestly reported as "not an engine op yet"')
 
   // ── context predicate drives visibility live: leave edit mode → Insert/Draw/Chart tabs hide ──
   const count = () => page.locator('#ribbon-tabs .tab').count()
