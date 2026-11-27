@@ -1,1 +1,38 @@
-/* ribbon/ops module "font": its own stylesheet, so module tasks never share a file. */
+
+.ops-panel#ops-font {
+    display: none;
+    position: absolute;
+    top: 40px;
+    left: 0;
+    z-index: 100;
+    background: var(--wo-bg-panel, #f9f9f9);
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    font-family: sans-serif;
+}
+.ops-panel#ops-font.open {
+    display: block;
+}
+.color-palette {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 10px;
+}
+.color-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #999;
+    cursor: pointer;
+    padding: 0;
+}
+.color-btn:hover {
+    border-color: #333;
+}
+.color-input {
+    width: 100%;
+    height: 30px;
+    cursor: pointer;
+}
