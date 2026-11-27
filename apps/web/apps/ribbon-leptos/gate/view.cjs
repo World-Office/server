@@ -116,6 +116,9 @@ const url = process.argv[2];
   check('page is a quarter wide at 25%', Math.abs(p25.width - page1.width * 0.25) <= 1, `${r1(p25.width)} px`);
 
   // ── 6. fit to width: fills the .pages container minus 48 px ──
+  // fit-to-width / fit-to-page / multiple-pages live in the HOME tab's "view" group, not the View tab
+  await page.click('[role=tab]#tab-home');
+  await page.waitForTimeout(100);
   const sFit = await clickStatus('#fit-to-width');
   check('fit-to-width status', /^zoom \d+% \(fit to width\)$/.test(sFit), sFit);
   const cw = (await container()).w;
@@ -130,6 +133,8 @@ const url = process.argv[2];
   const c2m = await container();
   const pFP = await box('.page');
   check('fit-to-page fits the container height minus 48 px (±12 = 1%)', Math.abs(pFP.height - (c2m.h - 48)) <= 12 && pFP.width < cw - 48, `page ${r1(pFP.width)}×${r1(pFP.height)} px vs container ${c2m.w}×${c2m.h}`);
+  await page.click('[role=tab]#tab-view');
+  await page.waitForTimeout(100);
   check('zoom-100 back to 100%', (await clickStatus('#zoom-100')) === 'zoom 100%', await status());
 
   // ── 8. dark document: body class + CSS filter; the canvas bitmap is identical ──
@@ -165,7 +170,11 @@ const url = process.argv[2];
   check('navigation', (await clickStatus('#navigation')) === 'toggleNavigation failed — the navigation pane is not rendered yet', await status());
   check('macros', (await clickStatus('#macros')) === 'macros failed — macros are not available in the editor', await status());
   check('record-macro', (await clickStatus('#record-macro')) === 'recordMacro failed — macros are not available in the editor', await status());
+  await page.click('[role=tab]#tab-home');
+  await page.waitForTimeout(100);
   check('multiple-pages', (await clickStatus('#multiple-pages')) === 'multiplePages failed — pages are shown in one column — no multi-page grid yet', await status());
+  await page.click('[role=tab]#tab-view');
+  await page.waitForTimeout(100);
   await page.selectOption('#interface-theme', 'dark');
   await page.waitForFunction(() => document.querySelector('#status')?.textContent.startsWith('interface-theme'));
   check('interface theme', (await status()) === 'interface-theme failed — interface themes are not available yet', await status());
