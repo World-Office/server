@@ -77,7 +77,7 @@ const check = (name, ok, detail = '') => {
   // Check the panel display
   const toolsText = await page.locator('#ops-tools').textContent();
   check('ops-tools shows Words 2', toolsText.includes('Words 2'), `text: ${toolsText}`);
-  check('ops-tools shows Characters 9', toolsText.includes('Characters 9'), `text: ${toolsText}`);
+  check('ops-tools shows Characters 10', toolsText.includes('Characters 10'), `text: ${toolsText}`);
   check('ops-tools shows Characters with spaces 11', toolsText.includes('Characters with spaces 11'), `text: ${toolsText}`);
   check('ops-tools shows Paragraphs 1', toolsText.includes('Paragraphs 1'), `text: ${toolsText}`);
 
