@@ -1590,6 +1590,21 @@ fn hit_test_position(
         }
     }
 
+    // A click at or beyond the right edge of the line's last glyph puts the caret AFTER it.
+    // The nearest-centre rule above can only ever return a glyph's left edge, so the
+    // end-of-line position (where typing leaves the caret) would be unreachable by clicking —
+    // a "click the caret back" restore lands one glyph short.
+    if found {
+        let line = &page.paragraphs[best_para].lines[best_line];
+        if !line.chars.is_empty() {
+            let right = line.x + line.width; // the line's text extent = sum of the glyph advances
+            if best_char + 1 == line.chars.len() && x >= right - 0.5 {
+                best_char = line.chars.len();
+                best_x = right;
+            }
+        }
+    }
+
     Ok((
         CursorPos {
             page: page_index,
@@ -2999,9 +3014,53 @@ fn layout_document_and_return_json(
     let engine_store = ENGINE_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut engine_store = engine_store.lock().unwrap();
     engine_store.insert(doc_handle, engine);
+    drop(engine_store);
+    drop(layout_store);
+
+    // The fresh layout is the only thing that knows where the caret now is.
+    snap_cursor_to_layout(doc_handle);
 
     // Serialize to JSON (includes per-page selection_rects)
     pages_to_layout_json(&pages, doc_handle)
+}
+
+/// Re-derive the caret's pixel position from the laid-out line that owns it. The
+/// insert/delete helpers carry the old `x`/`y` forward, so after an edit the caret would
+/// otherwise stay put while the text (and the user's typing) moves on.
+fn snap_cursor_to_layout(doc_handle: u32) {
+    let cursor = get_cursor(doc_handle);
+    let lines = match layout_lines(doc_handle) {
+        Some(l) => l,
+        None => return,
+    };
+    let Some(i) = current_line_idx(&lines, &cursor) else {
+        return;
+    };
+    let l = &lines[i];
+    let x = cursor
+        .char_idx
+        .checked_sub(l.start)
+        .and_then(|k| l.xs.get(k).copied())
+        .unwrap_or(l.end_x);
+    if cursor.x == x && cursor.y == l.y {
+        return;
+    }
+    let snapped = CursorPos {
+        x,
+        y: l.y,
+        ..cursor
+    };
+    set_cursor(doc_handle, snapped);
+    // A collapsed selection (anchor == caret) must stay collapsed, or the next
+    // `selection_rects()` would paint a stale range as a selection.
+    if get_anchor(doc_handle).is_some_and(|a| {
+        a.char_idx == cursor.char_idx
+            && a.para == cursor.para
+            && a.line == cursor.line
+            && a.page == cursor.page
+    }) {
+        set_anchor(doc_handle, snapped);
+    }
 }
 
 /// Serialize the document back to DOCX bytes.
@@ -5169,6 +5228,71 @@ mod tests {
         let cursor_store = CURSOR_STORE.get_or_init(|| Mutex::new(HashMap::new()));
         let mut cs = cursor_store.lock().unwrap();
         cs.remove(&doc_handle);
+    }
+
+    /// One line, `chars.len()` glyphs of 8 px starting at the content edge, as the layout engine
+    /// produces it (width = sum of the advances).
+    fn one_line_page(chars: &str) -> Vec<LaidOutPage> {
+        let n = chars.chars().count() as f32;
+        vec![LaidOutPage {
+            layout: PageLayout {
+                width_px: 793,
+                height_px: 1123,
+                margin_px: 96.0,
+                content_x: 96.0,
+                content_y: 96.0,
+                content_width: 601.0,
+                content_height: 931.0,
+            },
+            paragraphs: vec![LaidOutParagraph {
+                lines: vec![LaidOutLine {
+                    chars: chars
+                        .chars()
+                        .enumerate()
+                        .map(|(i, ch)| LaidOutChar {
+                            ch,
+                            x: 96.0 + 8.0 * i as f32,
+                            y: 96.0,
+                            font_size_pt: 12.0,
+                            color: String::new(),
+                            bold: false,
+                            italic: false,
+                            underline: false,
+                        })
+                        .collect(),
+                    x: 96.0,
+                    y: 96.0,
+                    width: 8.0 * n,
+                    height: 18.0,
+                }],
+                y: 96.0,
+                height: 18.0,
+                style_id: None,
+                path: BlockPath::default(),
+            }],
+            images: Vec::new(),
+        }]
+    }
+
+    #[test]
+    fn hit_test_click_at_the_line_end_lands_after_the_last_glyph() {
+        let pages = one_line_page("hello world");
+        let line_y = 96.0 + 12.0 * 1.2 * 0.5; // the glyphs' vertical centre
+        let end = 96.0 + 8.0 * 11.0; // right edge of the 'd' — where typing leaves the caret
+
+        // Before the last glyph: its left edge, as always.
+        let (pos, found) = hit_test_position(&pages, 0, 96.0 + 8.0 * 4.0 + 1.0, line_y).unwrap();
+        assert!(found);
+        assert_eq!((pos.char_idx, pos.x), (4, 96.0 + 8.0 * 4.0));
+
+        // At or beyond the line's right edge: AFTER the last glyph (the caret's own position
+        // after typing must be reachable by clicking it back).
+        for x in [end, end + 0.5, end + 40.0] {
+            let (pos, found) = hit_test_position(&pages, 0, x, line_y).unwrap();
+            assert!(found, "x={x}");
+            assert_eq!(pos.char_idx, 11, "x={x}");
+            assert!((pos.x - end).abs() < 0.01, "x={x}: caret x {}", pos.x);
+        }
     }
 
     #[test]

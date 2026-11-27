@@ -411,6 +411,34 @@ mod host_tests {
     }
 
     #[test]
+    fn the_caret_follows_typing_and_a_click_on_it_keeps_its_position() {
+        let d = doc();
+        d.insert_text("Hello").expect("insert");
+        let (x0, y0) = d.caret_xy().expect("caret after the insert");
+        // the caret after an insert sits after the last glyph, so clicking right on it keeps it
+        let c = d.click(0, x0, y0 + 8.0).expect("click");
+        assert!(c.found);
+        assert!(
+            (c.x - x0).abs() < 0.01,
+            "click at the caret x: {} vs {x0}",
+            c.x
+        );
+        // the key path and the paste path both advance the caret along the line
+        d.key("a", false, false).expect("key a");
+        let (x1, y1) = d.caret_xy().expect("caret after key a");
+        assert!(x1 > x0, "key: the caret follows the typing {x0} → {x1}");
+        assert!((y1 - y0).abs() < 0.01, "key: same line {y0} → {y1}");
+        d.insert_text("bc").expect("insert bc");
+        let (x2, y2) = d.caret_xy().expect("caret after insert bc");
+        assert!(x2 > x1, "insert: the caret follows the typing {x1} → {x2}");
+        assert!((y2 - y1).abs() < 0.01, "insert: same line {y1} → {y2}");
+        assert!(
+            d.selected_text().is_empty(),
+            "no stray selection after typing"
+        );
+    }
+
+    #[test]
     fn select_all_selects_the_typed_text() {
         let d = doc();
         d.insert_text("Hello").expect("insert");
