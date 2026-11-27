@@ -1,5 +1,6 @@
 import { makeStyles, tokens } from "@fluentui/react-components"
 import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { observer } from "mobx-react-lite"
 import { useCallback } from "react"
 import { convertFromHtml, downloadBlob } from "../../lib/conversion"
 import { documentStore } from "../../stores/DocumentStore"
@@ -45,7 +46,10 @@ const useStyles = makeStyles({
     padding: "0 20px",
     position: "relative",
     overflow: "hidden",
-    display: "none",
+    // NOT display:none — each pane below carries its own
+    // `display: visible ? "block" : "none"`, so hiding the container here
+    // starved every pane: it was mounted but never painted.
+    display: "block",
   },
 })
 
@@ -96,7 +100,7 @@ const DOCUMENT_FORMATS: ExportFormat[] = [
   },
 ]
 
-export function FileMenu() {
+function FileMenuInner() {
   const styles = useStyles()
   const activePanel = documentStore.activeFileMenuPanel
 
@@ -179,3 +183,5 @@ export function FileMenu() {
     </div>
   )
 }
+
+export const FileMenu = observer(FileMenuInner)

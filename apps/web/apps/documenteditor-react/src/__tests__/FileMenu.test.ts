@@ -14,6 +14,7 @@ import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { FileMenu } from "../components/FileMenu/FileMenu"
 import { FileMenuItems } from "../components/FileMenu/FileMenuItems"
 import { documentStore } from "../stores/DocumentStore"
 
@@ -149,5 +150,83 @@ describe("FileMenu backstage", () => {
     const container = mount(createElement(FileMenuItems, { onMenuClick, onBack }))
     clickButton(container, "Print")
     expect(documentStore.isFileMenuOpen).toBe(false)
+  })
+})
+
+/**
+ * The pane column next to the rail. Every pane owns its own
+ * `display: visible ? "block" : "none"`, so the column itself must (a) stay
+ * displayed and (b) re-render when the active panel changes — otherwise each
+ * pane stays invisible no matter which rail item is clicked (the bug this
+ * pins: the column was `display: none` and the component was not an observer).
+ */
+describe("FileMenu pane column", () => {
+  beforeEach(() => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    documentStore.isDesktop = false
+    documentStore.setFileMenuOpen(true)
+    documentStore.setActiveFileMenuPanel(null)
+  })
+
+  afterEach(() => {
+    for (const { root, container } of mounted.splice(0)) {
+      act(() => root.unmount())
+      container.remove()
+    }
+    documentStore.setFileMenuOpen(false)
+    documentStore.setActiveFileMenuPanel(null)
+  })
+
+  const shownPanes = (container: HTMLElement): HTMLElement[] =>
+    [...container.querySelectorAll<HTMLElement>(".de-file-menu-content-box")].filter(
+      (box) => box.style.display !== "none",
+    )
+
+  it("renders the pane of the clicked rail item, and only that pane", () => {
+    const container = mount(createElement(FileMenu))
+    expect(shownPanes(container)).toHaveLength(0)
+    for (const label of [
+      "Document Info...",
+      "Protect Document",
+      "Access Rights...",
+      "Share...",
+      "Version History...",
+      "Advanced Settings...",
+      "Help...",
+      "Download as...",
+      "Save Copy as...",
+      "Create New",
+      "Browse Files",
+      "Print with Preview",
+    ]) {
+      clickButton(container, label)
+      expect(shownPanes(container), label).toHaveLength(1)
+    }
+  })
+
+  it("toggles the pane closed when the active rail item is clicked again", () => {
+    const container = mount(createElement(FileMenu))
+    clickButton(container, "Help...")
+    expect(shownPanes(container)).toHaveLength(1)
+    clickButton(container, "Help...")
+    expect(shownPanes(container)).toHaveLength(0)
+  })
+
+  it("keeps the pane column displayed so the visible pane can actually be seen", () => {
+    const container = mount(createElement(FileMenu))
+    const pane = container.querySelector(".de-file-menu-help-content")
+    const column = pane?.parentElement?.parentElement
+    expect(column, "Help pane mounted inside the pane column").toBeDefined()
+    expect(getComputedStyle(column as HTMLElement).display).not.toBe("none")
+  })
+
+  it("gives the harness its stable hooks: rail ids and the pane each row opens", () => {
+    const container = mount(createElement(FileMenu))
+    expect(container.querySelector("#filehistory")?.textContent).toContain("Version History")
+    expect(container.querySelector('[data-pane="help"]')).toBe(container.querySelector("#filehelp"))
+    expect(container.querySelector('[data-pane="save"]')).toBeNull()
+    // pane-specific hook (the history pane shares every other class with the
+    // list-style panes)
+    expect(container.querySelectorAll(".de-file-menu-history")).toHaveLength(1)
   })
 })

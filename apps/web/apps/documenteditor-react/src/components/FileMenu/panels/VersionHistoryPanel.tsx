@@ -169,7 +169,7 @@ export function VersionHistoryPanel({ visible }: { visible: boolean }) {
 
   return (
     <div
-      className="de-file-menu-content-box"
+      className="de-file-menu-content-box de-file-menu-history"
       style={{ display: visible ? "block" : "none", padding: "0 0 0 20px" }}
     >
       <div className="de-file-menu-header">Version History</div>

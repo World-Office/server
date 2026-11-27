@@ -21,6 +21,7 @@ const ACTION_ID: Record<string, string> = {
   protect: "fileprotect",
   opts: "filesettings",
   help: "filehelp",
+  history: "filehistory",
   suggest: "filesuggest",
 }
 
@@ -320,6 +321,7 @@ const ObservedFileMenuItems = observer(function FileMenuItems({
             <Button
               key={item.action}
               id={ACTION_ID[item.action]}
+              data-pane={item.hasPanel ? item.action : undefined}
               appearance="subtle"
               className={mergeClasses(
                 styles.item,
