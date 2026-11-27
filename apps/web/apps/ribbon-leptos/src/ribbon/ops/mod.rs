@@ -16,6 +16,7 @@ pub mod find_replace;
 pub mod font;
 pub mod paragraph;
 pub mod review;
+pub mod tools;
 pub mod view;
 
 use crate::editor::PageView;
@@ -58,6 +59,7 @@ pub fn exec(cmd: &Cmd, ui: &Ui) -> Option<Result<String, String>> {
         .or_else(|| font::exec(cmd, ui))
         .or_else(|| paragraph::exec(cmd, ui))
         .or_else(|| review::exec(cmd, ui))
+        .or_else(|| tools::exec(cmd, ui))
         .or_else(|| view::exec(cmd, ui))
 }
 
@@ -70,6 +72,7 @@ pub fn Panels(ui: Ui) -> impl IntoView {
         <font::Panel ui/>
         <paragraph::Panel ui/>
         <review::Panel ui/>
+        <tools::Panel ui/>
         <view::Panel ui/>
     }
 }
