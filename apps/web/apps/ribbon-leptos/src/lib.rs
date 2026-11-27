@@ -120,13 +120,21 @@ pub fn App() -> impl IntoView {
     match opened {
         Ok((d, l)) => {
             view.refresh(&pressed, &d, &l);
-            doc.set(Some(d.handle()));
             APP_HANDLE.with(|h| *h.borrow_mut() = d.handle());
+            doc.set(Some(d.handle()));
             std::mem::forget(d); // the handle outlives this scope; released on page unload
             status.set("ready".to_string());
         }
         Err(e) => status.set(format!("engine: open failed — {e}")),
     }
+    // What the non-engine command modules (`ribbon::ops`) may touch.
+    let ui = ribbon::ops::Ui {
+        doc: doc.try_get().flatten().unwrap_or(0),
+        view,
+        pressed,
+        cmd,
+        status,
+    };
 
     // cmd signal → engine → toggled-button state. Runs once per dispatched command.
     //
@@ -151,7 +159,12 @@ pub fn App() -> impl IntoView {
                 editor::focus_input(); // ribbon buttons steal focus on click
                 status.set(format!("{} ok", c.command));
             }
-            Ok(None) => status.set(format!("{} (not an engine op yet)", c.command)),
+            // Not an engine op: ask the command modules (clipboard, view, …) — same honesty rule.
+            Ok(None) => match ribbon::ops::exec(&c, &ui) {
+                Some(Ok(s)) => status.set(s),
+                Some(Err(e)) => status.set(format!("{} failed — {e}", c.command)),
+                None => status.set(format!("{} (not an engine op yet)", c.command)),
+            },
             Err(e) => status.set(format!("{} failed — {e}", c.command)),
         }
     });
@@ -165,6 +178,7 @@ pub fn App() -> impl IntoView {
             </section>
             <p id="status" role="status">{status}</p>
         </div>
+        <ribbon::ops::Panels ui/>
         // The canvas host, mounted once the document exists. Its hidden textarea is also the
         // IME bridge (`#ime-bridge` / `#ime-out` — the IME gate's contract).
         <Show when=move || doc.with(|d| d.is_some())>

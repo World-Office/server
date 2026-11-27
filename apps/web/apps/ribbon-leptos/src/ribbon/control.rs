@@ -86,13 +86,17 @@ pub fn render_control(c: Control, st: RibbonState) -> AnyView {
             .into_any()
         }
         Kind::Checkbox { command, checked_when } => {
+            // A checkbox keeps its own state: it starts from the predicate (a document-context
+            // default) and then follows the clicks, sending the new value with every command.
+            let on = RwSignal::new(checked_when.eval(&st.ctx.get()));
             view! {
                 <button id=id class="btn" data-kind="checkbox" data-command=command.unwrap_or(id)
                     aria-label=label title=title
-                    aria-pressed=move || checked_when.eval(&st.ctx.get()).to_string()
+                    aria-pressed=move || on.get().to_string()
                     on:click=move |_| {
-                        let now = checked_when.eval(&st.ctx.get());
-                        st.cmd.set(Some(Cmd { id, command: command.unwrap_or(id), value: Some((!now).to_string()) }))
+                        let now = !on.get();
+                        on.set(now);
+                        st.cmd.set(Some(Cmd { id, command: command.unwrap_or(id), value: Some(now.to_string()) }))
                     }>
                     <span class="box" style="pointer-events: none">{move || if checked_when.eval(&st.ctx.get()) { "☑" } else { "☐" }}</span>
                     <span class="caption" style="pointer-events: none">{label}</span>

@@ -19,7 +19,13 @@ WASM=$(ls dist/*_bg.wasm | head -1); JS=$(ls dist/*.js | head -1)
 printf 'gate: wasm %s B (%s B gzip)  js %s B (%s B gzip)\n' \
   "$(stat -c%s "$WASM")" "$(gzip -9c "$WASM" | wc -c)" "$(stat -c%s "$JS")" "$(gzip -9c "$JS" | wc -c)"
 
-PORT="$(shuf -i 8700-8799 -n 1)"
+# A port nobody listens on (parallel gates must never share a server — that serves another
+# task's dist). bash's /dev/tcp connect fails fast on a closed port.
+PORT=""
+for p in $(shuf -i 8700-8799); do
+  if ! (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then PORT=$p; break; fi
+done
+[ -n "$PORT" ] || { echo "gate: no free port in 8700-8799"; exit 2; }
 /usr/bin/python3 -m http.server "$PORT" --bind 127.0.0.1 --directory dist >/dev/null 2>&1 &
 SRV=$!
 trap 'kill "$SRV" 2>/dev/null || true' EXIT
