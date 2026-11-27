@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-27T02:11:43.431Z",
+ "generatedAt": "2026-11-27T02:14:21.971Z",
  "source": {
   "ledger": "/home/weiss/git/World-Office/wo-test-harness/census/ledger/ledger.json",
   "ledgerRows": 534
@@ -15561,12 +15561,16 @@
    },
    "subFeatures": [
     {
-     "name": "document info entry",
-     "selector": "#fileinfo"
+     "name": "Title row (the OO info dialog's Name)",
+     "selector": ".de-file-menu-info-row:nth-child(1)"
     },
     {
-     "name": "backstage header (doc title + save state — the OO info dialog's name retarget)",
-     "selector": ".de-filemenu-header"
+     "name": "Created row",
+     "selector": ".de-file-menu-info-row:nth-child(7)"
+    },
+    {
+     "name": "Size row (pages)",
+     "selector": ".de-file-menu-info-row:nth-child(10)"
     }
    ],
    "note": "loop18 [override-only: no ledger row matched this key]",
@@ -15577,8 +15581,8 @@
      "kind": "dialog-visible",
      "dialogSelector": ".de-file-menu-info-table"
     },
-    "xfail": true,
-    "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry | 2026-11-26: xfail — a pass on 'file-menu panel visible' proves nothing about Document Info (FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so no pane ever renders); the contract now asserts the info table (.de-file-menu-info-table) being visible. The runner does not drive xfail rows by default"
+    "xfail": false,
+    "note": "loop18 react-port: the OO File>Info dialog is delivered by the file backstage — [data-tab=file] opens .de-file-menu-panel and #fileinfo is the Document Info entry (the OO info name/path/lang/stats/size fields become the react backstage's title/author/subject/keywords/comments panel fields). The deployed bundle renders the backstage rail; the info panel body stays display:none behind the panelBox (app-side gap, tracked separately) — the observable info surface is the backstage with the #fileinfo entry | 2026-11-26: xfail — a pass on 'file-menu panel visible' proves nothing about Document Info (FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so no pane ever renders); the contract now asserts the info table (.de-file-menu-info-table) being visible. The runner does not drive xfail rows by default | 2026-11-27: passes since the FileMenu pane fix — the Document Info pane renders, and the audit now requires the title/created/size rows inside it (the old sub-features could never be found inside the pane: #fileinfo is the rail entry and .de-filemenu-header never existed — the class is de-file-menu-header)"
    }
   },
   {
@@ -19202,10 +19206,24 @@
     "woTab": "backstage",
     "assertion": {
      "kind": "dialog-visible",
-     "dialogSelector": ".de-file-menu-settings-table"
+     "dialogSelector": ".de-file-menu-content-box:has(.de-file-menu-select)"
     },
-    "xfail": true,
-    "note": "2026-11-26: xfail. This override-only row (no ledger row behind it) has been passing on a loop19 contract that only survived via the generator's prior-manifest carry-over, and that contract asserted nothing but 'file-menu panel visible' after #filesettings. FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so the Advanced Settings pane never renders; the contract now asserts the settings table being visible. The runner does not drive xfail rows by default"
+    "subFeatures": [
+     {
+      "name": "settings table",
+      "selector": ".de-file-menu-settings-table"
+     },
+     {
+      "name": "settings dropdowns (the OO options pages)",
+      "selector": ".de-file-menu-select"
+     },
+     {
+      "name": "Close button",
+      "selector": ".de-file-menu-footer button"
+     }
+    ],
+    "xfail": false,
+    "note": "2026-11-27: passes since the FileMenu pane fix — the dialog selector is the Advanced Settings pane itself (three panes share .de-file-menu-settings-table; only this one holds a dropdown) and the audit requires the settings table, its dropdowns and the Close button inside it. History — 2026-11-26: xfail. This override-only row (no ledger row behind it) has been passing on a loop19 contract that only survived via the generator's prior-manifest carry-over, and that contract asserted nothing but 'file-menu panel visible' after #filesettings. FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so the Advanced Settings pane never renders; the contract now asserts the settings table being visible. The runner does not drive xfail rows by default"
    }
   },
   {

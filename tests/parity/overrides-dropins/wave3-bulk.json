@@ -509,10 +509,15 @@
     "woTab": "backstage",
     "assertion": {
      "kind": "dialog-visible",
-     "dialogSelector": ".de-file-menu-settings-table"
+     "dialogSelector": ".de-file-menu-content-box:has(.de-file-menu-select)"
     },
-    "xfail": true,
-    "note": "2026-11-26: xfail. This override-only row (no ledger row behind it) has been passing on a loop19 contract that only survived via the generator's prior-manifest carry-over, and that contract asserted nothing but 'file-menu panel visible' after #filesettings. FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so the Advanced Settings pane never renders; the contract now asserts the settings table being visible. The runner does not drive xfail rows by default"
+    "subFeatures": [
+     { "name": "settings table", "selector": ".de-file-menu-settings-table" },
+     { "name": "settings dropdowns (the OO options pages)", "selector": ".de-file-menu-select" },
+     { "name": "Close button", "selector": ".de-file-menu-footer button" }
+    ],
+    "xfail": false,
+    "note": "2026-11-27: passes since the FileMenu pane fix — the dialog selector is the Advanced Settings pane itself (three panes share .de-file-menu-settings-table; only this one holds a dropdown) and the audit requires the settings table, its dropdowns and the Close button inside it. History — 2026-11-26: xfail. This override-only row (no ledger row behind it) has been passing on a loop19 contract that only survived via the generator's prior-manifest carry-over, and that contract asserted nothing but 'file-menu panel visible' after #filesettings. FileMenu.tsx hides panelBox and FileMenu is not a mobx observer, so the Advanced Settings pane never renders; the contract now asserts the settings table being visible. The runner does not drive xfail rows by default"
    }
   },
   "insert.eraser": {

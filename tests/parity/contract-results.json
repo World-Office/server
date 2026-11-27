@@ -1,8 +1,8 @@
 {
- "ranAt": "2026-11-26T20:40:50.652Z",
+ "ranAt": "2026-11-27T02:30:35.759Z",
  "total": 678,
- "pass": 343,
- "knownGap": 9,
+ "pass": 350,
+ "knownGap": 2,
  "retarget": 326,
  "fail": 0,
  "results": [
@@ -623,7 +623,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-26/2026-11-25)"
+   "observed": "text contains today/yesterday (2026-11-27/2026-11-26)"
   },
   {
    "token": "btn-textfile",
@@ -1343,7 +1343,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-26/2026-11-25)"
+   "observed": "text contains today/yesterday (2026-11-27/2026-11-26)"
   },
   {
    "token": "btn-field",
@@ -2233,7 +2233,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-26/2026-11-25)"
+   "observed": "text contains today/yesterday (2026-11-27/2026-11-26)"
   },
   {
    "token": "back",
@@ -2663,7 +2663,7 @@
    "xfail": false,
    "ok": true,
    "expected": "{\"kind\":\"text-mutation\",\"selector\":\"[data-header-footer-region=\\\"header\\\"]\",\"containsDate\":true}",
-   "observed": "text contains today/yesterday (2026-11-26/2026-11-25)"
+   "observed": "text contains today/yesterday (2026-11-27/2026-11-26)"
   },
   {
    "token": "shortcut.movetolowerheader",
@@ -5350,9 +5350,10 @@
    "feature": "info",
    "tab": "",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-info-table\"} +3 subFeatures",
+   "observed": "dialog visible (de-file-menu-info-table)"
   },
   {
    "token": "backstage.overlay",
@@ -5529,45 +5530,50 @@
    "feature": "backstage.settings-cancel",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-style\",\"selector\":\".de-file-menu-panel\",\"prop\":\"display\",\"equals\":\"none\"} +0 subFeatures",
+   "observed": "display=none"
   },
   {
    "token": "backstage.help-open",
    "feature": "backstage.help-open",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-help-content\"} +0 subFeatures",
+   "observed": "dialog visible (de-file-menu-help-content)"
   },
   {
    "token": "backstage.help-close",
    "feature": "backstage.help-close",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-style\",\"selector\":\".de-file-menu-content-box:has(.de-file-menu-help-content)\",\"prop\":\"display\",\"equals\":\"none\"}",
+   "observed": "display=none"
   },
   {
    "token": "backstage.history-open",
    "feature": "backstage.history-open",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-history\"} +1 subFeatures",
+   "observed": "dialog visible (de-file-menu-content-box)"
   },
   {
    "token": "backstage.history-close",
    "feature": "backstage.history-close",
    "tab": "backstage",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dom-style\",\"selector\":\".de-file-menu-history\",\"prop\":\"display\",\"equals\":\"none\"}",
+   "observed": "display=none"
   },
   {
    "token": "backstage.ai-review-open",
@@ -6523,9 +6529,10 @@
    "feature": "file.advanced-settings",
    "tab": "chart-design",
    "cls": "dialog",
-   "xfail": true,
-   "ok": false,
-   "observed": "known-gap (fast-path: not driven)"
+   "xfail": false,
+   "ok": true,
+   "expected": "{\"kind\":\"dialog-visible\",\"dialogSelector\":\".de-file-menu-content-box:has(.de-file-menu-select)\"} +3 subFeatures",
+   "observed": "dialog visible (de-file-menu-content-box)"
   },
   {
    "token": "ctx.edit-alt-text",
