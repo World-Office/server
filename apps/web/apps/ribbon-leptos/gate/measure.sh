@@ -46,7 +46,12 @@ CENSUS_WO="$OUT/census-react-deep.json"
 
 export CENSUS_REACT_URL="http://127.0.0.1:$PORT/"
 export CENSUS_OUT="$OUT"
-NODE_PATH="$E2E_NM" node "$CENSUS_SCRIPT"
+# same guard as common.sh: a probe that never exits must fail loudly
+NODE_PATH="$E2E_NM" timeout -k 5 600 node "$CENSUS_SCRIPT" || {
+  rc=$?
+  echo "gate: census failed (exit $rc)$( [ "$rc" -eq 124 ] && echo ' — did not exit within 600s, killed')"
+  exit "$rc"
+}
 
 echo "=== LAYOUT DIFF ==="
 # Run layout-diff.py

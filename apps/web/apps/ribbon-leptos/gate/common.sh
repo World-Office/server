@@ -30,4 +30,9 @@ done
 SRV=$!
 trap 'kill "$SRV" 2>/dev/null || true' EXIT
 sleep 0.7
-NODE_PATH="$E2E_NM" node "$PROBE" "http://127.0.0.1:$PORT/"
+# A probe that never exits (browser.close() hanging after a crash) must fail loudly, not hang the
+# gate — and the agent waiting on it — forever.
+NODE_PATH="$E2E_NM" timeout -k 5 300 node "$PROBE" "http://127.0.0.1:$PORT/"
+rc=$?
+[ "$rc" -ne 124 ] || echo "gate: probe did not exit within 300s (browser.close() hang?) — killed"
+exit "$rc"
